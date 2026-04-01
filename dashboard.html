@@ -774,12 +774,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div class="rec-bar" id="stream-rec-bar" style="display:none"><div class="rec-dot"></div><span id="stream-rec-timer">00:00</span></div>
         </div>
         <!-- Audio Waveform Visualizer -->
-        <div style="border-radius:var(--r1);overflow:hidden;margin-bottom:14px;background:#0f172a;padding:12px 0">
-          <canvas id="stream-waveform" width="700" height="80" style="width:100%;height:80px;display:block"></canvas>
-          <div style="display:flex;justify-content:space-between;padding:6px 14px 0;align-items:center">
-            <span style="font-size:10px;color:rgba(255,255,255,.4)">실시간 음성 파형</span>
-            <span style="font-size:11px;font-weight:700;color:#4ade80" id="stream-db-live">0 dB</span>
+        <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#10b981" id="stream-mic-dot"></div>
+              <span style="font-size:11px;font-weight:600;color:var(--t2)">실시간 음성 파형</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:20px;font-weight:900;color:var(--t1)" id="stream-db-live">0</span>
+              <span style="font-size:10px;color:var(--t3)">dB</span>
+            </div>
           </div>
+          <canvas id="stream-waveform" width="700" height="70" style="width:100%;height:70px;display:block;border-radius:8px;background:#f8f9fa"></canvas>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-red" id="stream-rec-btn" onclick="toggleStreamRecord()" style="padding:10px 24px;font-size:13px">
@@ -1556,7 +1562,8 @@ function drawWaveform(){
     animFrameId=requestAnimationFrame(draw);
     analyser.getByteFrequencyData(data);
 
-    ctx.fillStyle='#0f172a';
+    // Clear with light bg
+    ctx.fillStyle='#f8f9fa';
     ctx.fillRect(0,0,W,H);
 
     // Calculate dB
@@ -1565,28 +1572,45 @@ function drawWaveform(){
     const avg=sum/bufLen;
     const db=Math.round(avg*0.4);
     const dbEl=el('stream-db-live');
+    const micDot=el('stream-mic-dot');
     if(dbEl){
-      dbEl.textContent=db+' dB';
-      dbEl.style.color=db>25?db>50?'#f87171':'#4ade80':'rgba(255,255,255,.4)';
+      dbEl.textContent=db;
+      dbEl.style.color=db>50?'#E21E26':db>20?'#0078C8':'var(--t3)';
     }
+    if(micDot) micDot.style.background=db>10?db>50?'#E21E26':'#10b981':'#ddd';
 
-    // Draw bars
-    const barCount=64;
-    const barW=W/barCount-1;
+    // Draw rounded bars from center
+    const barCount=80;
+    const gap=1;
+    const barW=(W-(barCount-1)*gap)/barCount;
     const step=Math.floor(bufLen/barCount);
     for(let i=0;i<barCount;i++){
       const val=data[i*step]/255;
-      const barH=val*H*0.9+1;
-      // Gradient color: green → yellow → red
-      const hue=120-(val*120);
-      ctx.fillStyle=`hsla(${hue},85%,55%,${0.5+val*0.5})`;
-      // Center-aligned bars (grow from middle)
+      const barH=Math.max(2, val*H*0.85);
+      // Color: blue (quiet) → red (loud)
+      const r=Math.round(0 + val*226);
+      const g=Math.round(120 - val*90);
+      const b=Math.round(200 - val*170);
+      ctx.fillStyle=`rgba(${r},${g},${b},${0.3+val*0.7})`;
+      // Rounded bar from center
+      const x=i*(barW+gap);
       const y=(H-barH)/2;
-      ctx.fillRect(i*(barW+1),y,barW,barH);
+      const radius=Math.min(barW/2, 3);
+      ctx.beginPath();
+      ctx.moveTo(x+radius,y);
+      ctx.lineTo(x+barW-radius,y);
+      ctx.quadraticCurveTo(x+barW,y,x+barW,y+radius);
+      ctx.lineTo(x+barW,y+barH-radius);
+      ctx.quadraticCurveTo(x+barW,y+barH,x+barW-radius,y+barH);
+      ctx.lineTo(x+radius,y+barH);
+      ctx.quadraticCurveTo(x,y+barH,x,y+barH-radius);
+      ctx.lineTo(x,y+radius);
+      ctx.quadraticCurveTo(x,y,x+radius,y);
+      ctx.fill();
     }
 
     // Center line
-    ctx.strokeStyle='rgba(255,255,255,.08)';
+    ctx.strokeStyle='rgba(0,0,0,.04)';
     ctx.lineWidth=1;
     ctx.beginPath();
     ctx.moveTo(0,H/2);
@@ -1601,7 +1625,7 @@ function stopWaveform(){
   if(audioCtx){ audioCtx.close(); audioCtx=null; analyser=null; }
   // Clear canvas
   const canvas=el('stream-waveform');
-  if(canvas){ const ctx=canvas.getContext('2d'); ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  if(canvas){ const ctx=canvas.getContext('2d'); ctx.fillStyle='#f8f9fa'; ctx.fillRect(0,0,canvas.width,canvas.height); }
 }
 
 function toggleStreamRecord(){
