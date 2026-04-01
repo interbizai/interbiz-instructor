@@ -1526,6 +1526,10 @@ function goStreamStep2(){
     <strong>인원:</strong> ${v('st-count')||'—'}명<br>
     <strong>날짜:</strong> ${v('st-date')||'—'}
   `;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    alert('이 브라우저에서 카메라를 지원하지 않습니다.\nHTTPS(배포 사이트)에서 접속해주세요.');
+    return;
+  }
   navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
     streamStream=stream;
     el('stream-webcam').srcObject=stream;
