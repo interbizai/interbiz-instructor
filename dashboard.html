@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>interbiz — 현장강사 역량 평가 플랫폼</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#E6E9EF;--sl:#ffffff;--sd:rgba(0,0,0,0.11);
+  --red:#E21E26;--blue:#0078C8;--green:#10b981;--orange:#f59e0b;--purple:#8b5cf6;
+  --t1:#1a202c;--t2:#4a5568;--t3:#718096;--bdr:rgba(0,0,0,0.07);
+  --r1:12px;--r2:16px;--r3:20px;
+}
+body{background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh}
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* ── Cards & Buttons (white clean) ── */
+.neu{background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.06);border-radius:var(--r2)}
+.neu-sm{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.06);border-radius:var(--r1)}
+.neu-in{box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}
+.neu-btn{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.08);border-radius:var(--r1);cursor:pointer;transition:box-shadow .15s,transform .1s}
+.neu-btn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1);transform:scale(.98)}
+input,select,textarea{background:#fff;border:1px solid #ddd;outline:none;box-shadow:none;border-radius:var(--r1);padding:10px 14px;font-size:13px;color:var(--t1);width:100%;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--t1)}
+textarea{resize:vertical;min-height:80px}
+
+/* ── Header ── */
+.hdr{position:sticky;top:0;z-index:200;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:13px 28px;display:flex;align-items:center;justify-content:space-between}
+.hdr-logo{display:flex;align-items:center;gap:11px}
+.hdr-logo img{height:34px;border-radius:9px}
+.hdr-logo-txt h1{font-size:15px;font-weight:800}
+.hdr-logo-txt p{font-size:10px;color:var(--t3)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.chip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;color:var(--t3);border:1px solid #eee;background:#fff}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r1);font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:3px 3px 9px rgba(0,120,200,.35)}
+.btn-red{background:var(--red);color:#fff;box-shadow:3px 3px 9px rgba(226,30,38,.3)}
+.btn-ghost{background:#fff;color:var(--blue);border:1px solid rgba(0,0,0,.1)}
+.btn:active{transform:scale(.97)}
+
+/* ── Section label ── */
+.sec-lbl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:14px}
+.sec-lbl::before{content:'';width:3px;height:16px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
+
+/* ── Main layout ── */
+main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
+
+/* ── Filter bar ── */
+.filter-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:26px}
+.f-item{display:flex;flex-direction:column;gap:5px}
+.f-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.filter-bar select{padding:9px 12px}
+
+/* ── AI Summary strip ── */
+.ai-strip{border-radius:var(--r2);padding:14px 20px;margin-bottom:26px;border:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .4s ease both}
+.ai-strip-ico{width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-strip-text{font-size:12px;color:var(--t2);line-height:1.7}
+.ai-strip-text strong{color:var(--t1);font-weight:700}
+
+/* ── Stats row ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both}
+.stat-card:nth-child(2){animation-delay:.06s}.stat-card:nth-child(3){animation-delay:.12s}.stat-card:nth-child(4){animation-delay:.18s}
+.icon-card{width:52px;height:52px;border-radius:16px;border:1px solid rgba(0,0,0,.08);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:center}
+.stat-val{font-size:28px;font-weight:900;line-height:1}
+.stat-lbl{font-size:11px;color:var(--t3);font-weight:500}
+
+/* ── Morphing icons CSS ── */
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.si-arc{stroke-dasharray:30 70;animation:spin 1s linear infinite;transform-origin:20px 20px;transition:opacity .4s}
+.done .si-arc{animation:none;opacity:.15;stroke-dasharray:100 0}
+.si-check{stroke-dasharray:50;stroke-dashoffset:50;transition:stroke-dashoffset .4s cubic-bezier(.22,1,.36,1) .1s}
+.done .si-check{stroke-dashoffset:0}
+.si-play{transform-origin:20px 20px;transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .25s}
+.playing .si-play{transform:scale(0);opacity:0}
+.si-pause{transform-origin:20px 20px;transform:scale(0);opacity:0;transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .25s}
+.playing .si-pause{transform:scale(1);opacity:1}
+.si-arrow{transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .3s}
+.downloaded .si-arrow{transform:translateY(8px);opacity:0}
+.si-done{stroke-dasharray:55;stroke-dashoffset:55;transition:stroke-dashoffset .4s ease}
+.downloaded .si-done{stroke-dashoffset:0}
+.si-dot{transform-origin:29px 11px;transform:scale(0);opacity:0;transition:transform .4s cubic-bezier(.32,.72,0,1),opacity .3s}
+.notified .si-dot{transform:scale(1);opacity:1}
+@keyframes bell-ring{0%,100%{transform:rotate(0)}20%{transform:rotate(10deg)}40%{transform:rotate(-10deg)}60%{transform:rotate(6deg)}80%{transform:rotate(-4deg)}}
+.si-bell{transform-origin:20px 9px}
+.notified .si-bell{animation:bell-ring .65s ease}
+
+/* ── 12-Icon Grid (reference style) ── */
+.icon-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}
+@media(min-width:640px){.icon-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.icon-grid{grid-template-columns:repeat(6,1fr)}}
+.icon-cell{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.icon-box{width:72px;height:72px;border-radius:var(--r2);border:1px solid var(--bdr);background:var(--bg);display:flex;align-items:center;justify-content:center;transition:box-shadow .2s;box-shadow:4px 4px 8px var(--sd),-4px -4px 8px var(--sl)}
+.icon-box:hover{box-shadow:6px 6px 12px var(--sd),-6px -6px 12px var(--sl)}
+.icon-label{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.3px;text-align:center;line-height:1.2}
+
+/* — 5. Lock/Unlock — */
+.si-lock-body{transition:opacity .3s}.si-lock-shackle{transition:transform .4s cubic-bezier(.32,.72,0,1)}
+.unlocked .si-lock-shackle{transform:translateY(-3px)}.unlocked .si-lock-dot{opacity:.4;transform:scale(.6)}
+.si-lock-dot{transition:opacity .3s,transform .3s;transform-origin:20px 26px}
+/* — 6. Copy/Copied — */
+.si-copy-check{stroke-dasharray:40;stroke-dashoffset:40;transition:stroke-dashoffset .35s ease}
+.copied .si-copy-check{stroke-dashoffset:0}
+.si-copy-lines{transition:opacity .25s}.copied .si-copy-lines{opacity:0}
+/* — 7. Heart — */
+.si-heart{transition:fill .25s,stroke .25s,transform .4s cubic-bezier(.32,.72,0,1);transform-origin:20px 22px}
+.hearted .si-heart{fill:#EF4444;stroke:#EF4444;transform:scale(1.2)}
+/* — 8. Menu/Close — */
+.si-menu-top,.si-menu-mid,.si-menu-bot{transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .2s;transform-origin:20px 20px}
+.menu-open .si-menu-top{transform:translateY(8px) rotate(45deg)}.menu-open .si-menu-mid{opacity:0;transform:scaleX(0)}.menu-open .si-menu-bot{transform:translateY(-8px) rotate(-45deg)}
+/* — 9. Send — */
+.si-send-plane{transition:transform .5s cubic-bezier(.32,.72,0,1),opacity .4s;transform-origin:20px 20px}
+.sent .si-send-plane{transform:translate(20px,-20px) scale(.5);opacity:0}
+/* — 10. Toggle — */
+.si-toggle-track{transition:opacity .3s}.si-toggle-knob{transition:cx .3s cubic-bezier(.32,.72,0,1)}
+.toggled .si-toggle-track{opacity:.25}
+/* — 11. Eye — */
+.si-eye-path{transition:opacity .3s}.si-eye-pupil{transition:transform .3s,opacity .3s;transform-origin:20px 20px}
+.eye-hidden .si-eye-path{opacity:.3}.eye-hidden .si-eye-pupil{transform:scale(.6);opacity:.2}
+.si-eye-slash{transition:opacity .25s;opacity:0}.eye-hidden .si-eye-slash{opacity:1}
+/* — 12. Volume — */
+.si-vol-wave1,.si-vol-wave2{transition:opacity .3s,transform .3s;transform-origin:26px 20px}
+.muted .si-vol-wave1{opacity:0;transform:translateX(-3px)}.muted .si-vol-wave2{opacity:0;transform:translateX(-5px)}
+.si-vol-x{opacity:0;transition:opacity .25s}.muted .si-vol-x{opacity:1}
+
+/* ── Dual Tab (video analysis) ── */
+.dual-tabs{display:flex;gap:0;margin-bottom:16px;border-radius:var(--r1);overflow:hidden;border:1px solid var(--bdr)}
+.dual-tab{flex:1;padding:10px 16px;background:var(--bg);border:none;font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;text-align:center}
+.dual-tab.active{background:var(--blue);color:#fff}
+.dual-pane{display:none}.dual-pane.active{display:block}
+
+/* ── Top 5 highlight ── */
+.top5-scroll{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;margin-bottom:28px;scroll-snap-type:x mandatory}
+.top5-card{min-width:200px;max-width:220px;border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;scroll-snap-align:start;flex-shrink:0;animation:fadeUp .4s ease both;cursor:pointer;transition:transform .2s}
+.top5-card:hover{transform:translateY(-3px)}
+.top5-rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;font-size:11px;font-weight:900}
+.t5r-1{background:rgba(245,158,11,.14);color:#d97706}.t5r-2{background:rgba(156,163,175,.14);color:#6b7280}.t5r-3{background:rgba(180,83,9,.12);color:#b45309}.t5r-4,.t5r-5{background:rgba(0,0,0,.06);color:var(--t3)}
+
+/* ── Webcam ── */
+.webcam-wrap{position:relative;border-radius:var(--r2);overflow:hidden;background:#111;aspect-ratio:16/9}
+.webcam-wrap video{width:100%;height:100%;object-fit:cover}
+.rec-dot{width:12px;height:12px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-bar{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700}
+
+/* ── Lecturer grid ── */
+.lect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.lect-card{padding:20px;border-radius:var(--r3);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
+.lect-card:hover{transform:translateY(-3px)}
+.lect-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lect-photo{width:46px;height:46px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
+.lect-info{flex:1}
+.lect-name{font-size:14px;font-weight:800}
+.lect-meta{font-size:10px;color:var(--t3);margin-top:2px}
+.channel-chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.ch-가전{background:rgba(226,30,38,.1);color:var(--red)}
+.ch-IT{background:rgba(0,120,200,.1);color:var(--blue)}
+.ch-서비스{background:rgba(16,185,129,.1);color:var(--green)}
+.grade-badge{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;margin-left:auto}
+.g-S{background:rgba(16,185,129,.12);color:#059669}.g-A{background:rgba(37,99,235,.12);color:#2563eb}.g-B{background:rgba(245,158,11,.12);color:#d97706}.g-C{background:rgba(220,38,38,.12);color:#dc2626}
+.mini-bar-row{margin-bottom:7px}.mini-bar-hdr{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:3px}
+.bar-track{height:5px;border-radius:3px;background:#f0f0f0;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;width:0%;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.bf-red{background:linear-gradient(90deg,var(--red),#ff6b70)}.bf-blue{background:linear-gradient(90deg,var(--blue),#4db8ff)}.bf-green{background:linear-gradient(90deg,var(--green),#34d399)}
+.lect-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.total-score{font-size:22px;font-weight:900}
+
+/* ── Accordion ── */
+.acc-wrap{border-radius:var(--r3);overflow:hidden;border:1px solid var(--bdr);animation:fadeUp .5s ease both}
+.acc-item{border-bottom:1px solid var(--bdr)}.acc-item:last-child{border-bottom:none}
+.acc-trigger{width:100%;padding:14px 18px;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .2s;text-align:left}
+.acc-trigger:hover{background:#f9f9f9}.acc-trigger.open{background:#f5f6f8}
+.acc-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acc-title{flex:1;font-size:13px;font-weight:700}
+.acc-toggle{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border:1px solid rgba(0,0,0,.08);flex-shrink:0}
+.acc-trigger.open .acc-toggle{background:#eee}
+.icon-plus{display:block}.icon-minus{display:none}
+.acc-trigger.open .icon-plus{display:none}.acc-trigger.open .icon-minus{display:block}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .38s cubic-bezier(.22,1,.36,1);background:#fafafa}
+.acc-body.open{max-height:3000px}
+.coll-item{border-top:1px solid var(--bdr);padding:0 18px}
+.coll-trigger{width:100%;padding:11px 0;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--t2);transition:color .2s}
+.coll-trigger:hover{color:var(--blue)}
+.coll-chev{width:15px;height:15px;color:var(--t3);flex-shrink:0;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.coll-trigger.open .coll-chev{transform:rotate(180deg)}
+.coll-body{max-height:0;overflow:hidden;transition:max-height .32s cubic-bezier(.22,1,.36,1);padding-left:22px}
+.coll-body.open{max-height:1500px;padding-bottom:14px}
+
+/* ── Video page layout ── */
+.video-layout{display:grid;grid-template-columns:1fr 400px;gap:22px}
+.video-player{border-radius:var(--r2);overflow:hidden;background:#111;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative}
+.video-player iframe,.video-player video{width:100%;height:100%;border:none}
+.vid-placeholder{display:flex;flex-direction:column;align-items:center;gap:12px;color:rgba(255,255,255,.5)}
+.ts-feed{border-radius:var(--r2);border:1px solid var(--bdr);overflow:hidden}
+.ts-hdr{padding:14px 16px;background:rgba(255,255,255,.4);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.ts-list{overflow-y:auto;max-height:480px}
+.ts-item{padding:12px 16px;border-bottom:1px solid var(--bdr);display:flex;gap:10px;align-items:flex-start}
+.ts-item:last-child{border-bottom:none}
+.ts-time{font-size:10px;font-weight:800;color:var(--blue);cursor:pointer;white-space:nowrap;padding-top:1px}
+.ts-badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.ts-good{background:rgba(16,185,129,.1);color:#059669}.ts-bad{background:rgba(220,38,38,.1);color:#dc2626}.ts-tip{background:rgba(245,158,11,.1);color:#d97706}
+.ts-text{font-size:12px;color:var(--t2);line-height:1.6;flex:1}
+.ts-edit-btn{padding:2px 6px;border-radius:5px;font-size:10px;border:none;background:transparent;color:var(--t3);cursor:pointer}
+.ts-edit-btn:hover{color:var(--blue)}
+.ts-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.ts-tag{padding:1px 6px;border-radius:10px;font-size:10px;background:rgba(0,0,0,.06);color:var(--t3)}
+
+/* ── Habit badges ── */
+.habit-list{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0}
+.habit-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.hb-high{background:rgba(226,30,38,.1);color:var(--red)}.hb-mid{background:rgba(245,158,11,.1);color:var(--orange)}.hb-low{background:rgba(113,128,150,.1);color:var(--t3)}
+.habit-cnt{font-size:10px;font-weight:800;opacity:.8}
+
+/* ── Engagement timeline ── */
+.eng-line{display:flex;align-items:center;padding:12px 0;overflow-x:auto;gap:0}
+.eng-seg{display:flex;align-items:center;gap:0;flex-shrink:0}
+.eng-bar{height:3px;background:linear-gradient(90deg,var(--blue),#4db8ff);opacity:.3}
+.eng-dot{width:12px;height:12px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px rgba(0,120,200,.15);flex-shrink:0}
+.eng-label{font-size:9px;color:var(--t3);white-space:nowrap;margin-top:4px}
+.eng-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+
+/* ── Decibel bar ── */
+.db-wrap{position:relative;height:8px;border-radius:4px;background:#f0f0f0;overflow:visible;margin:8px 0 20px}
+.db-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#4db8ff);transition:width 1s ease}
+.db-zone{position:absolute;top:-3px;height:14px;border:2px solid var(--orange);border-radius:3px;opacity:.6}
+.db-info{font-size:11px;color:var(--t2);margin-top:4px}
+
+/* ── Score mini grid ── */
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 0}
+.mini-item{display:flex;flex-direction:column;gap:3px}
+.mini-name{font-size:10px;color:var(--t3);font-weight:500}
+.mini-val{font-size:11px;font-weight:700}
+
+/* ── Profile page ── */
+.prof-layout{display:grid;grid-template-columns:300px 1fr;gap:22px}
+.prof-card{padding:24px;border-radius:var(--r3);border:1px solid var(--bdr)}
+.prof-photo{width:90px;height:90px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#fff}
+.prof-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.prof-row:last-child{border-bottom:none}
+.prof-key{color:var(--t3);font-weight:600}.prof-val{color:var(--t1);font-weight:500}
+
+/* ── Login / Register (reference: clean white card style) ── */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#fafafa}
+.auth-card{width:420px;background:#fff;border-radius:12px;padding:40px 36px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
+.auth-title{font-size:28px;font-weight:800;text-align:center;margin-bottom:4px;color:var(--t1)}
+.auth-sub{font-size:13px;color:var(--t3);text-align:center;margin-bottom:32px}
+.auth-logo{text-align:center;margin-bottom:22px}
+.auth-logo img{height:40px}
+.form-group{margin-bottom:18px}
+.form-lbl{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:6px;display:block}
+.form-input{width:100%;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;color:var(--t1);background:#fff;outline:none;transition:border-color .2s;box-shadow:none}
+.form-input:focus{border-color:var(--t1)}
+.form-input::placeholder{color:#bbb}
+select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center}
+.form-row-flex{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.form-check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer}
+.form-check input{width:16px;height:16px;margin:0;box-shadow:none}
+.auth-forgot{font-size:12px;color:var(--t2);cursor:pointer;text-decoration:none;font-weight:500}
+.auth-forgot:hover{color:var(--t1)}
+.auth-btn{width:100%;padding:13px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+.auth-btn:active{transform:scale(.98)}
+.auth-btn-primary{background:var(--t1);color:#fff}
+.auth-btn-primary:hover{background:#000}
+.auth-btn-outline{background:#fff;color:var(--t1);border:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
+.auth-btn-outline:hover{background:#f8f8f8}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#ccc;font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#eee}
+.auth-footer{text-align:center;margin-top:20px;font-size:13px;color:var(--t3)}
+.auth-footer a{color:var(--t1);font-weight:700;text-decoration:none;cursor:pointer}
+.auth-footer a:hover{text-decoration:underline}
+.auth-err{font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px}
+/* pw toggle */
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:40px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t3);padding:0}
+.pw-toggle:hover{color:var(--t1)}
+/* register card wider */
+.auth-card-wide{width:520px}
+.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.reg-full{grid-column:1/-1}
+/* photo upload circle */
+.photo-upload{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.photo-circle{width:72px;height:72px;border-radius:50%;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-color .2s}
+.photo-circle:hover{border-color:var(--t1)}
+.photo-circle img{width:100%;height:100%;object-fit:cover}
+.photo-label{font-size:11px;color:var(--t3)}
+/* form-row compat */
+.form-row{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.7px}
+.auth-link{text-align:center;font-size:11px;color:var(--t3);margin-top:10px;cursor:pointer}
+.auth-link span{color:var(--blue);font-weight:700;cursor:pointer}
+
+/* ── Admin tabs ── */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:20px}
+.tab-btn{padding:10px 18px;background:none;border:none;border-bottom:2px solid transparent;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .2s;margin-bottom:-1px}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 12px;text-align:left;font-weight:700;color:var(--t3);border-bottom:1px solid var(--bdr);font-size:11px;text-transform:uppercase}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--bdr);color:var(--t2)}
+.tbl tr:hover td{background:rgba(255,255,255,.4)}
+.tbl tr:last-child td{border-bottom:none}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.28);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:500}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,.15);animation:scaleIn .25s cubic-bezier(.22,1,.36,1)}
+.modal-sm{width:320px}.modal-md{width:480px}.modal-lg{width:640px}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--t3);margin-bottom:20px}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+
+/* ── Solution card ── */
+.solution-card{border-radius:var(--r2);padding:14px 16px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);margin-bottom:10px}
+.sol-title{font-size:11px;font-weight:800;color:var(--purple);margin-bottom:5px}
+.sol-text{font-size:12px;color:var(--t2);line-height:1.7}
+
+/* ── Upload zone ── */
+.upload-zone{border:2px dashed var(--bdr);border-radius:var(--r2);padding:28px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-zone:hover{border-color:var(--blue)}
+.upload-zone p{font-size:12px;color:var(--t3);margin-top:8px}
+
+/* ── Home Page ── */
+#page-home .hdr{padding-left:16px}
+.home-hero{text-align:center;padding:44px 0 32px}
+.home-hero img{height:80px}
+.home-carousel{overflow:hidden;position:relative;margin-bottom:36px}
+.home-track{display:flex;gap:18px;animation:marquee 30s linear infinite;width:max-content}
+.home-track:hover{animation-play-state:paused}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.carousel-card{min-width:320px;height:195px;border-radius:var(--r2);overflow:hidden;position:relative;flex-shrink:0;cursor:pointer;border:1px solid rgba(0,0,0,.08);transition:transform .2s}
+.carousel-card:hover{transform:scale(1.03)}
+.carousel-card-bg{width:100%;height:100%;background:#1a1a2e;display:flex;align-items:center;justify-content:center}
+.carousel-card-bg svg{opacity:.35}
+.carousel-overlay{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.carousel-top{position:absolute;top:0;left:0;right:0;padding:10px 12px;background:linear-gradient(rgba(0,0,0,.6),transparent);display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.85);font-weight:600}
+.carousel-top .ct-chip{padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.2);font-size:9px;font-weight:700}
+.carousel-top .ct-score{margin-left:auto;font-size:12px;font-weight:800;color:#4ade80}
+.carousel-title{font-size:12px;font-weight:700;color:#fff;line-height:1.3}
+.carousel-meta{font-size:10px;color:rgba(255,255,255,.6);margin-top:3px}
+
+/* ── 8-Icon Grid ── */
+.home-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:720px;margin:0 auto 40px}
+@media(max-width:600px){.home-icons{grid-template-columns:repeat(2,1fr)}}
+.home-icon-cell{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer}
+.home-icon-box{width:90px;height:90px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.1);background:#fff;display:flex;align-items:center;justify-content:center;transition:box-shadow .2s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.04);color:var(--t1)}
+.home-icon-box:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.home-icon-box:active{transform:scale(.96)}
+.home-icon-box svg{stroke-width:2.2}
+.home-icon-lbl{font-size:11px;font-weight:600;color:var(--t2);text-align:center;line-height:1.3}
+
+/* ── Streaming Page ── */
+.stream-layout{display:grid;grid-template-columns:1fr 380px;gap:22px}
+@media(max-width:900px){.stream-layout{grid-template-columns:1fr}}
+.stream-info{display:flex;flex-direction:column;gap:14px}
+.stream-info-card{border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff}
+.stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.ss-ready{background:#f0fdf4;color:#16a34a}
+.ss-recording{background:#fef2f2;color:#dc2626}
+.ss-done{background:#eff6ff;color:#2563eb}
+.stream-step{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.stream-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--t3);flex-shrink:0}
+.step-num.active{background:var(--blue);color:#fff}
+.step-num.done{background:var(--green);color:#fff}
+.step-text{font-size:12px;color:var(--t2)}
+.step-text.active{color:var(--t1);font-weight:700}
+
+/* ── Responsive ── */
+@media(max-width:900px){.lect-grid{grid-template-columns:1fr 1fr}.video-layout{grid-template-columns:1fr}.prof-layout{grid-template-columns:1fr}}
+@media(max-width:600px){main{padding:14px 14px 48px}.filter-bar{grid-template-columns:repeat(2,1fr)}.stats-row{grid-template-columns:repeat(2,1fr)}.lect-grid{grid-template-columns:1fr}}
+
+/* ── Print ── */
+@media print{header,.filter-bar,.btn-pdf,.nav-back,.hdr-right{display:none!important}.acc-body{max-height:none!important}.page{display:block!important}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     PAGE: LOGIN
+════════════════════════════════════ -->
+<div id="page-login" class="page active">
+<div class="auth-page">
+<div class="auth-card">
+  <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:72px"></div>
+  <div class="auth-sub" style="margin-bottom:36px">로그인 정보를 입력해 주세요</div>
+
+  <div class="form-group">
+    <label class="form-lbl">Email</label>
+    <input type="email" class="form-input" id="li-email" placeholder="name@company.com">
+  </div>
+
+  <div class="form-group">
+    <label class="form-lbl">Password</label>
+    <div class="pw-wrap">
+      <input type="password" class="form-input" id="li-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="pw-toggle" type="button" onclick="togglePwVis('li-pw',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="form-row-flex">
+    <label class="form-check"><input type="checkbox"> 30일간 기억하기</label>
+    <a class="auth-forgot" onclick="showFindPw()">비밀번호 찾기</a>
+  </div>
+
+  <div class="auth-err" id="li-err"></div>
+  <button class="auth-btn auth-btn-primary" onclick="doLogin()">Log in</button>
+
+  <div class="auth-footer" style="margin-top:24px">계정이 없으신가요? <a onclick="showPage('page-register')">Sign Up</a></div>
+</div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: REGISTER
+════════════════════════════════════ -->
+<div id="page-register" class="page">
+<div class="auth-page">
+<div class="auth-card auth-card-wide">
+  <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:72px"></div>
+  <div class="auth-sub" style="margin-bottom:28px">강사 정보를 등록해 주세요</div>
+
+  <!-- Profile photo -->
+  <div class="photo-upload" onclick="document.getElementById('rg-photo').click()" style="margin-bottom:20px">
+    <div class="photo-circle" id="photo-preview">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <span class="photo-label">프로필 사진 등록</span>
+    <input type="file" id="rg-photo" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+  </div>
+
+  <div class="reg-grid">
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">이름</label>
+      <input type="text" class="form-input" id="rg-name" placeholder="홍길동">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">생년 (년도)</label>
+      <input type="number" class="form-input" id="rg-year" placeholder="1990" min="1960" max="2005">
+    </div>
+    <div class="form-group reg-full" style="margin:0">
+      <label class="form-lbl">이메일</label>
+      <input type="email" class="form-input" id="rg-email" placeholder="name@company.com">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">비밀번호 (4자리)</label>
+      <div class="pw-wrap">
+        <input type="password" class="form-input" id="rg-pw" placeholder="••••" maxlength="4">
+        <button class="pw-toggle" type="button" onclick="togglePwVis('rg-pw',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">비밀번호 확인</label>
+      <div class="pw-wrap">
+        <input type="password" class="form-input" id="rg-pw2" placeholder="••••" maxlength="4">
+        <button class="pw-toggle" type="button" onclick="togglePwVis('rg-pw2',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">소속</label>
+      <select class="form-input" id="rg-channel">
+        <option value="" disabled selected>소속 선택</option>
+        <option value="가전AM">가전AM</option>
+        <option value="하이케어솔루션">하이케어솔루션</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">팀</label>
+      <input type="text" class="form-input" id="rg-team" placeholder="팀명 직접 입력">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">입사날짜</label>
+      <input type="date" class="form-input" id="rg-hire">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-lbl">번호</label>
+      <input type="tel" class="form-input" id="rg-phone" placeholder="01012345678">
+    </div>
+  </div>
+
+  <div class="auth-err" id="rg-err" style="margin-top:12px"></div>
+  <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="doRegister()">Sign Up</button>
+
+  <div class="auth-footer">이미 계정이 있으신가요? <a onclick="showPage('page-login')">Log in</a></div>
+</div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: HOME (로그인 후 첫 화면)
+════════════════════════════════════ -->
+<div id="page-home" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px;box-shadow:none">
+  </div>
+  <div class="hdr-right">
+    <div class="avatar" id="hdr-avatar-home" onclick="goMyPage()" title="내 프로필">?</div>
+    <button class="btn btn-ghost" style="padding:7px 14px;color:var(--red)" onclick="doLogout()">로그아웃</button>
+  </div>
+</header>
+<main style="max-width:900px">
+  <!-- Logo hero -->
+  <div class="home-hero">
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
+  </div>
+
+  <!-- Video carousel (auto-scroll right→left) -->
+  <div class="sec-lbl">상위 강의 영상</div>
+  <div class="home-carousel">
+    <div class="home-track" id="home-track"></div>
+  </div>
+
+  <!-- 8 Icon Grid -->
+  <div class="sec-lbl">주요 기능</div>
+  <div class="home-icons">
+    <!-- 1. 평가결과 -->
+    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+      <div class="home-icon-box">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+          <rect x="8" y="24" width="5" height="10" rx="1" stroke-width="2"/>
+          <rect x="17.5" y="16" width="5" height="18" rx="1" stroke-width="2"/>
+          <rect x="27" y="8" width="5" height="26" rx="1" stroke-width="2"/>
+          <path d="M6 6v30h30" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">평가결과</span>
+    </div>
+    <!-- 2. 영상 스트리밍 -->
+    <div class="home-icon-cell" onclick="openStreaming()">
+      <div class="home-icon-box" id="hi2">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <rect x="6" y="8" width="28" height="20" rx="3" stroke="currentColor" stroke-width="2"/>
+          <polygon points="16,14 26,18 16,22" fill="currentColor" opacity=".7"/>
+          <line x1="12" y1="32" x2="28" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">영상 스트리밍</span>
+    </div>
+    <!-- 3. 영상등록 분석 (AI 텍스트) -->
+    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+      <div class="home-icon-box" id="hi3">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="8" width="28" height="24" rx="4"/>
+          <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor" stroke="none" font-family="sans-serif">AI</text>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">영상등록 분석</span>
+    </div>
+    <!-- 4. 내페이지 -->
+    <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
+      <div class="home-icon-box" id="hi4">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="15" r="6" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">내페이지</span>
+    </div>
+    <!-- 5. 음성분석 -->
+    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+      <div class="home-icon-box" id="hi5">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <rect x="16" y="6" width="8" height="16" rx="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 20a10 10 0 0020 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="30" x2="20" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="15" y1="35" x2="25" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">음성분석</span>
+    </div>
+    <!-- 6. 리포트 다운 -->
+    <div class="home-icon-cell" onclick="window.print()">
+      <div class="home-icon-box">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor">
+          <path d="M8 30v3a2 2 0 002 2h20a2 2 0 002-2v-3" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="8" x2="20" y2="26" stroke-width="2" stroke-linecap="round"/>
+          <polyline points="13,20 20,27 27,20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">리포트 다운</span>
+    </div>
+    <!-- 7. 체크리스트/평가안 (메뉴판 스타일) -->
+    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+      <div class="home-icon-box" id="hi7">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="4" width="24" height="32" rx="2"/>
+          <line x1="14" y1="12" x2="14" y2="12.01" stroke-width="3"/>
+          <line x1="19" y1="12" x2="28" y2="12"/>
+          <line x1="14" y1="19" x2="14" y2="19.01" stroke-width="3"/>
+          <line x1="19" y1="19" x2="28" y2="19"/>
+          <line x1="14" y1="26" x2="14" y2="26.01" stroke-width="3"/>
+          <line x1="19" y1="26" x2="28" y2="26"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">체크리스트<br>평가안</span>
+    </div>
+    <!-- 8. 관리자 -->
+    <div class="home-icon-cell" onclick="openAdmin()">
+      <div class="home-icon-box" id="hi8">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <rect x="9" y="18" width="22" height="16" rx="3" stroke="currentColor" stroke-width="2"/>
+          <path d="M14 18V13a6 6 0 0112 0v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="si-lock-shackle"/>
+          <circle cx="20" cy="26" r="2" fill="currentColor" class="si-lock-dot"/>
+        </svg>
+      </div>
+      <span class="home-icon-lbl">관리자</span>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: DASHBOARD
+════════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+<!-- Header -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      홈
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz">
+  </div>
+  <div class="hdr-right">
+    <span class="chip" id="hdr-date">2026년 4월</span>
+    <div class="avatar" id="hdr-avatar" onclick="goMyPage()" title="내 프로필">?</div>
+    <button class="btn btn-ghost" style="padding:7px 14px" onclick="openAdmin()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      관리자
+    </button>
+    <button class="btn btn-ghost" style="padding:7px 14px;color:var(--red)" onclick="doLogout()">로그아웃</button>
+  </div>
+</header>
+<main>
+  <!-- Filter bar -->
+  <div class="filter-bar" style="animation:fadeUp .35s ease both">
+    <div class="f-item"><label class="f-lbl">기간</label>
+      <select id="f-date" onchange="renderDashboard()">
+        <option value="">전체 기간</option>
+        <option value="this-month">이번 달</option>
+        <option value="3month">최근 3개월</option>
+        <option value="this-year">올해</option>
+      </select>
+    </div>
+    <div class="f-item"><label class="f-lbl">소속</label>
+      <select id="f-ch" onchange="renderDashboard()">
+        <option value="">전체</option><option value="가전AM">가전AM</option><option value="하이케어솔루션">하이케어솔루션</option>
+      </select>
+    </div>
+    <div class="f-item"><label class="f-lbl">팀</label>
+      <select id="f-team" onchange="renderDashboard()">
+        <option value="">전체</option>
+      </select>
+    </div>
+    <div class="f-item"><label class="f-lbl">경력기간</label>
+      <select id="f-tenure" onchange="renderDashboard()">
+        <option value="">전체</option>
+        <option value="3m">3개월 미만</option>
+        <option value="1y">1년 미만</option>
+        <option value="1y+">1년 이상</option>
+        <option value="5y+">5년 이상</option>
+        <option value="10y+">10년 이상</option>
+      </select>
+    </div>
+    <div class="f-item"><label class="f-lbl">이름</label>
+      <select id="f-name" onchange="renderDashboard()"><option value="">전체</option></select>
+    </div>
+  </div>
+
+  <!-- AI Summary strip -->
+  <div class="ai-strip neu" id="ai-strip">
+    <div class="ai-strip-ico">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    </div>
+    <div class="ai-strip-text" id="ai-strip-text">필터를 적용하면 AI 종합 평가가 표시됩니다.</div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card neu">
+      <div class="icon-card" id="ic1">
+        <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".2"/>
+          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" class="si-arc"/>
+          <path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-check"/>
+        </svg>
+      </div>
+      <div class="stat-val" id="sv-total" style="color:var(--blue)">6</div>
+      <div class="stat-lbl">총 강사 수</div>
+    </div>
+    <div class="stat-card neu">
+      <div class="icon-card" id="ic2">
+        <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+          <polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/>
+          <rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
+          <rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
+        </svg>
+      </div>
+      <div class="stat-val" id="sv-vids" style="color:var(--red)">12</div>
+      <div class="stat-lbl">분석 완료 영상</div>
+    </div>
+    <div class="stat-card neu">
+      <div class="icon-card" id="ic3">
+        <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+          <path d="M8 31v3a2 2 0 002 2h20a2 2 0 002-2v-3" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/>
+          <g class="si-arrow"><line x1="20" y1="8" x2="20" y2="26" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/><polyline points="13,20 20,27 27,20" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+          <path d="M13 22l6 6 9-11" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-done"/>
+        </svg>
+      </div>
+      <div class="stat-val" id="sv-avg" style="color:var(--green)">85.3</div>
+      <div class="stat-lbl">전체 평균 점수</div>
+    </div>
+    <div class="stat-card neu">
+      <div class="icon-card" id="ic4">
+        <svg width="32" height="32" viewBox="0 0 40 40" fill="none" class="si-bell">
+          <path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/>
+        </svg>
+      </div>
+      <div class="stat-val" id="sv-s" style="color:var(--orange)">3</div>
+      <div class="stat-lbl">S등급 우수 강사</div>
+    </div>
+  </div>
+
+  <!-- Top 5 Video Highlights -->
+  <div class="sec-lbl">베스트 영상 하이라이트</div>
+  <div class="top5-scroll" id="top5-scroll"></div>
+
+  <!-- Lecturer Grid -->
+  <div class="sec-lbl">강사 목록</div>
+  <div class="lect-grid" id="lect-grid"></div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: STREAMING (녹화 + AI 평가)
+════════════════════════════════════ -->
+<div id="page-streaming" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopStreamWebcam();showPage('page-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      홈
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px">
+  </div>
+</header>
+<main>
+  <div class="sec-lbl" style="margin-bottom:20px">영상 스트리밍 & AI 평가</div>
+
+  <!-- Step 1: hidden (modal handles it) -->
+  <div id="stream-step1" style="display:none"></div>
+
+  <!-- Step 2: 녹화 -->
+  <div id="stream-step2" style="display:none">
+    <div class="stream-layout">
+      <div>
+        <!-- Webcam -->
+        <div class="webcam-wrap" id="stream-webcam-wrap" style="margin-bottom:14px">
+          <video id="stream-webcam" autoplay muted playsinline></video>
+          <div class="rec-bar" id="stream-rec-bar" style="display:none"><div class="rec-dot"></div><span id="stream-rec-timer">00:00</span></div>
+        </div>
+        <!-- Audio Waveform Visualizer -->
+        <div style="border-radius:var(--r1);overflow:hidden;margin-bottom:14px;background:#0f172a;padding:12px 0">
+          <canvas id="stream-waveform" width="700" height="80" style="width:100%;height:80px;display:block"></canvas>
+          <div style="display:flex;justify-content:space-between;padding:6px 14px 0;align-items:center">
+            <span style="font-size:10px;color:rgba(255,255,255,.4)">실시간 음성 파형</span>
+            <span style="font-size:11px;font-weight:700;color:#4ade80" id="stream-db-live">0 dB</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-red" id="stream-rec-btn" onclick="toggleStreamRecord()" style="padding:10px 24px;font-size:13px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+            녹화 시작
+          </button>
+          <button class="btn btn-ghost" onclick="finishStreamRecord()" id="stream-finish-btn" style="display:none">녹화 완료 → AI 평가</button>
+          <span class="stream-status ss-ready" id="stream-status">대기 중</span>
+        </div>
+      </div>
+      <!-- 오른쪽: 진행 상태 -->
+      <div class="stream-info">
+        <div class="stream-info-card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px">진행 단계</div>
+          <div class="stream-step"><div class="step-num done">1</div><div class="step-text">영상 정보 입력 완료</div></div>
+          <div class="stream-step"><div class="step-num active" id="step2-num">2</div><div class="step-text active" id="step2-text">녹화 진행 중...</div></div>
+          <div class="stream-step"><div class="step-num" id="step3-num">3</div><div class="step-text" id="step3-text">AI 평가 분석</div></div>
+        </div>
+        <div class="stream-info-card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">입력된 정보</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.8" id="stream-info-display"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: AI 평가 결과 -->
+  <div id="stream-step3" style="display:none">
+    <div class="stream-layout">
+      <div>
+        <div class="video-player" style="margin-bottom:14px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.08)">
+          <video id="stream-playback" controls style="width:100%;height:100%;border-radius:var(--r2)"></video>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-blue" onclick="saveStreamVideo()">영상 저장 & 등록</button>
+          <button class="btn btn-ghost" onclick="retakeStream()">다시 녹화</button>
+        </div>
+      </div>
+      <div class="stream-info">
+        <div class="stream-info-card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px">🤖 AI 평가 결과</div>
+          <div id="stream-ai-result" style="font-size:12px;color:var(--t2);line-height:1.8"></div>
+        </div>
+        <div class="stream-info-card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">타임스탬프 피드</div>
+          <div id="stream-ts-feed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: LECTURER DETAIL
+════════════════════════════════════ -->
+<div id="page-lecturer" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" id="lect-back-btn" onclick="showPage('page-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      뒤로
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px">
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" onclick="window.print()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      PDF 출력
+    </button>
+  </div>
+</header>
+<main id="lecturer-main"></main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: VIDEO ANALYSIS
+════════════════════════════════════ -->
+<div id="page-video" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" onclick="history.back ? showPage('page-lecturer') : showPage('page-dashboard')" style="padding:7px 12px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      강사 상세
+    </button>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
+  </div>
+</header>
+<main id="video-main"></main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: MY PROFILE
+════════════════════════════════════ -->
+<div id="page-myprofile" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-dashboard')" style="padding:7px 12px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      대시보드
+    </button>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-blue" onclick="saveProfile()">저장</button>
+  </div>
+</header>
+<main id="myprofile-main"></main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: ADMIN
+════════════════════════════════════ -->
+<div id="page-admin" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-home')" style="padding:7px 12px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      홈
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px">
+  </div>
+</header>
+<main>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
+    <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
+    <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
+    <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
+    <button class="tab-btn" onclick="switchTab('PDF',this)">PDF 내보내기</button>
+  </div>
+
+  <!-- 강사 관리 -->
+  <div class="tab-pane active" id="tab-강사관리">
+    <div class="acc-wrap neu" style="overflow:auto">
+      <table class="tbl" id="admin-user-tbl">
+        <thead><tr><th>이름</th><th>이메일</th><th>채널</th><th>팀</th><th>직책</th><th>등급</th><th>가입일</th><th>관리</th></tr></thead>
+        <tbody id="admin-user-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 평가 기준 -->
+  <div class="tab-pane" id="tab-평가기준">
+    <div class="acc-wrap neu" style="padding:20px">
+      <div class="sec-lbl">평가 항목 설정</div>
+      <div id="criteria-rows"></div>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="addCriteriaRow()">+ 항목 추가</button>
+      <button class="btn btn-blue" style="margin-top:12px;margin-left:8px" onclick="saveCriteria()">저장</button>
+    </div>
+  </div>
+
+  <!-- 기준 영상 -->
+  <div class="tab-pane" id="tab-기준영상">
+    <div class="acc-wrap neu" style="padding:20px">
+      <div class="sec-lbl">채널별 기준 영상 등록</div>
+      <p style="font-size:12px;color:var(--t3);margin-bottom:16px">기준 영상은 관리자 및 로그인한 강사 누구나 등록 가능합니다.</p>
+      <div id="ref-video-list"></div>
+    </div>
+  </div>
+
+  <!-- 통계 -->
+  <div class="tab-pane" id="tab-통계">
+    <div class="acc-wrap neu" style="padding:20px">
+      <div class="sec-lbl">채널별 평균 점수</div>
+      <div id="stat-chart"></div>
+    </div>
+  </div>
+
+  <!-- PDF -->
+  <div class="tab-pane" id="tab-PDF">
+    <div class="acc-wrap neu" style="padding:20px;max-width:500px">
+      <div class="sec-lbl">리포트 PDF 내보내기</div>
+      <div class="form-row"><label class="form-label">강사 선택</label>
+        <select id="pdf-user"><option value="">전체 강사</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">기간</label>
+        <select id="pdf-range">
+          <option value="">전체</option><option value="this-month">이번 달</option><option value="3month">최근 3개월</option>
+        </select>
+      </div>
+      <button class="btn btn-blue" onclick="window.print()">PDF 생성 및 인쇄</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ── Admin Password Modal ── -->
+<div class="overlay" id="admin-overlay">
+  <div class="modal modal-sm">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,120,200,.1);margin:0 auto 10px;display:flex;align-items:center;justify-content:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+    </div>
+    <div class="modal-title" style="text-align:center">관리자 인증</div>
+    <div class="modal-sub" style="text-align:center">4자리 비밀번호를 입력하세요</div>
+    <input type="password" id="admin-pw" maxlength="4" placeholder="· · · ·" style="text-align:center;font-size:22px;letter-spacing:10px;margin-bottom:8px" onkeydown="if(event.key==='Enter')checkAdmin()">
+    <div class="auth-err" id="admin-err"></div>
+    <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="checkAdmin()">확인</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px;color:var(--t3)" onclick="closeOverlay('admin-overlay')">취소</button>
+  </div>
+</div>
+
+<!-- ── Add Timestamp Modal ── -->
+<div class="overlay" id="ts-overlay">
+  <div class="modal modal-md">
+    <div class="modal-title">타임스탬프 추가</div>
+    <div class="modal-sub">영상의 특정 시간에 평가를 기록하세요</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="form-row" style="margin:0"><label class="form-label">시간 (mm:ss)</label><input type="text" id="ts-time" placeholder="예: 05:30"></div>
+      <div class="form-row" style="margin:0"><label class="form-label">유형</label>
+        <select id="ts-type"><option value="good">✅ 잘한 점</option><option value="bad">⚠️ 취약점</option><option value="tip">💡 Tip</option></select>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">내용</label><textarea id="ts-text" placeholder="내용을 입력하세요" style="min-height:70px"></textarea></div>
+    <div class="form-row"><label class="form-label">태그 (쉼표 구분)</label><input type="text" id="ts-tags" placeholder="예: 발성, 전문성"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-blue" style="flex:1;justify-content:center" onclick="saveTimestamp()">저장</button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeOverlay('ts-overlay')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Find Password Modal ── -->
+<div class="overlay" id="findpw-overlay">
+  <div class="auth-card" style="width:420px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:56px"></div>
+    <div class="auth-sub" style="margin-bottom:28px">가입한 이메일을 입력하시면<br>임시 비밀번호를 발송해 드립니다</div>
+    <div class="form-group">
+      <label class="form-lbl">Email</label>
+      <input type="email" class="form-input" id="findpw-email" placeholder="name@company.com">
+    </div>
+    <div class="auth-err" id="findpw-msg"></div>
+    <button class="auth-btn auth-btn-primary" onclick="doFindPw()">임시 비밀번호 발송</button>
+    <div class="auth-footer" style="margin-top:16px"><a onclick="closeOverlay('findpw-overlay')">← 로그인으로 돌아가기</a></div>
+  </div>
+</div>
+
+<!-- ── Stream Info Modal ── -->
+<div class="overlay" id="stream-info-overlay">
+  <div class="auth-card" style="width:460px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:50px"></div>
+    <div class="auth-sub" style="margin-bottom:24px">영상 정보를 입력해 주세요</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">영상 제목</label>
+        <input type="text" class="form-input" id="st-title" placeholder="예: 에어컨 교육 3회차">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">영상 종류 (직접 입력)</label>
+        <input type="text" class="form-input" id="st-type" placeholder="예: 판경상인, 거점교육">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">소속</label>
+        <select class="form-input" id="st-channel">
+          <option value="" disabled selected>소속 선택</option>
+          <option value="가전AM">가전AM</option>
+          <option value="하이케어솔루션">하이케어솔루션</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">교육생 인원수</label>
+        <input type="number" class="form-input" id="st-count" placeholder="20" min="1">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;margin:0">
+        <label class="form-lbl">날짜</label>
+        <input type="date" class="form-input" id="st-date">
+      </div>
+    </div>
+    <div class="auth-err" id="st-err" style="margin-top:10px"></div>
+    <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="goStreamStep2()">녹화 시작 →</button>
+    <div class="auth-footer" style="margin-top:12px"><a onclick="closeOverlay('stream-info-overlay')">취소</a></div>
+  </div>
+</div>
+
+<!-- ── Compare Modal ── -->
+<div class="overlay" id="compare-overlay">
+  <div class="auth-card" style="width:520px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:40px"></div>
+    <div class="auth-sub" style="margin-bottom:20px">비교할 강사를 필터로 찾아주세요</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">기간</label>
+        <select class="form-input" id="cmp-date">
+          <option value="">전체 기간</option>
+          <option value="this-month">이번 달</option>
+          <option value="3month">최근 3개월</option>
+          <option value="this-year">올해</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">소속</label>
+        <select class="form-input" id="cmp-ch">
+          <option value="">전체</option>
+          <option value="가전AM">가전AM</option>
+          <option value="하이케어솔루션">하이케어솔루션</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">팀</label>
+        <select class="form-input" id="cmp-team"><option value="">전체</option></select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">경력기간</label>
+        <select class="form-input" id="cmp-tenure">
+          <option value="">전체</option>
+          <option value="3m">3개월 미만</option>
+          <option value="1y">1년 미만</option>
+          <option value="1y+">1년 이상</option>
+          <option value="5y+">5년 이상</option>
+          <option value="10y+">10년 이상</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;margin:0">
+        <label class="form-lbl">이름</label>
+        <select class="form-input" id="cmp-name"><option value="">전체</option></select>
+      </div>
+    </div>
+    <!-- Filtered results -->
+    <div id="cmp-results" style="max-height:220px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="auth-footer"><a onclick="closeOverlay('compare-overlay')">취소</a></div>
+  </div>
+</div>
+
+<!-- ── Edit Profile Modal ── -->
+<div class="overlay" id="edit-profile-overlay">
+  <div class="auth-card auth-card-wide" style="animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div class="auth-logo"><img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:50px"></div>
+    <div class="auth-sub" style="margin-bottom:20px">내 정보를 수정해 주세요</div>
+    <div class="reg-grid">
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">이름</label>
+        <input type="text" class="form-input" id="ep-name">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">생년 (년도)</label>
+        <input type="number" class="form-input" id="ep-year" min="1960" max="2005">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">소속</label>
+        <select class="form-input" id="ep-channel">
+          <option value="가전AM">가전AM</option>
+          <option value="하이케어솔루션">하이케어솔루션</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">팀</label>
+        <input type="text" class="form-input" id="ep-team">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">입사날짜</label>
+        <input type="date" class="form-input" id="ep-hire">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">번호</label>
+        <input type="tel" class="form-input" id="ep-phone" placeholder="01012345678">
+      </div>
+      <div class="form-group reg-full" style="margin:0">
+        <label class="form-lbl">비밀번호 변경 (비워두면 유지)</label>
+        <div class="pw-wrap">
+          <input type="password" class="form-input" id="ep-pw" placeholder="새 비밀번호 4자리" maxlength="4">
+          <button class="pw-toggle" type="button" onclick="togglePwVis('ep-pw',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <div class="auth-err" id="ep-err" style="margin-top:10px"></div>
+    <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="saveEditProfile()">저장</button>
+    <div class="auth-footer" style="margin-top:12px"><a onclick="closeOverlay('edit-profile-overlay')">취소</a></div>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+/* ════════════════════════════════
+   SUPABASE CONNECTION
+════════════════════════════════ */
+const SUPA_URL = 'https://teaeqymeiurcawbuqmqx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlYWVxeW1laXVyY2F3YnVxbXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjc1NjgsImV4cCI6MjA5MDYwMzU2OH0.PytJ96HfQTWUID1Sv439u9Lt0LO9zNSKJtQ8HR9OZ5M';
+const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ════════════════════════════════
+   SUPABASE HELPER FUNCTIONS
+════════════════════════════════ */
+// DB에서 모든 유저 가져오기
+async function dbGetUsers(){
+  const {data,error}=await sb.from('users').select('*').order('id');
+  if(error){ console.error('dbGetUsers:',error); return []; }
+  return data.map(r=>({
+    id:r.id, name:r.name, email:r.email, pw:r.pw, channel:r.channel, team:r.team,
+    position:'강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
+    photo:r.photo, memo:r.memo||'', score:r.score||0, grade:r.grade||'—',
+    scores:r.scores||{}, maxes:r.maxes||{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+    habits:r.habits||[], habitCounts:r.habit_counts||[], engagementGaps:r.engagement_gaps||[],
+    decibel:r.decibel||0, tempo:r.tempo||0, studentCount:r.student_count||0,
+    registered:r.created_at?r.created_at.split('T')[0]:''
+  }));
+}
+// DB에서 모든 영상 가져오기
+async function dbGetVideos(){
+  const {data,error}=await sb.from('videos').select('*').order('id');
+  if(error){ console.error('dbGetVideos:',error); return []; }
+  const tsRes=await sb.from('timestamps').select('*').order('id');
+  const allTs=tsRes.data||[];
+  return data.map(r=>({
+    id:r.id, userId:r.user_id, title:r.title, youtube:r.youtube||'', filePath:r.file_path||'',
+    date:r.video_date, duration:r.duration||'', studentCount:r.student_count||0,
+    status:r.status||'등록완료', videoType:r.video_type||'', channel:r.channel||'',
+    checklist:r.checklist, solution:r.solution||'',
+    timestamps: allTs.filter(t=>t.video_id===r.id).map(t=>({
+      id:t.id, t:t.time_mark, type:t.type, text:t.text, tags:t.tags||[]
+    }))
+  }));
+}
+// 유저 생성
+async function dbCreateUser(u){
+  const {data,error}=await sb.from('users').insert({
+    name:u.name, email:u.email, pw:u.pw, channel:u.channel, team:u.team,
+    birth_year:u.birthYear, hire_date:u.hireDate||null, phone:u.phone||'',
+    photo:u.photo, memo:'', score:0, grade:'—',
+    scores:{}, maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+    habits:[], habit_counts:[], engagement_gaps:[], decibel:0, tempo:0, student_count:0
+  }).select().single();
+  if(error){ console.error('dbCreateUser:',error); return null; }
+  return data;
+}
+// 유저 업데이트
+async function dbUpdateUser(id,fields){
+  const map={};
+  if('name' in fields) map.name=fields.name;
+  if('channel' in fields) map.channel=fields.channel;
+  if('team' in fields) map.team=fields.team;
+  if('birthYear' in fields) map.birth_year=fields.birthYear;
+  if('hireDate' in fields) map.hire_date=fields.hireDate;
+  if('phone' in fields) map.phone=fields.phone;
+  if('pw' in fields) map.pw=fields.pw;
+  if('photo' in fields) map.photo=fields.photo;
+  if('memo' in fields) map.memo=fields.memo;
+  if('score' in fields) map.score=fields.score;
+  if('grade' in fields) map.grade=fields.grade;
+  if('scores' in fields) map.scores=fields.scores;
+  const {error}=await sb.from('users').update(map).eq('id',id);
+  if(error) console.error('dbUpdateUser:',error);
+}
+// 영상 생성
+async function dbCreateVideo(v){
+  const {data,error}=await sb.from('videos').insert({
+    user_id:v.userId, title:v.title, youtube:v.youtube||'', file_path:v.filePath||'',
+    video_date:v.date||null, duration:v.duration||'', student_count:v.studentCount||0,
+    status:v.status||'등록완료', video_type:v.videoType||'', channel:v.channel||'',
+    solution:v.solution||''
+  }).select().single();
+  if(error){ console.error('dbCreateVideo:',error); return null; }
+  return data;
+}
+// 영상 업데이트
+async function dbUpdateVideo(id,fields){
+  const map={};
+  if('youtube' in fields) map.youtube=fields.youtube;
+  if('filePath' in fields) map.file_path=fields.filePath;
+  if('solution' in fields) map.solution=fields.solution;
+  if('status' in fields) map.status=fields.status;
+  const {error}=await sb.from('videos').update(map).eq('id',id);
+  if(error) console.error('dbUpdateVideo:',error);
+}
+// 타임스탬프 추가
+async function dbAddTimestamp(videoId,ts){
+  const {data,error}=await sb.from('timestamps').insert({
+    video_id:videoId, time_mark:ts.t, type:ts.type, text:ts.text, tags:ts.tags||[]
+  }).select().single();
+  if(error){ console.error('dbAddTs:',error); return null; }
+  return data;
+}
+// 타임스탬프 수정
+async function dbUpdateTimestamp(id,text){
+  const {error}=await sb.from('timestamps').update({text}).eq('id',id);
+  if(error) console.error('dbUpdateTs:',error);
+}
+// 타임스탬프 삭제
+async function dbDeleteTimestamp(id){
+  const {error}=await sb.from('timestamps').delete().eq('id',id);
+  if(error) console.error('dbDeleteTs:',error);
+}
+// 유저 삭제
+async function dbDeleteUser(id){
+  const {error}=await sb.from('users').delete().eq('id',id);
+  if(error) console.error('dbDeleteUser:',error);
+}
+// DB에서 전체 데이터 로드 → D에 저장
+async function loadFromDB(){
+  D.users = await dbGetUsers();
+  D.videos = await dbGetVideos();
+  const {data:cri}=await sb.from('criteria').select('*').order('sort_order');
+  if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description}));
+  const {data:ref}=await sb.from('ref_videos').select('*');
+  if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
+}
+
+/* ════════════════════════════════
+   SAMPLE DATA (fallback)
+════════════════════════════════ */
+const SEED = {
+  users:[
+    {id:1,name:'김민준',email:'kim@interbiz.com',pw:'1234',channel:'가전',team:'교육1팀',position:'선임강사',birthYear:1988,hireDate:'2018-03-01',specialty:'에어컨, 냉장고',type:'판경상인',score:94,grade:'S',photo:null,memo:'',
+     scores:{발성:19,전문성:24,판서:14,상호작용:19,시간관리:9,마무리:9},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['음~','그래서','맞죠?'],habitCounts:[12,8,15],engagementGaps:[8,12,7,10],decibel:72,tempo:145,studentCount:20,registered:'2026-01-10'},
+    {id:2,name:'이수연',email:'lee@interbiz.com',pw:'1234',channel:'IT',team:'교육1팀',position:'선임강사',birthYear:1990,hireDate:'2019-06-15',specialty:'노트북, 태블릿',type:'거점',score:91,grade:'S',photo:null,memo:'',
+     scores:{발성:18,전문성:24,판서:14,상호작용:18,시간관리:9,마무리:8},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['어~','뭐랄까'],habitCounts:[6,9],engagementGaps:[10,15,8],decibel:68,tempo:138,studentCount:15,registered:'2026-01-12'},
+    {id:3,name:'박도윤',email:'park@interbiz.com',pw:'1234',channel:'서비스',team:'현장지원팀',position:'선임강사',birthYear:1985,hireDate:'2016-01-10',specialty:'고객응대, CS',type:'판경상인',score:90,grade:'S',photo:null,memo:'',
+     scores:{발성:18,전문성:23,판서:13,상호작용:18,시간관리:9,마무리:9},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['그니까','사실은'],habitCounts:[7,5],engagementGaps:[9,11,6,8],decibel:75,tempo:142,studentCount:25,registered:'2026-01-15'},
+    {id:4,name:'최지아',email:'choi@interbiz.com',pw:'1234',channel:'가전',team:'교육2팀',position:'주임',birthYear:1993,hireDate:'2021-04-01',specialty:'TV, 세탁기',type:'거점',score:85,grade:'A',photo:null,memo:'',
+     scores:{발성:17,전문성:21,판서:13,상호작용:16,시간관리:9,마무리:9},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['이제','그리고','음~'],habitCounts:[18,11,8],engagementGaps:[15,20,18],decibel:65,tempo:130,studentCount:18,registered:'2026-02-01'},
+    {id:5,name:'정현서',email:'jung@interbiz.com',pw:'1234',channel:'IT',team:'교육2팀',position:'강사',birthYear:1995,hireDate:'2022-09-01',specialty:'스마트폰',type:'판경상인',score:78,grade:'B',photo:null,memo:'',
+     scores:{발성:15,전문성:20,판서:11,상호작용:15,시간관리:8,마무리:9},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['어','그냥','뭐'],habitCounts:[22,14,9],engagementGaps:[20,25],decibel:60,tempo:125,studentCount:12,registered:'2026-02-10'},
+    {id:6,name:'한예진',email:'han@interbiz.com',pw:'1234',channel:'서비스',team:'현장지원팀',position:'강사',birthYear:1996,hireDate:'2023-03-15',specialty:'매장서비스',type:'거점',score:74,grade:'B',photo:null,memo:'',
+     scores:{발성:14,전문성:19,판서:11,상호작용:14,시간관리:8,마무리:8},maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
+     habits:['저기'],habitCounts:[4],engagementGaps:[22,30,19],decibel:62,tempo:128,studentCount:10,registered:'2026-03-01'}
+  ],
+  videos:[
+    {id:1,userId:1,title:'에어컨 신제품 강의 1회차',youtube:'',filePath:'',date:'2026-03-05',duration:'45:32',studentCount:20,status:'분석완료',checklist:null,
+     timestamps:[
+       {id:1,t:'02:15',type:'good',text:'제품 스펙 비교 설명 시 명확한 예시 활용 — 수강생 이해도 매우 높음',tags:['발성','전문성']},
+       {id:2,t:'08:44',type:'tip',text:'판서 흐름이 강의 논리와 완벽 연결 — 멘토 강사로 추천',tags:['판서']},
+       {id:3,t:'15:30',type:'bad',text:'질문 유도 후 답변 대기 시간이 너무 짧음 (2초 미만)',tags:['상호작용']},
+       {id:4,t:'22:10',type:'good',text:'제품 시연 순서가 체계적이고 명확함',tags:['전문성']},
+       {id:5,t:'35:20',type:'tip',text:'마무리 요약 후 다음 강의 연결이 자연스러움',tags:['마무리']}
+     ],
+     solution:'다음 강의에서 질문 후 5-7초 대기 시간을 확보하고 수강생 2-3명의 답변을 유도하세요. 상호작용 점수 3-5점 향상이 예상됩니다.'
+    },
+    {id:2,userId:1,title:'에어컨 신제품 강의 2회차',youtube:'',filePath:'',date:'2026-03-12',duration:'42:18',studentCount:20,status:'분석완료',checklist:null,
+     timestamps:[
+       {id:1,t:'05:00',type:'good',text:'오프닝 루틴이 이전보다 자신감 있게 개선됨',tags:['발성']},
+       {id:2,t:'18:30',type:'bad',text:'중간 복습 구간에서 속도가 너무 빠름',tags:['시간관리']},
+       {id:3,t:'30:00',type:'tip',text:'실제 사용 사례 언급이 수강생 집중도 높임',tags:['전문성']}
+     ],
+     solution:'강의 중반부 속도 조절이 필요합니다. 핵심 개념 설명 시 의도적으로 2-3초 멈추는 연습을 권장합니다.'
+    },
+    {id:3,userId:2,title:'노트북 활용 교육',youtube:'',filePath:'',date:'2026-03-08',duration:'50:15',studentCount:15,status:'분석완료',checklist:null,
+     timestamps:[
+       {id:1,t:'03:20',type:'good',text:'실습 안내가 단계별로 매우 명확함',tags:['실습지도']},
+       {id:2,t:'11:05',type:'bad',text:'후반부 목소리 볼륨이 다소 낮아짐',tags:['발성']},
+       {id:3,t:'25:00',type:'tip',text:'오류 대응 시나리오 사전 준비 권장',tags:['전문성']}
+     ],
+     solution:'강의 후반 45-50분 구간 에너지 저하 감지. 25분경 짧은 환기 활동(질문/실습)을 삽입하면 집중도 유지에 효과적입니다.'
+    },
+    {id:4,userId:3,title:'고객 응대 실습 교육',youtube:'',filePath:'',date:'2026-03-15',duration:'55:00',studentCount:25,status:'분석완료',checklist:null,
+     timestamps:[
+       {id:1,t:'04:10',type:'good',text:'롤플레잉 시나리오를 생동감 있게 운영',tags:['롤플레잉']},
+       {id:2,t:'09:30',type:'tip',text:'실제 현장 사례 3가지 연결로 신뢰도 향상',tags:['전문성']}
+     ],
+     solution:'현재 수준 유지하면서 어려운 상황(컴플레인 고객) 시나리오를 추가로 다루면 완성도가 높아집니다.'
+    }
+  ],
+  criteria:[
+    {name:'발성 및 전달력',max:20,desc:'목소리 크기, 속도, 발음의 명확성'},
+    {name:'내용 전문성',max:25,desc:'제품 지식의 정확성, 최신성, 깊이'},
+    {name:'판서 및 자료 활용',max:15,desc:'칠판/PPT 활용의 적절성'},
+    {name:'수강생 상호작용',max:20,desc:'질문 유도, 반응 확인, 참여 독려'},
+    {name:'시간 관리',max:10,desc:'강의 목표 시간 준수, 흐름 균형'},
+    {name:'마무리 및 요약',max:10,desc:'핵심 내용 재정리, 다음 강의 연결'}
+  ],
+  refVideos:{가전:'',IT:'',서비스:''}
+};
+
+/* ════════════════════════════════
+   APP STATE
+════════════════════════════════ */
+let D = { users:[], videos:[], criteria:[], refVideos:{} };
+let CU = JSON.parse(localStorage.getItem('ib_user')||'null');
+let curLectId = null;
+let curVidId = null;
+function save(){ /* DB 저장은 각 함수에서 직접 처리 */ }
+
+/* ════════════════════════════════
+   ROUTING
+════════════════════════════════ */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ════════════════════════════════
+   AUTH
+════════════════════════════════ */
+async function doLogin(){
+  const em=v('li-email').trim(), pw=v('li-pw').trim();
+  if(em==='admin' && pw==='7152'){ CU={id:0,name:'관리자',email:'admin',grade:'A',channel:'',isAdmin:true}; localStorage.setItem('ib_user',JSON.stringify(CU)); await loadFromDB(); initHome(); showPage('page-home'); return; }
+  // DB에서 확인
+  const {data,error}=await sb.from('users').select('*').eq('email',em).eq('pw',pw).single();
+  if(error||!data){ el('li-err').textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
+  el('li-err').textContent='';
+  await loadFromDB();
+  CU=D.users.find(x=>x.id===data.id);
+  localStorage.setItem('ib_user',JSON.stringify(CU));
+  initHome(); showPage('page-home');
+}
+function doLogout(){ CU=null; localStorage.removeItem('ib_user'); showPage('page-login'); }
+function goMyPage(){
+  if(CU&&CU.isAdmin){ openAdmin(); }
+  else if(CU&&CU.id){ openLecturer(CU.id,'page-home'); }
+  else { showPage('page-myprofile'); }
+}
+async function doRegister(){
+  const name=v('rg-name').trim(),email=v('rg-email').trim(),pw=v('rg-pw').trim(),pw2=v('rg-pw2').trim(),ch=v('rg-channel');
+  if(!name||!email||!pw){ el('rg-err').textContent='이름, 이메일, 비밀번호를 모두 입력하세요.'; return; }
+  if(pw!==pw2){ el('rg-err').textContent='비밀번호가 일치하지 않습니다.'; return; }
+  if(pw.length!==4){ el('rg-err').textContent='비밀번호는 4자리로 입력하세요.'; return; }
+  if(!ch){ el('rg-err').textContent='소속을 선택해 주세요.'; return; }
+  // DB에 저장
+  const result=await dbCreateUser({name,email,pw,channel:ch,team:v('rg-team'),
+    birthYear:parseInt(v('rg-year'))||1990,hireDate:v('rg-hire'),phone:v('rg-phone'),photo:pendingPhoto||null});
+  if(!result){ el('rg-err').textContent='이미 사용 중인 이메일이거나 오류가 발생했습니다.'; return; }
+  pendingPhoto=null;
+  await loadFromDB();
+  CU=D.users.find(x=>x.id===result.id);
+  localStorage.setItem('ib_user',JSON.stringify(CU));
+  initHome(); showPage('page-home');
+}
+/* ── PW visibility toggle ── */
+function togglePwVis(inputId,btn){
+  const inp=el(inputId);
+  if(inp.type==='password'){inp.type='text';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';}
+  else{inp.type='password';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';}
+}
+/* ── Photo preview ── */
+let pendingPhoto=null;
+function previewPhoto(input){
+  if(!input.files||!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pendingPhoto=e.target.result;
+    el('photo-preview').innerHTML=`<img src="${e.target.result}">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function showFindPw(){ el('findpw-msg').textContent=''; el('findpw-overlay').classList.add('show'); }
+function doFindPw(){
+  const em=v('findpw-email').trim();
+  const u=D.users.find(x=>x.email===em);
+  if(!u){ el('findpw-msg').textContent='등록된 이메일이 없습니다.'; return; }
+  el('findpw-msg').style.color='var(--green)';
+  el('findpw-msg').textContent=`임시 비밀번호: ${Math.random().toString(36).slice(-6).toUpperCase()} (실제 발송은 백엔드 연동 후 활성화)`;
+}
+
+/* ════════════════════════════════
+   ADMIN
+════════════════════════════════ */
+function openAdmin(){ el('admin-pw').value=''; el('admin-err').textContent=''; el('admin-overlay').classList.add('show'); setTimeout(()=>el('admin-pw').focus(),100); }
+function checkAdmin(){
+  if(v('admin-pw')==='7152'){ closeOverlay('admin-overlay'); renderAdmin(); showPage('page-admin'); }
+  else{ el('admin-err').textContent='비밀번호가 올바르지 않습니다.'; el('admin-pw').value=''; }
+}
+function closeOverlay(id){ el(id).classList.remove('show'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('show'); }));
+
+/* ════════════════════════════════
+   HOME PAGE
+════════════════════════════════ */
+function initHome(){
+  // Avatar on home
+  const av2=el('hdr-avatar-home');
+  if(CU){
+    if(CU.isAdmin){
+      av2.innerHTML='<img src="assets/logo/image.png" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'; av2.style.overflow='hidden';
+    } else {
+      const u=D.users.find(x=>x.id===CU.id);
+      const photo=u?.photo||CU.photo;
+      if(photo){ av2.innerHTML=`<img src="${photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`; av2.style.overflow='hidden'; }
+      else av2.textContent=CU.name?CU.name[0]:'?';
+    }
+  }
+  // Carousel: DB 영상 + 기본 유튜브 5개
+  const defaultVids=[
+    {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
+    {title:'백화점 VS 매장 비교 강의',yt:'rcRCF3gPSAo',name:'이수연',team:'수도권2팀',channel:'가전AM',score:91},
+    {title:'로보락 S 시리즈 출시 교육',yt:'OxALSj3q-QE',name:'박도윤',team:'중부팀',channel:'하이케어솔루션',score:88},
+    {title:'현장 트러블 대응 시나리오',yt:'ZOw_yYqgULk',name:'최지아',team:'수도권1팀',channel:'가전AM',score:85},
+    {title:'고객 클레임 실전 롤플레잉',yt:'Z0Sw-G-S14g',name:'정현서',team:'남부팀',channel:'하이케어솔루션',score:82},
+  ];
+  const dbVids=D.videos.filter(v=>v.status==='분석완료').map(vid=>{
+    const u=D.users.find(x=>x.id===vid.userId);
+    const m=vid.youtube?vid.youtube.match(/[?&]v=([^&]+)/):null;
+    return {title:vid.title, yt:m?m[1]:'', meta:u?.name||'', id:vid.id};
+  });
+  const carouselItems=dbVids.length>0?dbVids:defaultVids;
+  const items=[...carouselItems,...carouselItems];
+  el('home-track').innerHTML=items.map((v,i)=>{
+    const thumb=v.yt?`background-image:url('https://img.youtube.com/vi/${v.yt}/hqdefault.jpg')`:'background:#1a1a2e';
+    const onclick=v.id?`onclick="openVideo(${v.id})"`:`onclick="window.open('https://www.youtube.com/watch?v=${v.yt}','_blank')"`;
+    return `<div class="carousel-card" ${onclick}>
+      <div class="carousel-card-bg" style="${thumb}"></div>
+      <div class="carousel-top">
+        <span class="ct-chip">${v.channel||''}</span>
+        <span>${v.name||v.meta||''}</span>
+        <span>${v.team||''}</span>
+        ${v.score?`<span class="ct-score">${v.score}점</span>`:''}
+      </div>
+      <div class="carousel-overlay">
+        <div class="carousel-title">${v.title}</div>
+      </div>
+    </div>`;
+  }).join('');
+  // home icon animations
+  startHomeIconAnimations();
+}
+function startHomeIconAnimations(){}
+
+/* ════════════════════════════════
+   STREAMING PAGE
+════════════════════════════════ */
+let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null, streamSec=0, streamBlob=null;
+
+function openStreaming(){
+  el('st-title').value=''; el('st-type').value=''; el('st-count').value='';
+  el('st-date').value=new Date().toISOString().split('T')[0];
+  el('st-err').textContent='';
+  el('stream-info-overlay').classList.add('show');
+}
+
+let audioCtx=null, analyser=null, animFrameId=null;
+
+function goStreamStep2(){
+  const title=v('st-title').trim();
+  if(!title){ el('st-err').textContent='영상 제목을 입력하세요.'; return; }
+  if(!v('st-channel')){ el('st-err').textContent='소속을 선택하세요.'; return; }
+  closeOverlay('stream-info-overlay');
+  // Show streaming page
+  el('stream-step1').style.display='none';
+  el('stream-step2').style.display='';
+  el('stream-step3').style.display='none';
+  showPage('page-streaming');
+  el('stream-info-display').innerHTML=`
+    <strong>제목:</strong> ${title}<br>
+    <strong>소속:</strong> ${v('st-channel')||'—'}<br>
+    <strong>종류:</strong> ${v('st-type')||'—'}<br>
+    <strong>인원:</strong> ${v('st-count')||'—'}명<br>
+    <strong>날짜:</strong> ${v('st-date')||'—'}
+  `;
+  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+    streamStream=stream;
+    el('stream-webcam').srcObject=stream;
+    // Audio visualizer setup
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const source=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=256;
+    analyser.smoothingTimeConstant=0.75;
+    source.connect(analyser);
+    drawWaveform();
+  }).catch(err=>alert('카메라 접근 권한이 필요합니다: '+err.message));
+}
+
+function drawWaveform(){
+  const canvas=el('stream-waveform');
+  if(!canvas||!analyser) return;
+  const ctx=canvas.getContext('2d');
+  const bufLen=analyser.frequencyBinCount;
+  const data=new Uint8Array(bufLen);
+  const W=canvas.width, H=canvas.height;
+
+  function draw(){
+    animFrameId=requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(data);
+
+    ctx.fillStyle='#0f172a';
+    ctx.fillRect(0,0,W,H);
+
+    // Calculate dB
+    let sum=0;
+    for(let i=0;i<bufLen;i++) sum+=data[i];
+    const avg=sum/bufLen;
+    const db=Math.round(avg*0.4);
+    const dbEl=el('stream-db-live');
+    if(dbEl){
+      dbEl.textContent=db+' dB';
+      dbEl.style.color=db>25?db>50?'#f87171':'#4ade80':'rgba(255,255,255,.4)';
+    }
+
+    // Draw bars
+    const barCount=64;
+    const barW=W/barCount-1;
+    const step=Math.floor(bufLen/barCount);
+    for(let i=0;i<barCount;i++){
+      const val=data[i*step]/255;
+      const barH=val*H*0.9+1;
+      // Gradient color: green → yellow → red
+      const hue=120-(val*120);
+      ctx.fillStyle=`hsla(${hue},85%,55%,${0.5+val*0.5})`;
+      // Center-aligned bars (grow from middle)
+      const y=(H-barH)/2;
+      ctx.fillRect(i*(barW+1),y,barW,barH);
+    }
+
+    // Center line
+    ctx.strokeStyle='rgba(255,255,255,.08)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(0,H/2);
+    ctx.lineTo(W,H/2);
+    ctx.stroke();
+  }
+  draw();
+}
+
+function stopWaveform(){
+  if(animFrameId){ cancelAnimationFrame(animFrameId); animFrameId=null; }
+  if(audioCtx){ audioCtx.close(); audioCtx=null; analyser=null; }
+  // Clear canvas
+  const canvas=el('stream-waveform');
+  if(canvas){ const ctx=canvas.getContext('2d'); ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+}
+
+function toggleStreamRecord(){
+  const btn=el('stream-rec-btn');
+  if(!streamRecorder||streamRecorder.state==='inactive'){
+    streamChunks=[];
+    streamRecorder=new MediaRecorder(streamStream,{mimeType:'video/webm'});
+    streamRecorder.ondataavailable=e=>{ if(e.data.size>0) streamChunks.push(e.data); };
+    streamRecorder.onstop=()=>{
+      streamBlob=new Blob(streamChunks,{type:'video/webm'});
+    };
+    streamRecorder.start();
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> 녹화 중지';
+    btn.style.background='var(--t1)'; btn.style.color='#fff';
+    el('stream-rec-bar').style.display='flex';
+    el('stream-status').textContent='녹화 중'; el('stream-status').className='stream-status ss-recording';
+    el('stream-finish-btn').style.display='none';
+    streamSec=0;
+    streamTimerID=setInterval(()=>{
+      streamSec++;
+      el('stream-rec-timer').textContent=String(Math.floor(streamSec/60)).padStart(2,'0')+':'+String(streamSec%60).padStart(2,'0');
+    },1000);
+  } else {
+    streamRecorder.stop();
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg> 다시 녹화';
+    btn.style.background=''; btn.style.color='';
+    el('stream-rec-bar').style.display='none';
+    el('stream-status').textContent='녹화 완료'; el('stream-status').className='stream-status ss-done';
+    el('stream-finish-btn').style.display='';
+    clearInterval(streamTimerID);
+  }
+}
+
+function finishStreamRecord(){
+  // Stop webcam + waveform
+  stopWaveform();
+  if(streamStream){ streamStream.getTracks().forEach(t=>t.stop()); streamStream=null; }
+  // Show step 3
+  el('stream-step2').style.display='none';
+  el('stream-step3').style.display='';
+  // Update step indicators
+  el('step2-num').className='step-num done'; el('step2-text').className='step-text';
+  el('step3-num').className='step-num active'; el('step3-text').className='step-text active';
+  // Playback
+  if(streamBlob){
+    el('stream-playback').src=URL.createObjectURL(streamBlob);
+  }
+  // Mock AI evaluation
+  const dur=streamSec;
+  const durStr=String(Math.floor(dur/60)).padStart(2,'0')+':'+String(dur%60).padStart(2,'0');
+  el('stream-ai-result').innerHTML=`
+    <div style="padding:10px 14px;background:rgba(0,120,200,.05);border-radius:8px;margin-bottom:10px">
+      <strong>종합 점수:</strong> <span style="font-size:18px;font-weight:900;color:var(--blue)">—</span><br>
+      <span style="font-size:11px;color:var(--t3)">Gemini AI 연동 후 자동 분석됩니다</span>
+    </div>
+    <div style="font-size:11px;color:var(--t3);line-height:1.8">
+      <strong>영상 길이:</strong> ${durStr}<br>
+      <strong>영상 종류:</strong> ${v('st-type')||'—'}<br>
+      <strong>교육생:</strong> ${v('st-count')||'—'}명<br>
+      <strong>분석 상태:</strong> AI 연동 대기 중 (UI 완성, 백엔드 연결 필요)
+    </div>
+  `;
+  // Mock timestamps
+  el('stream-ts-feed').innerHTML=`
+    <div style="padding:10px;background:#fafafa;border-radius:8px;margin-bottom:6px;font-size:11px;color:var(--t3)">
+      AI 연동 후 자동으로 타임스탬프가 생성됩니다.<br>
+      <span style="color:var(--green)">● Good</span> / <span style="color:var(--red)">● Bad</span> / <span style="color:var(--orange)">● Tip</span> 시간대별 추출
+    </div>
+  `;
+}
+
+function stopStreamWebcam(){
+  if(streamStream){ streamStream.getTracks().forEach(t=>t.stop()); streamStream=null; }
+  if(streamRecorder&&streamRecorder.state!=='inactive') streamRecorder.stop();
+  clearInterval(streamTimerID); streamSec=0;
+  stopWaveform();
+}
+
+async function saveStreamVideo(){
+  if(!CU||!CU.id){ alert('로그인이 필요합니다.'); return; }
+  const dur=String(Math.floor(streamSec/60)).padStart(2,'0')+':'+String(streamSec%60).padStart(2,'0');
+  const result=await dbCreateVideo({
+    userId:CU.id, title:v('st-title'), duration:dur,
+    studentCount:parseInt(v('st-count'))||0, status:'분석완료',
+    videoType:v('st-type'), channel:v('st-channel'),
+    date:v('st-date'), solution:'AI 연동 후 솔루션이 자동 생성됩니다.'
+  });
+  if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:''}); }
+  alert('영상이 저장되었습니다!');
+  showPage('page-home');
+}
+
+function retakeStream(){
+  el('stream-step3').style.display='none';
+  el('stream-step2').style.display='';
+  el('step3-num').className='step-num'; el('step3-text').className='step-text';
+  el('step2-num').className='step-num active'; el('step2-text').className='step-text active';
+  streamBlob=null;
+  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+    streamStream=stream;
+    el('stream-webcam').srcObject=stream;
+  }).catch(err=>alert('카메라 접근 권한이 필요합니다.'));
+}
+
+/* ════════════════════════════════
+   DASHBOARD
+════════════════════════════════ */
+function initDashboard(){
+  const now=new Date();
+  el('hdr-date').textContent=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
+  if(CU){
+    const av=el('hdr-avatar');
+    if(CU.isAdmin){
+      av.innerHTML='<img src="assets/logo/image.png" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'; av.style.overflow='hidden';
+    } else {
+      const u=D.users.find(x=>x.id===CU.id);
+      const photo=u?.photo||CU.photo;
+      if(photo){ av.innerHTML=`<img src="${photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`; av.style.overflow='hidden'; }
+      else{ av.textContent=CU.name[0]; }
+    }
+  }
+  // populate team filter (dynamic)
+  const ts=el('f-team'); ts.innerHTML='<option value="">전체</option>';
+  const teams=[...new Set(D.users.map(u=>u.team).filter(Boolean))];
+  teams.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o); });
+  // populate name filter
+  const ns=el('f-name'); ns.innerHTML='<option value="">전체</option>';
+  D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o); });
+  renderDashboard();
+  startIconAnimations();
+}
+
+function getFiltered(){
+  const ch=v('f-ch'),team=v('f-team'),tenure=v('f-tenure'),name=v('f-name');
+  const now=new Date();
+  return D.users.filter(u=>{
+    if(ch && u.channel!==ch) return false;
+    if(team && u.team!==team) return false;
+    if(name && u.name!==name) return false;
+    if(tenure && u.hireDate){
+      const hire=new Date(u.hireDate);
+      const months=Math.round((now-hire)/(1000*60*60*24*30));
+      if(tenure==='3m' && months>=3) return false;
+      if(tenure==='1y' && (months<3||months>=12)) return false;
+      if(tenure==='1y+' && months<12) return false;
+      if(tenure==='5y+' && months<60) return false;
+      if(tenure==='10y+' && months<120) return false;
+    }
+    return true;
+  });
+}
+
+function renderDashboard(){
+  const filtered=getFiltered();
+  // stats
+  el('sv-total').textContent=filtered.length;
+  const totalVids=D.videos.filter(v=>filtered.some(u=>u.id===v.userId)).length;
+  el('sv-vids').textContent=totalVids;
+  const avg=filtered.length ? (filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1) : '—';
+  el('sv-avg').textContent=avg;
+  el('sv-s').textContent=filtered.filter(u=>u.grade==='S').length;
+  // AI strip
+  renderAIStrip(filtered);
+  // top5 + grid
+  renderTop5();
+  renderGrid(filtered);
+}
+
+function renderAIStrip(filtered){
+  const ch=v('f-ch'), dt=v('f-date'), team=v('f-team');
+  let txt='';
+  if(!ch && !dt && !team){
+    txt=`<strong>전체 강사 ${filtered.length}명</strong> 기준, 평균 점수 ${filtered.length?(filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1):'—'}점. S등급 ${filtered.filter(u=>u.grade==='S').length}명 배출. 상호작용 항목 집중 개선 권장.`;
+  } else {
+    const avg=filtered.length?(filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1):'—';
+    const bestItem=filtered.length ? Object.entries(filtered[0].scores).sort((a,b)=>b[1]/filtered[0].maxes[b[0]]-a[1]/filtered[0].maxes[a[0]])[0][0] : '';
+    txt=`<strong>${ch||'전체'} ${team||''} ${dt||''}</strong> 필터 기준 — ${filtered.length}명 평균 <strong>${avg}점</strong>. ${bestItem ? `'${bestItem}' 항목이 가장 우수합니다.` : ''} 세부 데이터는 각 강사 카드에서 확인하세요.`;
+  }
+  el('ai-strip-text').innerHTML=txt;
+}
+
+function renderGrid(users){
+  const fills=['bf-red','bf-blue','bf-green'];
+  el('lect-grid').innerHTML=users.map((u,i)=>{
+    const scoreKeys=Object.keys(u.scores).slice(0,3);
+    const bars=scoreKeys.map((k,j)=>{
+      const pct=Math.round(u.scores[k]/u.maxes[k]*100);
+      return `<div class="mini-bar-row"><div class="mini-bar-hdr"><span>${k}</span><span>${u.scores[k]}/${u.maxes[k]}</span></div>
+        <div class="bar-track"><div class="bar-fill ${fills[j]}" data-pct="${pct}" style="width:0%"></div></div></div>`;
+    }).join('');
+    const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][i%6];
+    return `<div class="lect-card neu" onclick="openLecturer(${u.id},'page-dashboard')" style="animation-delay:${i*.07}s">
+      <div class="lect-card-top">
+        <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
+        <div class="lect-info">
+          <div class="lect-name">${u.name}</div>
+          <div class="lect-meta">${u.team} · ${u.position}</div>
+          <div style="margin-top:4px"><span class="channel-chip ch-${u.channel}">${u.channel}</span></div>
+        </div>
+        <div class="grade-badge g-${u.grade}">${u.grade}</div>
+      </div>
+      ${bars}
+      <div class="lect-footer">
+        <div><span class="total-score">${u.score}</span><span style="font-size:11px;color:var(--t3)"> / 100점</span></div>
+        <button class="btn btn-blue" style="padding:6px 12px;font-size:11px" onclick="event.stopPropagation();openLecturer(${u.id},'page-dashboard')">상세 보기 →</button>
+      </div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.bar-fill').forEach(el=>{ el.style.width=el.dataset.pct+'%'; });
+  }));
+}
+
+/* ════════════════════════════════
+   LECTURER DETAIL
+════════════════════════════════ */
+let lectFromPage='page-home';
+function openLecturer(id, fromPage){
+  lectFromPage=fromPage||'page-home';
+  // Update back button
+  const bb=el('lect-back-btn');
+  if(bb){ bb.setAttribute('onclick',`showPage('${lectFromPage}')`); }
+  curLectId=id;
+  const u=D.users.find(x=>x.id===id);
+  const userVids=D.videos.filter(v=>v.userId===id);
+  const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][(id-1)%6];
+
+  // Score bars
+  const scoreRows=Object.entries(u.scores).map(([k,v])=>{
+    const pct=Math.round(v/u.maxes[k]*100);
+    return `<div class="mini-bar-row"><div class="mini-bar-hdr"><span>${k}</span><span>${v}/${u.maxes[k]}점</span></div>
+      <div class="bar-track"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+
+  // Habit badges
+  const habitHtml = u.habits.length
+    ? u.habits.map((h,i)=>{
+        const cnt=u.habitCounts[i]||0;
+        const cls=cnt>10?'hb-high':cnt>5?'hb-mid':'hb-low';
+        return `<span class="habit-badge ${cls}">${h}<span class="habit-cnt">${cnt}회</span></span>`;
+      }).join('')
+    : '<span style="font-size:12px;color:var(--t3)">감지된 반복 습관어 없음</span>';
+
+  // Engagement timeline
+  const engHtml=buildEngagementTimeline(u.engagementGaps);
+
+  // Decibel
+  const recMin=60, recMax=80;
+  const dbPct=Math.min(100,(u.decibel/90)*100);
+  const zoneLeft=Math.round(recMin/90*100), zoneWidth=Math.round((recMax-recMin)/90*100);
+  const dbColor=u.decibel>=recMin&&u.decibel<=recMax?'var(--green)':u.decibel<recMin?'var(--orange)':'var(--red)';
+
+  // Video list
+  const vidListHtml=userVids.map(vid=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${vid.title}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date} · ${vid.duration} · 교육생 ${vid.studentCount}명</div>
+      </div>
+      <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.1);color:#059669">${vid.status}</span>
+      <button class="btn btn-blue" style="padding:5px 10px;font-size:11px" onclick="openVideo(${vid.id})">분석 보기</button>
+    </div>`).join('');
+
+  // Reference video comparison
+  const refVid=D.refVideos[u.channel];
+  const refHtml=refVid
+    ? `<div style="font-size:12px;color:var(--t2)">기준 영상 대비 비교 분석 (채널: ${u.channel})</div>`
+    : `<div style="padding:12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--orange)">⚠️ ${u.channel} 채널의 기준 영상이 등록되지 않았습니다. <span style="text-decoration:underline;cursor:pointer" onclick="openAdmin()">관리자 패널</span>에서 등록하세요.</div>`;
+
+  // Solution
+  const solHtml=userVids.map(v=>`
+    <div class="solution-card">
+      <div class="sol-title">📹 ${v.title}</div>
+      <div class="sol-text">${v.solution||'AI 분석 대기 중입니다.'}</div>
+    </div>`).join('');
+
+  const isOwner=CU && (CU.id===u.id || CU.isAdmin);
+
+  el('lecturer-main').innerHTML=`
+    <div class="prof-layout">
+      <!-- LEFT: Profile card -->
+      <div>
+        <div class="prof-card neu" style="text-align:center;margin-bottom:18px">
+          <div class="prof-photo" style="background:${bg};overflow:hidden;cursor:pointer;position:relative" onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경" id="prof-photo-display">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
+          <input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">
+          <div style="font-size:18px;font-weight:900;margin-bottom:4px">${u.name}</div>
+          <div style="margin-bottom:12px"><span class="channel-chip ch-${u.channel}">${u.channel}</span>&nbsp;<span class="grade-badge g-${u.grade}" style="display:inline-flex">${u.grade}</span></div>
+          <div class="prof-row"><span class="prof-key">소속</span><span class="prof-val">${u.channel||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">팀</span><span class="prof-val">${u.team||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">생년</span><span class="prof-val">${u.birthYear?u.birthYear+'년생':'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">입사</span><span class="prof-val">${u.hireDate||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">번호</span><span class="prof-val">${u.phone||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">이메일</span><span class="prof-val">${u.email||'—'}</span></div>
+        </div>
+        ${isOwner?`<div class="prof-card neu" style="padding:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">자기 평가 메모</div>
+          <textarea id="self-memo" style="min-height:100px">${u.memo||''}</textarea>
+          <button class="btn btn-blue" style="width:100%;justify-content:center;margin-top:8px;padding:9px" onclick="saveMemo(${u.id})">메모 저장</button>
+        </div>
+        <button class="auth-btn auth-btn-primary" style="margin-top:12px" onclick="openEditProfile(${u.id})">내 정보 변경</button>`:''}
+      </div>
+      <!-- RIGHT: Accordion -->
+      <div>
+        <div class="acc-wrap neu">
+
+          <!-- 1. 역량 평가 점수 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(0,120,200,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <span class="acc-title">📊 역량 평가 점수</span>
+              <span style="font-size:18px;font-weight:900;color:var(--blue);margin-right:8px">${u.score}</span>
+              <span class="grade-badge g-${u.grade}" style="margin-right:8px">${u.grade}</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div class="coll-item"><button class="coll-trigger" onclick="toggleColl(this)"><svg class="coll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>항목별 점수</button>
+                <div class="coll-body"><div style="padding:10px 0">${scoreRows}</div></div></div>
+              <div class="coll-item"><button class="coll-trigger" onclick="toggleColl(this)"><svg class="coll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>기준 영상 비교</button>
+                <div class="coll-body"><div style="padding:10px 0">${refHtml}</div></div></div>
+            </div>
+          </div>
+
+          <!-- 2. 등록 영상 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(226,30,38,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              </div>
+              <span class="acc-title">🎬 등록 영상 목록</span>
+              <span style="font-size:11px;color:var(--t3);margin-right:8px">${userVids.length}개</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div style="padding:0 18px 10px">
+                ${vidListHtml||'<p style="font-size:12px;color:var(--t3);padding:12px 0">등록된 영상이 없습니다.</p>'}
+                ${isOwner?`<button class="btn btn-blue" style="margin-top:12px;padding:8px 14px;font-size:11px" onclick="openRegisterVideo(${u.id})">+ 영상 등록</button>`:''}
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. AI 분석 리포트 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(16,185,129,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              </div>
+              <span class="acc-title">🔍 AI 분석 리포트</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div class="coll-item"><button class="coll-trigger" onclick="toggleColl(this)"><svg class="coll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>반복 어 습관 분석</button>
+                <div class="coll-body"><div class="habit-list">${habitHtml}</div></div></div>
+              <div class="coll-item"><button class="coll-trigger" onclick="toggleColl(this)"><svg class="coll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>참여 유도 타임라인</button>
+                <div class="coll-body">${engHtml}</div></div>
+              <div class="coll-item"><button class="coll-trigger" onclick="toggleColl(this)"><svg class="coll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>음성 분석 (데시벨·템포)</button>
+                <div class="coll-body">
+                  <div style="padding:10px 0">
+                    <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">데시벨 (교육생 ${u.studentCount}명 기준)</div>
+                    <div class="db-wrap"><div class="db-fill" style="width:${dbPct}%;background:${dbColor}"></div><div class="db-zone" style="left:${zoneLeft}%;width:${zoneWidth}%"></div></div>
+                    <div class="db-info">현재: <strong>${u.decibel}dB</strong> · 권장 범위: 60–80dB · 상태: <span style="color:${dbColor};font-weight:700">${u.decibel>=recMin&&u.decibel<=recMax?'적정':'조정 필요'}</span></div>
+                    <div style="font-size:11px;font-weight:700;color:var(--t3);margin-top:12px;margin-bottom:4px">강의 템포</div>
+                    <div class="db-info">현재: <strong>${u.tempo} WPM</strong> · 권장: 130–160 WPM · 상태: <span style="color:${u.tempo>=130&&u.tempo<=160?'var(--green)':'var(--orange)'};font-weight:700">${u.tempo>=130&&u.tempo<=160?'적정':'조정 권장'}</span></div>
+                  </div>
+                </div></div>
+            </div>
+          </div>
+
+          <!-- 4. 체크리스트/교안 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(245,158,11,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              </div>
+              <span class="acc-title">📋 체크리스트 / 교안</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div style="padding:12px 18px">
+                <div style="padding:8px 12px;background:rgba(139,92,246,.08);border-radius:8px;font-size:12px;color:var(--purple);margin-bottom:10px">✨ 평가 기준 없을 시 AI 자동 분석이 적용됩니다</div>
+                <div class="upload-zone" onclick="document.getElementById('checklist-upload').click()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p>PDF/Excel 평가지 업로드<br><span style="font-size:10px">클릭 또는 드래그</span></p>
+                </div>
+                <input type="file" id="checklist-upload" accept=".pdf,.xlsx,.xls" style="display:none">
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. 솔루션 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(139,92,246,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+              </div>
+              <span class="acc-title">💡 솔루션 & 권장 시나리오</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div style="padding:12px 18px">
+                ${solHtml||'<div style="font-size:12px;color:var(--t3)">분석된 영상이 없습니다.</div>'}
+                <div class="solution-card" style="background:rgba(0,120,200,.05);border-color:rgba(0,120,200,.15)">
+                  <div class="sol-title" style="color:var(--blue)">🎯 다음 강의 권장 시나리오</div>
+                  <div class="sol-text">1. 오프닝 3분: 지난 강의 핵심 복습 → 오늘 목표 제시<br>2. 본론 15분: 제품 시연 + 수강생 직접 체험<br>3. 참여 유도: 10분 간격 질문 or 미니 퀴즈<br>4. 마무리 5분: 3가지 핵심 요약 + 다음 강의 예고</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </div><!-- /acc-wrap -->
+
+        <!-- 멘토찾기 (독립 섹션) -->
+        <div style="margin-top:22px">
+          <div class="sec-lbl">🔍 멘토찾기</div>
+          <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:20px;background:#fff">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+              <div style="width:42px;height:42px;border-radius:12px;background:rgba(236,72,153,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg>
+              </div>
+              <div>
+                <div style="font-size:14px;font-weight:800">다른 강사와 비교하고 멘토를 찾아보세요</div>
+                <div style="font-size:11px;color:var(--t3)">필터로 강사를 검색하고 항목별 점수를 비교합니다</div>
+              </div>
+            </div>
+            <button class="auth-btn auth-btn-primary" style="max-width:200px;padding:11px" onclick="openCompareModal(${u.id})">멘토 찾기</button>
+            <div id="compare-result-${u.id}" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+  showPage('page-lecturer');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('#lecturer-main .bar-fill').forEach(e=>{ e.style.width=e.dataset.pct+'%'; });
+  });
+}
+
+async function saveMemo(uid){
+  const memo=el('self-memo').value;
+  await dbUpdateUser(uid,{memo});
+  const u=D.users.find(x=>x.id===uid);
+  if(u) u.memo=memo;
+  alert('메모가 저장되었습니다.');
+}
+function changeProfilePhoto(uid,input){
+  if(!input.files||!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    await dbUpdateUser(uid,{photo:e.target.result});
+    const u=D.users.find(x=>x.id===uid);
+    if(u) u.photo=e.target.result;
+    if(CU&&CU.id===uid){ CU.photo=e.target.result; localStorage.setItem('ib_user',JSON.stringify(CU)); }
+    el('prof-photo-display').innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+/* ════════════════════════════════
+   COMPARE
+════════════════════════════════ */
+let compareMyId=null;
+function openCompareModal(myId){
+  compareMyId=myId;
+  const ts=el('cmp-team'); ts.innerHTML='<option value="">전체</option>';
+  [...new Set(D.users.map(u=>u.team).filter(Boolean))].forEach(t=>{
+    const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o);
+  });
+  const ns=el('cmp-name'); ns.innerHTML='<option value="">전체</option>';
+  D.users.filter(u=>u.id!==myId).forEach(u=>{
+    const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o);
+  });
+  el('cmp-results').innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px;text-align:center">필터를 선택하거나 이름을 선택하세요</div>';
+  ['cmp-date','cmp-ch','cmp-team','cmp-tenure','cmp-name'].forEach(id=>{
+    el(id).onchange=()=>renderCompareResults(myId);
+  });
+  el('compare-overlay').classList.add('show');
+}
+function renderCompareResults(myId){
+  const ch=v('cmp-ch'),team=v('cmp-team'),tenure=v('cmp-tenure'),name=v('cmp-name');
+  const now=new Date();
+  let list=D.users.filter(u=>{
+    if(u.id===myId) return false;
+    if(ch&&u.channel!==ch) return false;
+    if(team&&u.team!==team) return false;
+    if(name&&u.name!==name) return false;
+    if(tenure&&u.hireDate){
+      const m=Math.round((now-new Date(u.hireDate))/(1000*60*60*24*30));
+      if(tenure==='3m'&&m>=3) return false;
+      if(tenure==='1y'&&(m<3||m>=12)) return false;
+      if(tenure==='1y+'&&m<12) return false;
+      if(tenure==='5y+'&&m<60) return false;
+      if(tenure==='10y+'&&m<120) return false;
+    }
+    return true;
+  });
+  if(!list.length){ el('cmp-results').innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px;text-align:center">조건에 맞는 강사가 없습니다</div>'; return; }
+  const colors=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'];
+  el('cmp-results').innerHTML=list.map((u,i)=>{
+    const bg=colors[i%6];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='#f8f8f8'" onmouseout="this.style.background=''" onclick="doCompare(${myId},${u.id})">
+      <div style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${u.channel} · ${u.team} · ${u.score}점</div></div>
+      <span class="grade-badge g-${u.grade}" style="display:inline-flex">${u.grade}</span>
+      <span style="font-size:11px;color:var(--blue);font-weight:700">비교 →</span>
+    </div>`;
+  }).join('');
+}
+function doCompare(myId,otherId){
+  closeOverlay('compare-overlay');
+  const me=D.users.find(x=>x.id===myId), other=D.users.find(x=>x.id===otherId);
+  if(!me||!other) return;
+  const scoreKeys=Object.keys(me.scores);
+  const barsHtml=scoreKeys.map(k=>{
+    const myPct=Math.round(me.scores[k]/(me.maxes[k]||1)*100);
+    const otPct=Math.round((other.scores[k]||0)/((other.maxes||me.maxes)[k]||1)*100);
+    const diff=me.scores[k]-(other.scores[k]||0);
+    const dc=diff>0?'var(--green)':diff<0?'var(--red)':'var(--t3)';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:600">${k}</span><span style="color:${dc};font-weight:700">${diff>0?'+':''}${diff}점</span></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--blue);width:30px">${me.scores[k]}</span><div style="flex:1"><div class="bar-track"><div class="bar-fill bf-blue" style="width:${myPct}%"></div></div></div></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px"><span style="font-size:10px;color:var(--orange);width:30px">${other.scores[k]||0}</span><div style="flex:1"><div class="bar-track"><div class="bar-fill" style="width:${otPct}%;background:linear-gradient(90deg,var(--orange),#fcd34d)"></div></div></div></div>
+    </div>`;
+  }).join('');
+  const td=me.score-other.score;
+  const tdc=td>0?'var(--green)':td<0?'var(--red)':'var(--t3)';
+  const otBg=['#E21E26','#0078C8','#10b981','#f59e0b'][(otherId-1)%4];
+  el('compare-result-'+myId).innerHTML=`
+    <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;flex:1">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${me.photo?'<img src="'+me.photo+'" style="width:100%;height:100%;object-fit:cover">':me.name[0]}</div>
+          <div><div style="font-size:13px;font-weight:800">${me.name}</div><div style="font-size:10px;color:var(--t3)">${me.score}점</div></div>
+        </div>
+        <span style="font-size:16px;font-weight:900;color:var(--t3)">VS</span>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end">
+          <div><div style="font-size:13px;font-weight:800;text-align:right">${other.name}</div><div style="font-size:10px;color:var(--t3);text-align:right">${other.score}점</div></div>
+          <div style="width:32px;height:32px;border-radius:50%;background:${otBg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${other.photo?'<img src="'+other.photo+'" style="width:100%;height:100%;object-fit:cover">':other.name[0]}</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:16px;padding:8px;background:rgba(0,0,0,.03);border-radius:8px">
+        <span style="font-size:12px;color:var(--t2)">종합 점수 차이: </span><span style="font-size:18px;font-weight:900;color:${tdc}">${td>0?'+':''}${td}점</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;font-size:10px"><span style="color:var(--blue)">● ${me.name}</span><span style="color:var(--orange)">● ${other.name}</span></div>
+      ${barsHtml}
+    </div>`;
+}
+
+/* ════════════════════════════════
+   EDIT PROFILE
+════════════════════════════════ */
+let editProfileId=null;
+function openEditProfile(uid){
+  editProfileId=uid;
+  const u=D.users.find(x=>x.id===uid);
+  if(!u) return;
+  el('ep-name').value=u.name||'';
+  el('ep-year').value=u.birthYear||'';
+  el('ep-channel').value=u.channel||'가전AM';
+  el('ep-team').value=u.team||'';
+  el('ep-hire').value=u.hireDate||'';
+  el('ep-phone').value=u.phone||'';
+  el('ep-pw').value='';
+  el('ep-err').textContent='';
+  el('edit-profile-overlay').classList.add('show');
+}
+async function saveEditProfile(){
+  const u=D.users.find(x=>x.id===editProfileId);
+  if(!u) return;
+  const name=v('ep-name').trim();
+  if(!name){ el('ep-err').textContent='이름을 입력하세요.'; return; }
+  const pw=v('ep-pw').trim();
+  if(pw && pw.length!==4){ el('ep-err').textContent='비밀번호는 4자리입니다.'; return; }
+  const fields={name,birthYear:parseInt(v('ep-year'))||u.birthYear,channel:v('ep-channel'),team:v('ep-team'),hireDate:v('ep-hire'),phone:v('ep-phone')};
+  if(pw) fields.pw=pw;
+  await dbUpdateUser(editProfileId,fields);
+  Object.assign(u,fields);
+  if(CU&&CU.id===editProfileId){ CU.name=u.name; CU.channel=u.channel; localStorage.setItem('ib_user',JSON.stringify(CU)); }
+  closeOverlay('edit-profile-overlay');
+  openLecturer(editProfileId, lectFromPage);
+}
+
+function buildEngagementTimeline(gaps){
+  if(!gaps||!gaps.length) return '<p style="font-size:12px;color:var(--t3);padding:10px 0">데이터 없음</p>';
+  const avg=(gaps.reduce((a,b)=>a+b,0)/gaps.length).toFixed(1);
+  const dots=gaps.map((g,i)=>{
+    const color=g<=10?'var(--green)':g<=15?'var(--orange)':'var(--red)';
+    return `<div class="eng-seg"><div class="eng-bar" style="width:${g*6}px"></div><div class="eng-wrap"><div class="eng-dot" style="background:${color}"></div><div class="eng-label">${g}분</div></div></div>`;
+  }).join('');
+  return `<div style="padding:10px 0">
+    <div class="eng-line"><div class="eng-dot" style="background:var(--t3)"></div>${dots}</div>
+    <div style="font-size:11px;color:var(--t2);margin-top:6px">평균 참여 유도 간격: <strong>${avg}분</strong> · 권장: 10분 이내<br><span style="color:var(--green)">●</span> ≤10분(양호) <span style="color:var(--orange)">●</span> 11-15분(주의) <span style="color:var(--red)">●</span> >15분(개선필요)</div>
+  </div>`;
+}
+
+/* ════════════════════════════════
+   VIDEO ANALYSIS
+════════════════════════════════ */
+function openVideo(id){
+  curVidId=id;
+  const vid=D.videos.find(x=>x.id===id);
+  const u=D.users.find(x=>x.id===vid.userId);
+
+  const playerHtml=vid.youtube
+    ? `<iframe src="${vid.youtube.replace('watch?v=','embed/')}" allowfullscreen></iframe>`
+    : vid.filePath
+      ? `<video controls src="${vid.filePath}"></video>`
+      : `<div class="vid-placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg><p>영상이 등록되지 않았습니다</p></div>`;
+
+  const tsHtml=vid.timestamps.map(ts=>`
+    <div class="ts-item" id="ts-${ts.id}">
+      <div>
+        <div class="ts-time" onclick="alert('영상 연결 후 ${ts.t}으로 이동합니다')">${ts.t}</div>
+      </div>
+      <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ 잘함':ts.type==='bad'?'⚠️ 취약':'💡 Tip'}</span>
+      <div style="flex:1">
+        <div class="ts-text" id="ts-text-${ts.id}">${ts.text}</div>
+        <div class="ts-tags">${ts.tags.map(t=>`<span class="ts-tag">${t}</span>`).join('')}</div>
+      </div>
+      <button class="ts-edit-btn" onclick="editTs(${vid.id},${ts.id})">✏️</button>
+      <button class="ts-edit-btn" onclick="deleteTs(${vid.id},${ts.id})" style="color:var(--red)">🗑️</button>
+    </div>`).join('');
+
+  el('video-main').innerHTML=`
+    <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div>
+        <div style="font-size:18px;font-weight:900">${vid.title}</div>
+        <div style="font-size:11px;color:var(--t3)">${u.name} · ${vid.date} · ${vid.duration} · 교육생 ${vid.studentCount}명</div>
+      </div>
+    </div>
+    <!-- Video register -->
+    <div class="neu" style="border-radius:var(--r2);padding:14px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="yt-url" placeholder="YouTube URL 입력 (예: https://youtube.com/watch?v=...)" style="flex:1;min-width:200px">
+      <button class="btn btn-blue" onclick="registerYoutube(${vid.id})">YouTube 연결</button>
+      <label class="btn btn-ghost" style="cursor:pointer">파일 업로드<input type="file" accept="video/*" style="display:none" onchange="registerFile(${vid.id},this)"></label>
+      <button class="btn btn-red" onclick="startWebcam(${vid.id})">즉석 녹화</button>
+    </div>
+    <!-- Webcam area (hidden by default) -->
+    <div id="webcam-area" style="display:none;margin-bottom:18px">
+      <div class="webcam-wrap" id="webcam-wrap">
+        <video id="webcam-preview" autoplay muted playsinline></video>
+        <div class="rec-bar" id="rec-bar" style="display:none"><div class="rec-dot"></div><span id="rec-timer">00:00</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-red" id="rec-start-btn" onclick="toggleRecord(${vid.id})">녹화 시작</button>
+        <button class="btn btn-ghost" onclick="stopWebcam()">닫기</button>
+      </div>
+    </div>
+    <div class="video-layout">
+      <div>
+        <div class="video-player neu">${playerHtml}</div>
+        <!-- Solution -->
+        <div style="margin-top:16px">
+          <div class="sec-lbl">AI 솔루션</div>
+          <div class="solution-card">${vid.solution||'영상 분석 후 AI 솔루션이 표시됩니다.'}</div>
+        </div>
+      </div>
+      <!-- Timestamp feed with dual tabs -->
+      <div>
+        <div class="dual-tabs">
+          <button class="dual-tab active" onclick="switchDualTab('ts-pane-criteria',this)">평가안 기준</button>
+          <button class="dual-tab" onclick="switchDualTab('ts-pane-ai',this)">AI 종합 분석</button>
+        </div>
+        <div class="dual-pane active" id="ts-pane-criteria">
+          <div style="border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;margin-bottom:14px;background:rgba(0,120,200,.04)">
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">${vid.checklist?'업로드된 평가안 기준':'평가안 없음 — AI 자동 분석 적용 중'}</div>
+            <div style="font-size:11px;color:var(--t2);line-height:1.7">${vid.checklist||'별도 평가안이 업로드되지 않아 AI가 영상 흐름을 자체 분석합니다. 평가안을 업로드하면 해당 기준으로 재분석됩니다.'}</div>
+          </div>
+        </div>
+        <div class="dual-pane" id="ts-pane-ai">
+          <div style="font-size:11px;color:var(--t3);padding:8px 0;margin-bottom:8px">AI가 영상 흐름을 독자적으로 분석한 결과입니다.</div>
+        </div>
+        <div class="ts-feed neu">
+          <div class="ts-hdr">
+            <span style="font-size:12px;font-weight:700">타임스탬프 피드</span>
+            <button class="btn btn-blue" style="padding:5px 10px;font-size:11px" onclick="openAddTs()">+ 추가</button>
+          </div>
+          <div class="ts-list" id="ts-list">${tsHtml||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">타임스탬프가 없습니다</div>'}</div>
+        </div>
+      </div>
+    </div>`;
+  showPage('page-video');
+}
+
+function openAddTs(){ el('ts-time').value=''; el('ts-text').value=''; el('ts-tags').value=''; el('ts-overlay').classList.add('show'); }
+async function saveTimestamp(){
+  const vid=D.videos.find(x=>x.id===curVidId);
+  if(!vid) return;
+  const ts={t:v('ts-time'),type:v('ts-type'),text:v('ts-text'),tags:v('ts-tags').split(',').map(s=>s.trim()).filter(Boolean)};
+  const result=await dbAddTimestamp(curVidId,ts);
+  if(result){ vid.timestamps.push({id:result.id,...ts}); vid.timestamps.sort((a,b)=>a.t.localeCompare(b.t)); }
+  closeOverlay('ts-overlay'); openVideo(curVidId);
+}
+async function editTs(vidId,tsId){
+  const vid=D.videos.find(x=>x.id===vidId);
+  const ts=vid.timestamps.find(x=>x.id===tsId);
+  const textEl=el(`ts-text-${tsId}`);
+  if(textEl.tagName==='TEXTAREA'){ ts.text=textEl.value; await dbUpdateTimestamp(tsId,ts.text); openVideo(vidId); return; }
+  const ta=document.createElement('textarea');
+  ta.value=ts.text; ta.id=`ts-text-${tsId}`;
+  ta.style.cssText='width:100%;min-height:60px;font-size:12px;padding:6px';
+  textEl.replaceWith(ta); ta.focus();
+}
+async function deleteTs(vidId,tsId){
+  if(!confirm('삭제하시겠습니까?')) return;
+  await dbDeleteTimestamp(tsId);
+  const vid=D.videos.find(x=>x.id===vidId);
+  vid.timestamps=vid.timestamps.filter(x=>x.id!==tsId);
+  openVideo(vidId);
+}
+async function registerYoutube(vidId){
+  const url=v('yt-url').trim();
+  if(!url){ alert('URL을 입력하세요'); return; }
+  await dbUpdateVideo(vidId,{youtube:url});
+  const vid=D.videos.find(x=>x.id===vidId);
+  vid.youtube=url; openVideo(vidId);
+}
+function registerFile(vidId,input){
+  const vid=D.videos.find(x=>x.id===vidId);
+  vid.filePath=URL.createObjectURL(input.files[0]); save(); openVideo(vidId);
+}
+
+/* ════════════════════════════════
+   VIDEO REGISTER MODAL (from lecturer page)
+════════════════════════════════ */
+async function openRegisterVideo(userId){
+  const title=prompt('영상 제목을 입력하세요:');
+  if(!title) return;
+  const date=prompt('강의 날짜 (예: 2026-04-01):') || new Date().toISOString().split('T')[0];
+  const sc=prompt('교육생 인원수:') || '0';
+  const result=await dbCreateVideo({userId,title,date,duration:'—',studentCount:parseInt(sc)||0});
+  if(result){ D.videos.push({id:result.id,userId,title,youtube:'',filePath:'',date,duration:'—',studentCount:parseInt(sc)||0,status:'등록완료',timestamps:[],solution:''}); }
+  alert('영상이 등록되었습니다.');
+  openLecturer(userId,'page-dashboard');
+}
+
+/* ════════════════════════════════
+   ADMIN PANEL
+════════════════════════════════ */
+function renderAdmin(){
+  // User table
+  el('admin-user-tbody').innerHTML=D.users.map(u=>`
+    <tr>
+      <td><strong>${u.name}</strong></td>
+      <td style="color:var(--t3)">${u.email}</td>
+      <td><span class="channel-chip ch-${u.channel}">${u.channel}</span></td>
+      <td>${u.team}</td>
+      <td>${u.position}</td>
+      <td><span class="grade-badge g-${u.grade}" style="display:inline-flex">${u.grade}</span></td>
+      <td style="color:var(--t3)">${u.registered||'—'}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
+          <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button></td>
+    </tr>`).join('');
+  // PDF select
+  const pdfSel=el('pdf-user'); pdfSel.innerHTML='<option value="">전체 강사</option>';
+  D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; pdfSel.appendChild(o); });
+  // Criteria
+  renderCriteria();
+  // Ref videos
+  renderRefVideos();
+  // Stats chart
+  renderStatChart();
+}
+async function resetPw(id){ await dbUpdateUser(id,{pw:'0000'}); const u=D.users.find(x=>x.id===id); if(u) u.pw='0000'; alert(`${u?.name||''} 님의 비밀번호가 0000으로 초기화되었습니다.`); }
+async function deleteUser(id){ if(!confirm('강사를 삭제하시겠습니까?')) return; await dbDeleteUser(id); D.users=D.users.filter(x=>x.id!==id); renderAdmin(); }
+function renderCriteria(){
+  el('criteria-rows').innerHTML=D.criteria.map((c,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 80px 2fr auto;gap:8px;margin-bottom:8px;align-items:center">
+      <input type="text" value="${c.name}" onchange="D.criteria[${i}].name=this.value">
+      <input type="number" value="${c.max}" onchange="D.criteria[${i}].max=parseInt(this.value)" style="text-align:center">
+      <input type="text" value="${c.desc}" onchange="D.criteria[${i}].desc=this.value">
+      <button class="btn btn-ghost" style="padding:5px 8px;color:var(--red)" onclick="D.criteria.splice(${i},1);renderCriteria()">✕</button>
+    </div>`).join('');
+}
+function addCriteriaRow(){ D.criteria.push({name:'새 항목',max:10,desc:''}); renderCriteria(); }
+function saveCriteria(){ save(); alert('평가 기준이 저장되었습니다.'); }
+function renderRefVideos(){
+  el('ref-video-list').innerHTML=['가전','IT','서비스'].map(ch=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <span class="channel-chip ch-${ch}" style="flex-shrink:0">${ch}</span>
+      <input type="text" value="${D.refVideos[ch]||''}" placeholder="YouTube URL 입력" id="ref-${ch}" style="flex:1">
+      <button class="btn btn-blue" style="padding:6px 12px;font-size:11px;flex-shrink:0" onclick="D.refVideos['${ch}']=document.getElementById('ref-${ch}').value;save();alert('저장됨')">저장</button>
+    </div>`).join('');
+}
+function renderStatChart(){
+  const channels=['가전','IT','서비스'];
+  el('stat-chart').innerHTML=channels.map(ch=>{
+    const users=D.users.filter(u=>u.channel===ch);
+    const avg=users.length?(users.reduce((a,b)=>a+b.score,0)/users.length).toFixed(1):'—';
+    const pct=users.length?Math.round(parseFloat(avg))+'%':'0%';
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span class="channel-chip ch-${ch}">${ch}</span><span style="font-weight:700">${avg}점 (${users.length}명)</span></div>
+      <div class="bar-track"><div class="bar-fill ${ch==='가전'?'bf-red':ch==='IT'?'bf-blue':'bf-green'}" style="width:${pct}"></div></div>
+    </div>`;
+  }).join('');
+}
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  el('tab-'+name).classList.add('active');
+}
+
+/* ════════════════════════════════
+   ACCORDION / COLLAPSIBLE
+════════════════════════════════ */
+function toggleAcc(btn){
+  const body=btn.nextElementSibling;
+  const isOpen=body.classList.contains('open');
+  // close all in same wrapper
+  const wrap=btn.closest('.acc-wrap');
+  wrap.querySelectorAll('.acc-body.open').forEach(b=>b.classList.remove('open'));
+  wrap.querySelectorAll('.acc-trigger.open').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){ body.classList.add('open'); btn.classList.add('open'); }
+}
+function toggleColl(btn){
+  btn.nextElementSibling.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+/* ════════════════════════════════
+   MORPHING ICON ANIMATIONS
+════════════════════════════════ */
+function startIconAnimations(){
+  // Stat card icons
+  setInterval(()=>el('ic1').classList.toggle('done'),2200);
+  setInterval(()=>el('ic2').classList.toggle('playing'),2400);
+  setInterval(()=>el('ic3').classList.toggle('downloaded'),2600);
+  setInterval(()=>el('ic4').classList.toggle('notified'),2800);
+  // 12-icon grid (all 12 icons on loop)
+  const grids=[
+    ['ig1','done',2200],['ig2','menu-open',2000],['ig3','playing',2400],['ig4','unlocked',2600],
+    ['ig5','copied',2200],['ig6','notified',2800],['ig7','hearted',2000],['ig8','downloaded',2400],
+    ['ig9','sent',2600],['ig10','toggled',1800],['ig11','eye-hidden',2200],['ig12','muted',2400]
+  ];
+  grids.forEach(([id,cls,ms])=>setInterval(()=>{
+    const e=el(id); if(e) e.classList.toggle(cls);
+    // Toggle knob position for toggle icon
+    if(id==='ig10'){ const k=e?.querySelector('.si-toggle-knob'); if(k) k.setAttribute('cx',e.classList.contains(cls)?'28':'12'); }
+  },ms));
+}
+
+/* ════════════════════════════════
+   TOP 5 HIGHLIGHTS
+════════════════════════════════ */
+function renderTop5(){
+  const allVids=D.videos.filter(v=>v.status==='분석완료').map(vid=>{
+    const u=D.users.find(x=>x.id===vid.userId);
+    const score=vid.timestamps.filter(t=>t.type==='good').length*10+vid.timestamps.length*3;
+    return {...vid,user:u,score};
+  }).sort((a,b)=>b.score-a.score).slice(0,5);
+
+  const ranks=['t5r-1','t5r-2','t5r-3','t5r-4','t5r-5'];
+  el('top5-scroll').innerHTML=allVids.map((v,i)=>{
+    const bg=['var(--red)','var(--blue)','var(--green)','var(--orange)','var(--purple)'][i%5];
+    return `<div class="top5-card neu" style="animation-delay:${i*.08}s" onclick="openVideo(${v.id})">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span class="top5-rank ${ranks[i]}">${i+1}</span>
+        <div><div style="font-size:12px;font-weight:800">${v.title}</div><div style="font-size:10px;color:var(--t3)">${v.user?.name||'—'} · ${v.date}</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <span class="ts-badge ts-good">Good ${v.timestamps.filter(t=>t.type==='good').length}</span>
+        <span class="ts-badge ts-bad">Bad ${v.timestamps.filter(t=>t.type==='bad').length}</span>
+        <span class="ts-badge ts-tip">Tip ${v.timestamps.filter(t=>t.type==='tip').length}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill bf-blue" style="width:${Math.min(100,v.score)}%"></div></div>
+    </div>`;
+  }).join('')||'<div style="font-size:12px;color:var(--t3);padding:12px">분석 완료된 영상이 없습니다.</div>';
+}
+
+/* ════════════════════════════════
+   WEBCAM RECORDING
+════════════════════════════════ */
+let webcamStream=null, mediaRecorder=null, recordedChunks=[], recTimerID=null, recSeconds=0;
+function startWebcam(vidId){
+  el('webcam-area').style.display='block';
+  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+    webcamStream=stream;
+    el('webcam-preview').srcObject=stream;
+  }).catch(err=>{ alert('카메라 접근 권한이 필요합니다: '+err.message); stopWebcam(); });
+}
+function stopWebcam(){
+  if(webcamStream){ webcamStream.getTracks().forEach(t=>t.stop()); webcamStream=null; }
+  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  el('webcam-area').style.display='none';
+  el('rec-bar').style.display='none';
+  clearInterval(recTimerID); recSeconds=0;
+}
+function toggleRecord(vidId){
+  const btn=el('rec-start-btn');
+  if(!mediaRecorder||mediaRecorder.state==='inactive'){
+    recordedChunks=[];
+    mediaRecorder=new MediaRecorder(webcamStream,{mimeType:'video/webm'});
+    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(recordedChunks,{type:'video/webm'});
+      const url=URL.createObjectURL(blob);
+      const vid=D.videos.find(x=>x.id===vidId);
+      if(vid){ vid.filePath=url; save(); }
+      stopWebcam(); openVideo(vidId);
+    };
+    mediaRecorder.start();
+    btn.textContent='녹화 중지'; btn.style.background='var(--t1)';
+    el('rec-bar').style.display='flex';
+    recSeconds=0;
+    recTimerID=setInterval(()=>{
+      recSeconds++;
+      const m=String(Math.floor(recSeconds/60)).padStart(2,'0');
+      const s=String(recSeconds%60).padStart(2,'0');
+      el('rec-timer').textContent=m+':'+s;
+    },1000);
+  } else {
+    mediaRecorder.stop();
+    btn.textContent='녹화 시작'; btn.style.background='';
+    clearInterval(recTimerID);
+  }
+}
+
+/* ════════════════════════════════
+   DUAL TAB SWITCH
+════════════════════════════════ */
+function switchDualTab(paneId,btn){
+  btn.parentElement.querySelectorAll('.dual-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.dual-pane').forEach(p=>p.classList.remove('active'));
+  el(paneId).classList.add('active');
+}
+
+/* ════════════════════════════════
+   MY PROFILE PAGE
+════════════════════════════════ */
+function renderMyProfile(){
+  if(!CU||!CU.id){ showPage('page-login'); return; }
+  const u=D.users.find(x=>x.id===CU.id);
+  if(!u){ showPage('page-login'); return; }
+  el('myprofile-main').innerHTML=`
+    <div style="max-width:520px;margin:0 auto">
+      <div class="sec-lbl">내 프로필 수정</div>
+      <div class="prof-card neu" style="padding:24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-row" style="grid-column:1/-1;margin:0"><label class="form-label">이름</label><input type="text" id="mp-name" value="${u.name}"></div>
+          <div class="form-row" style="margin:0"><label class="form-label">소속 채널</label>
+            <select id="mp-ch"><option ${u.channel==='가전'?'selected':''}>가전</option><option ${u.channel==='IT'?'selected':''}>IT</option><option ${u.channel==='서비스'?'selected':''}>서비스</option></select>
+          </div>
+          <div class="form-row" style="margin:0"><label class="form-label">팀</label>
+            <select id="mp-team"><option ${u.team==='교육1팀'?'selected':''}>교육1팀</option><option ${u.team==='교육2팀'?'selected':''}>교육2팀</option><option ${u.team==='현장지원팀'?'selected':''}>현장지원팀</option></select>
+          </div>
+          <div class="form-row" style="margin:0"><label class="form-label">직책</label>
+            <select id="mp-pos"><option ${u.position==='강사'?'selected':''}>강사</option><option ${u.position==='주임'?'selected':''}>주임</option><option ${u.position==='선임강사'?'selected':''}>선임강사</option></select>
+          </div>
+          <div class="form-row" style="margin:0"><label class="form-label">담당 종목</label><input type="text" id="mp-spec" value="${u.specialty}"></div>
+          <div class="form-row" style="grid-column:1/-1;margin:0"><label class="form-label">비밀번호 변경 (비워두면 유지)</label><input type="password" id="mp-pw" placeholder="새 비밀번호 8자 이상"></div>
+        </div>
+      </div>
+    </div>`;
+  showPage('page-myprofile');
+}
+function saveProfile(){
+  if(!CU||!CU.id) return;
+  const u=D.users.find(x=>x.id===CU.id);
+  if(!u) return;
+  u.name=v('mp-name'); u.channel=v('mp-ch'); u.team=v('mp-team'); u.position=v('mp-pos'); u.specialty=v('mp-spec');
+  const pw=v('mp-pw');
+  if(pw){ if(pw.length<8){ alert('비밀번호는 8자 이상이어야 합니다.'); return; } u.pw=pw; }
+  CU=u; localStorage.setItem('ib_user',JSON.stringify(CU)); save();
+  alert('프로필이 저장되었습니다.'); showPage('page-dashboard');
+}
+
+/* ════════════════════════════════
+   UTILS
+════════════════════════════════ */
+function el(id){ return document.getElementById(id); }
+function v(id){ const e=el(id); return e?(e.value||''):''; }
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+window.addEventListener('load',async ()=>{
+  if(CU){
+    await loadFromDB();
+    // CU 정보 최신화
+    if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh) CU=fresh; }
+    initHome(); showPage('page-home');
+  } else {
+    showPage('page-login');
+  }
+});
+
+// Override showPage for profile
+const _showPage=showPage;
+window.showPage=function(id){
+  if(id==='page-myprofile'){ renderMyProfile(); return; }
+  _showPage(id);
+};
+</script>
+</body>
+</html>
