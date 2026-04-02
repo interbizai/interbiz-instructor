@@ -379,7 +379,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @media(max-width:600px){main{padding:14px 14px 48px}.filter-bar{grid-template-columns:repeat(2,1fr)}.stats-row{grid-template-columns:repeat(2,1fr)}.lect-grid{grid-template-columns:1fr}}
 
 /* ── Print ── */
-@media print{header,.filter-bar,.btn-pdf,.nav-back,.hdr-right{display:none!important}.acc-body{max-height:none!important}.page{display:block!important}body{background:#fff}}
+@media print{
+  header,.filter-bar,.btn-pdf,.nav-back,.hdr-right,.btn-ghost,.btn-blue,.auth-btn,.home-icons,.home-carousel,.icon-grid,.overlay{display:none!important}
+  .acc-body,.coll-body{max-height:none!important}
+  .page{display:none!important}
+  .page.active{display:block!important}
+  body{background:#fff}
+  main{padding:10px!important}
+}
 </style>
 </head>
 <body>
