@@ -2595,6 +2595,7 @@ async function saveAnalysisVideo(){
     await loadFromDB();
   }
   alert('영상과 분석 결과가 저장되었습니다!');
+  initDashboard(); showPage('page-dashboard');
 }
 
 /* ════════════════════════════════
@@ -3029,14 +3030,15 @@ async function saveVoiceAnalysis(){
   const score=el('va-ai-result')?.querySelector('div[style*="font-size:36px"]')?.textContent||'0';
   const tone=v('va-tone');
   const count=parseInt(v('va-count'))||0;
-  const userId=CU?.isAdmin?(D.users[0]?.id||null):CU?.id;
-  await sb.from('voice_evals').insert({
-    user_id:userId, user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
-    tone, student_count:count, eval_date:new Date().toISOString().split('T')[0]
-  });
+  const userId=CU?.id||null;
+  const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
+    tone, student_count:count, eval_date:new Date().toISOString().split('T')[0]};
+  if(userId) insertData.user_id=userId;
+  const {error}=await sb.from('voice_evals').insert(insertData);
+  if(error) console.error('voice save error:',error);
   await loadFromDB();
   alert('음성 분석 결과가 저장되었습니다!');
-  showPage('page-home'); initHome();
+  initDashboard(); showPage('page-dashboard');
 }
 
 function renderVoiceHighlight(){
