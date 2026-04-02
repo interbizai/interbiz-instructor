@@ -3135,8 +3135,45 @@ function buildEngagementTimeline(gaps){
 function openVideo(id){
   curVidId=id;
   const vid=D.videos.find(x=>x.id===id);
+  if(!vid) return;
   const u=D.users.find(x=>x.id===vid.userId);
 
+  // page-analysis의 Step2 결과 화면으로 표시
+  el('an-step1').style.display='none';
+  el('an-step2').style.display='';
+
+  // 영상 플레이어
+  window._anYtId=null;
+  if(vid.youtube){
+    const m=vid.youtube.match(/[?&]v=([^&]+)/);
+    if(m){
+      window._anYtId=m[1];
+      el('an-player').innerHTML=`<iframe id="an-yt-iframe" src="https://www.youtube.com/embed/${m[1]}?enablejsapi=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none;border-radius:var(--r2)"></iframe>`;
+    }
+  } else if(vid.filePath){
+    el('an-player').innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${vid.filePath}"></video>`;
+  } else {
+    el('an-player').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)"><p>영상이 등록되지 않았습니다</p></div>`;
+  }
+
+  // 평가안 여부 (저장된 영상은 AI 독자 분석만)
+  const hasCL=false;
+  if(!hasCL){
+    el('an-split').style.gridTemplateColumns='1fr';
+    el('an-criteria-result').parentElement.parentElement.style.display='none';
+  }
+
+  // 기존 타임스탬프로 결과 렌더링
+  const count=vid.studentCount||20;
+  const mockResult=generateMockResult(count);
+  // 실제 저장된 타임스탬프가 있으면 사용
+  if(vid.timestamps?.length) mockResult.timestamps=vid.timestamps;
+  renderAnalysisResult(mockResult,hasCL,count);
+
+  showPage('page-analysis');
+  return;
+
+  // ─── 이하 기존 page-video 코드 (미사용) ───
   const playerHtml=vid.youtube
     ? `<iframe src="${vid.youtube.replace('watch?v=','embed/')}" allowfullscreen></iframe>`
     : vid.filePath
@@ -3146,7 +3183,7 @@ function openVideo(id){
   const tsHtml=vid.timestamps.map(ts=>`
     <div class="ts-item" id="ts-${ts.id}">
       <div>
-        <div class="ts-time" onclick="alert('영상 연결 후 ${ts.t}으로 이동합니다')">${ts.t}</div>
+        <div class="ts-time" onclick="seekToTime('${ts.t}')">${ts.t}</div>
       </div>
       <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ 잘함':ts.type==='bad'?'⚠️ 취약':'💡 Tip'}</span>
       <div style="flex:1">
