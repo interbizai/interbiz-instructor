@@ -576,76 +576,75 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- 8 Icon Grid -->
   <div class="sec-lbl">주요 기능</div>
   <div class="home-icons">
-    <!-- 1. 평가결과 -->
+    <!-- 1. 평가결과 (파랑, 스피너→체크) -->
     <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
-      <div class="home-icon-box">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor">
-          <rect x="8" y="24" width="5" height="10" rx="1" stroke-width="2"/>
-          <rect x="17.5" y="16" width="5" height="18" rx="1" stroke-width="2"/>
-          <rect x="27" y="8" width="5" height="26" rx="1" stroke-width="2"/>
-          <path d="M6 6v30h30" stroke-width="2" stroke-linecap="round"/>
+      <div class="home-icon-box hi-anim" id="hi1">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".2"/>
+          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" class="si-arc"/>
+          <path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-check"/>
         </svg>
       </div>
       <span class="home-icon-lbl">평가결과</span>
     </div>
-    <!-- 2. 영상 스트리밍 -->
+    <!-- 2. 영상 스트리밍 (빨강, 플레이→일시정지) -->
     <div class="home-icon-cell" onclick="openStreaming()">
-      <div class="home-icon-box" id="hi2">
+      <div class="home-icon-box hi-anim" id="hi2">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="6" y="8" width="28" height="20" rx="3" stroke="currentColor" stroke-width="2"/>
-          <polygon points="16,14 26,18 16,22" fill="currentColor" opacity=".7"/>
-          <line x1="12" y1="32" x2="28" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/>
+          <rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
+          <rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
         </svg>
       </div>
       <span class="home-icon-lbl">영상 스트리밍</span>
     </div>
-    <!-- 3. 영상등록 분석 (AI 텍스트) -->
+    <!-- 3. 영상등록 분석 (보라, AI) -->
     <div class="home-icon-cell" onclick="openAnalysis()">
       <div class="home-icon-box" id="hi3">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="6" y="8" width="28" height="24" rx="4"/>
-          <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor" stroke="none" font-family="sans-serif">AI</text>
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/>
+          <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text>
         </svg>
       </div>
       <span class="home-icon-lbl">영상등록 분석</span>
     </div>
-    <!-- 4. 내페이지 -->
+    <!-- 4. 내페이지 (초록) -->
     <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
       <div class="home-icon-box" id="hi4">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="15" r="6" stroke="currentColor" stroke-width="2"/>
-          <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/>
+          <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
       <span class="home-icon-lbl">내페이지</span>
     </div>
-    <!-- 5. 음성분석 -->
+    <!-- 5. 음성분석 (파랑) -->
     <div class="home-icon-cell" onclick="openVoiceAnalysis()">
       <div class="home-icon-box" id="hi5">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="16" y="6" width="8" height="16" rx="4" stroke="currentColor" stroke-width="2"/>
-          <path d="M10 20a10 10 0 0020 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="20" y1="30" x2="20" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="15" y1="35" x2="25" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <rect x="16" y="6" width="8" height="16" rx="4" stroke="#0078C8" stroke-width="2"/>
+          <path d="M10 20a10 10 0 0020 0" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="30" x2="20" y2="35" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="15" y1="35" x2="25" y2="35" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
       <span class="home-icon-lbl">음성분석</span>
     </div>
-    <!-- 6. 학습링크이동 -->
+    <!-- 6. 학습링크이동 (초록, 다운로드→완료) -->
     <div class="home-icon-cell" onclick="openLearningLinks()">
-      <div class="home-icon-box">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6H8a2 2 0 00-2 2v24a2 2 0 002 2h24a2 2 0 002-2V22"/>
-          <path d="M24 4h12v12"/>
-          <line x1="16" y1="24" x2="36" y2="4"/>
+      <div class="home-icon-box hi-anim" id="hi6">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <path d="M8 30v3a2 2 0 002 2h20a2 2 0 002-2v-3" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/>
+          <g class="si-arrow"><line x1="20" y1="8" x2="20" y2="26" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/><polyline points="13,20 20,27 27,20" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+          <path d="M13 22l6 6 9-11" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-done"/>
         </svg>
       </div>
       <span class="home-icon-lbl">학습링크이동</span>
     </div>
-    <!-- 7. 체크리스트/평가안 (메뉴판 스타일) -->
+    <!-- 7. 체크리스트/평가안 (주황) -->
     <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
       <div class="home-icon-box" id="hi7">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="8" y="4" width="24" height="32" rx="2"/>
           <line x1="14" y1="12" x2="14" y2="12.01" stroke-width="3"/>
           <line x1="19" y1="12" x2="28" y2="12"/>
@@ -657,13 +656,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <span class="home-icon-lbl">체크리스트<br>평가안</span>
     </div>
-    <!-- 8. 관리자 -->
+    <!-- 8. 관리자 (주황, 벨→알림) -->
     <div class="home-icon-cell" onclick="openAdmin()">
-      <div class="home-icon-box" id="hi8">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="9" y="18" width="22" height="16" rx="3" stroke="currentColor" stroke-width="2"/>
-          <path d="M14 18V13a6 6 0 0112 0v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="si-lock-shackle"/>
-          <circle cx="20" cy="26" r="2" fill="currentColor" class="si-lock-dot"/>
+      <div class="home-icon-box hi-anim" id="hi8">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" class="si-bell">
+          <path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/>
         </svg>
       </div>
       <span class="home-icon-lbl">관리자</span>
@@ -1885,7 +1884,12 @@ function initHome(){
   // home icon animations
   startHomeIconAnimations();
 }
-function startHomeIconAnimations(){}
+function startHomeIconAnimations(){
+  setInterval(()=>{const e=el('hi1');if(e)e.classList.toggle('done');},2200);
+  setInterval(()=>{const e=el('hi2');if(e)e.classList.toggle('playing');},2400);
+  setInterval(()=>{const e=el('hi6');if(e)e.classList.toggle('downloaded');},2600);
+  setInterval(()=>{const e=el('hi8');if(e)e.classList.toggle('notified');},2800);
+}
 
 /* ════════════════════════════════
    STREAMING PAGE
