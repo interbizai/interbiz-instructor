@@ -944,18 +944,22 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </header>
 <main style="max-width:700px">
   <div class="sec-lbl">학습 링크 모음</div>
-  <p style="font-size:12px;color:var(--t3);margin-bottom:18px">자주 사용하는 학습 사이트를 등록하고 바로 이동하세요.</p>
+  <p style="font-size:12px;color:var(--t3);margin-bottom:18px">자주 사용하는 학습 사이트 바로가기</p>
 
-  <!-- 링크 목록 -->
+  <!-- 링크 목록 (카드 그리드) -->
   <div id="link-list" style="margin-bottom:18px"></div>
 
-  <!-- 링크 추가 -->
-  <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px">+ 새 링크 추가</div>
-    <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">
+  <!-- 관리자만 보이는 추가 영역 -->
+  <div id="link-admin-area" style="display:none;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">+ 새 링크 추가 (관리자 전용)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px">
       <div class="form-group" style="margin:0">
         <label class="form-lbl">이름</label>
-        <input type="text" class="form-input" id="link-name" placeholder="예: interbiz 교육포털">
+        <input type="text" class="form-input" id="link-name" placeholder="예: 교육포털">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">설명</label>
+        <input type="text" class="form-input" id="link-desc" placeholder="예: 교육 일정 확인">
       </div>
       <div class="form-group" style="margin:0">
         <label class="form-lbl">URL</label>
@@ -2363,34 +2367,45 @@ let vaStream=null,vaRecorder=null,vaChunks=[],vaTimerID=null,vaSec=0,vaAudioCtx=
    LEARNING LINKS
 ════════════════════════════════ */
 function openLearningLinks(){
+  // 관리자만 추가 영역 보이기
+  const adminArea=el('link-admin-area');
+  if(adminArea) adminArea.style.display=(CU&&CU.isAdmin)?'':'none';
   renderLinks();
   showPage('page-links');
 }
 function renderLinks(){
   const links=JSON.parse(localStorage.getItem('ib_links')||'[]');
+  const isAdmin=CU&&CU.isAdmin;
+  const colors=['#0078C8','#E21E26','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
   if(!links.length){
-    el('link-list').innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">등록된 링크가 없습니다. 아래에서 추가하세요.</div>';
+    el('link-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:12px">등록된 링크가 없습니다.</div>';
     return;
   }
-  el('link-list').innerHTML=links.map((lk,i)=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r1);background:#fff;margin-bottom:8px;transition:box-shadow .15s;cursor:pointer" onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.06)'" onmouseout="this.style.boxShadow=''">
-      <div style="width:40px;height:40px;border-radius:10px;background:rgba(0,120,200,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="window.open('${lk.url}','_blank')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  el('link-list').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">${links.map((lk,i)=>{
+    const c=colors[i%colors.length];
+    const initial=lk.name[0]||'?';
+    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="window.open('${lk.url}','_blank')">
+      <div style="height:80px;background:linear-gradient(135deg,${c},${c}cc);display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </div>
+        ${isAdmin?`<button style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="event.stopPropagation();removeLearningLink(${i})">✕</button>`:''}
       </div>
-      <div style="flex:1;cursor:pointer" onclick="window.open('${lk.url}','_blank')">
-        <div style="font-size:13px;font-weight:700">${lk.name}</div>
-        <div style="font-size:11px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">${lk.url}</div>
+      <div style="padding:12px">
+        <div style="font-size:13px;font-weight:800;margin-bottom:2px">${lk.name}</div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">${lk.desc||''}</div>
+        <div style="font-size:10px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.url}</div>
       </div>
-      <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:4px" onclick="event.stopPropagation();removeLearningLink(${i})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('')}</div>`;
 }
 function addLearningLink(){
-  const name=v('link-name').trim(), url=v('link-url').trim();
+  const name=v('link-name').trim(), url=v('link-url').trim(), desc=v('link-desc')?.trim()||'';
   if(!name||!url){alert('이름과 URL을 입력하세요.');return;}
   const links=JSON.parse(localStorage.getItem('ib_links')||'[]');
-  links.push({name,url:url.startsWith('http')?url:'https://'+url});
+  links.push({name,desc,url:url.startsWith('http')?url:'https://'+url});
   localStorage.setItem('ib_links',JSON.stringify(links));
-  el('link-name').value='';el('link-url').value='';
+  el('link-name').value='';el('link-url').value='';if(el('link-desc'))el('link-desc').value='';
   renderLinks();
 }
 function removeLearningLink(idx){
