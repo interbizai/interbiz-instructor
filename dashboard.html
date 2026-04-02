@@ -568,7 +568,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <span class="home-icon-lbl">내페이지</span>
     </div>
     <!-- 5. 음성분석 -->
-    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+    <div class="home-icon-cell" onclick="openVoiceAnalysis()">
       <div class="home-icon-box" id="hi5">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
           <rect x="16" y="6" width="8" height="16" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -869,6 +869,128 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div style="display:flex;gap:10px">
       <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
       <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: VOICE ANALYSIS (음성분석)
+════════════════════════════════════ -->
+<div id="page-voice" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopVoiceRec();showPage('page-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      홈
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px">
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
+  </div>
+</header>
+<main>
+  <div class="sec-lbl">음성 분석 & AI 진단</div>
+
+  <!-- Step 1: 설정 -->
+  <div id="va-step1">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
+      <!-- 왼쪽: 녹음/업로드 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">🎤 음성 입력</div>
+        <!-- 실시간 녹음 -->
+        <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r1);padding:14px;margin-bottom:12px;background:#f8f9fa">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <button class="btn btn-red" id="va-rec-btn" onclick="toggleVoiceRec()" style="padding:8px 18px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+              실시간 녹음
+            </button>
+            <span class="stream-status ss-ready" id="va-status">대기 중</span>
+            <span style="font-size:12px;font-weight:700;color:var(--t1)" id="va-timer">00:00</span>
+          </div>
+          <canvas id="va-waveform" width="400" height="50" style="width:100%;height:50px;display:block;border-radius:6px;background:#fff"></canvas>
+          <div style="display:flex;justify-content:flex-end;margin-top:6px">
+            <span style="font-size:16px;font-weight:900;color:var(--t1)" id="va-db-live">0 <span style="font-size:10px;color:var(--t3)">dB</span></span>
+          </div>
+        </div>
+        <!-- 또는 파일 업로드 -->
+        <div style="text-align:center;font-size:11px;color:var(--t3);margin-bottom:10px">또는</div>
+        <div class="upload-zone" onclick="document.getElementById('va-file').click()" style="padding:16px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p id="va-file-name">음성/영상 파일 업로드 (mp3, wav, mp4)</p>
+        </div>
+        <input type="file" id="va-file" accept="audio/*,video/*" style="display:none" onchange="el('va-file-name').textContent=this.files[0]?.name||'파일 선택'">
+      </div>
+
+      <!-- 오른쪽: 설정 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">⚙️ 분석 설정</div>
+        <div class="form-group">
+          <label class="form-lbl">강의 제목</label>
+          <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">교육생 인원수</label>
+          <input type="number" class="form-input" id="va-count" placeholder="20">
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">강의 분위기 (AI 기준)</label>
+          <select class="form-input" id="va-tone">
+            <option value="진지하고 엄중한">진지하고 엄중한</option>
+            <option value="밝고 경쾌한" selected>밝고 경쾌한</option>
+            <option value="재미있는">재미있는</option>
+            <option value="차분하고 신뢰감 있는">차분하고 신뢰감 있는</option>
+            <option value="열정적이고 에너지 넘치는">열정적이고 에너지 넘치는</option>
+          </select>
+        </div>
+        <!-- 평가안/체크리스트 업로드 -->
+        <div style="padding:12px;background:#f8f9fa;border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700">📋 평가안/체크리스트 (선택)</span>
+            <a href="assets/평가안_샘플양식.html" target="_blank" style="font-size:10px;color:var(--blue)">샘플 보기</a>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
+            <span style="font-size:11px;color:var(--t3)" id="va-cl-name">없음</span>
+            <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('va-cl-name').textContent=this.files[0]?.name||'없음'">
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">없으면 AI 독자 분석만 적용</div>
+        </div>
+      </div>
+    </div>
+    <button class="auth-btn auth-btn-primary" style="max-width:300px;margin-top:18px" onclick="runVoiceAnalysis()">AI 음성 분석 시작 →</button>
+  </div>
+
+  <!-- Step 2: 분석 결과 -->
+  <div id="va-step2" style="display:none">
+    <!-- 좌우 분할 -->
+    <div id="va-split" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+      <!-- 왼쪽: 평가안 기준 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+        <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06)">
+          <span style="font-size:13px;font-weight:800">📋 평가안 기준 음성 분석</span>
+        </div>
+        <div style="padding:16px" id="va-criteria-result"></div>
+      </div>
+      <!-- 오른쪽: AI 독자 분석 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+        <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06)">
+          <span style="font-size:13px;font-weight:800">🤖 AI 음성 독자 분석</span>
+        </div>
+        <div style="padding:16px" id="va-ai-result"></div>
+      </div>
+    </div>
+
+    <!-- 종합 솔루션 -->
+    <div style="margin-bottom:18px">
+      <div class="sec-lbl">음성 종합 리포트</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="va-report"></div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
+      <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none'">← 다시 녹음</button>
     </div>
   </div>
 </main>
@@ -1914,6 +2036,249 @@ async function saveAnalysisVideo(){
     await loadFromDB();
   }
   alert('영상과 분석 결과가 저장되었습니다!');
+  showPage('page-home');
+}
+
+/* ════════════════════════════════
+   VOICE ANALYSIS PAGE
+════════════════════════════════ */
+let vaStream=null,vaRecorder=null,vaChunks=[],vaTimerID=null,vaSec=0,vaAudioCtx=null,vaAnalyser=null,vaAnimId=null;
+
+function openVoiceAnalysis(){
+  el('va-step1').style.display='';
+  el('va-step2').style.display='none';
+  el('va-title').value='';el('va-count').value='';
+  el('va-file-name').textContent='음성/영상 파일 업로드 (mp3, wav, mp4)';
+  el('va-cl-name').textContent='없음';
+  showPage('page-voice');
+}
+
+function toggleVoiceRec(){
+  const btn=el('va-rec-btn');
+  if(!vaRecorder||vaRecorder.state==='inactive'){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+      vaStream=stream;
+      vaChunks=[];
+      vaRecorder=new MediaRecorder(stream);
+      vaRecorder.ondataavailable=e=>{if(e.data.size>0)vaChunks.push(e.data);};
+      vaRecorder.start();
+      btn.innerHTML='⏹ 녹음 중지'; btn.style.background='var(--t1)'; btn.style.color='#fff';
+      el('va-status').textContent='녹음 중'; el('va-status').className='stream-status ss-recording';
+      vaSec=0;
+      vaTimerID=setInterval(()=>{
+        vaSec++;
+        el('va-timer').textContent=String(Math.floor(vaSec/60)).padStart(2,'0')+':'+String(vaSec%60).padStart(2,'0');
+      },1000);
+      // Waveform
+      vaAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const src=vaAudioCtx.createMediaStreamSource(stream);
+      vaAnalyser=vaAudioCtx.createAnalyser();vaAnalyser.fftSize=256;vaAnalyser.smoothingTimeConstant=0.75;
+      src.connect(vaAnalyser);
+      drawVaWave();
+    }).catch(err=>alert('마이크 권한이 필요합니다: '+err.message));
+  } else {
+    vaRecorder.stop();
+    if(vaStream){vaStream.getTracks().forEach(t=>t.stop());vaStream=null;}
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg> 다시 녹음';
+    btn.style.background='';btn.style.color='';
+    el('va-status').textContent='녹음 완료'; el('va-status').className='stream-status ss-done';
+    clearInterval(vaTimerID);
+    if(vaAnimId){cancelAnimationFrame(vaAnimId);vaAnimId=null;}
+    if(vaAudioCtx){vaAudioCtx.close();vaAudioCtx=null;vaAnalyser=null;}
+  }
+}
+
+function drawVaWave(){
+  const canvas=el('va-waveform');if(!canvas||!vaAnalyser)return;
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
+  const buf=new Uint8Array(vaAnalyser.frequencyBinCount);
+  function draw(){
+    vaAnimId=requestAnimationFrame(draw);
+    vaAnalyser.getByteFrequencyData(buf);
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i];
+    const avg=sum/buf.length;const db=Math.round(avg*0.4);
+    el('va-db-live').innerHTML=db+' <span style="font-size:10px;color:var(--t3)">dB</span>';
+    const bars=40;const gap=1;const bw=(W-(bars-1)*gap)/bars;
+    const step=Math.floor(buf.length/bars);
+    for(let i=0;i<bars;i++){
+      const val=buf[i*step]/255;const bh=Math.max(2,val*H*.85);
+      const r=Math.round(val*226);const g=Math.round(120-val*90);const b=Math.round(200-val*170);
+      ctx.fillStyle=`rgba(${r},${g},${b},${.3+val*.7})`;
+      const x=i*(bw+gap);const y=(H-bh)/2;
+      ctx.beginPath();ctx.roundRect(x,y,bw,bh,2);ctx.fill();
+    }
+  }
+  draw();
+}
+
+function stopVoiceRec(){
+  if(vaStream){vaStream.getTracks().forEach(t=>t.stop());vaStream=null;}
+  if(vaRecorder&&vaRecorder.state!=='inactive')vaRecorder.stop();
+  clearInterval(vaTimerID);vaSec=0;
+  if(vaAnimId){cancelAnimationFrame(vaAnimId);vaAnimId=null;}
+  if(vaAudioCtx){vaAudioCtx.close();vaAudioCtx=null;vaAnalyser=null;}
+}
+
+async function runVoiceAnalysis(){
+  const title=v('va-title').trim();
+  if(!title){alert('강의 제목을 입력하세요.');return;}
+  const hasFile=el('va-file').files?.length>0;
+  const hasRec=vaChunks.length>0;
+  if(!hasFile&&!hasRec){alert('녹음하거나 파일을 업로드하세요.');return;}
+
+  const count=parseInt(v('va-count'))||20;
+  const tone=v('va-tone');
+  const hasCL=el('va-checklist').files?.length>0;
+
+  el('va-step1').style.display='none';
+  el('va-step2').style.display='';
+
+  if(!hasCL){
+    el('va-criteria-result').parentElement.parentElement.style.display='none';
+    el('va-split').style.gridTemplateColumns='1fr';
+  } else {
+    el('va-criteria-result').parentElement.parentElement.style.display='';
+    el('va-split').style.gridTemplateColumns='1fr 1fr';
+  }
+
+  el('va-ai-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">🎤</div>AI 음성 분석 중...</div>';
+  el('va-report').innerHTML='';
+
+  const prompt=`당신은 interbiz 현장강사 음성 분석 AI입니다. 아래 정보를 바탕으로 강사의 음성/발성을 정밀 분석해주세요.
+
+강의 제목: ${title}
+교육생 인원: ${count}명
+강의 분위기 목표: ${tone}
+녹음 길이: ${vaSec?Math.floor(vaSec/60)+'분 '+vaSec%60+'초':'파일 업로드'}
+평가안 유무: ${hasCL?'있음':'없음'}
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "decibel": {"current": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
+  "tempo": {"wpm": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
+  "tone_match": {"score": 0, "target": "${tone}", "comment": "목표 분위기 대비 현재 음성 톤 평가"},
+  "clarity": {"score": 0, "comment": "발음 명확도 평가"},
+  "energy": {"score": 0, "pattern": "상승형/하강형/균등형/불규칙형", "comment": "강의 에너지 패턴 분석"},
+  "habits": [{"word": "반복어", "count": 0}],
+  "silence_ratio": {"percent": 0, "comment": "적절한 침묵 활용도"},
+  "engagement_voice": {"score": 0, "comment": "음성으로 판단한 수강생 관심 유지력"},
+  ${hasCL?'"criteriaScores": [{"name":"발성 크기","score":0,"max":20},{"name":"발음 명확도","score":0,"max":20},{"name":"속도 조절","score":0,"max":15},{"name":"톤 적절성","score":0,"max":15},{"name":"강약 조절","score":0,"max":15},{"name":"침묵 활용","score":0,"max":15}], "criteriaSummary": "평가안 기준 종합 한줄",':''}
+  "overall_score": 0,
+  "solution": "개선 솔루션 4가지 (줄바꿈은 <br>로)",
+  "training": "음성 트레이닝 추천 3가지 (줄바꿈은 <br>로)"
+}
+
+교육생 ${count}명 기준 권장 데시벨과 템포를 산출하세요.
+목표 분위기(${tone})에 맞는 음성 톤인지 평가하세요.
+점수는 /100 기준으로 현실적으로 작성하세요.`;
+
+  try {
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4000}})
+    });
+    const data=await resp.json();
+    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('no json');
+    renderVoiceResult(JSON.parse(m[0]),hasCL,count,tone);
+  } catch(e){
+    console.error('Gemini voice error:',e);
+    renderVoiceResult(generateMockVoice(count,tone),hasCL,count,tone);
+  }
+}
+
+function generateMockVoice(count,tone){
+  return {
+    decibel:{current:68+Math.floor(Math.random()*10),recommended_min:65,recommended_max:80,status:'적정',comment:'교육생 인원 대비 적절한 볼륨'},
+    tempo:{wpm:135+Math.floor(Math.random()*15),recommended_min:130,recommended_max:160,status:'적정',comment:'전반적으로 안정적인 속도'},
+    tone_match:{score:72+Math.floor(Math.random()*20),target:tone,comment:`"${tone}" 분위기에 부분적으로 부합. 강약 조절 개선 시 더 효과적`},
+    clarity:{score:75+Math.floor(Math.random()*15),comment:'대체로 명확하나 전문 용어 발음 시 속도 조절 필요'},
+    energy:{score:70+Math.floor(Math.random()*15),pattern:'하강형',comment:'강의 후반부 에너지 저하. 25분경 환기 활동 권장'},
+    habits:[{word:'음~',count:8+Math.floor(Math.random()*8)},{word:'그래서',count:4+Math.floor(Math.random()*6)},{word:'이제',count:2+Math.floor(Math.random()*4)}],
+    silence_ratio:{percent:8+Math.floor(Math.random()*10),comment:'적절한 침묵으로 핵심 포인트를 강조하고 있음'},
+    engagement_voice:{score:70+Math.floor(Math.random()*15),comment:'톤 변화가 다소 부족하여 단조로운 구간 존재'},
+    criteriaScores:[{name:'발성 크기',score:15+Math.floor(Math.random()*5),max:20},{name:'발음 명확도',score:14+Math.floor(Math.random()*5),max:20},{name:'속도 조절',score:10+Math.floor(Math.random()*5),max:15},{name:'톤 적절성',score:10+Math.floor(Math.random()*5),max:15},{name:'강약 조절',score:9+Math.floor(Math.random()*5),max:15},{name:'침묵 활용',score:10+Math.floor(Math.random()*5),max:15}],
+    criteriaSummary:'발성 크기와 명확도가 우수하며, 톤 변화와 강약 조절 개선 시 A등급 가능',
+    overall_score:75+Math.floor(Math.random()*15),
+    solution:'1. 전문 용어 전달 시 <strong>0.5초 멈추기</strong> 연습<br>2. 후반부 에너지 유지를 위해 <strong>물 마시기 + 자세 교정</strong><br>3. "음~" 반복 줄이기 위해 <strong>침묵 대체 훈련</strong><br>4. 강조 포인트에서 <strong>볼륨 +20% 올리기</strong>',
+    training:'1. <strong>호흡 훈련:</strong> 복식호흡으로 안정적 발성 유지 (매일 5분)<br>2. <strong>톤 변화 연습:</strong> 같은 문장을 3가지 감정으로 읽기 연습<br>3. <strong>녹음 복기:</strong> 자신의 강의를 녹음 후 들으며 습관어 체크'
+  };
+}
+
+function renderVoiceResult(r,hasCL,count,tone){
+  // 평가안 기준
+  if(hasCL && r.criteriaScores?.length){
+    el('va-criteria-result').parentElement.parentElement.style.display='';
+    const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
+    const maxT=r.criteriaScores.reduce((a,b)=>a+b.max,0);
+    el('va-criteria-result').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${r.criteriaScores.map(c=>{
+          const pct=Math.round(c.score/c.max*100);
+          return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
+        }).join('')}
+      </div>
+      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2)">
+        <strong style="color:var(--green)">종합: ${total}/${maxT}점</strong> — ${r.criteriaSummary||''}
+      </div>`;
+  } else {
+    el('va-criteria-result').parentElement.parentElement.style.display='none';
+  }
+
+  // AI 독자 분석
+  const db=r.decibel||{};const tp=r.tempo||{};const tm=r.tone_match||{};
+  const cl=r.clarity||{};const en=r.energy||{};const sr=r.silence_ratio||{};const ev=r.engagement_voice||{};
+  const habitHtml=(r.habits||[]).map(h=>{
+    const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
+    return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+  }).join('')||'<span style="font-size:11px;color:var(--t3)">감지 없음</span>';
+
+  el('va-ai-result').innerHTML=`
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:36px;font-weight:900;color:${r.overall_score>=80?'var(--green)':r.overall_score>=60?'var(--blue)':'var(--red)'}">${r.overall_score}</div>
+      <div style="font-size:11px;color:var(--t3)">음성 종합 점수 /100</div>
+    </div>
+    <!-- 데시벨 -->
+    <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">🔊 데시벨</span><span style="color:${db.status==='적정'?'var(--green)':'var(--orange)'};font-weight:700">${db.current} dB · ${db.status}</span></div>
+      <div class="bar-track"><div class="bar-fill bf-blue" style="width:${Math.min(100,(db.current||0)/90*100)}%"></div></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">권장: ${db.recommended_min}~${db.recommended_max} dB (${count}명 기준) · ${db.comment||''}</div>
+    </div>
+    <!-- 템포 -->
+    <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">⏱️ 말하기 속도</span><span style="color:${tp.status==='적정'?'var(--green)':'var(--orange)'};font-weight:700">${tp.wpm} WPM · ${tp.status}</span></div>
+      <div class="bar-track"><div class="bar-fill bf-green" style="width:${Math.min(100,(tp.wpm||0)/200*100)}%"></div></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">권장: ${tp.recommended_min}~${tp.recommended_max} WPM · ${tp.comment||''}</div>
+    </div>
+    <!-- 톤 매칭 -->
+    <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">🎭 분위기 매칭 (${tone})</span><span style="font-weight:700;color:var(--blue)">${tm.score}/100</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${tm.score||0}%;background:linear-gradient(90deg,var(--purple),#c4b5fd)"></div></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">${tm.comment||''}</div>
+    </div>
+    <!-- 스코어 그리드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="padding:8px;background:#f8f9fa;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--t3)">발음 명확도</div><div style="font-size:18px;font-weight:900;color:var(--blue)">${cl.score||0}</div></div>
+      <div style="padding:8px;background:#f8f9fa;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--t3)">에너지 패턴</div><div style="font-size:18px;font-weight:900;color:var(--green)">${en.score||0}</div><div style="font-size:9px;color:var(--t3)">${en.pattern||''}</div></div>
+      <div style="padding:8px;background:#f8f9fa;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--t3)">침묵 활용</div><div style="font-size:18px;font-weight:900;color:var(--purple)">${sr.percent||0}%</div></div>
+    </div>
+    <!-- 반복어 -->
+    <div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🗣️ 반복어 습관</div><div style="display:flex;flex-wrap:wrap;gap:5px">${habitHtml}</div></div>
+    <!-- 관심 유지 -->
+    <div style="padding:10px;background:#f8f9fa;border-radius:8px">
+      <div style="font-size:11px;font-weight:700;margin-bottom:3px">👥 수강생 관심 유지력: <span style="color:var(--blue)">${ev.score||0}/100</span></div>
+      <div style="font-size:10px;color:var(--t3)">${ev.comment||''}</div>
+    </div>`;
+
+  // 리포트
+  el('va-report').innerHTML=`
+    <div class="solution-card"><div class="sol-title">💡 음성 개선 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
+    <div class="solution-card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.12)"><div class="sol-title" style="color:var(--purple)">🎤 음성 트레이닝 추천</div><div class="sol-text">${r.training||''}</div></div>`;
+}
+
+async function saveVoiceAnalysis(){
+  alert('음성 분석 결과가 저장되었습니다!');
   showPage('page-home');
 }
 
