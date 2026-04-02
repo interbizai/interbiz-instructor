@@ -1046,7 +1046,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
     <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
     <button class="tab-btn" onclick="switchTab('PDF',this)">PDF 내보내기</button>
-    <button class="tab-btn" onclick="switchTab('API',this)">API 설정</button>
   </div>
 
   <!-- 강사 관리 -->
@@ -1112,18 +1111,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
   </div>
 
-  <!-- API 설정 -->
-  <div class="tab-pane" id="tab-API">
-    <div class="acc-wrap neu" style="padding:20px;max-width:500px">
-      <div class="sec-lbl">AI API 키 설정</div>
-      <div class="form-group">
-        <label class="form-lbl">Claude API Key</label>
-        <input type="password" class="form-input" id="api-claude-key" placeholder="sk-ant-..." value="">
-        <p style="font-size:10px;color:var(--t3);margin-top:4px">영상등록 분석에서 AI 자동 평가에 사용됩니다. 없으면 자체 생성 모드로 동작합니다.</p>
-      </div>
-      <button class="btn btn-blue" onclick="saveApiKeys()">저장</button>
-    </div>
-  </div>
 </main>
 </div>
 
@@ -1662,14 +1649,8 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
 /* ════════════════════════════════
    ANALYSIS PAGE (영상등록 분석)
 ════════════════════════════════ */
-// API Key 관리
-window._claudeKey=localStorage.getItem('ib_claude_key')||'';
-function saveApiKeys(){
-  const key=v('api-claude-key').trim();
-  window._claudeKey=key;
-  localStorage.setItem('ib_claude_key',key);
-  alert('API 키가 저장되었습니다.'+(key?'':'(비어있음 — 자체 생성 모드)'));
-}
+// Gemini API Key (코드에 직접 설정)
+const GEMINI_KEY='AIzaSyCaE_-2YbUPd0Fa_6GsigMnj9KtpM7omg8';
 
 function openAnalysis(){
   el('an-step1').style.display='';
@@ -1770,27 +1751,24 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
 반복어는 한국어 강의에서 흔한 것 위주로 2~5개 감지하세요.`;
 
   try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':window._claudeKey||'',
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4000,
-        messages:[{role:'user',content:prompt}]
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{temperature:0.7,maxOutputTokens:4000}
       })
     });
     const data=await resp.json();
-    const txt=data.content?.[0]?.text||'';
-    const json=JSON.parse(txt);
+    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    // JSON 블록 추출 (```json ... ``` 제거)
+    const jsonMatch=txt.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('JSON not found');
+    const json=JSON.parse(jsonMatch[0]);
     renderAnalysisResult(json,hasChecklist,studentCount);
   } catch(e){
-    console.error('Claude API error:',e);
-    // API 키 없거나 에러 시 → 자체 생성 (Mock)
+    console.error('Gemini API error:',e);
+    // API 에러 시 → 자체 생성 (Mock)
     renderAnalysisResult(generateMockResult(studentCount),hasChecklist,studentCount);
   }
 }
@@ -2800,9 +2778,6 @@ async function openRegisterVideo(userId){
    ADMIN PANEL
 ════════════════════════════════ */
 function renderAdmin(){
-  // API key
-  const apiKeyEl=el('api-claude-key');
-  if(apiKeyEl) apiKeyEl.value=window._claudeKey||'';
   // User table
   el('admin-user-tbody').innerHTML=D.users.map(u=>{
     const latestScore=u.score||'—';
