@@ -829,44 +829,46 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Step 2: 분석 결과 -->
   <div id="an-step2" style="display:none">
     <!-- 영상 플레이어 -->
-    <div style="max-width:900px;margin-bottom:18px">
+    <div style="margin-bottom:18px">
       <div class="video-player" id="an-player" style="border-radius:var(--r2);border:1px solid rgba(0,0,0,.08)"></div>
     </div>
-    <!-- 이원화 탭 -->
-    <div style="max-width:900px">
-      <div class="dual-tabs" style="margin-bottom:0">
-        <button class="dual-tab active" onclick="switchAnalysisTab('an-tab-criteria',this)">📋 평가안 기준 분석</button>
-        <button class="dual-tab" onclick="switchAnalysisTab('an-tab-ai',this)">🤖 AI 독자 분석</button>
-      </div>
 
-      <!-- 탭1: 평가안 기준 -->
-      <div id="an-tab-criteria" class="dual-pane active" style="border:1px solid rgba(0,0,0,.06);border-top:none;border-radius:0 0 var(--r1) var(--r1);padding:18px;background:#fff">
-        <div id="an-criteria-result"></div>
-      </div>
-      <!-- 탭2: AI 독자 -->
-      <div id="an-tab-ai" class="dual-pane" style="border:1px solid rgba(0,0,0,.06);border-top:none;border-radius:0 0 var(--r1) var(--r1);padding:18px;background:#fff">
-        <div id="an-ai-result"></div>
-      </div>
-
-      <!-- 타임스탬프 피드 -->
-      <div style="margin-top:18px">
-        <div class="sec-lbl">타임스탬프 피드</div>
-        <div class="acc-wrap neu" style="overflow:hidden">
-          <div id="an-ts-feed"></div>
+    <!-- 좌우 분할: 평가안 기준 | AI 독자 분석 -->
+    <div id="an-split" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+      <!-- 왼쪽: 평가안 기준 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+        <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:6px">
+          <span style="font-size:13px;font-weight:800">📋 평가안 기준 분석</span>
         </div>
+        <div style="padding:16px" id="an-criteria-result"></div>
       </div>
+      <!-- 오른쪽: AI 독자 분석 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+        <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:6px">
+          <span style="font-size:13px;font-weight:800">🤖 AI 독자 분석</span>
+        </div>
+        <div style="padding:16px" id="an-ai-result"></div>
+      </div>
+    </div>
 
-      <!-- 종합 리포트 -->
-      <div style="margin-top:18px">
-        <div class="sec-lbl">종합 리포트</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="an-report"></div>
+    <!-- 타임스탬프 피드 (클릭하면 영상 시간 이동) -->
+    <div style="margin-bottom:18px">
+      <div class="sec-lbl">타임스탬프 피드</div>
+      <div class="acc-wrap neu" style="overflow:hidden;max-height:400px;overflow-y:auto">
+        <div id="an-ts-feed"></div>
       </div>
+    </div>
 
-      <!-- 저장 -->
-      <div style="margin-top:18px;display:flex;gap:10px">
-        <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
-        <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
-      </div>
+    <!-- 종합 리포트 -->
+    <div style="margin-bottom:18px">
+      <div class="sec-lbl">종합 리포트</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="an-report"></div>
+    </div>
+
+    <!-- 저장 -->
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
+      <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
     </div>
   </div>
 </main>
@@ -1672,17 +1674,27 @@ function runAnalysis(){
   if(!yt&&!file){ alert('YouTube 링크 또는 영상 파일을 등록하세요.'); return; }
 
   // 영상 플레이어 세팅
+  window._anYtId=null;
   if(yt){
     const m=yt.match(/[?&]v=([^&]+)/);
-    if(m) el('an-player').innerHTML=`<iframe src="https://www.youtube.com/embed/${m[1]}" allowfullscreen style="width:100%;height:100%;border:none;border-radius:var(--r2)"></iframe>`;
+    if(m){
+      window._anYtId=m[1];
+      el('an-player').innerHTML=`<iframe id="an-yt-iframe" src="https://www.youtube.com/embed/${m[1]}?enablejsapi=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none;border-radius:var(--r2)"></iframe>`;
+    }
   } else if(file){
-    el('an-player').innerHTML=`<video controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${URL.createObjectURL(file)}"></video>`;
+    el('an-player').innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${URL.createObjectURL(file)}"></video>`;
   }
 
   const hasChecklist=el('an-checklist').files?.length>0;
   const count=parseInt(v('an-count'))||20;
 
-  // Claude AI 분석 (현재 Mock — 나중에 Gemini 연동)
+  // 평가안 없으면 AI가 전체 화면 사용
+  if(!hasChecklist){
+    el('an-split').style.gridTemplateColumns='1fr';
+  } else {
+    el('an-split').style.gridTemplateColumns='1fr 1fr';
+  }
+
   generateAIAnalysis(title,count,hasChecklist);
 
   el('an-step1').style.display='none';
@@ -1707,11 +1719,8 @@ function generateAIAnalysis(title,studentCount,hasChecklist){
         <strong style="color:var(--green)">평가안 기준 종합:</strong> 총 85/100점 (A등급). 발성 및 전달력이 우수하며, 판서 활용도를 높이면 90점 이상 가능합니다.
       </div>`;
   } else {
-    el('an-criteria-result').innerHTML=`
-      <div style="padding:16px;background:rgba(245,158,11,.06);border-radius:8px;text-align:center">
-        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:4px">📋 평가안 미등록</div>
-        <div style="font-size:11px;color:var(--t3)">평가안이 업로드되지 않아 이 탭은 비활성 상태입니다.<br>오른쪽 "AI 독자 분석" 탭에서 결과를 확인하세요.</div>
-      </div>`;
+    // 평가안 없으면 왼쪽 패널 숨기고 AI가 전체 사용
+    el('an-criteria-result').parentElement.parentElement.style.display='none';
   }
 
   // ─── AI 독자 분석 탭 ───
@@ -1772,8 +1781,8 @@ function generateAIAnalysis(title,studentCount,hasChecklist){
     {t:'42:30',type:'tip',text:'마무리에서 "오늘의 핵심 3가지"로 요약하면 만족도 대폭 향상',tags:['마무리','요약']},
   ];
   el('an-ts-feed').innerHTML=mockTs.map((ts,i)=>`
-    <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start">
-      <span style="font-size:11px;font-weight:800;color:var(--blue);cursor:pointer;white-space:nowrap;min-width:45px">${ts.t}</span>
+    <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''" onclick="seekToTime('${ts.t}')">
+      <span style="font-size:11px;font-weight:800;color:var(--blue);white-space:nowrap;min-width:45px">${ts.t}</span>
       <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
       <div style="flex:1">
         <div style="font-size:12px;color:var(--t2);line-height:1.6">${ts.text}</div>
@@ -1803,11 +1812,27 @@ function generateAIAnalysis(title,studentCount,hasChecklist){
     </div>`;
 }
 
+// 타임스탬프 클릭 → 영상 해당 시간으로 이동
+function seekToTime(timeStr){
+  const parts=timeStr.split(':');
+  const sec=parseInt(parts[0])*60+parseInt(parts[1]||0);
+  // 로컬 video 태그
+  const vid=document.getElementById('an-video-el');
+  if(vid){ vid.currentTime=sec; vid.play(); return; }
+  // YouTube iframe — postMessage로 제어
+  const iframe=document.getElementById('an-yt-iframe');
+  if(iframe && window._anYtId){
+    iframe.src=`https://www.youtube.com/embed/${window._anYtId}?enablejsapi=1&autoplay=1&start=${sec}`;
+  }
+}
+
 async function saveAnalysisVideo(){
-  if(!CU||!CU.id){ alert('로그인이 필요합니다.'); return; }
+  if(!CU){ alert('로그인이 필요합니다.'); return; }
+  // 관리자도 저장 가능 — user_id는 첫번째 유저 또는 null
+  const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
   const yt=v('an-youtube').trim();
   const result=await dbCreateVideo({
-    userId:CU.id, title:v('an-title'), youtube:yt,
+    userId:userId, title:v('an-title'), youtube:yt,
     date:new Date().toISOString().split('T')[0], duration:'—',
     studentCount:parseInt(v('an-count'))||0, status:'분석완료',
     channel:v('an-channel'), solution:'AI 분석 완료'
