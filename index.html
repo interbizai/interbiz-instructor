@@ -739,6 +739,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="sec-lbl">베스트 영상 하이라이트</div>
   <div class="top5-scroll" id="top5-scroll"></div>
 
+  <!-- 음성평가 하이라이트 -->
+  <div class="sec-lbl">음성평가 하이라이트</div>
+  <div class="top5-scroll" id="voice-highlight"></div>
+
   <!-- Lecturer Grid -->
   <div class="sec-lbl">강사 목록</div>
   <div class="lect-grid" id="lect-grid"></div>
@@ -814,10 +818,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:12px;font-weight:700">📋 평가안 업로드 (선택)</span>
-          <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용 · <a href="assets/평가안_샘플양식.html" target="_blank" style="color:var(--blue);text-decoration:underline">샘플 양식 보기</a></span>
+          <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 선택 (PDF/Excel)</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">📥 샘플 다운로드</button>
           <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
           <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
         </div>
@@ -952,6 +957,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--green)" onclick="downloadVoiceChecklistSample()">📥 샘플 다운</button>
             <span style="font-size:11px;color:var(--t3)" id="va-cl-name">없음</span>
             <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('va-cl-name').textContent=this.files[0]?.name||'없음'">
           </div>
@@ -1774,6 +1780,91 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
 // Gemini API Key (코드에 직접 설정)
 const GEMINI_KEY='AIzaSyCaE_-2YbUPd0Fa_6GsigMnj9KtpM7omg8';
 
+/* ════════════════════════════════
+   EXCEL SAMPLE DOWNLOAD
+════════════════════════════════ */
+function downloadChecklistSample(){
+  const rows=[
+    ['#','평가 항목','배점','평가 기준 설명','점수 (직접 입력)'],
+    [1,'발성 및 전달력',20,'목소리 크기, 속도, 발음의 명확성. 교육생 인원수 대비 적절한 볼륨 유지',''],
+    [2,'내용 전문성',25,'제품/서비스 지식의 정확성, 최신성, 깊이. 실제 사례 활용 여부',''],
+    [3,'판서 및 자료 활용',15,'칠판/화이트보드/PPT 활용의 적절성. 핵심 키워드 정리 여부',''],
+    [4,'수강생 상호작용',20,'질문 유도, 반응 확인, 참여 독려. 쌍방향 소통 여부',''],
+    [5,'시간 관리',10,'강의 목표 시간 준수. 도입-전개-정리 비율의 균형',''],
+    [6,'마무리 및 요약',10,'핵심 내용 재정리. 다음 강의 연결의 자연스러움',''],
+    [],
+    ['구분','체크 항목','체크 (O/X)','비고'],
+    ['오프닝','인사 및 자기소개가 자연스러운가?','',''],
+    ['오프닝','오늘 학습 목표를 명확히 제시했는가?','',''],
+    ['오프닝','수강생 주의를 끄는 기법을 사용했는가?','',''],
+    ['본론','핵심 내용을 논리적 순서로 전달했는가?','',''],
+    ['본론','실물 시연 또는 시각 자료를 활용했는가?','',''],
+    ['본론','10분 이내 간격으로 참여 유도가 있었는가?','',''],
+    ['본론','어려운 용어를 쉬운 말로 풀어 설명했는가?','',''],
+    ['마무리','핵심 내용 3가지를 요약 정리했는가?','',''],
+    ['마무리','Q&A 시간을 충분히 확보했는가?','',''],
+    ['마무리','다음 강의 예고 및 과제를 안내했는가?','',''],
+    [],
+    ['등급','점수 범위','의미'],
+    ['S','90점 이상','최우수 — 멘토 강사로 활용 가능'],
+    ['A','80~89점','우수 — 소규모 보완 후 독립 진행 가능'],
+    ['B','70~79점','양호 — 지속 코칭 권장'],
+    ['C','60~69점','보통 — 집중 개발 프로그램 필요'],
+    ['D','59점 이하','미흡 — 재교육 후 재평가 필요'],
+  ];
+  downloadExcel(rows,'interbiz_평가안_체크리스트_샘플.xlsx');
+}
+
+function downloadVoiceChecklistSample(){
+  const rows=[
+    ['#','음성 평가 항목','배점','평가 기준 설명','점수 (직접 입력)'],
+    [1,'발성 크기 (데시벨)',20,'교육생 인원수 대비 적절한 볼륨 유지. 앞줄/뒷줄 모두 들리는지',''],
+    [2,'발음 명확도',20,'전문 용어 발음이 명확한지. 지역 사투리나 뭉개짐 여부',''],
+    [3,'말하기 속도 (템포)',15,'너무 빠르지 않고 너무 느리지 않은 적절한 속도. 강조 구간 감속',''],
+    [4,'톤 적절성',15,'강의 분위기에 맞는 음색. 단조롭지 않은 톤 변화',''],
+    [5,'강약 조절',15,'중요 내용에서 볼륨 UP. 전환 시 의도적 변화',''],
+    [6,'침묵 활용',15,'핵심 포인트 전후 적절한 멈춤. 반복어 대신 침묵 사용',''],
+    [],
+    ['구분','체크 항목','체크 (O/X)','비고'],
+    ['발성','강의 시작부터 끝까지 볼륨이 일정한가?','',''],
+    ['발성','후반부에도 에너지가 유지되는가?','',''],
+    ['발음','전문 용어를 천천히 명확하게 발음하는가?','',''],
+    ['발음','숫자/스펙을 정확하게 전달하는가?','',''],
+    ['속도','핵심 포인트에서 의도적으로 느리게 말하는가?','',''],
+    ['속도','1분당 130~160단어 수준인가?','',''],
+    ['톤','질문할 때 톤이 올라가는가?','',''],
+    ['톤','강조할 때 톤이 변하는가?','',''],
+    ['습관','불필요한 반복어(음~, 그래서)가 적은가?','',''],
+    ['습관','적절한 곳에서 멈추는가?','',''],
+    [],
+    ['강의 분위기','목표 톤','설명'],
+    ['진지하고 엄중한','낮고 안정적인 톤','신뢰감, 무게감 전달'],
+    ['밝고 경쾌한','밝고 높은 톤','에너지, 친근감 전달'],
+    ['재미있는','변화 많은 톤','유머, 흥미 유발'],
+    ['차분하고 신뢰감 있는','중간 톤, 일정 속도','안정감, 전문성 전달'],
+    ['열정적이고 에너지 넘치는','높고 강한 톤','동기부여, 열정 전달'],
+  ];
+  downloadExcel(rows,'interbiz_음성평가_체크리스트_샘플.xlsx');
+}
+
+function downloadExcel(rows,filename){
+  // CSV → Excel 변환 (한글 지원을 위해 BOM 추가)
+  let csv='\uFEFF';
+  rows.forEach(row=>{
+    if(!row||!row.length){csv+='\n';return;}
+    csv+=row.map(cell=>{
+      const s=String(cell??'');
+      return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;
+    }).join(',')+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename.replace('.xlsx','.csv');
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function openAnalysis(){
   el('an-step1').style.display='';
   el('an-step2').style.display='none';
@@ -2278,8 +2369,48 @@ function renderVoiceResult(r,hasCL,count,tone){
 }
 
 async function saveVoiceAnalysis(){
+  const title=v('va-title').trim();
+  const score=el('va-ai-result')?.querySelector('div[style*="font-size:36px"]')?.textContent||'0';
+  const tone=v('va-tone');
+  const count=parseInt(v('va-count'))||0;
+  const userId=CU?.isAdmin?(D.users[0]?.id||null):CU?.id;
+  // localStorage에 음성평가 저장
+  const vaData=JSON.parse(localStorage.getItem('ib_voice_evals')||'[]');
+  vaData.push({
+    id:Date.now(), userId, userName:CU?.name||'관리자', title, score:parseInt(score)||0,
+    tone, studentCount:count, date:new Date().toISOString().split('T')[0]
+  });
+  localStorage.setItem('ib_voice_evals',JSON.stringify(vaData));
   alert('음성 분석 결과가 저장되었습니다!');
-  showPage('page-home');
+  showPage('page-home'); initHome();
+}
+
+function renderVoiceHighlight(){
+  const vaData=JSON.parse(localStorage.getItem('ib_voice_evals')||'[]');
+  if(!vaData.length){
+    el('voice-highlight').innerHTML='<div style="font-size:12px;color:var(--t3);padding:12px">저장된 음성 평가가 없습니다.</div>';
+    return;
+  }
+  const sorted=[...vaData].sort((a,b)=>b.score-a.score).slice(0,5);
+  const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
+  el('voice-highlight').innerHTML=sorted.map((v,i)=>`
+    <div class="top5-card neu" style="animation-delay:${i*.08}s;min-width:200px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="top5-rank t5r-${i+1}">${i+1}</span>
+        <div>
+          <div style="font-size:12px;font-weight:800">${v.title}</div>
+          <div style="font-size:10px;color:var(--t3)">${v.userName} · ${v.date}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px;font-weight:900;color:${v.score>=80?'var(--green)':v.score>=60?'var(--blue)':'var(--red)'}">${v.score}</span>
+        <span style="font-size:10px;color:var(--t3)">/100</span>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(0,0,0,.05);color:${toneColors[v.tone]||'var(--t3)'}">${v.tone}</span>
+        <span style="padding:2px 7px;border-radius:10px;font-size:9px;background:rgba(0,0,0,.04);color:var(--t3)">${v.studentCount}명</span>
+      </div>
+    </div>`).join('');
 }
 
 function openStreaming(){
@@ -2567,6 +2698,7 @@ function renderDashboard(){
   renderAIStrip(filtered);
   // top5 + grid
   renderTop5();
+  renderVoiceHighlight();
   renderGrid(filtered);
 }
 
