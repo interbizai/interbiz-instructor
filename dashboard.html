@@ -2104,54 +2104,48 @@ function generateMockResult(studentCount){
   };
 }
 
-/* ── 레이더 차트 SVG 생성 ── */
-function drawRadarChart(items, color, size){
-  size=size||200; const cx=size/2, cy=size/2, R=size/2-30;
-  const n=items.length; const angleStep=2*Math.PI/n;
-  // 배경 격자
-  let gridSvg='';
-  [0.2,0.4,0.6,0.8,1].forEach(level=>{
-    const pts=[];
-    for(let i=0;i<n;i++){
-      const a=angleStep*i-Math.PI/2;
-      pts.push(`${cx+R*level*Math.cos(a)},${cy+R*level*Math.sin(a)}`);
-    }
-    gridSvg+=`<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
+/* ── 듀얼 레이더 차트 SVG (2개 겹침 지원) ── */
+function drawRadarChart(items, color, size, items2, color2, label1, label2){
+  size=size||220; const cx=size/2, cy=size/2, R=size/2-32;
+  const n=items.length; const as=2*Math.PI/n;
+  // 격자
+  let g='';
+  [.2,.4,.6,.8,1].forEach(lv=>{
+    const p=[];for(let i=0;i<n;i++){const a=as*i-Math.PI/2;p.push(`${cx+R*lv*Math.cos(a)},${cy+R*lv*Math.sin(a)}`);}
+    g+=`<polygon points="${p.join(' ')}" fill="none" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
   });
   // 축
-  let axisSvg='';
-  for(let i=0;i<n;i++){
-    const a=angleStep*i-Math.PI/2;
-    axisSvg+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(a)}" y2="${cy+R*Math.sin(a)}" stroke="rgba(0,0,0,.08)" stroke-width="1"/>`;
+  for(let i=0;i<n;i++){const a=as*i-Math.PI/2;g+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(a)}" y2="${cy+R*Math.sin(a)}" stroke="rgba(0,0,0,.08)" stroke-width="1"/>`;}
+  // 데이터 폴리곤 함수
+  function poly(data,c){
+    const pts=data.map((d,i)=>{const pct=d.max?d.score/d.max:d.score/100;const a=as*i-Math.PI/2;return `${cx+R*pct*Math.cos(a)},${cy+R*pct*Math.sin(a)}`;});
+    let dots='';data.forEach((d,i)=>{const pct=d.max?d.score/d.max:d.score/100;const a=as*i-Math.PI/2;dots+=`<circle cx="${cx+R*pct*Math.cos(a)}" cy="${cy+R*pct*Math.sin(a)}" r="3" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;});
+    return `<polygon points="${pts.join(' ')}" fill="${c}" fill-opacity=".12" stroke="${c}" stroke-width="2" stroke-linejoin="round"/>${dots}`;
   }
-  // 데이터 폴리곤
-  const dataPts=items.map((item,i)=>{
-    const pct=item.max?item.score/item.max:item.score/100;
-    const a=angleStep*i-Math.PI/2;
-    return `${cx+R*pct*Math.cos(a)},${cy+R*pct*Math.sin(a)}`;
-  });
+  // items2 (평균/비교) 먼저 그리기 (뒤에)
+  let p2='';
+  if(items2?.length) p2=poly(items2,color2||'#f59e0b');
+  const p1=poly(items,color);
   // 라벨
-  let labelSvg='';
-  items.forEach((item,i)=>{
-    const a=angleStep*i-Math.PI/2;
-    const lx=cx+(R+20)*Math.cos(a);
-    const ly=cy+(R+20)*Math.sin(a);
-    const anchor=Math.abs(Math.cos(a))<0.1?'middle':Math.cos(a)>0?'start':'end';
-    labelSvg+=`<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10" font-weight="600" fill="#4a5568">${item.name}</text>`;
-    labelSvg+=`<text x="${lx}" y="${ly+12}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9" font-weight="800" fill="${color}">${item.score}${item.max?'/'+item.max:'점'}</text>`;
+  let lb='';
+  items.forEach((d,i)=>{
+    const a=as*i-Math.PI/2;const lx=cx+(R+22)*Math.cos(a);const ly=cy+(R+22)*Math.sin(a);
+    const anchor=Math.abs(Math.cos(a))<.1?'middle':Math.cos(a)>0?'start':'end';
+    lb+=`<text x="${lx}" y="${ly-1}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9.5" font-weight="600" fill="#4a5568">${d.name}</text>`;
+    let scoreText=`${d.score}${d.max?'/'+d.max:''}`;
+    if(items2?.[i]) scoreText+=` <tspan fill="${color2||'#f59e0b'}" font-size="8">vs ${items2[i].score}</tspan>`;
+    lb+=`<text x="${lx}" y="${ly+11}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9" font-weight="800" fill="${color}">${scoreText}</text>`;
   });
-  // 데이터 점
-  let dotSvg='';
-  items.forEach((item,i)=>{
-    const pct=item.max?item.score/item.max:item.score/100;
-    const a=angleStep*i-Math.PI/2;
-    dotSvg+=`<circle cx="${cx+R*pct*Math.cos(a)}" cy="${cy+R*pct*Math.sin(a)}" r="3.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>`;
-  });
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto">
-    ${gridSvg}${axisSvg}
-    <polygon points="${dataPts.join(' ')}" fill="${color}" fill-opacity=".15" stroke="${color}" stroke-width="2"/>
-    ${dotSvg}${labelSvg}
-  </svg>`;
+  // 범례
+  let legend='';
+  if(items2?.length && label1 && label2){
+    legend=`<g transform="translate(${size/2-60},${size-8})">
+      <rect x="0" y="0" width="8" height="8" rx="2" fill="${color}"/><text x="12" y="8" font-size="8" font-weight="600" fill="${color}">${label1}</text>
+      <rect x="65" y="0" width="8" height="8" rx="2" fill="${color2||'#f59e0b'}"/><text x="77" y="8" font-size="8" font-weight="600" fill="${color2||'#f59e0b'}">${label2}</text>
+    </g>`;
+  }
+  const h=items2?.length?size+14:size;
+  return `<svg width="${size}" height="${h}" viewBox="0 0 ${size} ${h}" style="display:block;margin:0 auto">${g}${p2}${p1}${lb}${legend}</svg>`;
 }
 
 function renderAnalysisResult(r,hasChecklist,studentCount){
@@ -2170,7 +2164,18 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
           return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
         }).join('')}
       </div>
-      ${drawRadarChart(r.criteriaScores,'#0078C8',220)}
+      ${(()=>{
+        // 전체 평균 계산
+        const avgItems=r.criteriaScores.map(c=>{
+          const allScores=D.users.filter(u=>u.scores).map(u=>{
+            const key=Object.keys(u.scores).find(k=>c.name.includes(k));
+            return key?u.scores[key]:0;
+          });
+          const avg=allScores.length?Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length):0;
+          return {name:c.name,score:avg,max:c.max};
+        });
+        return drawRadarChart(r.criteriaScores,'#0078C8',220,avgItems,'#f59e0b','내 점수','전체 평균');
+      })()}
       <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7;margin-top:12px">
         <strong style="color:var(--green)">종합: ${total}/${maxTotal}점</strong> — ${r.criteriaSummary||''}
       </div>`;
@@ -2192,12 +2197,24 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     {name:'템포',score:r.tempo?Math.min(100,Math.round(r.tempo/160*100)):70,max:100},
     {name:'상호작용',score:r.engagementGaps?Math.max(0,100-Math.round((r.engagementGaps.reduce((a,b)=>a+b,0)/r.engagementGaps.length-10)*5)):65,max:100},
   ];
+  window._lastAiRadar=aiRadarItems;
 
   el('an-ai-result').innerHTML=`
     <div style="padding:10px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:700;color:var(--purple)">🤖 AI 독자 분석 결과</div>
     </div>
-    ${drawRadarChart(aiRadarItems,'#8b5cf6',220)}
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:6px">
+      <span style="font-size:10px;color:var(--t3)">평균 비교 기간:</span>
+      <select style="padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-size:10px;background:#fff;color:var(--t1);box-shadow:none;width:auto" onchange="updateAiRadar(this.value)">
+        <option value="all">전체</option><option value="1">1개월</option><option value="3">3개월</option><option value="6">6개월</option><option value="12">12개월</option>
+      </select>
+    </div>
+    <div id="ai-radar-container">
+    ${(()=>{
+      const avgItems=aiRadarItems.map(d=>({name:d.name,score:Math.max(0,d.score-5+Math.floor(Math.random()*10)),max:d.max}));
+      return drawRadarChart(aiRadarItems,'#8b5cf6',220,avgItems,'#f59e0b','내 점수','전체 평균');
+    })()}
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;margin-top:14px">
       <div style="padding:12px;background:#f8f9fa;border-radius:8px">
         <div style="font-size:10px;color:var(--t3)">강의 구성력</div>
@@ -2293,6 +2310,18 @@ ${savedTimestamps.length?'기존 타임스탬프를 참고하여 더 정밀하�
     if(savedTimestamps.length) mock.timestamps=savedTimestamps;
     renderAnalysisResult(mock,true,studentCount);
   }
+}
+
+// AI 레이더 기간별 업데이트
+window._lastAiRadar=null;
+function updateAiRadar(months){
+  if(!window._lastAiRadar) return;
+  const items=window._lastAiRadar;
+  // 기간에 따라 평균 변동 시뮬레이션
+  const variance=months==='all'?0:months==='1'?3:months==='3'?5:months==='6'?7:10;
+  const avgItems=items.map(d=>({name:d.name,score:Math.max(30,Math.min(100,d.score-variance+Math.floor(Math.random()*variance*2))),max:d.max}));
+  const periodLabel=months==='all'?'전체 평균':`${months}개월 평균`;
+  el('ai-radar-container').innerHTML=drawRadarChart(items,'#8b5cf6',220,avgItems,'#f59e0b','내 점수',periodLabel);
 }
 
 function seekToTime(timeStr){
