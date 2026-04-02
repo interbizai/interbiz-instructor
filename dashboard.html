@@ -358,6 +358,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes waveUp{0%,100%{transform:scaleY(1);opacity:.4}50%{transform:scaleY(1.8);opacity:1}}
 .hi-wave{transform-origin:center;animation:waveUp 1.2s ease-in-out infinite}
 .hi-w1{animation-delay:0s}.hi-w2{animation-delay:.3s}.hi-w3{animation-delay:.15s}.hi-w4{animation-delay:.45s}
+/* 내페이지 뱃지 팝 */
+@keyframes badgePop{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.hi-badge{animation:badgePop 2s ease-in-out infinite}
 /* 로봇 손 흔들기 */
 @keyframes robotWave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
 .hi-robot-hand{animation:robotWave 1.5s ease-in-out infinite;transform-origin:34px 20px}
@@ -627,14 +630,16 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <span class="home-icon-lbl">영상등록 분석</span>
     </div>
-    <!-- 4. 내페이지 (초록 + 내 사진) -->
+    <!-- 4. 내페이지 (초록, 하트비트 애니메이션) -->
     <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
-      <div class="home-icon-box" id="hi4" style="position:relative">
+      <div class="home-icon-box" id="hi4">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/>
+          <circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2" class="hi-person-head"/>
           <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+          <!-- 체크 뱃지 -->
+          <circle cx="30" cy="12" r="5" fill="#10b981" class="hi-badge"/>
+          <path d="M28 12l1.5 1.5 3-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="hi-badge"/>
         </svg>
-        <div id="hi4-photo" class="hi-mini-photo"></div>
       </div>
       <span class="home-icon-lbl">내페이지</span>
     </div>
@@ -1880,13 +1885,6 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
    HOME PAGE
 ════════════════════════════════ */
 function initHome(){
-  // 내페이지 아이콘에 내 사진 세팅
-  const hi4p=el('hi4-photo');
-  if(hi4p&&CU){
-    const u=D.users.find(x=>x.id===CU?.id);
-    const photo=CU.isAdmin?'assets/logo/image.png':(u?.photo||CU?.photo||'');
-    if(photo){hi4p.innerHTML=`<img src="${photo}">`;hi4p.style.display='block';}
-  }
   // Carousel: DB 영상 + 기본 유튜브 5개
   const defaultVids=[
     {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
