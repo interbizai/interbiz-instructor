@@ -380,15 +380,44 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Print ── */
 @media print{
-  header,.filter-bar,.btn-pdf,.nav-back,.hdr-right,.btn-ghost,.btn-blue,.auth-btn,.home-icons,.home-carousel,.icon-grid,.overlay{display:none!important}
-  .acc-body,.coll-body{max-height:none!important}
+  @page{size:A4;margin:12mm 10mm}
+  header,.filter-bar,.btn-pdf,.nav-back,.hdr-right,.btn-ghost,.btn-blue,.btn-red,.auth-btn,.home-icons,.home-carousel,.icon-grid,.overlay,.upload-zone,.dual-tabs,.webcam-wrap,canvas{display:none!important}
   .page{display:none!important}
   .page.active{display:block!important}
-  body{background:#fff}
-  main{padding:10px!important}
-  .ts-list,.acc-wrap,.top5-scroll,[style*="max-height"]{max-height:none!important;overflow:visible!important}
-  #an-ts-feed,#an-ts-feed *,.ts-feed{max-height:none!important;overflow:visible!important}
-  *{break-inside:avoid;overflow:visible!important}
+  body{background:#fff!important;font-size:11px!important;color:#1a202c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  main{padding:0!important;max-width:100%!important}
+  /* 스크롤 전부 해제 */
+  *{overflow:visible!important;max-height:none!important}
+  .acc-body,.coll-body{max-height:none!important}
+  /* 레이아웃 A4 최적화 */
+  .video-player{height:240px!important;page-break-inside:avoid}
+  .video-player iframe{height:240px!important}
+  #an-split{grid-template-columns:1fr 1fr!important;gap:12px!important}
+  #va-split{grid-template-columns:1fr 1fr!important;gap:12px!important}
+  .prof-layout{grid-template-columns:220px 1fr!important;gap:14px!important}
+  .stream-layout{grid-template-columns:1fr!important}
+  .lect-grid{grid-template-columns:1fr 1fr!important;gap:10px!important}
+  .stats-row{grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
+  /* 카드/항목 페이지 분리 방지 */
+  .acc-item,.solution-card,.lect-card,.stat-card,.prof-card,.top5-card{break-inside:avoid;page-break-inside:avoid}
+  /* 타임스탬프 피드 */
+  #an-ts-feed>div,#va-report>div{break-inside:avoid;page-break-inside:avoid}
+  /* 폰트/여백 밸런스 */
+  .sec-lbl{font-size:13px!important;margin:14px 0 8px!important}
+  .stat-val{font-size:20px!important}
+  .stat-lbl{font-size:9px!important}
+  .bar-track{height:4px!important}
+  .ts-badge{font-size:9px!important;padding:1px 5px!important}
+  .ts-tag{font-size:8px!important}
+  .solution-card{padding:10px 12px!important;margin-bottom:8px!important}
+  .sol-title{font-size:10px!important}
+  .sol-text{font-size:10px!important}
+  .habit-badge{font-size:10px!important;padding:3px 8px!important}
+  /* 프로필 카드 */
+  .prof-photo{width:60px!important;height:60px!important}
+  .prof-row{padding:5px 0!important;font-size:11px!important}
+  /* 인쇄 헤더 추가 */
+  .page.active::before{content:'interbiz 현장강사 역량 평가 플랫폼';display:block;text-align:center;font-size:14px;font-weight:800;padding:8px 0 12px;border-bottom:2px solid #1a202c;margin-bottom:14px}
 }
 </style>
 </head>
