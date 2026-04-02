@@ -2105,7 +2105,6 @@ function seekToTime(timeStr){
 
 async function saveAnalysisVideo(){
   if(!CU){ alert('로그인이 필요합니다.'); return; }
-  // 관리자도 저장 가능 — user_id는 첫번째 유저 또는 null
   const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
   const yt=v('an-youtube').trim();
   const result=await dbCreateVideo({
@@ -2114,20 +2113,13 @@ async function saveAnalysisVideo(){
     studentCount:parseInt(v('an-count'))||0, status:'분석완료',
     channel:v('an-channel'), solution:'AI 분석 완료'
   });
-  if(result){
-    // Mock 타임스탬프 DB 저장
-    const mockTs=[
-      {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
-      {t:'05:20',type:'good',text:'제품 스펙 비교 시 실물 시연과 함께 설명하여 이해도 향상',tags:['전문성','시연']},
-      {t:'08:45',type:'bad',text:'"음~" 반복 사용이 잦아 전달력이 다소 저하됨',tags:['발성','습관어']},
-      {t:'12:10',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
-      {t:'18:30',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
-    ];
-    for(const ts of mockTs){ await dbAddTimestamp(result.id,ts); }
+  if(result && window._anTimestamps?.length){
+    for(const ts of window._anTimestamps){ await dbAddTimestamp(result.id,ts); }
     await loadFromDB();
   }
-  alert('영상과 분석 결과가 저장되었습니다!');
-  showPage('page-home');
+  // 저장 완료 표시 (페이지 이동 없이 결과 화면 유지)
+  const saveBtn=event?.target;
+  if(saveBtn){ saveBtn.textContent='✅ 저장 완료!'; saveBtn.style.background='var(--green)'; saveBtn.disabled=true; }
 }
 
 /* ════════════════════════════════
