@@ -358,6 +358,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes waveUp{0%,100%{transform:scaleY(1);opacity:.4}50%{transform:scaleY(1.8);opacity:1}}
 .hi-wave{transform-origin:center;animation:waveUp 1.2s ease-in-out infinite}
 .hi-w1{animation-delay:0s}.hi-w2{animation-delay:.3s}.hi-w3{animation-delay:.15s}.hi-w4{animation-delay:.45s}
+/* 로봇 손 흔들기 */
+@keyframes robotWave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
+.hi-robot-hand{animation:robotWave 1.5s ease-in-out infinite;transform-origin:34px 20px}
+/* 내 사진 미니 */
+.hi-mini-photo{position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:50%;border:2px solid #10b981;overflow:hidden;background:#e5e7eb;display:none}
+.hi-mini-photo img{width:100%;height:100%;object-fit:cover}
 /* 펜 쓰기 애니메이션 */
 @keyframes penWrite{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,4px)}50%{transform:translate(1px,8px)}75%{transform:translate(-1px,12px)}}
 .hi-pen{animation:penWrite 2s ease-in-out infinite;transform-origin:30px 8px}
@@ -605,23 +611,30 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <span class="home-icon-lbl">영상 스트리밍</span>
     </div>
-    <!-- 3. 영상등록 분석 (보라, AI) -->
+    <!-- 3. 영상등록 분석 (보라, AI + 로봇손) -->
     <div class="home-icon-cell" onclick="openAnalysis()">
       <div class="home-icon-box" id="hi3">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
           <rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/>
           <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text>
+          <!-- 로봇 손 -->
+          <g class="hi-robot-hand">
+            <path d="M34 18c2-1 4 0 4 2s-2 3-4 2" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.15)" stroke-linecap="round"/>
+            <line x1="36" y1="17" x2="37" y2="14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="38" y1="18" x2="39" y2="15" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
         </svg>
       </div>
       <span class="home-icon-lbl">영상등록 분석</span>
     </div>
-    <!-- 4. 내페이지 (초록) -->
+    <!-- 4. 내페이지 (초록 + 내 사진) -->
     <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
-      <div class="home-icon-box" id="hi4">
+      <div class="home-icon-box" id="hi4" style="position:relative">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/>
           <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
         </svg>
+        <div id="hi4-photo" class="hi-mini-photo"></div>
       </div>
       <span class="home-icon-lbl">내페이지</span>
     </div>
@@ -1867,6 +1880,13 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
    HOME PAGE
 ════════════════════════════════ */
 function initHome(){
+  // 내페이지 아이콘에 내 사진 세팅
+  const hi4p=el('hi4-photo');
+  if(hi4p&&CU){
+    const u=D.users.find(x=>x.id===CU?.id);
+    const photo=CU.isAdmin?'assets/logo/image.png':(u?.photo||CU?.photo||'');
+    if(photo){hi4p.innerHTML=`<img src="${photo}">`;hi4p.style.display='block';}
+  }
   // Carousel: DB 영상 + 기본 유튜브 5개
   const defaultVids=[
     {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
