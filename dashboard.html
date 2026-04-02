@@ -2066,6 +2066,56 @@ function generateMockResult(studentCount){
   };
 }
 
+/* ── 레이더 차트 SVG 생성 ── */
+function drawRadarChart(items, color, size){
+  size=size||200; const cx=size/2, cy=size/2, R=size/2-30;
+  const n=items.length; const angleStep=2*Math.PI/n;
+  // 배경 격자
+  let gridSvg='';
+  [0.2,0.4,0.6,0.8,1].forEach(level=>{
+    const pts=[];
+    for(let i=0;i<n;i++){
+      const a=angleStep*i-Math.PI/2;
+      pts.push(`${cx+R*level*Math.cos(a)},${cy+R*level*Math.sin(a)}`);
+    }
+    gridSvg+=`<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
+  });
+  // 축
+  let axisSvg='';
+  for(let i=0;i<n;i++){
+    const a=angleStep*i-Math.PI/2;
+    axisSvg+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(a)}" y2="${cy+R*Math.sin(a)}" stroke="rgba(0,0,0,.08)" stroke-width="1"/>`;
+  }
+  // 데이터 폴리곤
+  const dataPts=items.map((item,i)=>{
+    const pct=item.max?item.score/item.max:item.score/100;
+    const a=angleStep*i-Math.PI/2;
+    return `${cx+R*pct*Math.cos(a)},${cy+R*pct*Math.sin(a)}`;
+  });
+  // 라벨
+  let labelSvg='';
+  items.forEach((item,i)=>{
+    const a=angleStep*i-Math.PI/2;
+    const lx=cx+(R+20)*Math.cos(a);
+    const ly=cy+(R+20)*Math.sin(a);
+    const anchor=Math.abs(Math.cos(a))<0.1?'middle':Math.cos(a)>0?'start':'end';
+    labelSvg+=`<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10" font-weight="600" fill="#4a5568">${item.name}</text>`;
+    labelSvg+=`<text x="${lx}" y="${ly+12}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9" font-weight="800" fill="${color}">${item.score}${item.max?'/'+item.max:'점'}</text>`;
+  });
+  // 데이터 점
+  let dotSvg='';
+  items.forEach((item,i)=>{
+    const pct=item.max?item.score/item.max:item.score/100;
+    const a=angleStep*i-Math.PI/2;
+    dotSvg+=`<circle cx="${cx+R*pct*Math.cos(a)}" cy="${cy+R*pct*Math.sin(a)}" r="3.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>`;
+  });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto">
+    ${gridSvg}${axisSvg}
+    <polygon points="${dataPts.join(' ')}" fill="${color}" fill-opacity=".15" stroke="${color}" stroke-width="2"/>
+    ${dotSvg}${labelSvg}
+  </svg>`;
+}
+
 function renderAnalysisResult(r,hasChecklist,studentCount){
   // ─── 평가안 기준 (왼쪽) ───
   if(hasChecklist && r.criteriaScores?.length){
@@ -2082,7 +2132,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
           return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
         }).join('')}
       </div>
-      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7">
+      ${drawRadarChart(r.criteriaScores,'#0078C8',220)}
+      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7;margin-top:12px">
         <strong style="color:var(--green)">종합: ${total}/${maxTotal}점</strong> — ${r.criteriaSummary||''}
       </div>`;
   } else {
@@ -2095,11 +2146,21 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
   }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>';
 
+  // AI 역량 레이더 차트 데이터
+  const aiRadarItems=[
+    {name:'구성력',score:r.overallScore||0,max:100},
+    {name:'집중도',score:r.focusScore||0,max:100},
+    {name:'발성',score:r.decibel?Math.min(100,Math.round(r.decibel/80*100)):70,max:100},
+    {name:'템포',score:r.tempo?Math.min(100,Math.round(r.tempo/160*100)):70,max:100},
+    {name:'상호작용',score:r.engagementGaps?Math.max(0,100-Math.round((r.engagementGaps.reduce((a,b)=>a+b,0)/r.engagementGaps.length-10)*5)):65,max:100},
+  ];
+
   el('an-ai-result').innerHTML=`
     <div style="padding:10px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:700;color:var(--purple)">🤖 AI 독자 분석 결과</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    ${drawRadarChart(aiRadarItems,'#8b5cf6',220)}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;margin-top:14px">
       <div style="padding:12px;background:#f8f9fa;border-radius:8px">
         <div style="font-size:10px;color:var(--t3)">강의 구성력</div>
         <div style="font-size:22px;font-weight:900;color:var(--blue)">${r.overallScore}<span style="font-size:11px;color:var(--t3)">/100</span></div>
@@ -2400,7 +2461,8 @@ function renderVoiceResult(r,hasCL,count,tone){
     const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
     const maxT=r.criteriaScores.reduce((a,b)=>a+b.max,0);
     el('va-criteria-result').innerHTML=`
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      ${drawRadarChart(r.criteriaScores,'#0078C8',200)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
         ${r.criteriaScores.map(c=>{
           const pct=Math.round(c.score/c.max*100);
           return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
@@ -2421,11 +2483,21 @@ function renderVoiceResult(r,hasCL,count,tone){
     return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
   }).join('')||'<span style="font-size:11px;color:var(--t3)">감지 없음</span>';
 
+  const voiceRadar=[
+    {name:'데시벨',score:Math.min(100,Math.round((db.current||70)/80*100)),max:100},
+    {name:'템포',score:Math.min(100,Math.round((tp.wpm||140)/160*100)),max:100},
+    {name:'톤 매칭',score:tm.score||70,max:100},
+    {name:'명확도',score:cl.score||70,max:100},
+    {name:'에너지',score:en.score||70,max:100},
+    {name:'침묵 활용',score:Math.min(100,(sr.percent||10)*5),max:100},
+  ];
+
   el('va-ai-result').innerHTML=`
-    <div style="text-align:center;margin-bottom:14px">
+    <div style="text-align:center;margin-bottom:8px">
       <div style="font-size:36px;font-weight:900;color:${r.overall_score>=80?'var(--green)':r.overall_score>=60?'var(--blue)':'var(--red)'}">${r.overall_score}</div>
       <div style="font-size:11px;color:var(--t3)">음성 종합 점수 /100</div>
     </div>
+    ${drawRadarChart(voiceRadar,'#8b5cf6',220)}
     <!-- 데시벨 -->
     <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">🔊 데시벨</span><span style="color:${db.status==='적정'?'var(--green)':'var(--orange)'};font-weight:700">${db.current} dB · ${db.status}</span></div>
