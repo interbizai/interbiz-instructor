@@ -548,7 +548,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <span class="home-icon-lbl">영상 스트리밍</span>
     </div>
     <!-- 3. 영상등록 분석 (AI 텍스트) -->
-    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
+    <div class="home-icon-cell" onclick="openAnalysis()">
       <div class="home-icon-box" id="hi3">
         <svg width="36" height="36" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="6" y="8" width="28" height="24" rx="4"/>
@@ -742,6 +742,133 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Lecturer Grid -->
   <div class="sec-lbl">강사 목록</div>
   <div class="lect-grid" id="lect-grid"></div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: ANALYSIS (영상등록 분석)
+════════════════════════════════════ -->
+<div id="page-analysis" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      홈
+    </button>
+    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:30px">
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
+  </div>
+</header>
+<main>
+  <div class="sec-lbl">영상등록 & AI 분석</div>
+
+  <!-- Step 1: 영상 입력 -->
+  <div id="an-step1">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
+      <!-- YouTube 링크 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 8 16 12 10 16" fill="var(--red)" stroke="none"/></svg>
+          <span style="font-size:14px;font-weight:800">YouTube 링크</span>
+        </div>
+        <div class="form-group" style="margin:0">
+          <input type="text" class="form-input" id="an-youtube" placeholder="https://youtube.com/watch?v=...">
+        </div>
+      </div>
+      <!-- 파일 업로드 -->
+      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span style="font-size:14px;font-weight:800">영상 파일 업로드</span>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('an-file').click()" style="padding:18px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p id="an-file-name">클릭하여 파일 선택 (mp4, mov, webm)</p>
+        </div>
+        <input type="file" id="an-file" accept="video/*" style="display:none" onchange="el('an-file-name').textContent=this.files[0]?.name||'파일 선택'">
+      </div>
+    </div>
+    <!-- 영상 정보 -->
+    <div style="max-width:900px;margin-top:18px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+      <div style="font-size:14px;font-weight:800;margin-bottom:14px">영상 정보</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group" style="margin:0">
+          <label class="form-lbl">영상 제목</label>
+          <input type="text" class="form-input" id="an-title" placeholder="강의 제목">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-lbl">소속</label>
+          <select class="form-input" id="an-channel">
+            <option value="가전AM">가전AM</option>
+            <option value="하이케어솔루션">하이케어솔루션</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-lbl">교육생 인원수</label>
+          <input type="number" class="form-input" id="an-count" placeholder="20">
+        </div>
+      </div>
+      <!-- 평가안 업로드 (이원화) -->
+      <div style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700">📋 평가안 업로드 (선택)</span>
+          <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 선택 (PDF/Excel)</button>
+          <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
+          <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
+        </div>
+      </div>
+    </div>
+    <button class="auth-btn auth-btn-primary" style="max-width:300px;margin-top:18px" onclick="runAnalysis()">AI 분석 시작 →</button>
+  </div>
+
+  <!-- Step 2: 분석 결과 -->
+  <div id="an-step2" style="display:none">
+    <!-- 영상 플레이어 -->
+    <div style="max-width:900px;margin-bottom:18px">
+      <div class="video-player" id="an-player" style="border-radius:var(--r2);border:1px solid rgba(0,0,0,.08)"></div>
+    </div>
+    <!-- 이원화 탭 -->
+    <div style="max-width:900px">
+      <div class="dual-tabs" style="margin-bottom:0">
+        <button class="dual-tab active" onclick="switchAnalysisTab('an-tab-criteria',this)">📋 평가안 기준 분석</button>
+        <button class="dual-tab" onclick="switchAnalysisTab('an-tab-ai',this)">🤖 AI 독자 분석</button>
+      </div>
+
+      <!-- 탭1: 평가안 기준 -->
+      <div id="an-tab-criteria" class="dual-pane active" style="border:1px solid rgba(0,0,0,.06);border-top:none;border-radius:0 0 var(--r1) var(--r1);padding:18px;background:#fff">
+        <div id="an-criteria-result"></div>
+      </div>
+      <!-- 탭2: AI 독자 -->
+      <div id="an-tab-ai" class="dual-pane" style="border:1px solid rgba(0,0,0,.06);border-top:none;border-radius:0 0 var(--r1) var(--r1);padding:18px;background:#fff">
+        <div id="an-ai-result"></div>
+      </div>
+
+      <!-- 타임스탬프 피드 -->
+      <div style="margin-top:18px">
+        <div class="sec-lbl">타임스탬프 피드</div>
+        <div class="acc-wrap neu" style="overflow:hidden">
+          <div id="an-ts-feed"></div>
+        </div>
+      </div>
+
+      <!-- 종합 리포트 -->
+      <div style="margin-top:18px">
+        <div class="sec-lbl">종합 리포트</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="an-report"></div>
+      </div>
+
+      <!-- 저장 -->
+      <div style="margin-top:18px;display:flex;gap:10px">
+        <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
+        <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
+      </div>
+    </div>
+  </div>
 </main>
 </div>
 
@@ -1515,6 +1642,191 @@ function startHomeIconAnimations(){}
    STREAMING PAGE
 ════════════════════════════════ */
 let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null, streamSec=0, streamBlob=null;
+
+/* ════════════════════════════════
+   ANALYSIS PAGE (영상등록 분석)
+════════════════════════════════ */
+function openAnalysis(){
+  el('an-step1').style.display='';
+  el('an-step2').style.display='none';
+  el('an-youtube').value='';el('an-title').value='';el('an-count').value='';
+  el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
+  el('an-checklist-name').textContent='선택된 파일 없음';
+  showPage('page-analysis');
+}
+
+function switchAnalysisTab(paneId,btn){
+  btn.parentElement.querySelectorAll('.dual-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['an-tab-criteria','an-tab-ai'].forEach(id=>{
+    el(id).classList.toggle('active',id===paneId);
+    el(id).style.display=id===paneId?'block':'none';
+  });
+}
+
+function runAnalysis(){
+  const yt=v('an-youtube').trim();
+  const file=el('an-file').files?.[0];
+  const title=v('an-title').trim();
+  if(!title){ alert('영상 제목을 입력하세요.'); return; }
+  if(!yt&&!file){ alert('YouTube 링크 또는 영상 파일을 등록하세요.'); return; }
+
+  // 영상 플레이어 세팅
+  if(yt){
+    const m=yt.match(/[?&]v=([^&]+)/);
+    if(m) el('an-player').innerHTML=`<iframe src="https://www.youtube.com/embed/${m[1]}" allowfullscreen style="width:100%;height:100%;border:none;border-radius:var(--r2)"></iframe>`;
+  } else if(file){
+    el('an-player').innerHTML=`<video controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${URL.createObjectURL(file)}"></video>`;
+  }
+
+  const hasChecklist=el('an-checklist').files?.length>0;
+  const count=parseInt(v('an-count'))||20;
+
+  // Claude AI 분석 (현재 Mock — 나중에 Gemini 연동)
+  generateAIAnalysis(title,count,hasChecklist);
+
+  el('an-step1').style.display='none';
+  el('an-step2').style.display='';
+}
+
+function generateAIAnalysis(title,studentCount,hasChecklist){
+  // ─── 평가안 기준 탭 ───
+  if(hasChecklist){
+    el('an-criteria-result').innerHTML=`
+      <div style="padding:12px;background:rgba(0,120,200,.04);border-radius:8px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">✅ 업로드된 평가안 기준 적용</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.8">업로드하신 평가안을 기준으로 영상을 분석했습니다.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        ${['발성 및 전달력|18|20','내용 전문성|22|25','판서 및 자료|12|15','수강생 상호작용|17|20','시간 관리|8|10','마무리 및 요약|8|10'].map(x=>{
+          const[n,s,m]=x.split('|');const pct=Math.round(s/m*100);
+          return `<div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${n}</div><div style="font-size:18px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${s}<span style="font-size:11px;color:var(--t3)">/${m}</span></div><div class="bar-track" style="margin-top:4px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.8">
+        <strong style="color:var(--green)">평가안 기준 종합:</strong> 총 85/100점 (A등급). 발성 및 전달력이 우수하며, 판서 활용도를 높이면 90점 이상 가능합니다.
+      </div>`;
+  } else {
+    el('an-criteria-result').innerHTML=`
+      <div style="padding:16px;background:rgba(245,158,11,.06);border-radius:8px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:4px">📋 평가안 미등록</div>
+        <div style="font-size:11px;color:var(--t3)">평가안이 업로드되지 않아 이 탭은 비활성 상태입니다.<br>오른쪽 "AI 독자 분석" 탭에서 결과를 확인하세요.</div>
+      </div>`;
+  }
+
+  // ─── AI 독자 분석 탭 ───
+  el('an-ai-result').innerHTML=`
+    <div style="padding:12px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">🤖 AI가 영상 흐름을 독자적으로 분석했습니다</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div style="padding:14px;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:8px">
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">전체 강의 구성력</div>
+        <div style="font-size:24px;font-weight:900;color:var(--blue)">82<span style="font-size:12px;color:var(--t3)">/100</span></div>
+        <div style="font-size:11px;color:var(--t2);margin-top:4px">도입→전개→정리 흐름이 자연스러움</div>
+      </div>
+      <div style="padding:14px;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:8px">
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">수강생 집중도 예측</div>
+        <div style="font-size:24px;font-weight:900;color:var(--green)">78<span style="font-size:12px;color:var(--t3)">/100</span></div>
+        <div style="font-size:11px;color:var(--t2);margin-top:4px">환기 활동 간격 평균 12분 (권장: 10분 이내)</div>
+      </div>
+    </div>
+    <!-- 반복어 습관 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🗣️ 반복어 습관 감지</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="habit-badge hb-high">음~ <span class="habit-cnt">14회</span></span>
+        <span class="habit-badge hb-mid">그래서 <span class="habit-cnt">8회</span></span>
+        <span class="habit-badge hb-mid">맞죠? <span class="habit-cnt">6회</span></span>
+        <span class="habit-badge hb-low">이제 <span class="habit-cnt">3회</span></span>
+      </div>
+    </div>
+    <!-- 음성 분석 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎤 음성 분석 (교육생 ${studentCount}명 기준)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="padding:10px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">데시벨</span><br><strong style="font-size:16px">72 dB</strong> <span style="font-size:10px;color:var(--green)">적정</span></div>
+        <div style="padding:10px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">말하기 속도</span><br><strong style="font-size:16px">142 WPM</strong> <span style="font-size:10px;color:var(--green)">적정</span></div>
+      </div>
+    </div>
+    <!-- 환기 분석 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🔄 교육 환기 타이밍</div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.8">
+        참여 유도 간격: <strong>8분 → 14분 → 7분 → 11분</strong><br>
+        <span style="color:var(--orange)">⚠️ 14분 구간</span>에서 집중도 저하 예상. 중간에 질문이나 퀴즈를 삽입하세요.
+      </div>
+    </div>`;
+
+  // ─── 타임스탬프 피드 ───
+  const mockTs=[
+    {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
+    {t:'05:20',type:'good',text:'제품 스펙 비교 시 실물 시연과 함께 설명하여 이해도 향상',tags:['전문성','시연']},
+    {t:'08:45',type:'bad',text:'"음~" 반복 사용이 잦아 전달력이 다소 저하됨 (14회 감지)',tags:['발성','습관어']},
+    {t:'12:10',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
+    {t:'18:30',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
+    {t:'22:00',type:'bad',text:'PPT 전환이 너무 빠르고 판서 없이 말로만 설명하는 구간',tags:['판서','속도']},
+    {t:'28:15',type:'tip',text:'핵심 개념 3가지를 칠판에 정리하면 기억 정착률 2배 향상',tags:['판서','팁']},
+    {t:'33:40',type:'good',text:'수강생 3명에게 직접 질문하여 참여도를 높임',tags:['상호작용']},
+    {t:'38:00',type:'bad',text:'강의 후반부 목소리 볼륨 저하 — 에너지 관리 필요',tags:['발성','에너지']},
+    {t:'42:30',type:'tip',text:'마무리에서 "오늘의 핵심 3가지"로 요약하면 만족도 대폭 향상',tags:['마무리','요약']},
+  ];
+  el('an-ts-feed').innerHTML=mockTs.map((ts,i)=>`
+    <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start">
+      <span style="font-size:11px;font-weight:800;color:var(--blue);cursor:pointer;white-space:nowrap;min-width:45px">${ts.t}</span>
+      <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--t2);line-height:1.6">${ts.text}</div>
+        <div style="display:flex;gap:4px;margin-top:4px">${ts.tags.map(t=>`<span class="ts-tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>`).join('');
+
+  // ─── 종합 리포트 ───
+  el('an-report').innerHTML=`
+    <div class="solution-card">
+      <div class="sol-title">💡 솔루션 & 다음 강의 권장</div>
+      <div class="sol-text">
+        1. "음~" 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>
+        2. 14분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>
+        3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>
+        4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획
+      </div>
+    </div>
+    <div class="solution-card" style="background:rgba(0,120,200,.04);border-color:rgba(0,120,200,.12)">
+      <div class="sol-title" style="color:var(--blue)">🎯 다음 강의 추천 시나리오</div>
+      <div class="sol-text">
+        <strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br>
+        <strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br>
+        <strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br>
+        <strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고
+      </div>
+    </div>`;
+}
+
+async function saveAnalysisVideo(){
+  if(!CU||!CU.id){ alert('로그인이 필요합니다.'); return; }
+  const yt=v('an-youtube').trim();
+  const result=await dbCreateVideo({
+    userId:CU.id, title:v('an-title'), youtube:yt,
+    date:new Date().toISOString().split('T')[0], duration:'—',
+    studentCount:parseInt(v('an-count'))||0, status:'분석완료',
+    channel:v('an-channel'), solution:'AI 분석 완료'
+  });
+  if(result){
+    // Mock 타임스탬프 DB 저장
+    const mockTs=[
+      {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
+      {t:'05:20',type:'good',text:'제품 스펙 비교 시 실물 시연과 함께 설명하여 이해도 향상',tags:['전문성','시연']},
+      {t:'08:45',type:'bad',text:'"음~" 반복 사용이 잦아 전달력이 다소 저하됨',tags:['발성','습관어']},
+      {t:'12:10',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
+      {t:'18:30',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
+    ];
+    for(const ts of mockTs){ await dbAddTimestamp(result.id,ts); }
+    await loadFromDB();
+  }
+  alert('영상과 분석 결과가 저장되었습니다!');
+  showPage('page-home');
+}
 
 function openStreaming(){
   el('st-title').value=''; el('st-type').value=''; el('st-count').value='';
