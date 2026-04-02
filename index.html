@@ -2097,6 +2097,62 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 }
 
 // 타임스탬프 클릭 → 영상 해당 시간으로 이동
+async function generateFullAnalysis(title, studentCount, savedTimestamps, youtubeUrl){
+  const videoInfo=youtubeUrl?`YouTube URL: ${youtubeUrl}`:'업로드된 영상';
+  const tsInfo=savedTimestamps.length
+    ?`기존 타임스탬프:\n${savedTimestamps.map(ts=>`${ts.t} [${ts.type}] ${ts.text}`).join('\n')}`
+    :'타임스탬프 없음';
+
+  const prompt=`당신은 interbiz 현장강사 역량 평가 AI입니다. 아래 강의 영상 정보를 기반으로 정밀 분석해주세요.
+
+영상 제목: ${title}
+교육생 인원: ${studentCount}명
+영상 정보: ${videoInfo}
+${tsInfo}
+
+반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{
+  "criteriaScores": [{"name":"발성 및 전달력","score":0,"max":20},{"name":"내용 전문성","score":0,"max":25},{"name":"판서 및 자료","score":0,"max":15},{"name":"수강생 상호작용","score":0,"max":20},{"name":"시간 관리","score":0,"max":10},{"name":"마무리 및 요약","score":0,"max":10}],
+  "criteriaSummary": "평가안 기준 종합 평가 한줄",
+  "overallScore": 0,
+  "focusScore": 0,
+  "overallComment": "강의 구성력 코멘트",
+  "focusComment": "수강생 집중도 코멘트",
+  "habits": [{"word":"반복어","count":0}],
+  "decibel": 0,
+  "decibelStatus": "적정 또는 조정 필요",
+  "tempo": 0,
+  "tempoStatus": "적정 또는 조정 필요",
+  "engagementGaps": [0,0,0,0],
+  "engagementWarning": "환기 관련 메시지",
+  "timestamps": [
+    {"t":"mm:ss","type":"good","text":"설명","tags":["태그"]}
+  ],
+  "solution": "개선 솔루션 4가지 (<br>로 줄바꿈)",
+  "scenario": "다음 강의 추천 시나리오 (<br>로 줄바꿈)"
+}
+
+타임스탬프는 8~12개, good/bad/tip 골고루.
+점수는 현실적으로.
+${savedTimestamps.length?'기존 타임스탬프를 참고하여 더 정밀하게 분석하세요.':''}`;
+
+  try {
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4000}})
+    });
+    const data=await resp.json();
+    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('no json');
+    renderAnalysisResult(JSON.parse(m[0]),true,studentCount);
+  } catch(e){
+    console.error('Gemini full analysis error:',e);
+    const mock=generateMockResult(studentCount);
+    if(savedTimestamps.length) mock.timestamps=savedTimestamps;
+    renderAnalysisResult(mock,true,studentCount);
+  }
+}
+
 function seekToTime(timeStr){
   const parts=timeStr.split(':');
   const sec=parseInt(parts[0])*60+parseInt(parts[1]||0);
@@ -3170,21 +3226,23 @@ function openVideo(id){
     el('an-player').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)"><p>영상이 등록되지 않았습니다</p></div>`;
   }
 
-  // 평가안 여부 (저장된 영상은 AI 독자 분석만)
-  const hasCL=false;
-  if(!hasCL){
-    el('an-split').style.gridTemplateColumns='1fr';
-    el('an-criteria-result').parentElement.parentElement.style.display='none';
-  }
+  // 평가안 기준 분석도 표시
+  el('an-split').style.gridTemplateColumns='1fr 1fr';
+  el('an-criteria-result').parentElement.parentElement.style.display='';
 
-  // 기존 타임스탬프로 결과 렌더링
   const count=vid.studentCount||20;
-  const mockResult=generateMockResult(count);
-  // 실제 저장된 타임스탬프가 있으면 사용
-  if(vid.timestamps?.length) mockResult.timestamps=vid.timestamps;
-  renderAnalysisResult(mockResult,hasCL,count);
+  const title=vid.title||'';
+
+  // 로딩 표시
+  el('an-criteria-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">분석 중...</div>';
+  el('an-ai-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">🤖</div>AI 분석 중...</div>';
+  el('an-ts-feed').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">타임스탬프 로딩 중...</div>';
+  el('an-report').innerHTML='';
 
   showPage('page-analysis');
+
+  // Gemini AI로 전체 분석 호출 (저장된 타임스탬프 포함)
+  generateFullAnalysis(title, count, vid.timestamps||[], vid.youtube||'');
   return;
 
   // ─── 이하 기존 page-video 코드 (미사용) ───
