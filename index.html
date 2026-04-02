@@ -1249,6 +1249,22 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <main>
   <div class="sec-lbl" style="margin-bottom:20px">영상 스트리밍 & AI 평가</div>
 
+  <!-- 대기 화면 -->
+  <div id="stream-step0" style="text-align:center;padding:60px 0">
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(226,30,38,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+      <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="14" stroke="#E21E26" stroke-width="2" opacity=".3"/>
+        <circle cx="20" cy="20" r="8" fill="#E21E26" opacity=".15"/>
+        <circle cx="20" cy="20" r="4" fill="#E21E26"/>
+      </svg>
+    </div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:6px">녹화를 시작하세요</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:24px">아래 버튼을 눌러 영상 정보를 입력하고 녹화를 시작합니다</div>
+    <button class="auth-btn auth-btn-primary" style="max-width:220px;margin:0 auto" onclick="openStreamModal()">
+      녹화 시작 →
+    </button>
+  </div>
+
   <!-- Step 1: hidden (modal handles it) -->
   <div id="stream-step1" style="display:none"></div>
 
@@ -3014,6 +3030,13 @@ function renderVoiceHighlight(){
 }
 
 function openStreaming(){
+  el('stream-step1').style.display='none';
+  el('stream-step2').style.display='none';
+  el('stream-step3').style.display='none';
+  showPage('page-streaming');
+  // 녹화 시작 모달은 버튼 클릭 시 표시
+}
+function openStreamModal(){
   el('st-title').value=''; el('st-type').value=''; el('st-count').value='';
   el('st-date').value=new Date().toISOString().split('T')[0];
   el('st-err').textContent='';
@@ -3028,6 +3051,7 @@ function goStreamStep2(){
   if(!v('st-channel')){ el('st-err').textContent='소속을 선택하세요.'; return; }
   closeOverlay('stream-info-overlay');
   // Show streaming page
+  el('stream-step0').style.display='none';
   el('stream-step1').style.display='none';
   el('stream-step2').style.display='';
   el('stream-step3').style.display='none';
