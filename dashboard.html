@@ -2424,6 +2424,29 @@ function renderVoiceResult(r,hasCL,count,tone){
     <div class="solution-card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.12)"><div class="sol-title" style="color:var(--purple)">🎤 음성 트레이닝 추천</div><div class="sol-text">${r.training||''}</div></div>`;
 }
 
+function renderUserVoiceList(userId){
+  const vaData=JSON.parse(localStorage.getItem('ib_voice_evals')||'[]');
+  const userVoice=vaData.filter(v=>v.userId===userId);
+  const countEl=el('voice-count-'+userId);
+  const listEl=el('voice-list-'+userId);
+  if(countEl) countEl.textContent=userVoice.length+'개';
+  if(!listEl) return;
+  if(!userVoice.length){
+    listEl.innerHTML='<p style="font-size:12px;color:var(--t3);padding:12px 0">등록된 음성 평가가 없습니다.</p>';
+    return;
+  }
+  listEl.innerHTML=userVoice.map(v=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${v.title}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${v.date} · — · 교육생 ${v.studentCount||0}명</div>
+      </div>
+      <span style="font-size:14px;font-weight:900;color:${v.score>=80?'var(--green)':v.score>=60?'var(--blue)':'var(--red)'}">${v.score}점</span>
+      <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(139,92,246,.1);color:#8b5cf6">${v.tone||'—'}</span>
+      <button class="btn btn-blue" style="padding:5px 10px;font-size:11px" onclick="openVoiceResult(${v.id})">분석 보기</button>
+    </div>`).join('');
+}
+
 function openVoiceResult(vaId){
   const vaData=JSON.parse(localStorage.getItem('ib_voice_evals')||'[]');
   const v=vaData.find(x=>x.id===vaId);
@@ -2948,6 +2971,21 @@ function openLecturer(id, fromPage){
             </div>
           </div>
 
+          <!-- 2.5 등록 음성 목록 -->
+          <div class="acc-item">
+            <button class="acc-trigger" onclick="toggleAcc(this)">
+              <div class="acc-ico" style="background:rgba(139,92,246,.09)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              </div>
+              <span class="acc-title">🎤 등록 음성 목록</span>
+              <span style="font-size:11px;color:var(--t3);margin-right:8px" id="voice-count-${u.id}">0개</span>
+              <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            </button>
+            <div class="acc-body">
+              <div style="padding:0 18px 10px" id="voice-list-${u.id}"></div>
+            </div>
+          </div>
+
           <!-- 3. AI 분석 리포트 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
@@ -3043,6 +3081,8 @@ function openLecturer(id, fromPage){
   requestAnimationFrame(()=>{
     document.querySelectorAll('#lecturer-main .bar-fill').forEach(e=>{ e.style.width=e.dataset.pct+'%'; });
   });
+  // 음성 목록 렌더링
+  renderUserVoiceList(id);
 }
 
 async function saveMemo(uid){
