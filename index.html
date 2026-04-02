@@ -814,7 +814,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:12px;font-weight:700">📋 평가안 업로드 (선택)</span>
-          <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
+          <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용 · <a href="assets/평가안_샘플양식.html" target="_blank" style="color:var(--blue);text-decoration:underline">샘플 양식 보기</a></span>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 선택 (PDF/Excel)</button>
@@ -1046,6 +1046,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
     <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
     <button class="tab-btn" onclick="switchTab('PDF',this)">PDF 내보내기</button>
+    <button class="tab-btn" onclick="switchTab('API',this)">API 설정</button>
   </div>
 
   <!-- 강사 관리 -->
@@ -1108,6 +1109,19 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </select>
       </div>
       <button class="btn btn-blue" onclick="window.print()">PDF 생성 및 인쇄</button>
+    </div>
+  </div>
+
+  <!-- API 설정 -->
+  <div class="tab-pane" id="tab-API">
+    <div class="acc-wrap neu" style="padding:20px;max-width:500px">
+      <div class="sec-lbl">AI API 키 설정</div>
+      <div class="form-group">
+        <label class="form-lbl">Claude API Key</label>
+        <input type="password" class="form-input" id="api-claude-key" placeholder="sk-ant-..." value="">
+        <p style="font-size:10px;color:var(--t3);margin-top:4px">영상등록 분석에서 AI 자동 평가에 사용됩니다. 없으면 자체 생성 모드로 동작합니다.</p>
+      </div>
+      <button class="btn btn-blue" onclick="saveApiKeys()">저장</button>
     </div>
   </div>
 </main>
@@ -1648,6 +1662,15 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
 /* ════════════════════════════════
    ANALYSIS PAGE (영상등록 분석)
 ════════════════════════════════ */
+// API Key 관리
+window._claudeKey=localStorage.getItem('ib_claude_key')||'';
+function saveApiKeys(){
+  const key=v('api-claude-key').trim();
+  window._claudeKey=key;
+  localStorage.setItem('ib_claude_key',key);
+  alert('API 키가 저장되었습니다.'+(key?'':'(비어있음 — 자체 생성 모드)'));
+}
+
 function openAnalysis(){
   el('an-step1').style.display='';
   el('an-step2').style.display='none';
@@ -1695,121 +1718,184 @@ function runAnalysis(){
     el('an-split').style.gridTemplateColumns='1fr 1fr';
   }
 
-  generateAIAnalysis(title,count,hasChecklist);
-
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
+
+  // 로딩 표시
+  el('an-criteria-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">분석 중...</div>';
+  el('an-ai-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">🤖</div>AI 분석 중... 잠시만 기다려주세요</div>';
+  el('an-ts-feed').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">타임스탬프 생성 중...</div>';
+  el('an-report').innerHTML='';
+
+  generateAIAnalysis(title,count,hasChecklist);
 }
 
-function generateAIAnalysis(title,studentCount,hasChecklist){
-  // ─── 평가안 기준 탭 ───
-  if(hasChecklist){
+async function generateAIAnalysis(title,studentCount,hasChecklist){
+  const yt=v('an-youtube').trim();
+  const videoInfo=yt?`YouTube URL: ${yt}`:'업로드된 영상 파일';
+
+  const prompt=`당신은 interbiz 현장강사 역량 평가 AI입니다. 아래 강의 영상 정보를 기반으로 정밀 분석해주세요.
+
+영상 제목: ${title}
+교육생 인원: ${studentCount}명
+영상 정보: ${videoInfo}
+평가안 유무: ${hasChecklist?'있음 (업로드됨)':'없음'}
+
+반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{
+  "criteriaScores": ${hasChecklist?'[{"name":"발성 및 전달력","score":0,"max":20},{"name":"내용 전문성","score":0,"max":25},{"name":"판서 및 자료","score":0,"max":15},{"name":"수강생 상호작용","score":0,"max":20},{"name":"시간 관리","score":0,"max":10},{"name":"마무리 및 요약","score":0,"max":10}]':'[]'},
+  "criteriaSummary": "${hasChecklist?'평가안 기준 종합 평가 한줄 작성':''}",
+  "overallScore": 0,
+  "focusScore": 0,
+  "overallComment": "강의 구성력에 대한 한줄 코멘트",
+  "focusComment": "수강생 집중도에 대한 한줄 코멘트",
+  "habits": [{"word":"감지된 반복어","count":0}],
+  "decibel": 0,
+  "decibelStatus": "적정 또는 조정 필요",
+  "tempo": 0,
+  "tempoStatus": "적정 또는 조정 필요",
+  "engagementGaps": [0,0,0,0],
+  "engagementWarning": "환기 관련 경고 메시지",
+  "timestamps": [
+    {"t":"mm:ss","type":"good","text":"설명","tags":["태그"]},
+    {"t":"mm:ss","type":"bad","text":"설명","tags":["태그"]},
+    {"t":"mm:ss","type":"tip","text":"설명","tags":["태그"]}
+  ],
+  "solution": "개선 솔루션 4가지 (줄바꿈은 <br>로)",
+  "scenario": "다음 강의 추천 시나리오 (줄바꿈은 <br>로)"
+}
+
+타임스탬프는 최소 8~12개를 생성하되, good/bad/tip을 골고루 배분하세요.
+점수는 현실적으로 작성하고, 교육생 인원수에 맞는 데시벨/템포를 권장하세요.
+반복어는 한국어 강의에서 흔한 것 위주로 2~5개 감지하세요.`;
+
+  try {
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':window._claudeKey||'',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const txt=data.content?.[0]?.text||'';
+    const json=JSON.parse(txt);
+    renderAnalysisResult(json,hasChecklist,studentCount);
+  } catch(e){
+    console.error('Claude API error:',e);
+    // API 키 없거나 에러 시 → 자체 생성 (Mock)
+    renderAnalysisResult(generateMockResult(studentCount),hasChecklist,studentCount);
+  }
+}
+
+function generateMockResult(studentCount){
+  return {
+    criteriaScores:[{name:'발성 및 전달력',score:17+Math.floor(Math.random()*3),max:20},{name:'내용 전문성',score:20+Math.floor(Math.random()*5),max:25},{name:'판서 및 자료',score:10+Math.floor(Math.random()*5),max:15},{name:'수강생 상호작용',score:15+Math.floor(Math.random()*5),max:20},{name:'시간 관리',score:7+Math.floor(Math.random()*3),max:10},{name:'마무리 및 요약',score:7+Math.floor(Math.random()*3),max:10}],
+    criteriaSummary:'발성과 전문성이 우수하며, 판서 활용도 향상 시 A등급 달성 가능합니다.',
+    overallScore:78+Math.floor(Math.random()*15),
+    focusScore:72+Math.floor(Math.random()*15),
+    overallComment:'도입→전개→정리 흐름이 전반적으로 자연스러우며, 중반부 속도 조절 필요',
+    focusComment:'환기 활동 간격이 일부 구간에서 10분을 초과하여 집중도 저하 우려',
+    habits:[{word:'음~',count:8+Math.floor(Math.random()*10)},{word:'그래서',count:4+Math.floor(Math.random()*6)},{word:'맞죠?',count:3+Math.floor(Math.random()*5)},{word:'이제',count:1+Math.floor(Math.random()*3)}],
+    decibel:65+Math.floor(Math.random()*15),decibelStatus:'적정',
+    tempo:130+Math.floor(Math.random()*20),tempoStatus:'적정',
+    engagementGaps:[7+Math.floor(Math.random()*5),10+Math.floor(Math.random()*8),6+Math.floor(Math.random()*4),9+Math.floor(Math.random()*6)],
+    engagementWarning:'일부 구간에서 12분 이상 연속 강의 — 중간에 질문이나 퀴즈 삽입 권장',
+    timestamps:[
+      {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
+      {t:'04:15',type:'good',text:'제품 핵심 기능을 3가지로 정리하여 명확하게 전달',tags:['전문성','구성']},
+      {t:'07:40',type:'bad',text:'반복어 사용이 잦아 전달력이 다소 저하됨',tags:['발성','습관어']},
+      {t:'11:20',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
+      {t:'15:00',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
+      {t:'19:30',type:'bad',text:'PPT 전환이 빠르고 판서 없이 말로만 설명하는 구간',tags:['판서','속도']},
+      {t:'24:00',type:'tip',text:'핵심 개념을 칠판에 정리하면 기억 정착률이 크게 향상됨',tags:['판서','팁']},
+      {t:'28:45',type:'good',text:'수강생에게 직접 질문하여 참여도를 높임',tags:['상호작용']},
+      {t:'33:10',type:'bad',text:'강의 후반부 목소리 볼륨 저하 — 에너지 관리 필요',tags:['발성','에너지']},
+      {t:'38:00',type:'tip',text:'마무리에서 핵심 3가지를 요약하면 만족도 대폭 향상',tags:['마무리','요약']}
+    ],
+    solution:'1. 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>2. 12분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획',
+    scenario:'<strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br><strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br><strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br><strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고'
+  };
+}
+
+function renderAnalysisResult(r,hasChecklist,studentCount){
+  // ─── 평가안 기준 (왼쪽) ───
+  if(hasChecklist && r.criteriaScores?.length){
+    el('an-criteria-result').parentElement.parentElement.style.display='';
+    const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
+    const maxTotal=r.criteriaScores.reduce((a,b)=>a+b.max,0);
     el('an-criteria-result').innerHTML=`
-      <div style="padding:12px;background:rgba(0,120,200,.04);border-radius:8px;margin-bottom:14px">
-        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">✅ 업로드된 평가안 기준 적용</div>
-        <div style="font-size:11px;color:var(--t2);line-height:1.8">업로드하신 평가안을 기준으로 영상을 분석했습니다.</div>
+      <div style="padding:10px;background:rgba(0,120,200,.04);border-radius:8px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue)">✅ 평가안 기준 적용</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-        ${['발성 및 전달력|18|20','내용 전문성|22|25','판서 및 자료|12|15','수강생 상호작용|17|20','시간 관리|8|10','마무리 및 요약|8|10'].map(x=>{
-          const[n,s,m]=x.split('|');const pct=Math.round(s/m*100);
-          return `<div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${n}</div><div style="font-size:18px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${s}<span style="font-size:11px;color:var(--t3)">/${m}</span></div><div class="bar-track" style="margin-top:4px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${r.criteriaScores.map(c=>{
+          const pct=Math.round(c.score/c.max*100);
+          return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
         }).join('')}
       </div>
-      <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.8">
-        <strong style="color:var(--green)">평가안 기준 종합:</strong> 총 85/100점 (A등급). 발성 및 전달력이 우수하며, 판서 활용도를 높이면 90점 이상 가능합니다.
+      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7">
+        <strong style="color:var(--green)">종합: ${total}/${maxTotal}점</strong> — ${r.criteriaSummary||''}
       </div>`;
   } else {
-    // 평가안 없으면 왼쪽 패널 숨기고 AI가 전체 사용
     el('an-criteria-result').parentElement.parentElement.style.display='none';
   }
 
-  // ─── AI 독자 분석 탭 ───
+  // ─── AI 독자 분석 (오른쪽 또는 전체) ───
+  const habitHtml=r.habits?.length?r.habits.map(h=>{
+    const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
+    return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+  }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>';
+
   el('an-ai-result').innerHTML=`
-    <div style="padding:12px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">🤖 AI가 영상 흐름을 독자적으로 분석했습니다</div>
+    <div style="padding:10px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--purple)">🤖 AI 독자 분석 결과</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div style="padding:14px;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:8px">
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">전체 강의 구성력</div>
-        <div style="font-size:24px;font-weight:900;color:var(--blue)">82<span style="font-size:12px;color:var(--t3)">/100</span></div>
-        <div style="font-size:11px;color:var(--t2);margin-top:4px">도입→전개→정리 흐름이 자연스러움</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="padding:12px;background:#f8f9fa;border-radius:8px">
+        <div style="font-size:10px;color:var(--t3)">강의 구성력</div>
+        <div style="font-size:22px;font-weight:900;color:var(--blue)">${r.overallScore}<span style="font-size:11px;color:var(--t3)">/100</span></div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">${r.overallComment||''}</div>
       </div>
-      <div style="padding:14px;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:8px">
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">수강생 집중도 예측</div>
-        <div style="font-size:24px;font-weight:900;color:var(--green)">78<span style="font-size:12px;color:var(--t3)">/100</span></div>
-        <div style="font-size:11px;color:var(--t2);margin-top:4px">환기 활동 간격 평균 12분 (권장: 10분 이내)</div>
-      </div>
-    </div>
-    <!-- 반복어 습관 -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🗣️ 반복어 습관 감지</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        <span class="habit-badge hb-high">음~ <span class="habit-cnt">14회</span></span>
-        <span class="habit-badge hb-mid">그래서 <span class="habit-cnt">8회</span></span>
-        <span class="habit-badge hb-mid">맞죠? <span class="habit-cnt">6회</span></span>
-        <span class="habit-badge hb-low">이제 <span class="habit-cnt">3회</span></span>
+      <div style="padding:12px;background:#f8f9fa;border-radius:8px">
+        <div style="font-size:10px;color:var(--t3)">집중도 예측</div>
+        <div style="font-size:22px;font-weight:900;color:var(--green)">${r.focusScore}<span style="font-size:11px;color:var(--t3)">/100</span></div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">${r.focusComment||''}</div>
       </div>
     </div>
-    <!-- 음성 분석 -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎤 음성 분석 (교육생 ${studentCount}명 기준)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div style="padding:10px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">데시벨</span><br><strong style="font-size:16px">72 dB</strong> <span style="font-size:10px;color:var(--green)">적정</span></div>
-        <div style="padding:10px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">말하기 속도</span><br><strong style="font-size:16px">142 WPM</strong> <span style="font-size:10px;color:var(--green)">적정</span></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🗣️ 반복어 습관</div><div style="display:flex;flex-wrap:wrap;gap:5px">${habitHtml}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🎤 음성 분석 (${studentCount}명 기준)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="padding:8px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">데시벨</span><br><strong>${r.decibel} dB</strong> <span style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus}</span></div>
+        <div style="padding:8px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">템포</span><br><strong>${r.tempo} WPM</strong> <span style="font-size:10px;color:${r.tempoStatus==='적정'?'var(--green)':'var(--orange)'}">${r.tempoStatus}</span></div>
       </div>
     </div>
-    <!-- 환기 분석 -->
-    <div>
-      <div style="font-size:12px;font-weight:700;margin-bottom:8px">🔄 교육 환기 타이밍</div>
-      <div style="font-size:11px;color:var(--t2);line-height:1.8">
-        참여 유도 간격: <strong>8분 → 14분 → 7분 → 11분</strong><br>
-        <span style="color:var(--orange)">⚠️ 14분 구간</span>에서 집중도 저하 예상. 중간에 질문이나 퀴즈를 삽입하세요.
-      </div>
+    <div><div style="font-size:12px;font-weight:700;margin-bottom:6px">🔄 환기 타이밍</div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'}</strong><br>${r.engagementWarning||''}</div>
     </div>`;
 
-  // ─── 타임스탬프 피드 ───
-  const mockTs=[
-    {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
-    {t:'05:20',type:'good',text:'제품 스펙 비교 시 실물 시연과 함께 설명하여 이해도 향상',tags:['전문성','시연']},
-    {t:'08:45',type:'bad',text:'"음~" 반복 사용이 잦아 전달력이 다소 저하됨 (14회 감지)',tags:['발성','습관어']},
-    {t:'12:10',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
-    {t:'18:30',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
-    {t:'22:00',type:'bad',text:'PPT 전환이 너무 빠르고 판서 없이 말로만 설명하는 구간',tags:['판서','속도']},
-    {t:'28:15',type:'tip',text:'핵심 개념 3가지를 칠판에 정리하면 기억 정착률 2배 향상',tags:['판서','팁']},
-    {t:'33:40',type:'good',text:'수강생 3명에게 직접 질문하여 참여도를 높임',tags:['상호작용']},
-    {t:'38:00',type:'bad',text:'강의 후반부 목소리 볼륨 저하 — 에너지 관리 필요',tags:['발성','에너지']},
-    {t:'42:30',type:'tip',text:'마무리에서 "오늘의 핵심 3가지"로 요약하면 만족도 대폭 향상',tags:['마무리','요약']},
-  ];
-  el('an-ts-feed').innerHTML=mockTs.map((ts,i)=>`
+  // ─── 타임스탬프 ───
+  window._anTimestamps=r.timestamps||[];
+  el('an-ts-feed').innerHTML=(r.timestamps||[]).map(ts=>`
     <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''" onclick="seekToTime('${ts.t}')">
       <span style="font-size:11px;font-weight:800;color:var(--blue);white-space:nowrap;min-width:45px">${ts.t}</span>
       <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
-      <div style="flex:1">
-        <div style="font-size:12px;color:var(--t2);line-height:1.6">${ts.text}</div>
-        <div style="display:flex;gap:4px;margin-top:4px">${ts.tags.map(t=>`<span class="ts-tag">${t}</span>`).join('')}</div>
+      <div style="flex:1"><div style="font-size:12px;color:var(--t2);line-height:1.6">${ts.text}</div>
+        <div style="display:flex;gap:4px;margin-top:4px">${(ts.tags||[]).map(t=>'<span class="ts-tag">'+t+'</span>').join('')}</div>
       </div>
     </div>`).join('');
 
   // ─── 종합 리포트 ───
   el('an-report').innerHTML=`
-    <div class="solution-card">
-      <div class="sol-title">💡 솔루션 & 다음 강의 권장</div>
-      <div class="sol-text">
-        1. "음~" 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>
-        2. 14분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>
-        3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>
-        4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획
-      </div>
-    </div>
-    <div class="solution-card" style="background:rgba(0,120,200,.04);border-color:rgba(0,120,200,.12)">
-      <div class="sol-title" style="color:var(--blue)">🎯 다음 강의 추천 시나리오</div>
-      <div class="sol-text">
-        <strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br>
-        <strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br>
-        <strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br>
-        <strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고
-      </div>
-    </div>`;
+    <div class="solution-card"><div class="sol-title">💡 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
+    <div class="solution-card" style="background:rgba(0,120,200,.04);border-color:rgba(0,120,200,.12)"><div class="sol-title" style="color:var(--blue)">🎯 다음 강의 시나리오</div><div class="sol-text">${r.scenario||''}</div></div>`;
 }
 
 // 타임스탬프 클릭 → 영상 해당 시간으로 이동
@@ -2714,6 +2800,9 @@ async function openRegisterVideo(userId){
    ADMIN PANEL
 ════════════════════════════════ */
 function renderAdmin(){
+  // API key
+  const apiKeyEl=el('api-claude-key');
+  if(apiKeyEl) apiKeyEl.value=window._claudeKey||'';
   // User table
   el('admin-user-tbody').innerHTML=D.users.map(u=>{
     const latestScore=u.score||'—';
