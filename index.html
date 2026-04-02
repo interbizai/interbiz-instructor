@@ -380,44 +380,55 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Print ── */
 @media print{
-  @page{size:A4;margin:12mm 10mm}
-  header,.filter-bar,.btn-pdf,.nav-back,.hdr-right,.btn-ghost,.btn-blue,.btn-red,.auth-btn,.home-icons,.home-carousel,.icon-grid,.overlay,.upload-zone,.dual-tabs,.webcam-wrap,canvas{display:none!important}
+  @page{size:A4;margin:8mm 8mm}
+  header,.filter-bar,.btn-pdf,.nav-back,.hdr-right,.btn-ghost,.btn-blue,.btn-red,.auth-btn,.home-icons,.home-carousel,.icon-grid,.overlay,.upload-zone,.dual-tabs,.webcam-wrap,canvas,.top5-scroll,.neu-btn{display:none!important}
   .page{display:none!important}
   .page.active{display:block!important}
-  body{background:#fff!important;font-size:11px!important;color:#1a202c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff!important;font-size:10px!important;color:#1a202c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.4!important}
   main{padding:0!important;max-width:100%!important}
-  /* 스크롤 전부 해제 */
   *{overflow:visible!important;max-height:none!important}
   .acc-body,.coll-body{max-height:none!important}
-  /* 레이아웃 A4 최적화 */
-  .video-player{height:240px!important;page-break-inside:avoid}
-  .video-player iframe{height:240px!important}
-  #an-split{grid-template-columns:1fr 1fr!important;gap:12px!important}
-  #va-split{grid-template-columns:1fr 1fr!important;gap:12px!important}
-  .prof-layout{grid-template-columns:220px 1fr!important;gap:14px!important}
+  /* 영상 작게 */
+  .video-player{height:160px!important;margin-bottom:8px!important}
+  .video-player iframe{height:160px!important}
+  /* 좌우 분할 유지 + 간격 축소 */
+  #an-split,#va-split{grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
+  .prof-layout{grid-template-columns:180px 1fr!important;gap:10px!important}
   .stream-layout{grid-template-columns:1fr!important}
-  .lect-grid{grid-template-columns:1fr 1fr!important;gap:10px!important}
-  .stats-row{grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
-  /* 카드/항목 페이지 분리 방지 */
-  .acc-item,.solution-card,.lect-card,.stat-card,.prof-card,.top5-card{break-inside:avoid;page-break-inside:avoid}
-  /* 타임스탬프 피드 */
-  #an-ts-feed>div,#va-report>div{break-inside:avoid;page-break-inside:avoid}
-  /* 폰트/여백 밸런스 */
-  .sec-lbl{font-size:13px!important;margin:14px 0 8px!important}
-  .stat-val{font-size:20px!important}
-  .stat-lbl{font-size:9px!important}
-  .bar-track{height:4px!important}
-  .ts-badge{font-size:9px!important;padding:1px 5px!important}
-  .ts-tag{font-size:8px!important}
-  .solution-card{padding:10px 12px!important;margin-bottom:8px!important}
-  .sol-title{font-size:10px!important}
-  .sol-text{font-size:10px!important}
-  .habit-badge{font-size:10px!important;padding:3px 8px!important}
-  /* 프로필 카드 */
-  .prof-photo{width:60px!important;height:60px!important}
-  .prof-row{padding:5px 0!important;font-size:11px!important}
-  /* 인쇄 헤더 추가 */
-  .page.active::before{content:'interbiz 현장강사 역량 평가 플랫폼';display:block;text-align:center;font-size:14px;font-weight:800;padding:8px 0 12px;border-bottom:2px solid #1a202c;margin-bottom:14px}
+  .lect-grid{grid-template-columns:1fr 1fr 1fr!important;gap:6px!important}
+  .stats-row{grid-template-columns:repeat(4,1fr)!important;gap:6px!important}
+  /* 여백 최소화 */
+  .sec-lbl{font-size:11px!important;margin:8px 0 4px!important}
+  .stat-card{padding:8px!important}
+  .stat-val{font-size:16px!important}
+  .stat-lbl{font-size:8px!important}
+  .icon-card{width:30px!important;height:30px!important}
+  .bar-track{height:3px!important}
+  .solution-card{padding:6px 8px!important;margin-bottom:4px!important}
+  .sol-title{font-size:9px!important;margin-bottom:2px!important}
+  .sol-text{font-size:9px!important;line-height:1.4!important}
+  /* 타임스탬프 빽빽하게 */
+  #an-ts-feed>div{padding:4px 8px!important;gap:6px!important}
+  .ts-badge{font-size:8px!important;padding:1px 4px!important}
+  .ts-tag{font-size:7px!important;padding:0 4px!important}
+  .habit-badge{font-size:9px!important;padding:2px 6px!important}
+  /* 프로필 */
+  .prof-photo{width:50px!important;height:50px!important;margin-bottom:6px!important}
+  .prof-card{padding:10px!important}
+  .prof-row{padding:3px 0!important;font-size:10px!important}
+  /* 아코디언 */
+  .acc-wrap{margin-bottom:6px!important}
+  .acc-trigger{padding:6px 10px!important;font-size:10px!important}
+  .acc-ico{width:24px!important;height:24px!important}
+  .acc-toggle{display:none!important}
+  .coll-item{padding:0 10px!important}
+  .coll-trigger{padding:4px 0!important;font-size:10px!important}
+  .coll-body{padding-left:14px!important}
+  /* 페이지 나뉨 방지 */
+  .acc-item,.solution-card,.lect-card,.stat-card,.prof-card{break-inside:avoid}
+  #an-ts-feed>div{break-inside:avoid}
+  /* 인쇄 헤더 */
+  .page.active::before{content:'interbiz 현장강사 역량 평가 리포트';display:block;text-align:center;font-size:12px;font-weight:800;padding:4px 0 8px;border-bottom:1.5px solid #1a202c;margin-bottom:8px}
 }
 </style>
 </head>
