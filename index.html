@@ -2124,9 +2124,7 @@ async function saveAnalysisVideo(){
     for(const ts of window._anTimestamps){ await dbAddTimestamp(result.id,ts); }
     await loadFromDB();
   }
-  // 저장 완료 표시 (페이지 이동 없이 결과 화면 유지)
-  const saveBtn=event?.target;
-  if(saveBtn){ saveBtn.textContent='✅ 저장 완료!'; saveBtn.style.background='var(--green)'; saveBtn.disabled=true; }
+  alert('영상과 분석 결과가 저장되었습니다!');
 }
 
 /* ════════════════════════════════
