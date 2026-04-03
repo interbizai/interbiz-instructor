@@ -743,7 +743,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">가전</label>
-      <input type="text" id="f-product" placeholder="예: 에어컨, TV" oninput="renderDashboard()" style="padding:9px 12px">
+      <select id="f-product" onchange="renderDashboard()">
+        <option value="">전체</option>
+      </select>
     </div>
     <div class="f-item"><label class="f-lbl">팀</label>
       <select id="f-team" onchange="renderDashboard()">
@@ -2592,7 +2594,7 @@ async function saveAnalysisVideo(){
     userId:userId, title:v('an-title'), youtube:yt,
     date:new Date().toISOString().split('T')[0], duration:'—',
     studentCount:parseInt(v('an-count'))||0, status:'분석완료',
-    channel:v('an-channel'), solution:'AI 분석 완료'
+    channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료'
   });
   if(result && window._anTimestamps?.length){
     for(const ts of window._anTimestamps){ await dbAddTimestamp(result.id,ts); }
@@ -3321,6 +3323,10 @@ function retakeStream(){
    DASHBOARD
 ════════════════════════════════ */
 function initDashboard(){
+  // populate product filter (from videos)
+  const ps=el('f-product'); ps.innerHTML='<option value="">전체</option>';
+  const products=[...new Set(D.videos.map(v=>v.videoType||v.video_type).filter(Boolean))];
+  products.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
   // populate team filter (dynamic)
   const ts=el('f-team'); ts.innerHTML='<option value="">전체</option>';
   const teams=[...new Set(D.users.map(u=>u.team).filter(Boolean))];
