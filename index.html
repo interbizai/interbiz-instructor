@@ -49,7 +49,7 @@ textarea{resize:vertical;min-height:80px}
 main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 
 /* ── Filter bar ── */
-.filter-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:26px}
+.filter-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:13px;margin-bottom:26px}
 .f-item{display:flex;flex-direction:column;gap:5px}
 .f-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .filter-bar select{padding:9px 12px}
@@ -741,6 +741,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <select id="f-ch" onchange="renderDashboard()">
         <option value="">전체</option><option value="가전AM">가전AM</option><option value="하이케어솔루션">하이케어솔루션</option>
       </select>
+    </div>
+    <div class="f-item"><label class="f-lbl">가전</label>
+      <input type="text" id="f-product" placeholder="예: 에어컨, TV" oninput="renderDashboard()" style="padding:9px 12px">
     </div>
     <div class="f-item"><label class="f-lbl">팀</label>
       <select id="f-team" onchange="renderDashboard()">
