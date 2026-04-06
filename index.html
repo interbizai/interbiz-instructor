@@ -2205,6 +2205,11 @@ function updateHeaderUI(){
   document.querySelectorAll('.hdr-admin-btn').forEach(btn=>{
     btn.style.display=CU?.isAdmin?'':'none';
   });
+  // 모든 헤더 로고 클릭 → 홈
+  document.querySelectorAll('.hdr-logo img').forEach(img=>{
+    img.style.cursor='pointer';
+    img.onclick=()=>showPage('page-home');
+  });
 }
 
 /* ════════════════════════════════
