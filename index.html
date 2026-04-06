@@ -611,15 +611,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
   </div>
 
-  <!-- Video carousel -->
-  <div class="sec-lbl">상위 강의 영상</div>
-  <div class="home-carousel">
-    <div class="home-track" id="home-track"></div>
-  </div>
-
-  <!-- 8 Icon Grid -->
-  <div class="sec-lbl">주요 기능</div>
-  <div class="home-icons">
+  <!-- 8 Icon Grid (중앙 정렬) -->
+  <div class="sec-lbl" style="justify-content:center;margin-top:20px">주요 기능</div>
+  <div class="home-icons" style="justify-content:center">
     <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')"><div class="home-icon-box hi-anim" id="hi1"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".2"/><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" class="si-arc"/><path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-check"/></svg></div><span class="home-icon-lbl">평가결과</span></div>
     <div class="home-icon-cell" onclick="openStreaming()"><div class="home-icon-box hi-anim" id="hi2"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/><rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/><rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/></svg></div><span class="home-icon-lbl">영상 스트리밍</span></div>
     <div class="home-icon-cell" onclick="openAnalysis()"><div class="home-icon-box" id="hi3"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/><text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text><g class="hi-robot-hand"><path d="M34 18c2-1 4 0 4 2s-2 3-4 2" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.15)" stroke-linecap="round"/><line x1="36" y1="17" x2="37" y2="14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/><line x1="38" y1="18" x2="39" y2="15" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/></g></svg></div><span class="home-icon-lbl">영상등록 분석</span></div>
@@ -2123,7 +2117,9 @@ function initHome(){
   });
   const carouselItems=dbVids.length>0?dbVids:defaultVids;
   const items=[...carouselItems,...carouselItems];
-  el('home-track').innerHTML=items.map((v,i)=>{
+  const trackEl=el('home-track');
+  if(!trackEl){startHomeIconAnimations();return;}
+  trackEl.innerHTML=items.map((v,i)=>{
     const thumb=v.yt?`background-image:url('https://img.youtube.com/vi/${v.yt}/hqdefault.jpg')`:'background:#1a1a2e';
     const onclick=v.id?`onclick="openVideo(${v.id})"`:`onclick="window.open('https://www.youtube.com/watch?v=${v.yt}','_blank')"`;
     return `<div class="carousel-card" ${onclick}>
