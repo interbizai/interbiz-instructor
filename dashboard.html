@@ -654,7 +654,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <div class="auth-err" id="li-err"></div>
-  <button class="auth-btn auth-btn-primary" onclick="try{doLogin()}catch(e){el('li-err').textContent='오류: '+e.message}">Log in</button>
+  <button class="auth-btn auth-btn-primary" onclick="doLogin()">Log in</button>
 
   <div class="auth-footer" style="margin-top:24px">계정이 없으신가요? <a onclick="showPage('page-register')">Sign Up</a></div>
 </div>
