@@ -30,7 +30,7 @@ textarea{resize:vertical;min-height:80px}
 /* ── Header ── */
 .hdr{position:sticky;top:0;z-index:200;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:13px 16px 13px 0;display:flex;align-items:center;justify-content:space-between}
 .hdr-logo{display:flex;align-items:center;gap:11px}
-.sidebar-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:8px;transition:background .15s;flex-shrink:0}
+.sidebar-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:8px;transition:background .15s;flex-shrink:0;margin-left:8px;margin-right:-4px}
 .sidebar-toggle:hover{background:rgba(0,0,0,.05)}
 .sidebar-toggle svg{display:block}
 .hdr-logo img{height:40px;border-radius:9px}
@@ -1935,6 +1935,9 @@ function toggleSidebar(){
 function addBurgerToHeaders(){
   document.querySelectorAll('.hdr-logo').forEach(logo=>{
     if(logo.querySelector('.sidebar-toggle')) return;
+    // 홈, 로그인, 회원가입 페이지에는 안 넣기
+    const pageId=logo.closest('.page')?.id||'';
+    if(['page-home','page-login','page-register'].includes(pageId)) return;
     const btn=document.createElement('button');
     btn.className='sidebar-toggle';
     btn.onclick=toggleSidebar;
