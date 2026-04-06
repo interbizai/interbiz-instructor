@@ -1175,10 +1175,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
 
     <!-- 종합 솔루션 -->
-    <div style="margin-bottom:18px">
-      <div class="sec-lbl">음성 종합 리포트</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="va-report"></div>
-    </div>
+    <div style="margin-bottom:18px" id="va-report"></div>
 
     <div style="display:flex;gap:10px">
       <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
@@ -3488,7 +3485,7 @@ function renderVoiceResult(r,hasCL,count,tone){
     </div>`:'';
 
   el('va-report').innerHTML=`
-    <div style="display:grid;grid-template-columns:3fr 2fr;gap:18px;align-items:start">
+    <div style="display:grid;grid-template-columns:7fr 3fr;gap:18px;align-items:start">
       <!-- 왼쪽: 타임스탬프 테이블 -->
       <div>
         ${vaTsHtml}
