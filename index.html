@@ -2134,7 +2134,7 @@ function initLogoParticles(){
     const pixels=imageData.data;
 
     logoParticles=[];
-    const step=3;
+    const step=2;
 
     for(let y=0;y<H;y+=step){
       for(let x=0;x<W;x+=step){
@@ -2142,23 +2142,19 @@ function initLogoParticles(){
         const a=pixels[i+3];
         if(a>50){
           const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
-          // Random start position (scattered)
-          // 화면 사방에서 랜덤 출발
           const edge=Math.floor(Math.random()*4);
           let sx,sy;
-          if(edge===0){sx=Math.random()*W;sy=-20-Math.random()*100;} // 위
-          else if(edge===1){sx=Math.random()*W;sy=H+20+Math.random()*100;} // 아래
-          else if(edge===2){sx=-20-Math.random()*100;sy=Math.random()*H;} // 왼쪽
-          else{sx=W+20+Math.random()*100;sy=Math.random()*H;} // 오른쪽
-          const angle=0;
-          const dist=0;
+          if(edge===0){sx=Math.random()*W;sy=-20-Math.random()*100;}
+          else if(edge===1){sx=Math.random()*W;sy=H+20+Math.random()*100;}
+          else if(edge===2){sx=-20-Math.random()*100;sy=Math.random()*H;}
+          else{sx=W+20+Math.random()*100;sy=Math.random()*H;}
           logoParticles.push({
             x: sx,
             y: sy,
             tx: x, ty: y,
             vx: 0, vy: 0,
             r, g, b, a,
-            size: Math.random()*2+1.5,
+            size: step,
             speed: Math.random()*0.006+0.004,
             arrived: false
           });
@@ -2187,7 +2183,7 @@ function animateLogo(){
       const dx=p.tx-p.x, dy=p.ty-p.y;
       const dist=Math.sqrt(dx*dx+dy*dy);
 
-      if(dist<0.5){
+      if(dist<0.3){
         p.x=p.tx; p.y=p.ty;
         p.arrived=true;
       } else {
@@ -2200,9 +2196,13 @@ function animateLogo(){
 
     // Draw
     ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.a/255})`;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.arrived?p.size*0.8:p.size,0,Math.PI*2);
-    ctx.fill();
+    if(p.arrived){
+      ctx.fillRect(p.x,p.y,p.size,p.size);
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size*0.7,0,Math.PI*2);
+      ctx.fill();
+    }
   }
 
   if(!allArrived){
