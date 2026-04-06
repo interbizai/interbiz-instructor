@@ -1578,7 +1578,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF 출력</button>
+    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -4392,7 +4392,7 @@ function renderRanking(filtered){
 
   function buildRankCard(title,subtitle,items){
     const rows=items.map((item,i)=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.04)':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.04)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.userId?'openLecturer('+item.userId+',\\'page-dashboard\\')':''}">
         <div style="width:24px;height:24px;border-radius:50%;background:${medalBg[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${rankColors[i]};flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
@@ -4410,9 +4410,9 @@ function renderRanking(filtered){
     </div>`;
   }
 
-  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.score}));
-  const videoItems=videoRank.map(v=>({name:v.name,sub:v.title,score:v.score}));
-  const voiceItems=voiceRank.map(v=>({name:v.user_name||'—',sub:v.tone||'',score:v.score}));
+  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.score,userId:u.id}));
+  const videoItems=videoRank.map(v=>({name:v.name,sub:v.title,score:v.score,userId:D.videos.find(vid=>vid.id===v.videoId)?.userId}));
+  const voiceItems=voiceRank.map(v=>({name:v.user_name||'—',sub:v.tone||'',score:v.score,userId:v.user_id}));
 
   rankArea.innerHTML=
     buildRankCard('개인 종합 랭킹','평균 점수',personalItems)+
