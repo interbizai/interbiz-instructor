@@ -77,7 +77,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(0,120,200,.1)}
 .neu{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.18);border-radius:var(--r2)}
 .neu-sm{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.18);border-radius:var(--r1)}
 .neu-in{box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}
-.neu-btn{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.08);border-radius:var(--r1);cursor:pointer;transition:box-shadow .15s,transform .1s}
+.neu-btn{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.18);border-radius:var(--r1);cursor:pointer;transition:box-shadow .15s,transform .1s}
 .neu-btn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1);transform:scale(.98)}
 input,select,textarea{background:#fff;border:1px solid #bbb;outline:none;box-shadow:none;border-radius:var(--r1);padding:11px 14px;font-size:15px;color:var(--t1);width:100%;transition:border-color .2s;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:var(--t1)}
@@ -98,7 +98,7 @@ textarea{resize:vertical;min-height:80px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r1);font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
 .btn-blue{background:var(--blue);color:#fff;box-shadow:3px 3px 9px rgba(0,120,200,.35)}
 .btn-red{background:var(--red);color:#fff;box-shadow:3px 3px 9px rgba(226,30,38,.3)}
-.btn-ghost{background:#fff;color:var(--blue);border:1px solid rgba(0,0,0,.1)}
+.btn-ghost{background:#fff;color:var(--blue);border:1px solid rgba(0,0,0,.18)}
 .btn:active{transform:scale(.97)}
 
 /* ── Section label ── */
@@ -127,7 +127,7 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
 .stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both}
 .stat-card:nth-child(2){animation-delay:.06s}.stat-card:nth-child(3){animation-delay:.12s}.stat-card:nth-child(4){animation-delay:.18s}
-.icon-card{width:52px;height:52px;border-radius:16px;border:1px solid rgba(0,0,0,.08);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:center}
+.icon-card{width:52px;height:52px;border-radius:16px;border:1px solid rgba(0,0,0,.18);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:center}
 .stat-val{font-size:32px;font-weight:900;line-height:1}
 .stat-lbl{font-size:14px;color:var(--t3);font-weight:500}
 
@@ -238,7 +238,7 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 .acc-trigger:hover{background:#f9f9f9}.acc-trigger.open{background:#f5f6f8}
 .acc-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .acc-title{flex:1;font-size:15px;font-weight:700}
-.acc-toggle{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border:1px solid rgba(0,0,0,.08);flex-shrink:0}
+.acc-toggle{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border:1px solid rgba(0,0,0,.18);flex-shrink:0}
 .acc-trigger.open .acc-toggle{background:#eee}
 .icon-plus{display:block}.icon-minus{display:none}
 .acc-trigger.open .icon-plus{display:none}.acc-trigger.open .icon-minus{display:block}
@@ -415,7 +415,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .home-track{display:flex;gap:18px;animation:marquee 50s linear infinite;width:max-content}
 .home-track:hover{animation-play-state:paused}
 @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.carousel-card{min-width:320px;height:195px;border-radius:var(--r2);overflow:hidden;position:relative;flex-shrink:0;cursor:pointer;border:1px solid rgba(0,0,0,.08);transition:transform .2s}
+.carousel-card{min-width:320px;height:195px;border-radius:var(--r2);overflow:hidden;position:relative;flex-shrink:0;cursor:pointer;border:1px solid rgba(0,0,0,.18);transition:transform .2s}
 .carousel-card:hover{transform:scale(1.03)}
 .carousel-card-bg{width:100%;height:100%;background:#1a1a2e;display:flex;align-items:center;justify-content:center}
 .carousel-card-bg svg{opacity:.35}
@@ -430,7 +430,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .home-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:720px;margin:0 auto 40px}
 @media(max-width:600px){.home-icons{grid-template-columns:repeat(2,1fr)}}
 .home-icon-cell{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer}
-.home-icon-box{width:90px;height:90px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.1);background:#fff;display:flex;align-items:center;justify-content:center;transition:box-shadow .2s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.04);color:var(--t1)}
+.home-icon-box{width:90px;height:90px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.18);background:#fff;display:flex;align-items:center;justify-content:center;transition:box-shadow .2s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.04);color:var(--t1)}
 .home-icon-box:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
 .home-icon-box:active{transform:scale(.96)}
 /* 음파 애니메이션 */
@@ -997,7 +997,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="an-step2" style="display:none">
     <!-- 영상 플레이어 -->
     <div style="margin-bottom:18px">
-      <div class="video-player" id="an-player" style="border-radius:var(--r2);border:1px solid rgba(0,0,0,.08)"></div>
+      <div class="video-player" id="an-player" style="border-radius:var(--r2);border:1px solid rgba(0,0,0,.18)"></div>
     </div>
 
     <!-- 좌우 분할: 평가안 기준 | AI 독자 분석 -->
@@ -1072,7 +1072,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;white-space:nowrap" onclick="openCalEventModal()">+ 일정 추가</button>
   </div>
   <!-- 달력 그리드 -->
-  <div style="border:1px solid rgba(0,0,0,.08);border-radius:var(--r2);overflow:hidden">
+  <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:hidden">
     <div id="cal-header" style="display:grid;grid-template-columns:repeat(7,1fr);background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.08)"></div>
     <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr)"></div>
   </div>
@@ -1443,7 +1443,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </div>
         </div>
         <!-- 음성 파형 빈 영역 -->
-        <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:14px">
+        <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.18);padding:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="display:flex;align-items:center;gap:6px">
               <div style="width:8px;height:8px;border-radius:50%;background:#ddd"></div>
@@ -1496,7 +1496,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div class="rec-bar" id="stream-rec-bar" style="display:none"><div class="rec-dot"></div><span id="stream-rec-timer">00:00</span></div>
         </div>
         <!-- Audio Waveform Visualizer -->
-        <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:14px">
+        <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.18);padding:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="display:flex;align-items:center;gap:6px">
               <div style="width:8px;height:8px;border-radius:50%;background:#10b981" id="stream-mic-dot"></div>
@@ -1544,7 +1544,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="stream-step3" style="display:none">
     <div class="stream-layout">
       <div>
-        <div class="video-player" style="margin-bottom:14px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.08)">
+        <div class="video-player" style="margin-bottom:14px;border-radius:var(--r2);border:1px solid rgba(0,0,0,.18)">
           <video id="stream-playback" controls style="width:100%;height:100%;border-radius:var(--r2)"></video>
         </div>
         <div style="display:flex;gap:10px">
