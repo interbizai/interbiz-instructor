@@ -2579,7 +2579,7 @@ function generateMockResult(studentCount){
 
 /* ── 듀얼 레이더 차트 SVG (2개 겹침 지원) ── */
 function drawRadarChart(items, color, size, items2, color2, label1, label2){
-  size=size||220; const cx=size/2, cy=size/2, R=size/2-32;
+  size=size||220; const cx=size/2, cy=size/2, R=size/2-55;
   const n=items.length; const as=2*Math.PI/n;
   // 격자
   let g='';
@@ -2602,12 +2602,12 @@ function drawRadarChart(items, color, size, items2, color2, label1, label2){
   // 라벨
   let lb='';
   items.forEach((d,i)=>{
-    const a=as*i-Math.PI/2;const lx=cx+(R+22)*Math.cos(a);const ly=cy+(R+22)*Math.sin(a);
+    const a=as*i-Math.PI/2;const lx=cx+(R+30)*Math.cos(a);const ly=cy+(R+30)*Math.sin(a);
     const anchor=Math.abs(Math.cos(a))<.1?'middle':Math.cos(a)>0?'start':'end';
-    lb+=`<text x="${lx}" y="${ly-1}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9.5" font-weight="600" fill="#4a5568">${d.name}</text>`;
+    lb+=`<text x="${lx}" y="${ly-2}" text-anchor="${anchor}" dominant-baseline="middle" font-size="12" font-weight="600" fill="#4a5568">${d.name}</text>`;
     let scoreText=`${d.score}${d.max?'/'+d.max:''}`;
-    if(items2?.[i]) scoreText+=` <tspan fill="${color2||'#f59e0b'}" font-size="8">vs ${items2[i].score}</tspan>`;
-    lb+=`<text x="${lx}" y="${ly+11}" text-anchor="${anchor}" dominant-baseline="middle" font-size="9" font-weight="800" fill="${color}">${scoreText}</text>`;
+    if(items2?.[i]) scoreText+=` <tspan fill="${color2||'#f59e0b'}" font-size="10">vs ${items2[i].score}</tspan>`;
+    lb+=`<text x="${lx}" y="${ly+14}" text-anchor="${anchor}" dominant-baseline="middle" font-size="12" font-weight="800" fill="${color}">${scoreText}</text>`;
   });
   // 범례
   let legend='';
@@ -2636,9 +2636,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
         <div style="font-size:12px;font-weight:700;color:var(--blue)">✅ 평가안 기준 적용</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">내 점수</div>${drawRadarChart(r.criteriaScores,'#0078C8',180)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgCri,'#f59e0b',180)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">비교</div>${drawRadarChart(r.criteriaScores,'#0078C8',180,avgCri,'#f59e0b','나','평균')}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">내 점수</div>${drawRadarChart(r.criteriaScores,'#0078C8',340)}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgCri,'#f59e0b',340)}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">비교</div>${drawRadarChart(r.criteriaScores,'#0078C8',340,avgCri,'#f59e0b','나','평균')}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         ${r.criteriaScores.map(c=>{
@@ -2683,9 +2683,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     ${(()=>{
       const avgAi=aiRadarItems.map(d=>({name:d.name,score:Math.max(30,d.score-5+Math.floor(Math.random()*10)),max:d.max}));
       return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">내 점수</div>${drawRadarChart(aiRadarItems,'#8b5cf6',180)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgAi,'#E21E26',180)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">비교</div>${drawRadarChart(aiRadarItems,'#8b5cf6',180,avgAi,'#E21E26','나','평균')}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">내 점수</div>${drawRadarChart(aiRadarItems,'#8b5cf6',340)}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgAi,'#E21E26',340)}</div>
+        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">비교</div>${drawRadarChart(aiRadarItems,'#8b5cf6',340,avgAi,'#E21E26','나','평균')}</div>
       </div>`;
     })()}
     </div>
@@ -2813,8 +2813,8 @@ function updateAiRadar(months){
   const avgItems=items.map(d=>({name:d.name,score:Math.max(30,Math.min(100,d.score-variance+Math.floor(Math.random()*variance*2))),max:d.max}));
   const periodLabel=months==='all'?'전체 평균':`${months}개월 평균`;
   el('ai-radar-container').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-    <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">내 점수</div>${drawRadarChart(items,'#8b5cf6',180)}</div>
-    <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">${periodLabel}</div>${drawRadarChart(avgItems,'#E21E26',180)}</div>
+    <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">내 점수</div>${drawRadarChart(items,'#8b5cf6',340)}</div>
+    <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">${periodLabel}</div>${drawRadarChart(avgItems,'#E21E26',340)}</div>
     <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">비교</div>${drawRadarChart(items,'#8b5cf6',180,avgItems,'#E21E26','나','평균')}</div>
   </div>`;
 }
@@ -3291,7 +3291,7 @@ function renderVoiceResult(r,hasCL,count,tone){
     const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
     const maxT=r.criteriaScores.reduce((a,b)=>a+b.max,0);
     el('va-criteria-result').innerHTML=`
-      ${drawRadarChart(r.criteriaScores,'#0078C8',200)}
+      ${drawRadarChart(r.criteriaScores,'#0078C8',340)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
         ${r.criteriaScores.map(c=>{
           const pct=Math.round(c.score/c.max*100);
@@ -3327,7 +3327,7 @@ function renderVoiceResult(r,hasCL,count,tone){
       <div style="font-size:36px;font-weight:900;color:${r.overall_score>=80?'var(--green)':r.overall_score>=60?'var(--blue)':'var(--red)'}">${r.overall_score}</div>
       <div style="font-size:11px;color:var(--t3)">음성 종합 점수 /100</div>
     </div>
-    ${drawRadarChart(voiceRadar,'#8b5cf6',220)}
+    ${drawRadarChart(voiceRadar,'#8b5cf6',340)}
     <!-- 데시벨 -->
     <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">🔊 데시벨</span><span style="color:${db.status==='적정'?'var(--green)':'var(--orange)'};font-weight:700">${db.current} dB · ${db.status}</span></div>
