@@ -2711,8 +2711,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
       <div style="flex:1"><div style="font-size:13px;color:var(--t2);line-height:1.6">${ts.text}</div>
         <div style="display:flex;gap:4px;margin-top:4px">${(ts.tags||[]).map(t=>'<span class="ts-tag">'+t+'</span>').join('')}</div>
-      </div>`}).join(`
-    </div>`).join('');
+    </div>`;}).join('');
 
   // ─── 종합 리포트 ───
   el('an-report').innerHTML=`
