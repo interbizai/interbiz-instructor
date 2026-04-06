@@ -426,7 +426,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .dash-sidebar-label{padding:18px 14px 6px}
 .dash-sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:all .15s;font-size:14px;font-weight:600;color:var(--t2);border-left:3px solid transparent}
 .dash-sidebar-item:hover{background:rgba(0,0,0,.03);color:var(--t1)}
-.dash-sidebar-item.active{background:rgba(0,120,200,.04);color:var(--blue);border-left-color:var(--blue);font-weight:700}
+.dash-sidebar-item.active{background:rgba(0,120,200,.12);color:var(--blue);border-left-color:var(--blue);font-weight:700}
 .dash-sidebar-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .dash-sidebar-label{font-size:12px;font-weight:700;color:var(--t3);padding:18px 18px 6px;text-transform:uppercase;letter-spacing:.8px}
 .dash-content{padding:24px 28px;overflow-y:auto}
@@ -1971,9 +1971,10 @@ function showPage(id){
   // 사이드바 주입
   if(sidebarPages.includes(id)) injectSidebar(id);
   // 사이드바 active 상태 업데이트
-  document.querySelectorAll('.dash-sidebar-item').forEach(it=>it.classList.remove('active'));
-  document.querySelectorAll('.dash-sidebar-item').forEach(it=>{
-    if(it.getAttribute('onclick')?.includes(id)) it.classList.add('active');
+  const pageToIdx={'page-dashboard':0,'page-streaming':1,'page-analysis':2,'page-lecturer':3,'page-voice':4,'page-links':5,'page-checklist':6,'page-admin':7,'page-myprofile':3,'page-video':2};
+  const activeIdx=pageToIdx[id];
+  document.querySelectorAll('.dash-sidebar-item[data-idx]').forEach(it=>{
+    it.classList.toggle('active',parseInt(it.dataset.idx)===activeIdx);
   });
   // nav-back (홈 버튼) 숨기기 (사이드바 있는 페이지)
   if(sidebarPages.includes(id)){
