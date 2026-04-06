@@ -459,6 +459,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .filter-bar{grid-template-columns:repeat(2,1fr);gap:8px}
   .stats-row{grid-template-columns:repeat(2,1fr);gap:8px}
   .lect-grid{grid-template-columns:1fr}
+  #ranking-area{grid-template-columns:1fr!important}
   .hdr{padding:10px 8px}
   .hdr-logo img{height:32px!important}
   .hdr-right{gap:6px}
@@ -828,6 +829,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="stat-lbl">S등급 우수 강사</div>
     </div>
   </div>
+
+  <!-- 랭킹 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px" id="ranking-area"></div>
 
   <!-- Top 5 Video Highlights -->
   <div class="sec-lbl-sm">베스트 영상 하이라이트</div>
@@ -4304,10 +4308,62 @@ function renderDashboard(){
   el('sv-s').textContent=filtered.filter(u=>u.grade==='S').length;
   // AI strip
   renderAIStrip(filtered);
-  // top5 + grid
+  // ranking + top5 + grid
+  renderRanking(filtered);
   renderTop5();
   renderVoiceHighlight();
   renderGrid(filtered);
+}
+
+function renderRanking(filtered){
+  const rankArea=el('ranking-area');
+  if(!rankArea) return;
+
+  // 1. 개인 종합 랭킹 (score 기준)
+  const personalRank=[...filtered].sort((a,b)=>b.score-a.score).slice(0,5);
+
+  // 2. 영상 랭킹 (영상 분석 점수 = 타임스탬프 good 수 기준)
+  const videoRank=D.videos.filter(v=>filtered.some(u=>u.id===v.userId)).map(v=>{
+    const u=filtered.find(x=>x.id===v.userId);
+    const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
+    return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id};
+  }).sort((a,b)=>b.score-a.score).slice(0,5);
+
+  // 3. 음성 랭킹
+  const voiceRank=(D.voiceEvals||[]).filter(ve=>!filtered.length||filtered.some(u=>u.id===ve.user_id))
+    .sort((a,b)=>b.score-a.score).slice(0,5);
+
+  const rankColors=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6'];
+  const medalBg=['rgba(226,30,38,.1)','rgba(0,120,200,.1)','rgba(16,185,129,.1)','rgba(245,158,11,.08)','rgba(139,92,246,.08)'];
+
+  function buildRankCard(title,subtitle,items){
+    const rows=items.map((item,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.04)':''}">
+        <div style="width:24px;height:24px;border-radius:50%;background:${medalBg[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${rankColors[i]};flex-shrink:0">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
+          ${item.sub?`<div style="font-size:10px;color:var(--t3)">${item.sub}</div>`:''}
+        </div>
+        <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${item.score}<span style="font-size:10px;color:var(--t3)">점</span></div>
+      </div>`).join('');
+
+    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:800">${title}</div>
+        <div style="font-size:11px;color:var(--t3)">${subtitle}</div>
+      </div>
+      ${rows||'<div style="font-size:12px;color:var(--t3);padding:10px 0;text-align:center">데이터 없음</div>'}
+    </div>`;
+  }
+
+  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.score}));
+  const videoItems=videoRank.map(v=>({name:v.name,sub:v.title,score:v.score}));
+  const voiceItems=voiceRank.map(v=>({name:v.user_name||'—',sub:v.tone||'',score:v.score}));
+
+  rankArea.innerHTML=
+    buildRankCard('개인 종합 랭킹','평균 점수',personalItems)+
+    buildRankCard('영상 랭킹 (TOP 5)','AI 점수',videoItems)+
+    buildRankCard('음성 랭킹 (TOP 5)','AI 점수',voiceItems);
 }
 
 function renderAIStrip(filtered){
