@@ -2127,7 +2127,8 @@ function initLogoParticles(){
     const offCtx=off.getContext('2d');
     const scale=Math.min(400/img.width, 200/img.height);
     const dw=img.width*scale, dh=img.height*scale;
-    offCtx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+    const logoY=60;
+    offCtx.drawImage(img,(W-dw)/2,logoY,dw,dh);
 
     const imageData=offCtx.getImageData(0,0,W,H);
     const pixels=imageData.data;
