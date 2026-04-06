@@ -196,7 +196,23 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 
 /* ── Video page layout ── */
 .video-layout{display:grid;grid-template-columns:1fr 400px;gap:22px}
-.video-player{border-radius:var(--r2);overflow:hidden;background:#111;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative}
+.video-player{border-radius:var(--r2);overflow:hidden;background:#111;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;max-width:360px}
+
+/* ── Timestamp Video Modal ── */
+.ts-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:600;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.ts-modal-overlay.show{display:flex}
+.ts-modal{background:#fff;border-radius:var(--r2);width:900px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.2);animation:scaleIn .25s ease}
+.ts-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.06)}
+.ts-modal-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:768px){.ts-modal-body{grid-template-columns:1fr}}
+.ts-modal-video{background:#111;aspect-ratio:16/9;overflow:hidden}
+.ts-modal-video iframe,.ts-modal-video video{width:100%;height:100%;border:none}
+.ts-modal-text{padding:16px 20px;max-height:400px;overflow-y:auto;border-left:1px solid rgba(0,0,0,.06)}
+.ts-modal-time{font-size:13px;font-weight:800;color:var(--blue);margin-bottom:6px}
+.ts-modal-content{font-size:14px;color:var(--t2);line-height:1.8}
+.ts-modal-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.ts-modal-close{width:32px;height:32px;border-radius:8px;border:none;background:rgba(0,0,0,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s}
+.ts-modal-close:hover{background:rgba(0,0,0,.1)}
 .video-player iframe,.video-player video{width:100%;height:100%;border:none}
 .vid-placeholder{display:flex;flex-direction:column;align-items:center;gap:12px;color:rgba(255,255,255,.5)}
 .ts-feed{border-radius:var(--r2);border:1px solid var(--bdr);overflow:hidden}
@@ -1492,6 +1508,36 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </div>
 
+<!-- ── Timestamp Video Modal ── -->
+<div class="ts-modal-overlay" id="ts-modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="ts-modal">
+    <div class="ts-modal-header">
+      <div>
+        <span id="ts-modal-badge" class="ts-badge ts-good" style="margin-right:6px">Good</span>
+        <span id="ts-modal-title" style="font-size:15px;font-weight:700">타임스탬프</span>
+      </div>
+      <button class="ts-modal-close" onclick="el('ts-modal-overlay').classList.remove('show')">✕</button>
+    </div>
+    <div class="ts-modal-body">
+      <div class="ts-modal-video" id="ts-modal-video"></div>
+      <div class="ts-modal-text">
+        <div class="ts-modal-time" id="ts-modal-time">00:00</div>
+        <div class="ts-modal-content" id="ts-modal-content"></div>
+        <div class="ts-modal-tags" id="ts-modal-tags"></div>
+        <!-- 수정 영역 (본인/관리자만) -->
+        <div id="ts-modal-edit" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.06)">
+          <textarea class="form-input" id="ts-modal-edit-text" style="min-height:80px;font-size:13px"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-blue" style="font-size:12px;padding:6px 14px" onclick="saveTimestampEdit()">저장</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="el('ts-modal-edit').style.display='none'">취소</button>
+          </div>
+        </div>
+        <button id="ts-modal-edit-btn" class="btn btn-ghost" style="margin-top:12px;font-size:11px;padding:5px 12px;display:none" onclick="openTimestampEdit()">✏️ 수정</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Add Timestamp Modal ── -->
 <div class="overlay" id="ts-overlay">
   <div class="modal modal-md">
@@ -2656,13 +2702,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 
   // ─── 타임스탬프 ───
   window._anTimestamps=r.timestamps||[];
-  el('an-ts-feed').innerHTML=(r.timestamps||[]).map(ts=>`
-    <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''" onclick="seekToTime('${ts.t}')">
-      <span style="font-size:11px;font-weight:800;color:var(--blue);white-space:nowrap;min-width:45px">${ts.t}</span>
+  const _vidUserId=curVidId?D.videos.find(v=>v.id===curVidId)?.userId:null;
+  el('an-ts-feed').innerHTML=(r.timestamps||[]).map(ts=>{
+    const tagsStr=JSON.stringify(ts.tags||[]).replace(/"/g,'&quot;');
+    const textEsc=(ts.text||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''" onclick="openTimestampModal('${ts.t}','${ts.type}','${textEsc}',${tagsStr},${ts.id||0},${_vidUserId||0})">
+      <span style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;min-width:50px">${ts.t}</span>
       <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
-      <div style="flex:1"><div style="font-size:12px;color:var(--t2);line-height:1.6">${ts.text}</div>
+      <div style="flex:1"><div style="font-size:13px;color:var(--t2);line-height:1.6">${ts.text}</div>
         <div style="display:flex;gap:4px;margin-top:4px">${(ts.tags||[]).map(t=>'<span class="ts-tag">'+t+'</span>').join('')}</div>
-      </div>
+      </div>`}).join(`
     </div>`).join('');
 
   // ─── 종합 리포트 ───
@@ -2742,6 +2791,61 @@ function updateAiRadar(months){
     <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">${periodLabel}</div>${drawRadarChart(avgItems,'#E21E26',180)}</div>
     <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">비교</div>${drawRadarChart(items,'#8b5cf6',180,avgItems,'#E21E26','나','평균')}</div>
   </div>`;
+}
+
+/* ── Timestamp Modal ── */
+let _tsModalVidId=null, _tsModalTsId=null;
+
+function openTimestampModal(timeStr, type, text, tags, tsId, videoUserId){
+  const parts=timeStr.split(':');
+  const sec=parseInt(parts[0])*60+parseInt(parts[1]||0);
+
+  // 배지
+  const badge=el('ts-modal-badge');
+  badge.className='ts-badge ts-'+type;
+  badge.textContent=type==='good'?'✅ Good':type==='bad'?'⚠️ Bad':'💡 Tip';
+
+  el('ts-modal-title').textContent=timeStr;
+  el('ts-modal-time').textContent=timeStr;
+  el('ts-modal-content').textContent=text;
+  el('ts-modal-tags').innerHTML=(tags||[]).map(t=>`<span class="ts-tag">${t}</span>`).join('');
+
+  // 영상 로드
+  if(window._anYtId){
+    el('ts-modal-video').innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1&start=${sec}" allowfullscreen allow="autoplay"></iframe>`;
+  } else {
+    const vid=document.getElementById('an-video-el');
+    if(vid){
+      el('ts-modal-video').innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${vid.querySelector('source')?.src||vid.src}"></video>`;
+      setTimeout(()=>{const v=el('ts-modal-video').querySelector('video');if(v){v.currentTime=sec;v.play();}},100);
+    } else {
+      el('ts-modal-video').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)">영상 없음</div>`;
+    }
+  }
+
+  // 수정 권한 (본인 또는 관리자)
+  _tsModalTsId=tsId;
+  const canEdit=CU&&(CU.isAdmin||(videoUserId&&CU.id===videoUserId));
+  el('ts-modal-edit-btn').style.display=canEdit?'':'none';
+  el('ts-modal-edit').style.display='none';
+
+  el('ts-modal-overlay').classList.add('show');
+}
+
+function openTimestampEdit(){
+  el('ts-modal-edit-text').value=el('ts-modal-content').textContent;
+  el('ts-modal-edit').style.display='';
+}
+
+async function saveTimestampEdit(){
+  const newText=el('ts-modal-edit-text').value.trim();
+  if(!newText) return;
+  if(_tsModalTsId){
+    await dbUpdateTimestamp(_tsModalTsId,newText);
+    el('ts-modal-content').textContent=newText;
+  }
+  el('ts-modal-edit').style.display='none';
+  alert('수정되었습니다.');
 }
 
 function seekToTime(timeStr){
