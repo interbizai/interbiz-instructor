@@ -2127,7 +2127,13 @@ function initLogoParticles(){
     const offCtx=off.getContext('2d');
     const scale=130/img.height;
     const dw=img.width*scale, dh=img.height*scale;
-    const logoY=60;
+    // 실제 로고 img 위치 읽기
+    const logoImg=document.querySelector('.home-hero img');
+    let logoY=60;
+    if(logoImg){
+      const rect=logoImg.getBoundingClientRect();
+      logoY=rect.top-60; // 헤더(60px) 빼기
+    }
     offCtx.drawImage(img,(W-dw)/2,logoY,dw,dh);
 
     const imageData=offCtx.getImageData(0,0,W,H);
