@@ -48,6 +48,8 @@ textarea{resize:vertical;min-height:80px}
 /* ── Section label ── */
 .sec-lbl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;margin-bottom:16px}
 .sec-lbl::before{content:'';width:4px;height:20px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
+.sec-lbl-sm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;margin-bottom:12px;color:var(--t1)}
+.sec-lbl-sm::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
 
 /* ── Main layout ── */
 main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
@@ -759,15 +761,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- Top 5 Video Highlights -->
-  <div class="sec-lbl">베스트 영상 하이라이트</div>
+  <div class="sec-lbl-sm">베스트 영상 하이라이트</div>
   <div class="top5-scroll" id="top5-scroll"></div>
 
   <!-- 음성평가 하이라이트 -->
-  <div class="sec-lbl">음성평가 하이라이트</div>
+  <div class="sec-lbl-sm">음성평가 하이라이트</div>
   <div class="top5-scroll" id="voice-highlight"></div>
 
   <!-- Lecturer Grid -->
-  <div class="sec-lbl">강사 목록</div>
+  <div class="sec-lbl-sm">강사 목록</div>
   <div class="lect-grid" id="lect-grid"></div>
 </main>
 </div>
@@ -889,7 +891,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
     <!-- 타임스탬프 피드 (클릭하면 영상 시간 이동) -->
     <div style="margin-bottom:18px">
-      <div class="sec-lbl">타임스탬프 피드</div>
+      <div class="sec-lbl-sm">타임스탬프 피드</div>
       <div class="acc-wrap neu" style="overflow:hidden;max-height:400px;overflow-y:auto">
         <div id="an-ts-feed"></div>
       </div>
@@ -897,7 +899,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
     <!-- 종합 리포트 -->
     <div style="margin-bottom:18px">
-      <div class="sec-lbl">종합 리포트</div>
+      <div class="sec-lbl-sm">종합 리포트</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="an-report"></div>
     </div>
 
@@ -3458,7 +3460,7 @@ function renderVoiceResult(r,hasCL,count,tone){
   window._vaTimestamps=r.voice_timestamps||[];
   const vaTsHtml=(r.voice_timestamps||[]).length?`
     <div style="margin-bottom:18px">
-      <div class="sec-lbl">음성 타임스탬프 피드</div>
+      <div class="sec-lbl-sm">음성 타임스탬프 피드</div>
       <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);overflow:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.08)">
@@ -3493,7 +3495,7 @@ function renderVoiceResult(r,hasCL,count,tone){
       </div>
       <!-- 오른쪽: 종합 리포트 -->
       <div>
-        <div class="sec-lbl">음성 종합 리포트</div>
+        <div class="sec-lbl-sm">음성 종합 리포트</div>
         <div class="solution-card" style="margin-bottom:12px"><div class="sol-title">💡 음성 개선 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
         <div class="solution-card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.12)"><div class="sol-title" style="color:var(--purple)">🎤 음성 트레이닝 추천</div><div class="sol-text">${r.training||''}</div></div>
       </div>
@@ -4483,7 +4485,7 @@ function openVideo(id){
         <div class="video-player neu">${playerHtml}</div>
         <!-- Solution -->
         <div style="margin-top:16px">
-          <div class="sec-lbl">AI 솔루션</div>
+          <div class="sec-lbl-sm">AI 솔루션</div>
           <div class="solution-card">${vid.solution||'영상 분석 후 AI 솔루션이 표시됩니다.'}</div>
         </div>
       </div>
