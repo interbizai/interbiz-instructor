@@ -622,10 +622,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main style="max-width:900px">
-  <!-- Logo hero with particle effect -->
-  <div class="home-hero" style="position:relative">
+  <!-- Logo hero -->
+  <div class="home-hero">
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
-    <canvas id="logo-canvas" style="display:block"></canvas>
   </div>
 
   <!-- 8 Icon Grid (중앙 정렬) -->
@@ -1510,29 +1509,43 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 <!-- ── Timestamp Video Modal ── -->
 <div class="ts-modal-overlay" id="ts-modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="ts-modal">
+  <div class="ts-modal" style="width:960px">
     <div class="ts-modal-header">
-      <div>
-        <span id="ts-modal-badge" class="ts-badge ts-good" style="margin-right:6px">Good</span>
-        <span id="ts-modal-title" style="font-size:15px;font-weight:700">타임스탬프</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="ts-modal-cat" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2)">카테고리</span>
+        <span id="ts-modal-title" style="font-size:16px;font-weight:800">항목명</span>
       </div>
       <button class="ts-modal-close" onclick="el('ts-modal-overlay').classList.remove('show')">✕</button>
     </div>
-    <div class="ts-modal-body">
-      <div class="ts-modal-video" id="ts-modal-video"></div>
-      <div class="ts-modal-text">
-        <div class="ts-modal-time" id="ts-modal-time">00:00</div>
-        <div class="ts-modal-content" id="ts-modal-content"></div>
-        <div class="ts-modal-tags" id="ts-modal-tags"></div>
-        <!-- 수정 영역 (본인/관리자만) -->
-        <div id="ts-modal-edit" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.06)">
-          <textarea class="form-input" id="ts-modal-edit-text" style="min-height:80px;font-size:13px"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="btn btn-blue" style="font-size:12px;padding:6px 14px" onclick="saveTimestampEdit()">저장</button>
-            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="el('ts-modal-edit').style.display='none'">취소</button>
+    <div class="ts-modal-body" style="grid-template-columns:55% 45%">
+      <!-- 좌측: 영상 + 항목 정보 -->
+      <div style="border-right:1px solid rgba(0,0,0,.06)">
+        <div class="ts-modal-video" id="ts-modal-video"></div>
+        <!-- 항목 카드 -->
+        <div style="padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span id="ts-modal-cat2" style="padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(0,0,0,.06)">카테고리</span>
+            <span id="ts-modal-item" style="font-size:15px;font-weight:700">항목명</span>
+            <span id="ts-modal-score" style="padding:3px 12px;border-radius:12px;font-size:13px;font-weight:800;margin-left:auto">5/5</span>
           </div>
+          <div id="ts-modal-content" style="font-size:13px;color:var(--t2);line-height:1.7;padding:10px 14px;background:#f8f9fa;border-radius:8px;border-left:3px solid var(--blue)"></div>
+          <!-- 솔루션 (있을 때만) -->
+          <div id="ts-modal-solution" style="display:none;margin-top:10px;font-size:12px;color:var(--red);line-height:1.6;padding:10px 14px;background:rgba(226,30,38,.04);border-radius:8px;border-left:3px solid var(--red)"></div>
+          <!-- 수정 -->
+          <div id="ts-modal-edit" style="display:none;margin-top:12px">
+            <textarea class="form-input" id="ts-modal-edit-text" style="min-height:70px;font-size:13px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-blue" style="font-size:12px;padding:6px 14px" onclick="saveTimestampEdit()">저장</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="el('ts-modal-edit').style.display='none'">취소</button>
+            </div>
+          </div>
+          <button id="ts-modal-edit-btn" class="btn btn-ghost" style="margin-top:10px;font-size:11px;padding:5px 12px;display:none" onclick="openTimestampEdit()">✏️ 수정</button>
         </div>
-        <button id="ts-modal-edit-btn" class="btn btn-ghost" style="margin-top:12px;font-size:11px;padding:5px 12px;display:none" onclick="openTimestampEdit()">✏️ 수정</button>
+      </div>
+      <!-- 우측: 전체 타임라인 스크롤 -->
+      <div style="display:flex;flex-direction:column">
+        <div style="padding:12px 16px;font-size:13px;font-weight:700;border-bottom:1px solid rgba(0,0,0,.06)">타임라인</div>
+        <div id="ts-modal-timeline" style="flex:1;overflow-y:auto;max-height:500px"></div>
       </div>
     </div>
   </div>
@@ -1930,8 +1943,6 @@ function showPage(id){
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(CU) updateHeaderUI();
-  // 홈 돌아올 때 파티클 재실행
-  if(id==='page-home'){logoInitialized=false;if(logoAnimId){cancelAnimationFrame(logoAnimId);}initLogoParticles();}
   // 버거 버튼 삽입
   addBurgerToHeaders();
   // 사이드바 상태 유지
@@ -2274,7 +2285,6 @@ function animateLogo(){
 }
 
 function initHome(){
-  initLogoParticles();
   // Carousel: DB 영상 + 기본 유튜브 5개
   const defaultVids=[
     {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
@@ -2500,15 +2510,17 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
   "engagementGaps": [0,0,0,0],
   "engagementWarning": "환기 관련 경고 메시지",
   "timestamps": [
-    {"t":"mm:ss","type":"good","text":"설명","tags":["태그"]},
-    {"t":"mm:ss","type":"bad","text":"설명","tags":["태그"]},
-    {"t":"mm:ss","type":"tip","text":"설명","tags":["태그"]}
+    {"category":"구분명","item":"평가 항목명","score":5,"maxScore":5,"t":"mm:ss~mm:ss","type":"good","text":"분석 피드백","solution":"못한 경우 개선 솔루션 (잘한 경우 빈 문자열)","tags":["태그"]}
   ],
-  "solution": "개선 솔루션 4가지 (줄바꿈은 <br>로)",
+  "solution": "종합 개선 솔루션 4가지 (줄바꿈은 <br>로)",
   "scenario": "다음 강의 추천 시나리오 (줄바꿈은 <br>로)"
 }
 
 타임스탬프는 최소 8~12개를 생성하되, good/bad/tip을 골고루 배분하세요.
+category는 니즈파악/제품상담/맞춤케어/AI공기청정/편리성/사용경험비교 등 구분을 넣으세요.
+score는 항목별 5점 만점, 중요 항목은 10점 만점으로 하세요.
+t는 "mm:ss ~ mm:ss" 시작~종료 시간 범위로 작성하세요.
+type이 bad일 때는 solution에 구체적 개선 방법을 작성하세요.
 점수는 현실적으로 작성하고, 교육생 인원수에 맞는 데시벨/템포를 권장하세요.
 반복어는 한국어 강의에서 흔한 것 위주로 2~5개 감지하세요.`;
 
@@ -2549,16 +2561,16 @@ function generateMockResult(studentCount){
     engagementGaps:[7+Math.floor(Math.random()*5),10+Math.floor(Math.random()*8),6+Math.floor(Math.random()*4),9+Math.floor(Math.random()*6)],
     engagementWarning:'일부 구간에서 12분 이상 연속 강의 — 중간에 질문이나 퀴즈 삽입 권장',
     timestamps:[
-      {t:'01:30',type:'good',text:'오프닝이 에너지 있고 학습 목표를 명확하게 제시함',tags:['발성','구성']},
-      {t:'04:15',type:'good',text:'제품 핵심 기능을 3가지로 정리하여 명확하게 전달',tags:['전문성','구성']},
-      {t:'07:40',type:'bad',text:'반복어 사용이 잦아 전달력이 다소 저하됨',tags:['발성','습관어']},
-      {t:'11:20',type:'tip',text:'이 시점에서 수강생 질문을 유도하면 집중도 유지에 효과적',tags:['상호작용','환기']},
-      {t:'15:00',type:'good',text:'실제 고객 사례를 활용한 설명이 공감대 형성에 탁월',tags:['전문성','사례']},
-      {t:'19:30',type:'bad',text:'PPT 전환이 빠르고 판서 없이 말로만 설명하는 구간',tags:['판서','속도']},
-      {t:'24:00',type:'tip',text:'핵심 개념을 칠판에 정리하면 기억 정착률이 크게 향상됨',tags:['판서','팁']},
-      {t:'28:45',type:'good',text:'수강생에게 직접 질문하여 참여도를 높임',tags:['상호작용']},
-      {t:'33:10',type:'bad',text:'강의 후반부 목소리 볼륨 저하 — 에너지 관리 필요',tags:['발성','에너지']},
-      {t:'38:00',type:'tip',text:'마무리에서 핵심 3가지를 요약하면 만족도 대폭 향상',tags:['마무리','요약']}
+      {category:'니즈파악',item:'제품 관심 유도',score:5,maxScore:5,t:'00:04 ~ 00:08',type:'good',text:'365일 끄지 않고 사용할 수 있는 제품임을 명확히 언급하며 상담 시작',solution:'',tags:['니즈파악']},
+      {category:'니즈파악',item:'구독 스몰토크',score:5,maxScore:5,t:'00:14 ~ 00:18',type:'good',text:'일반 구매와 구독의 차이를 예고하며 자연스럽게 구독 화두를 던짐',solution:'',tags:['니즈파악','구독']},
+      {category:'제품상담',item:'핵심 기능 설명',score:5,maxScore:5,t:'00:32 ~ 00:45',type:'good',text:'MOF 소재, 노벨 화학상, 유증기 및 암모니아 제거 성능을 전문적으로 설명',solution:'',tags:['전문성']},
+      {category:'제품상담',item:'시연 유도',score:4,maxScore:5,t:'00:46 ~ 00:48',type:'bad',text:'필터 위치를 직접 가리키며 고객 시선을 유도하나 속도가 다소 빠름',solution:'시연 시 3초 이상 멈추고 고객이 직접 만져보게 유도하세요',tags:['시연']},
+      {category:'맞춤케어',item:'라이프스타일별 맞춤 설명',score:9,maxScore:10,t:'00:49 ~ 01:13',type:'good',text:'요리/반려동물/암모니아 등 생활 패턴에 맞춰 M7 필터의 필요성을 강조',solution:'',tags:['맞춤케어']},
+      {category:'AI공기청정',item:'AI 센서 설명',score:5,maxScore:5,t:'01:14 ~ 01:25',type:'good',text:'AI 공기질 센서가 오염도와 필터 수명을 정밀하게 측정함을 설명',solution:'',tags:['AI','센서']},
+      {category:'AI공기청정',item:'센서 위치 시연',score:4,maxScore:5,t:'01:35 ~ 01:37',type:'bad',text:'센서 위치를 가리키나 설명이 너무 짧음',solution:'센서 위치를 가리키며 "여기를 보시면" 5초 이상 설명하세요',tags:['시연']},
+      {category:'편리성',item:'관리 편의 기능',score:5,maxScore:5,t:'01:26 ~ 01:34',type:'good',text:'기존 필터와 달리 센서 기반으로 오염도 측정하여 관리 효율성 높였음을 설명',solution:'',tags:['편리성']},
+      {category:'편리성',item:'디스플레이 안내',score:3,maxScore:5,t:'01:38 ~ 01:40',type:'bad',text:'디스플레이와 센서 연결을 언급하나 시각적 확인이 부족',solution:'디스플레이 화면을 직접 보여주며 숫자 변화를 실시간 시연하세요',tags:['시연','디스플레이']},
+      {category:'사용경험비교',item:'케어서비스 언급',score:5,maxScore:5,t:'01:41 ~ 01:50',type:'good',text:'공기청정기는 관리가 핵심임을 강조하며 케어서비스의 필요성을 역설',solution:'',tags:['사용경험','케어']},
     ],
     solution:'1. 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>2. 12분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획',
     scenario:'<strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br><strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br><strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br><strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고'
@@ -2700,18 +2712,33 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       <div style="font-size:11px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'}</strong><br>${r.engagementWarning||''}</div>
     </div>`;
 
-  // ─── 타임스탬프 ───
+  // ─── 타임스탬프 (테이블 형태) ───
   window._anTimestamps=r.timestamps||[];
   const _vidUserId=curVidId?D.videos.find(v=>v.id===curVidId)?.userId:null;
-  el('an-ts-feed').innerHTML=(r.timestamps||[]).map(ts=>{
-    const tagsStr=JSON.stringify(ts.tags||[]).replace(/"/g,'&quot;');
-    const textEsc=(ts.text||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    return `<div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''" onclick="openTimestampModal('${ts.t}','${ts.type}','${textEsc}',${tagsStr},${ts.id||0},${_vidUserId||0})">
-      <span style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;min-width:50px">${ts.t}</span>
-      <span class="ts-badge ts-${ts.type}">${ts.type==='good'?'✅ Good':ts.type==='bad'?'⚠️ Bad':'💡 Tip'}</span>
-      <div style="flex:1"><div style="font-size:13px;color:var(--t2);line-height:1.6">${ts.text}</div>
-        <div style="display:flex;gap:4px;margin-top:4px">${(ts.tags||[]).map(t=>'<span class="ts-tag">'+t+'</span>').join('')}</div>
-    </div>`;}).join('');
+  el('an-ts-feed').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.08)">
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:80px">구분</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">평가 항목</th>
+        <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:60px">점수</th>
+        <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:110px">시점</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">분석 피드백</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:180px">솔루션</th>
+      </tr></thead>
+      <tbody>${(r.timestamps||[]).map((ts,idx)=>{
+        const scoreColor=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
+        const scoreBg=ts.type==='good'?'rgba(16,185,129,.12)':ts.type==='bad'?'rgba(226,30,38,.12)':'rgba(245,158,11,.12)';
+        const s=ts.score||5, ms=ts.maxScore||5;
+        return `<tr style="border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer;transition:background .15s" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
+          <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${ts.category||'—'}</td>
+          <td style="padding:10px 12px;font-weight:600">${ts.item||ts.text?.substring(0,20)||'—'}</td>
+          <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:800;background:${scoreBg};color:${scoreColor}">${s} / ${ms}</span></td>
+          <td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--blue);font-weight:700;white-space:nowrap">${ts.t||'—'}</td>
+          <td style="padding:10px 12px;font-size:12px;color:var(--t2);line-height:1.5">${ts.text||''}</td>
+          <td style="padding:10px 12px;font-size:11px;color:${ts.solution?'var(--red)':'var(--t3)'};line-height:1.5">${ts.solution||'—'}</td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table>`;
 
   // ─── 종합 리포트 ───
   el('an-report').innerHTML=`
@@ -2845,6 +2872,80 @@ async function saveTimestampEdit(){
   }
   el('ts-modal-edit').style.display='none';
   alert('수정되었습니다.');
+}
+
+function openTimestampModal2(idx){
+  const stamps=window._anTimestamps||[];
+  if(!stamps[idx]) return;
+  const ts=stamps[idx];
+  const _vidUserId=curVidId?D.videos.find(v=>v.id===curVidId)?.userId:null;
+
+  // 시간 파싱 (mm:ss ~ mm:ss 또는 mm:ss)
+  const timeStr=(ts.t||'').split('~')[0].trim();
+  const parts=timeStr.split(':');
+  const sec=parseInt(parts[0]||0)*60+parseInt(parts[1]||0);
+
+  // 헤더
+  el('ts-modal-cat').textContent=ts.category||'—';
+  el('ts-modal-title').textContent=ts.item||ts.text?.substring(0,20)||'항목';
+  el('ts-modal-cat2').textContent=ts.category||'—';
+  el('ts-modal-item').textContent=ts.item||'—';
+
+  // 점수
+  const scoreEl=el('ts-modal-score');
+  const s=ts.score||5, ms=ts.maxScore||5;
+  const sc=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
+  const sb=ts.type==='good'?'rgba(16,185,129,.12)':ts.type==='bad'?'rgba(226,30,38,.12)':'rgba(245,158,11,.12)';
+  scoreEl.textContent=s+' / '+ms;
+  scoreEl.style.background=sb;scoreEl.style.color=sc;
+
+  // 내용
+  el('ts-modal-content').textContent=ts.text||'';
+
+  // 솔루션
+  const solEl=el('ts-modal-solution');
+  if(ts.solution){solEl.textContent=ts.solution;solEl.style.display='';}
+  else solEl.style.display='none';
+
+  // 영상
+  if(window._anYtId){
+    el('ts-modal-video').innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1&start=${sec}" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
+  } else {
+    const vid=document.getElementById('an-video-el');
+    if(vid){
+      el('ts-modal-video').innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${vid.querySelector('source')?.src||vid.src}"></video>`;
+      setTimeout(()=>{const v=el('ts-modal-video').querySelector('video');if(v){v.currentTime=sec;v.play();}},100);
+    } else {
+      el('ts-modal-video').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)">영상 없음</div>`;
+    }
+  }
+
+  // 우측 타임라인 (전체 목록, 현재 하이라이트)
+  el('ts-modal-timeline').innerHTML=stamps.map((s,i)=>{
+    const isActive=i===idx;
+    const bg=isActive?'rgba(0,120,200,.06)':'';
+    const border=isActive?'border-left:3px solid var(--blue)':'border-left:3px solid transparent';
+    const fw=isActive?'font-weight:700':'';
+    return `<div style="padding:10px 14px;cursor:pointer;transition:background .15s;${border};background:${bg}" onclick="openTimestampModal2(${i})" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${bg}'">
+      <div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:2px">${s.t||''}</div>
+      <div style="font-size:12px;color:var(--t1);${fw};line-height:1.5">${s.text||''}</div>
+    </div>`;
+  }).join('');
+
+  // 현재 항목으로 스크롤
+  setTimeout(()=>{
+    const tl=el('ts-modal-timeline');
+    const items=tl?.children;
+    if(items&&items[idx]) items[idx].scrollIntoView({block:'center',behavior:'smooth'});
+  },100);
+
+  // 수정 권한
+  _tsModalTsId=ts.id||null;
+  const canEdit=CU&&(CU.isAdmin||(_vidUserId&&CU.id===_vidUserId));
+  el('ts-modal-edit-btn').style.display=canEdit?'':'none';
+  el('ts-modal-edit').style.display='none';
+
+  el('ts-modal-overlay').classList.add('show');
 }
 
 function seekToTime(timeStr){
