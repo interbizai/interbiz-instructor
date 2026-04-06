@@ -4344,7 +4344,7 @@ function renderRanking(filtered){
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
           ${item.sub?`<div style="font-size:10px;color:var(--t3)">${item.sub}</div>`:''}
         </div>
-        <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${item.score}<span style="font-size:10px;color:var(--t3)">점</span></div>
+        <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>
       </div>`).join('');
 
     return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;padding:16px">
