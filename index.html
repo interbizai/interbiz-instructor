@@ -30,6 +30,9 @@ textarea{resize:vertical;min-height:80px}
 /* ── Header ── */
 .hdr{position:sticky;top:0;z-index:200;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:13px 16px 13px 0;display:flex;align-items:center;justify-content:space-between}
 .hdr-logo{display:flex;align-items:center;gap:11px}
+.sidebar-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:8px;transition:background .15s;flex-shrink:0}
+.sidebar-toggle:hover{background:rgba(0,0,0,.05)}
+.sidebar-toggle svg{display:block}
 .hdr-logo img{height:40px;border-radius:9px}
 .hdr-logo-txt h1{font-size:15px;font-weight:800}
 .hdr-logo-txt p{font-size:10px;color:var(--t3)}
@@ -411,6 +414,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .dash-sidebar-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .dash-sidebar-label{font-size:12px;font-weight:700;color:var(--t3);padding:18px 18px 6px;text-transform:uppercase;letter-spacing:.8px}
 .dash-content{padding:24px 28px;overflow-y:auto}
+.dash-layout.sidebar-hidden{grid-template-columns:1fr}
+.dash-layout.sidebar-hidden .dash-sidebar{display:none}
 @media(max-width:900px){.dash-layout{grid-template-columns:1fr}.dash-sidebar{display:none}}
 
 /* ── Responsive ── */
@@ -1885,6 +1890,20 @@ function showPage(id){
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(CU) updateHeaderUI();
+  // 버거 버튼 삽입
+  addBurgerToHeaders();
+  // 사이드바 상태 유지
+  document.querySelectorAll('.dash-layout').forEach(dl=>{
+    dl.classList.toggle('sidebar-hidden',!sidebarVisible);
+  });
+  // 페이지 라벨 업데이트
+  const activePage=document.getElementById(id);
+  if(activePage){
+    activePage.querySelectorAll('.hdr-page-label').forEach(lbl=>{
+      lbl.textContent=pageLabels[id]||'';
+      lbl.style.display=sidebarVisible?'none':'';
+    });
+  }
   // 사이드바 주입
   if(sidebarPages.includes(id)) injectSidebar(id);
   // 사이드바 active 상태 업데이트
@@ -1898,6 +1917,39 @@ function showPage(id){
     page?.querySelectorAll('.nav-back').forEach(b=>b.style.display='none');
   }
 }
+/* ── Sidebar Toggle ── */
+let sidebarVisible=true;
+const pageLabels={'page-dashboard':'평가결과','page-streaming':'영상 스트리밍','page-analysis':'영상등록 분석','page-lecturer':'내페이지','page-voice':'음성분석','page-links':'학습링크','page-checklist':'체크리스트','page-admin':'관리자','page-video':'영상 분석','page-myprofile':'프로필'};
+
+function toggleSidebar(){
+  sidebarVisible=!sidebarVisible;
+  document.querySelectorAll('.dash-layout').forEach(dl=>{
+    dl.classList.toggle('sidebar-hidden',!sidebarVisible);
+  });
+  // 페이지 라벨 표시/숨기기
+  document.querySelectorAll('.hdr-page-label').forEach(lbl=>{
+    lbl.style.display=sidebarVisible?'none':'';
+  });
+}
+
+function addBurgerToHeaders(){
+  document.querySelectorAll('.hdr-logo').forEach(logo=>{
+    if(logo.querySelector('.sidebar-toggle')) return;
+    const btn=document.createElement('button');
+    btn.className='sidebar-toggle';
+    btn.onclick=toggleSidebar;
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    logo.insertBefore(btn,logo.firstChild);
+    // 페이지 라벨 (사이드바 숨겼을 때 표시)
+    const activePage=logo.closest('.page')?.id||'';
+    const label=document.createElement('span');
+    label.className='hdr-page-label';
+    label.style.cssText='font-size:15px;font-weight:700;color:var(--t1);display:none';
+    label.textContent=pageLabels[activePage]||'';
+    logo.appendChild(label);
+  });
+}
+
 /* ── Global Sidebar ── */
 function getSidebarHTML(activePage){
   const items=[
