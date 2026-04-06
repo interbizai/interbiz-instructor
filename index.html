@@ -3487,15 +3487,10 @@ function renderVoiceResult(r,hasCL,count,tone){
       </div>
     </div>`:'';
 
-  el('va-report').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
-      <!-- 왼쪽: 타임스탬프 테이블 -->
-      <div>${vaTsHtml}</div>
-      <!-- 오른쪽: 종합 리포트 -->
-      <div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:60px">
-        <div class="solution-card"><div class="sol-title">💡 음성 개선 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
-        <div class="solution-card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.12)"><div class="sol-title" style="color:var(--purple)">🎤 음성 트레이닝 추천</div><div class="sol-text">${r.training||''}</div></div>
-      </div>
+  el('va-report').innerHTML=vaTsHtml+`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="solution-card"><div class="sol-title">💡 음성 개선 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
+    <div class="solution-card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.12)"><div class="sol-title" style="color:var(--purple)">🎤 음성 트레이닝 추천</div><div class="sol-text">${r.training||''}</div></div>
     </div>`;
 }
 
