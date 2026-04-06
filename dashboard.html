@@ -2141,7 +2141,7 @@ function initLogoParticles(){
           const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
           // Random start position (scattered)
           const angle=Math.random()*Math.PI*2;
-          const dist=200+Math.random()*300;
+          const dist=300+Math.random()*600;
           logoParticles.push({
             x: W/2+Math.cos(angle)*dist,
             y: H/2+Math.sin(angle)*dist,
@@ -2149,7 +2149,7 @@ function initLogoParticles(){
             vx: 0, vy: 0,
             r, g, b, a,
             size: Math.random()*2+1.5,
-            speed: Math.random()*0.03+0.02,
+            speed: Math.random()*0.006+0.004,
             arrived: false
           });
         }
@@ -2183,7 +2183,7 @@ function animateLogo(){
       } else {
         p.x+=dx*p.speed;
         p.y+=dy*p.speed;
-        p.speed=Math.min(p.speed+0.001, 0.1);
+        p.speed=Math.min(p.speed+0.0002, 0.03);
         allArrived=false;
       }
     }
