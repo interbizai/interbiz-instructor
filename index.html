@@ -606,9 +606,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main style="max-width:900px">
-  <!-- Logo hero -->
-  <div class="home-hero">
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
+  <!-- Logo hero with particle effect -->
+  <div class="home-hero" style="position:relative">
+    <canvas id="logo-canvas" style="display:block;margin:0 auto;max-width:100%;height:auto"></canvas>
   </div>
 
   <!-- 8 Icon Grid (중앙 정렬) -->
@@ -1883,6 +1883,8 @@ function showPage(id){
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(CU) updateHeaderUI();
+  // 홈 돌아올 때 파티클 재실행
+  if(id==='page-home'){logoInitialized=false;if(logoAnimId){cancelAnimationFrame(logoAnimId);}initLogoParticles();}
   // 버거 버튼 삽입
   addBurgerToHeaders();
   // 사이드바 상태 유지
@@ -2100,7 +2102,118 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
 /* ════════════════════════════════
    HOME PAGE
 ════════════════════════════════ */
+/* ════════════════════════════════
+   PARTICLE LOGO EFFECT
+════════════════════════════════ */
+let logoParticles=[], logoAnimId=null, logoInitialized=false;
+
+function initLogoParticles(){
+  const canvas=el('logo-canvas');
+  if(!canvas||logoInitialized) return;
+
+  const W=600, H=200;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  // Load logo image
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    // Draw logo to offscreen canvas to read pixels
+    const off=document.createElement('canvas');
+    off.width=W; off.height=H;
+    const offCtx=off.getContext('2d');
+    const scale=Math.min((W-40)/img.width, (H-20)/img.height);
+    const dw=img.width*scale, dh=img.height*scale;
+    offCtx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+
+    const imageData=offCtx.getImageData(0,0,W,H);
+    const pixels=imageData.data;
+
+    logoParticles=[];
+    const step=3;
+
+    for(let y=0;y<H;y+=step){
+      for(let x=0;x<W;x+=step){
+        const i=(y*W+x)*4;
+        const a=pixels[i+3];
+        if(a>50){
+          const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
+          // Random start position (scattered)
+          const angle=Math.random()*Math.PI*2;
+          const dist=200+Math.random()*300;
+          logoParticles.push({
+            x: W/2+Math.cos(angle)*dist,
+            y: H/2+Math.sin(angle)*dist,
+            tx: x, ty: y,
+            vx: 0, vy: 0,
+            r, g, b, a,
+            size: Math.random()*2+1.5,
+            speed: Math.random()*0.03+0.02,
+            arrived: false
+          });
+        }
+      }
+    }
+    logoInitialized=true;
+    animateLogo();
+  };
+  img.src='assets/logo/인터비즈로고.png';
+}
+
+function animateLogo(){
+  const canvas=el('logo-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+
+  let allArrived=true;
+
+  for(const p of logoParticles){
+    if(!p.arrived){
+      // Ease towards target
+      const dx=p.tx-p.x, dy=p.ty-p.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+
+      if(dist<0.5){
+        p.x=p.tx; p.y=p.ty;
+        p.arrived=true;
+      } else {
+        p.x+=dx*p.speed;
+        p.y+=dy*p.speed;
+        p.speed=Math.min(p.speed+0.001, 0.1);
+        allArrived=false;
+      }
+    }
+
+    // Draw
+    ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.a/255})`;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.arrived?p.size*0.8:p.size,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  if(!allArrived){
+    logoAnimId=requestAnimationFrame(animateLogo);
+  } else {
+    // Final: draw crisp logo image on top
+    setTimeout(()=>{
+      const img=new Image();
+      img.onload=()=>{
+        ctx.clearRect(0,0,W,H);
+        const scale=Math.min((W-40)/img.width,(H-20)/img.height);
+        const dw=img.width*scale, dh=img.height*scale;
+        ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+      };
+      img.src='assets/logo/인터비즈로고.png';
+    },300);
+  }
+}
+
 function initHome(){
+  initLogoParticles();
   // Carousel: DB 영상 + 기본 유튜브 5개
   const defaultVids=[
     {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
