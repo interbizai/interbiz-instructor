@@ -123,7 +123,11 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 
 /* ── Stats row ── */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
-.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both}
+.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both;border-top:3px solid transparent}
+.stat-card:nth-child(1){border-top-color:#0078C8}
+.stat-card:nth-child(2){border-top-color:#E21E26}
+.stat-card:nth-child(3){border-top-color:#10b981}
+.stat-card:nth-child(4){border-top-color:#f59e0b}
 .stat-card:nth-child(2){animation-delay:.06s}.stat-card:nth-child(3){animation-delay:.12s}.stat-card:nth-child(4){animation-delay:.18s}
 .icon-card{width:52px;height:52px;border-radius:16px;border:1px solid rgba(0,0,0,.08);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:center}
 .stat-val{font-size:32px;font-weight:900;line-height:1}
@@ -4390,9 +4394,9 @@ function renderRanking(filtered){
   const rankColors=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6'];
   const medalBg=['rgba(226,30,38,.1)','rgba(0,120,200,.1)','rgba(16,185,129,.1)','rgba(245,158,11,.08)','rgba(139,92,246,.08)'];
 
-  function buildRankCard(title,subtitle,items){
+  function buildRankCard(title,subtitle,items,topColor){
     const rows=items.map((item,i)=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.04)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.userId?'openLecturer('+item.userId+',\\'page-dashboard\\')':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.04)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.userId?'openLecturer('+item.userId+',&quot;page-dashboard&quot;)':''}">
         <div style="width:24px;height:24px;border-radius:50%;background:${medalBg[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${rankColors[i]};flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
@@ -4401,7 +4405,7 @@ function renderRanking(filtered){
         <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>
       </div>`).join('');
 
-    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;padding:16px">
+    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;padding:16px;border-top:3px solid ${topColor||'#0078C8'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:14px;font-weight:800">${title}</div>
         <div style="font-size:11px;color:var(--t3)">${subtitle}</div>
@@ -4415,9 +4419,9 @@ function renderRanking(filtered){
   const voiceItems=voiceRank.map(v=>({name:v.user_name||'—',sub:v.tone||'',score:v.score,userId:v.user_id}));
 
   rankArea.innerHTML=
-    buildRankCard('개인 종합 랭킹','평균 점수',personalItems)+
-    buildRankCard('영상 랭킹 (TOP 5)','AI 점수',videoItems)+
-    buildRankCard('음성 랭킹 (TOP 5)','AI 점수',voiceItems);
+    buildRankCard('개인 종합 랭킹','평균 점수',personalItems,'#0078C8')+
+    buildRankCard('영상 랭킹 (TOP 5)','AI 점수',videoItems,'#E21E26')+
+    buildRankCard('음성 랭킹 (TOP 5)','AI 점수',voiceItems,'#8b5cf6');
 }
 
 function renderAIStrip(filtered){
