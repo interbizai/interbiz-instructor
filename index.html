@@ -391,6 +391,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .step-text{font-size:12px;color:var(--t2)}
 .step-text.active{color:var(--t1);font-weight:700}
 
+/* ── Hero Feature Cards ── */
+.hero-card{padding:18px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:8px}
+.hero-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-3px)}
+.hero-card:active{transform:scale(.98)}
+.hero-card-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.hero-card-title{font-size:13px;font-weight:800;color:var(--t1)}
+.hero-card-desc{font-size:11px;color:var(--t3);line-height:1.4}
+@media(max-width:768px){.hero-card{padding:14px}.hero-card-icon{width:36px;height:36px}}
+
 /* ── Responsive ── */
 @media(max-width:900px){.lect-grid{grid-template-columns:1fr 1fr}.video-layout{grid-template-columns:1fr}.prof-layout{grid-template-columns:1fr}}
 @media(max-width:600px){main{padding:14px 14px 48px}.filter-bar{grid-template-columns:repeat(2,1fr)}.stats-row{grid-template-columns:repeat(2,1fr)}.lect-grid{grid-template-columns:1fr}}
@@ -578,130 +587,133 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="btn btn-ghost" style="padding:7px 14px;color:var(--red)" onclick="doLogout()">로그아웃</button>
   </div>
 </header>
-<main style="max-width:900px">
-  <!-- Logo hero -->
-  <div class="home-hero">
-    <img src="assets/logo/publicinterbiz-logo.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
+<main style="max-width:1000px;padding-top:0">
+  <!-- ── Hero Section ── -->
+  <section style="position:relative;overflow:hidden;padding:60px 0 40px">
+    <!-- Background gradient -->
+    <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 80% at 50% 0%,rgba(0,120,200,.06),transparent)"></div>
+
+    <div style="max-width:600px;display:flex;flex-direction:column;gap:16px;animation:fadeUp .6s ease both">
+      <!-- Badge -->
+      <a style="display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:4px;border:1px solid rgba(0,0,0,.08);border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeUp .6s ease both;animation-delay:.5s;text-decoration:none;color:var(--t1)" href="#" onclick="event.preventDefault();initDashboard();showPage('page-dashboard')">
+        <span style="padding:2px 8px;border:1px solid rgba(0,0,0,.06);border-radius:4px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:11px;font-weight:800;letter-spacing:.5px">NEW</span>
+        <span style="font-size:12px">평가결과 대시보드 바로가기</span>
+        <span style="display:block;height:16px;border-left:1px solid rgba(0,0,0,.1)"></span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <!-- Title -->
+      <h1 style="font-size:36px;font-weight:700;color:var(--t1);line-height:1.25;animation:fadeUp .5s ease both;animation-delay:.1s">
+        현장강사 역량을<br>AI로 분석하고 성장시키세요
+      </h1>
+
+      <!-- Description -->
+      <p style="font-size:15px;color:var(--t3);letter-spacing:.3px;line-height:1.7;animation:fadeUp .5s ease both;animation-delay:.2s">
+        영상 녹화, 음성 분석, AI 평가를 통해<br>강사님의 강의 역량을 체계적으로 개발합니다.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div style="display:flex;gap:10px;padding-top:8px;animation:fadeUp .5s ease both;animation-delay:.3s">
+        <button class="btn btn-ghost" style="padding:10px 20px;font-size:13px" onclick="openStreaming()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          영상 녹화
+        </button>
+        <button class="auth-btn auth-btn-primary" style="padding:10px 20px;font-size:13px;max-width:none;border-radius:var(--r1)" onclick="openAnalysis()">
+          AI 분석 시작
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:6px"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Video Carousel (화면 스크린샷 영역) ── -->
+  <div style="position:relative;margin-bottom:40px">
+    <div style="position:absolute;inset:-20px;transform:scale(1.1);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.04),transparent,transparent);filter:blur(40px)"></div>
+    <div style="position:relative;animation:fadeUp 1s ease both;animation-delay:.1s">
+      <div class="sec-lbl" style="margin-bottom:10px">상위 강의 영상</div>
+      <div class="home-carousel">
+        <div class="home-track" id="home-track"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Video carousel (auto-scroll right→left) -->
-  <div class="sec-lbl">상위 강의 영상</div>
-  <div class="home-carousel">
-    <div class="home-track" id="home-track"></div>
-  </div>
+  <!-- ── Feature Cards (주요 기능) ── -->
+  <div style="animation:fadeUp .6s ease both;animation-delay:.2s;margin-bottom:40px">
+    <div class="sec-lbl">주요 기능</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
 
-  <!-- 8 Icon Grid -->
-  <div class="sec-lbl">주요 기능</div>
-  <div class="home-icons">
-    <!-- 1. 평가결과 (파랑, 스피너→체크) -->
-    <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')">
-      <div class="home-icon-box hi-anim" id="hi1">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".2"/>
-          <circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" class="si-arc"/>
-          <path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-check"/>
-        </svg>
+      <!-- 1. 평가결과 -->
+      <div class="hero-card" onclick="initDashboard();showPage('page-dashboard')">
+        <div class="hero-card-icon" style="background:rgba(0,120,200,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+        </div>
+        <div class="hero-card-title">평가결과</div>
+        <div class="hero-card-desc">강사별 평가 대시보드</div>
       </div>
-      <span class="home-icon-lbl">평가결과</span>
-    </div>
-    <!-- 2. 영상 스트리밍 (빨강, 플레이→일시정지) -->
-    <div class="home-icon-cell" onclick="openStreaming()">
-      <div class="home-icon-box hi-anim" id="hi2">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/>
-          <rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
-          <rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/>
-        </svg>
+
+      <!-- 2. 영상 스트리밍 -->
+      <div class="hero-card" onclick="openStreaming()">
+        <div class="hero-card-icon" style="background:rgba(226,30,38,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <div class="hero-card-title">영상 스트리밍</div>
+        <div class="hero-card-desc">실시간 녹화 & 분석</div>
       </div>
-      <span class="home-icon-lbl">영상 스트리밍</span>
-    </div>
-    <!-- 3. 영상등록 분석 (보라, AI + 로봇손) -->
-    <div class="home-icon-cell" onclick="openAnalysis()">
-      <div class="home-icon-box" id="hi3">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/>
-          <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text>
-          <!-- 로봇 손 -->
-          <g class="hi-robot-hand">
-            <path d="M34 18c2-1 4 0 4 2s-2 3-4 2" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.15)" stroke-linecap="round"/>
-            <line x1="36" y1="17" x2="37" y2="14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="38" y1="18" x2="39" y2="15" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
-          </g>
-        </svg>
+
+      <!-- 3. 영상등록 분석 -->
+      <div class="hero-card" onclick="openAnalysis()">
+        <div class="hero-card-icon" style="background:rgba(139,92,246,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="900" fill="#8b5cf6" stroke="none">AI</text></svg>
+        </div>
+        <div class="hero-card-title">영상등록 분석</div>
+        <div class="hero-card-desc">AI 기반 영상 평가</div>
       </div>
-      <span class="home-icon-lbl">영상등록 분석</span>
-    </div>
-    <!-- 4. 내페이지 (초록, 하트비트 애니메이션) -->
-    <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
-      <div class="home-icon-box" id="hi4">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2" class="hi-person-head"/>
-          <path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
-          <!-- 체크 뱃지 -->
-          <circle cx="30" cy="12" r="5" fill="#10b981" class="hi-badge"/>
-          <path d="M28 12l1.5 1.5 3-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="hi-badge"/>
-        </svg>
+
+      <!-- 4. 내페이지 -->
+      <div class="hero-card" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}">
+        <div class="hero-card-icon" style="background:rgba(16,185,129,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div class="hero-card-title">내페이지</div>
+        <div class="hero-card-desc">프로필 & 역량 관리</div>
       </div>
-      <span class="home-icon-lbl">내페이지</span>
-    </div>
-    <!-- 5. 음성분석 (파랑, 음파 애니메이션) -->
-    <div class="home-icon-cell" onclick="openVoiceAnalysis()">
-      <div class="home-icon-box" id="hi5">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="16" y="8" width="8" height="14" rx="4" stroke="#0078C8" stroke-width="2"/>
-          <path d="M10 20a10 10 0 0020 0" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
-          <line x1="20" y1="30" x2="20" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
-          <line x1="15" y1="34" x2="25" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/>
-          <!-- 음파 -->
-          <line x1="8" y1="10" x2="8" y2="16" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w1"/>
-          <line x1="4" y1="12" x2="4" y2="18" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w2"/>
-          <line x1="32" y1="10" x2="32" y2="16" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w3"/>
-          <line x1="36" y1="12" x2="36" y2="18" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w4"/>
-        </svg>
+
+      <!-- 5. 음성분석 -->
+      <div class="hero-card" onclick="openVoiceAnalysis()">
+        <div class="hero-card-icon" style="background:rgba(0,120,200,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+        </div>
+        <div class="hero-card-title">음성분석</div>
+        <div class="hero-card-desc">발성 & 보이스 진단</div>
       </div>
-      <span class="home-icon-lbl">음성분석</span>
-    </div>
-    <!-- 6. 학습링크이동 (초록, 다운로드→완료) -->
-    <div class="home-icon-cell" onclick="openLearningLinks()">
-      <div class="home-icon-box hi-anim" id="hi6">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <path d="M8 30v3a2 2 0 002 2h20a2 2 0 002-2v-3" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/>
-          <g class="si-arrow"><line x1="20" y1="8" x2="20" y2="26" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"/><polyline points="13,20 20,27 27,20" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
-          <path d="M13 22l6 6 9-11" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-done"/>
-        </svg>
+
+      <!-- 6. 학습링크 -->
+      <div class="hero-card" onclick="openLearningLinks()">
+        <div class="hero-card-icon" style="background:rgba(16,185,129,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </div>
+        <div class="hero-card-title">학습링크</div>
+        <div class="hero-card-desc">교육 자료 바로가기</div>
       </div>
-      <span class="home-icon-lbl">학습링크이동</span>
-    </div>
-    <!-- 7. 체크리스트/평가안 (주황, 펜 애니메이션) -->
-    <div class="home-icon-cell" onclick="openChecklist()">
-      <div class="home-icon-box" id="hi7">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-          <rect x="6" y="4" width="22" height="32" rx="2" stroke="#f59e0b" stroke-width="2"/>
-          <line x1="12" y1="12" x2="12" y2="12.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
-          <line x1="16" y1="12" x2="24" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          <line x1="12" y1="19" x2="12" y2="19.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
-          <line x1="16" y1="19" x2="24" y2="19" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          <line x1="12" y1="26" x2="12" y2="26.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
-          <line x1="16" y1="26" x2="24" y2="26" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          <!-- 펜 -->
-          <g class="hi-pen">
-            <path d="M30 8l4-4 4 4-4 4z" fill="#f59e0b" opacity=".9"/>
-            <line x1="30" y1="8" x2="26" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          </g>
-        </svg>
+
+      <!-- 7. 체크리스트 -->
+      <div class="hero-card" onclick="openChecklist()">
+        <div class="hero-card-icon" style="background:rgba(245,158,11,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="8" x2="9" y2="8.01" stroke-width="3"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="9" y1="13" x2="9" y2="13.01" stroke-width="3"/><line x1="12" y1="13" x2="17" y2="13"/><line x1="9" y1="18" x2="9" y2="18.01" stroke-width="3"/><line x1="12" y1="18" x2="17" y2="18"/></svg>
+        </div>
+        <div class="hero-card-title">체크리스트</div>
+        <div class="hero-card-desc">평가안 & 교안 관리</div>
       </div>
-      <span class="home-icon-lbl">체크리스트<br>평가안</span>
-    </div>
-    <!-- 8. 관리자 (주황, 벨→알림) -->
-    <div class="home-icon-cell" onclick="openAdmin()">
-      <div class="home-icon-box hi-anim" id="hi8">
-        <svg width="36" height="36" viewBox="0 0 40 40" fill="none" class="si-bell">
-          <path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
-          <circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/>
-        </svg>
+
+      <!-- 8. 관리자 -->
+      <div class="hero-card" onclick="openAdmin()">
+        <div class="hero-card-icon" style="background:rgba(245,158,11,.08)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div class="hero-card-title">관리자</div>
+        <div class="hero-card-desc">시스템 관리 패널</div>
       </div>
-      <span class="home-icon-lbl">관리자</span>
+
     </div>
   </div>
 </main>
