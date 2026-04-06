@@ -1112,13 +1112,34 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <input type="number" class="form-input" id="va-count" placeholder="20">
         </div>
         <div class="form-group">
-          <label class="form-lbl">강의 분위기 (AI 기준)</label>
+          <label class="form-lbl">강의 분위기</label>
           <select class="form-input" id="va-tone">
-            <option value="진지하고 엄중한">진지하고 엄중한</option>
+            <option value="전문적이고 진지한">전문적이고 진지한</option>
             <option value="밝고 경쾌한" selected>밝고 경쾌한</option>
-            <option value="재미있는">재미있는</option>
-            <option value="차분하고 신뢰감 있는">차분하고 신뢰감 있는</option>
+            <option value="친근하고 편안한">친근하고 편안한</option>
+            <option value="재미있고 유머러스한">재미있고 유머러스한</option>
             <option value="열정적이고 에너지 넘치는">열정적이고 에너지 넘치는</option>
+            <option value="차분하고 신뢰감 있는">차분하고 신뢰감 있는</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">직군</label>
+          <select class="form-input" id="va-role">
+            <option value="현장강사">현장강사</option>
+            <option value="현장코칭강사">현장코칭강사</option>
+            <option value="매장 매니저">매장 매니저</option>
+            <option value="CS 상담사">CS 상담사</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">세부 업무</label>
+          <select class="form-input" id="va-task">
+            <option value="RP (롤플레잉)">RP (롤플레잉)</option>
+            <option value="인터뷰">인터뷰</option>
+            <option value="B2B 영업">B2B 영업</option>
+            <option value="제품 시연">제품 시연</option>
+            <option value="고객 상담">고객 상담</option>
+            <option value="교육 강의">교육 강의</option>
           </select>
         </div>
         <!-- 평가안/체크리스트 업로드 -->
@@ -3223,11 +3244,15 @@ async function runVoiceAnalysis(){
   el('va-ai-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">🎤</div>AI 음성 분석 중...</div>';
   el('va-report').innerHTML='';
 
-  const prompt=`당신은 interbiz 현장강사 음성 분석 AI입니다. 아래 정보를 바탕으로 강사의 음성/발성을 정밀 분석해주세요.
+  const role=v('va-role')||'현장강사';
+  const task=v('va-task')||'교육 강의';
+  const prompt=`당신은 interbiz 현장강사 음성 분석 전문 AI입니다. 아래 정보를 바탕으로 강사의 음성/발성을 정밀 분석해주세요.
 
 강의 제목: ${title}
 교육생 인원: ${count}명
 강의 분위기 목표: ${tone}
+직군: ${role}
+세부 업무: ${task}
 녹음 길이: ${vaSec?Math.floor(vaSec/60)+'분 '+vaSec%60+'초':'파일 업로드'}
 평가안 유무: ${hasCL?'있음':'없음'}
 
@@ -3235,21 +3260,27 @@ async function runVoiceAnalysis(){
 {
   "decibel": {"current": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
   "tempo": {"wpm": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
-  "tone_match": {"score": 0, "target": "${tone}", "comment": "목표 분위기 대비 현재 음성 톤 평가"},
+  "tone_match": {"score": 0, "percent": 0, "target": "${tone}", "actual": "실제 감지된 톤", "comment": "목표 분위기 대비 현재 음성 톤 적합도 상세 평가"},
+  "role_fit": {"score": 0, "role": "${role}", "task": "${task}", "comment": "${role}의 ${task} 업무 특성에 맞는 음성 평가"},
   "clarity": {"score": 0, "comment": "발음 명확도 평가"},
   "energy": {"score": 0, "pattern": "상승형/하강형/균등형/불규칙형", "comment": "강의 에너지 패턴 분석"},
-  "habits": [{"word": "반복어", "count": 0}],
+  "habits": [{"word": "반복어", "count": 0, "context": "사용된 상황 예시", "replacement": "나라면 이렇게 말하겠다 - 대체 문구 제안"}],
   "silence_ratio": {"percent": 0, "comment": "적절한 침묵 활용도"},
   "engagement_voice": {"score": 0, "comment": "음성으로 판단한 수강생 관심 유지력"},
   ${hasCL?'"criteriaScores": [{"name":"발성 크기","score":0,"max":20},{"name":"발음 명확도","score":0,"max":20},{"name":"속도 조절","score":0,"max":15},{"name":"톤 적절성","score":0,"max":15},{"name":"강약 조절","score":0,"max":15},{"name":"침묵 활용","score":0,"max":15}], "criteriaSummary": "평가안 기준 종합 한줄",':''}
   "overall_score": 0,
-  "solution": "개선 솔루션 4가지 (줄바꿈은 <br>로)",
-  "training": "음성 트레이닝 추천 3가지 (줄바꿈은 <br>로)"
+  "solution": "개선 솔루션 4가지 (<br>로 줄바꿈). 각 항목마다 '나라면 이렇게' 식의 코칭형 표현 포함",
+  "training": "음성 트레이닝 추천 3가지 (<br>로 줄바꿈). ${role}의 ${task} 업무에 최적화된 훈련법"
 }
 
-교육생 ${count}명 기준 권장 데시벨과 템포를 산출하세요.
-목표 분위기(${tone})에 맞는 음성 톤인지 평가하세요.
-점수는 /100 기준으로 현실적으로 작성하세요.`;
+중요 지침:
+1. tone_match.percent는 목표 분위기(${tone})와 실제 톤의 적합도를 0~100%로 산출하세요.
+2. role_fit은 ${role}이 ${task} 업무를 수행할 때 필요한 음성 특성을 기준으로 평가하세요.
+3. habits의 replacement는 반드시 "나라면 이렇게 말하겠다" 식의 실무 코칭형 대체 문구를 제안하세요.
+   예: "음~" → "잠시 정리하면요," / "그래서" → "이 부분이 핵심인데요,"
+4. solution도 단순 지적이 아닌 코칭형으로 작성하세요.
+5. 교육생 ${count}명 기준 권장 데시벨과 템포를 산출하세요.
+6. 점수는 /100 기준으로 현실적으로 작성하세요.`;
 
   try {
     const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
@@ -3270,10 +3301,15 @@ function generateMockVoice(count,tone){
   return {
     decibel:{current:68+Math.floor(Math.random()*10),recommended_min:65,recommended_max:80,status:'적정',comment:'교육생 인원 대비 적절한 볼륨'},
     tempo:{wpm:135+Math.floor(Math.random()*15),recommended_min:130,recommended_max:160,status:'적정',comment:'전반적으로 안정적인 속도'},
-    tone_match:{score:72+Math.floor(Math.random()*20),target:tone,comment:`"${tone}" 분위기에 부분적으로 부합. 강약 조절 개선 시 더 효과적`},
+    tone_match:{score:72+Math.floor(Math.random()*20),percent:65+Math.floor(Math.random()*25),target:tone,actual:'밝지만 다소 단조로운 톤',comment:`"${tone}" 분위기에 ${65+Math.floor(Math.random()*25)}% 부합. 강약 조절 개선 시 적합도 향상 가능`},
+    role_fit:{score:70+Math.floor(Math.random()*20),role:'현장강사',task:'교육 강의',comment:'현장강사의 교육 강의에 적합한 전달력을 보유하고 있으나, 고객 눈높이 언어 사용이 더 필요함'},
     clarity:{score:75+Math.floor(Math.random()*15),comment:'대체로 명확하나 전문 용어 발음 시 속도 조절 필요'},
     energy:{score:70+Math.floor(Math.random()*15),pattern:'하강형',comment:'강의 후반부 에너지 저하. 25분경 환기 활동 권장'},
-    habits:[{word:'음~',count:8+Math.floor(Math.random()*8)},{word:'그래서',count:4+Math.floor(Math.random()*6)},{word:'이제',count:2+Math.floor(Math.random()*4)}],
+    habits:[
+      {word:'음~',count:8+Math.floor(Math.random()*8),context:'"음~ 그러니까 이 제품은..." 처럼 문장 시작 시 반복',replacement:'"잠시 정리하면요," 또는 1초 침묵 후 바로 본론'},
+      {word:'그래서',count:4+Math.floor(Math.random()*6),context:'"그래서 이게 좋은 점은..." 처럼 연결어로 남용',replacement:'"이 부분이 핵심인데요," 또는 "여기서 주목하실 점은,"'},
+      {word:'이제',count:2+Math.floor(Math.random()*4),context:'"이제 다음으로..." 처럼 전환 시 습관적 사용',replacement:'"다음으로 살펴볼 내용은," 또는 "그럼 이어서,"'}
+    ],
     silence_ratio:{percent:8+Math.floor(Math.random()*10),comment:'적절한 침묵으로 핵심 포인트를 강조하고 있음'},
     engagement_voice:{score:70+Math.floor(Math.random()*15),comment:'톤 변화가 다소 부족하여 단조로운 구간 존재'},
     criteriaScores:[{name:'발성 크기',score:15+Math.floor(Math.random()*5),max:20},{name:'발음 명확도',score:14+Math.floor(Math.random()*5),max:20},{name:'속도 조절',score:10+Math.floor(Math.random()*5),max:15},{name:'톤 적절성',score:10+Math.floor(Math.random()*5),max:15},{name:'강약 조절',score:9+Math.floor(Math.random()*5),max:15},{name:'침묵 활용',score:10+Math.floor(Math.random()*5),max:15}],
@@ -3306,11 +3342,18 @@ function renderVoiceResult(r,hasCL,count,tone){
   }
 
   // AI 독자 분석
-  const db=r.decibel||{};const tp=r.tempo||{};const tm=r.tone_match||{};
+  const db=r.decibel||{};const tp=r.tempo||{};const tm=r.tone_match||{};const rf=r.role_fit||{};
   const cl=r.clarity||{};const en=r.energy||{};const sr=r.silence_ratio||{};const ev=r.engagement_voice||{};
+  // 습관어 (코칭형 대체 문구 포함)
   const habitHtml=(r.habits||[]).map(h=>{
     const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
-    return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+    return `<div style="padding:10px;border:1px solid rgba(0,0,0,.06);border-radius:8px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>
+      </div>
+      ${h.context?`<div style="font-size:11px;color:var(--t3);margin-bottom:4px">📍 ${h.context}</div>`:''}
+      ${h.replacement?`<div style="font-size:12px;color:var(--green);font-weight:600">💬 나라면: "${h.replacement}"</div>`:''}
+    </div>`;
   }).join('')||'<span style="font-size:11px;color:var(--t3)">감지 없음</span>';
 
   const voiceRadar=[
@@ -3340,11 +3383,27 @@ function renderVoiceResult(r,hasCL,count,tone){
       <div class="bar-track"><div class="bar-fill bf-green" style="width:${Math.min(100,(tp.wpm||0)/200*100)}%"></div></div>
       <div style="font-size:10px;color:var(--t3);margin-top:3px">권장: ${tp.recommended_min}~${tp.recommended_max} WPM · ${tp.comment||''}</div>
     </div>
-    <!-- 톤 매칭 -->
-    <div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:8px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700">🎭 분위기 매칭 (${tone})</span><span style="font-weight:700;color:var(--blue)">${tm.score}/100</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${tm.score||0}%;background:linear-gradient(90deg,var(--purple),#c4b5fd)"></div></div>
-      <div style="font-size:10px;color:var(--t3);margin-top:3px">${tm.comment||''}</div>
+    <!-- 분위기 적합도 -->
+    <div style="margin-bottom:12px;padding:12px;background:#f8f9fa;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700">🎭 강의 분위기 적합도</span>
+        <span style="font-size:20px;font-weight:900;color:var(--purple)">${tm.percent||tm.score||0}%</span>
+      </div>
+      <div class="bar-track" style="height:8px;border-radius:4px"><div class="bar-fill" style="width:${tm.percent||tm.score||0}%;background:linear-gradient(90deg,var(--purple),#c4b5fd);border-radius:4px"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px">
+        <span style="color:var(--t3)">목표: <strong>${tm.target||tone}</strong></span>
+        <span style="color:var(--t2)">실제: <strong>${tm.actual||'—'}</strong></span>
+      </div>
+      <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5">${tm.comment||''}</div>
+    </div>
+    <!-- 직군별 맞춤 평가 -->
+    <div style="margin-bottom:12px;padding:12px;background:rgba(0,120,200,.03);border-radius:8px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700">👤 직군별 맞춤 평가</span>
+        <span style="font-size:14px;font-weight:800;color:var(--blue)">${rf.score||0}/100</span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">${rf.role||'현장강사'} · ${rf.task||'교육 강의'}</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6">${rf.comment||''}</div>
     </div>
     <!-- 스코어 그리드 -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
