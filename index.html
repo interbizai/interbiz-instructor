@@ -945,13 +945,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <main style="max-width:1000px">
   <!-- 달력 헤더 -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="btn btn-ghost" style="padding:6px 10px" onclick="calNav(-1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <span id="cal-title" style="font-size:20px;font-weight:800"></span>
-      <button class="btn btn-ghost" style="padding:6px 10px" onclick="calNav(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-      <button class="btn btn-ghost" style="padding:6px 14px;font-size:13px" onclick="calToday()">오늘</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-ghost" style="padding:6px 8px" onclick="calNav(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span id="cal-title" style="font-size:18px;font-weight:800;white-space:nowrap"></span>
+      <button class="btn btn-ghost" style="padding:6px 8px" onclick="calNav(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px;white-space:nowrap" onclick="calToday()">오늘</button>
     </div>
-    <button class="auth-btn auth-btn-primary" style="padding:8px 18px;font-size:13px;max-width:none;border-radius:var(--r1)" onclick="openCalEventModal()">+ 일정 추가</button>
+    <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;white-space:nowrap" onclick="openCalEventModal()">+ 일정 추가</button>
   </div>
   <!-- 달력 그리드 -->
   <div style="border:1px solid rgba(0,0,0,.08);border-radius:var(--r2);overflow:hidden">
@@ -3242,11 +3242,24 @@ function renderCalendar(){
   for(let d=1;d<=totalDays;d++){
     const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    const thisDay=new Date(y,m,d);
+    const thisDayEnd=new Date(y,m,d,23,59,59);
+    const thisDayStart=new Date(y,m,d,0,0,0);
     const dayEvents=calEvents.filter(e=>{
-      const ed=new Date(e.start_time);
-      return ed.getFullYear()===y&&ed.getMonth()===m&&ed.getDate()===d;
+      const es=new Date(e.start_time), ee=new Date(e.end_time);
+      return es<=thisDayEnd && ee>=thisDayStart;
     });
-    const evHtml=dayEvents.slice(0,3).map(e=>`<div class="cal-ev-chip" style="background:${e.color||'#0078C8'}" onclick="event.stopPropagation();editCalEvent(${e.id})">${e.title}</div>`).join('');
+    const evHtml=dayEvents.slice(0,3).map(e=>{
+      const es=new Date(e.start_time), ee=new Date(e.end_time);
+      const isStart=es.getFullYear()===y&&es.getMonth()===m&&es.getDate()===d;
+      const isEnd=ee.getFullYear()===y&&ee.getMonth()===m&&ee.getDate()===d;
+      const borderL=isStart?'border-radius:4px 0 0 4px':'border-radius:0';
+      const borderR=isEnd?'border-radius:0 4px 4px 0':'';
+      const radius=isStart&&isEnd?'border-radius:4px':'';
+      const finalRadius=isStart&&isEnd?'border-radius:4px':isStart?'border-radius:4px 0 0 4px':isEnd?'border-radius:0 4px 4px 0':'border-radius:0';
+      const label=isStart?e.title:'';
+      return `<div class="cal-ev-chip" style="background:${e.color||'#0078C8'};${finalRadius};margin-right:${isEnd?'0':'-4px'};margin-left:${isStart?'0':'-4px'}" onclick="event.stopPropagation();editCalEvent(${e.id})">${label}</div>`;
+    }).join('');
     const more=dayEvents.length>3?`<div style="font-size:10px;color:var(--t3)">+${dayEvents.length-3}개</div>`:'';
     html+=`<div class="cal-day" onclick="openCalEventModal('${dateStr}')"><div class="cal-day-num${isToday?' today':''}">${d}</div>${evHtml}${more}</div>`;
   }
