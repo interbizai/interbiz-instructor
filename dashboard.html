@@ -28,9 +28,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--t1)}
 textarea{resize:vertical;min-height:80px}
 
 /* ── Header ── */
-.hdr{position:sticky;top:0;z-index:200;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:13px 28px;display:flex;align-items:center;justify-content:space-between}
+.hdr{position:sticky;top:0;z-index:200;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
 .hdr-logo{display:flex;align-items:center;gap:11px}
-.hdr-logo img{height:34px;border-radius:9px}
+.hdr-logo img{height:40px;border-radius:9px}
 .hdr-logo-txt h1{font-size:15px;font-weight:800}
 .hdr-logo-txt p{font-size:10px;color:var(--t3)}
 .hdr-right{display:flex;align-items:center;gap:10px}
@@ -1900,10 +1900,10 @@ function showPage(id){
 /* ── Global Sidebar ── */
 function getSidebarHTML(activePage){
   const items=[
-    {label:'평가결과',page:'page-dashboard',action:'initDashboard();showPage("page-dashboard")',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".3"/><path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',bg:'rgba(0,120,200,.08)'},
+    {label:'평가결과',page:'page-dashboard',action:"initDashboard();showPage('page-dashboard')",icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".3"/><path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',bg:'rgba(0,120,200,.08)'},
     {label:'영상 스트리밍',page:'page-streaming',action:'openStreaming()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><polygon points="14,10 30,20 14,30" fill="#E21E26"/></svg>',bg:'rgba(226,30,38,.08)'},
     {label:'영상등록 분석',page:'page-analysis',action:'openAnalysis()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/><text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text></svg>',bg:'rgba(139,92,246,.08)'},
-    {label:'내페이지',page:'page-lecturer',action:'if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,"page-dashboard")}else{showPage("page-myprofile")}',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/><path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(16,185,129,.08)'},
+    {label:'내페이지',page:'page-lecturer',action:"if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-dashboard')}else{showPage('page-myprofile')}",icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/><path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(16,185,129,.08)'},
     {label:'음성분석',page:'page-voice',action:'openVoiceAnalysis()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="16" y="8" width="8" height="14" rx="4" stroke="#0078C8" stroke-width="2"/><path d="M10 20a10 10 0 0020 0" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="30" x2="20" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="34" x2="25" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(0,120,200,.08)'},
     {label:'학습링크이동',page:'page-links',action:'openLearningLinks()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H8a2 2 0 00-2 2v24a2 2 0 002 2h24a2 2 0 002-2V22"/><path d="M24 4h12v12"/><line x1="16" y1="24" x2="36" y2="4"/></svg>',bg:'rgba(16,185,129,.08)'},
     {label:'체크리스트',page:'page-checklist',action:'openChecklist()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="8" y="4" width="24" height="32" rx="2" stroke="#f59e0b" stroke-width="2"/><line x1="14" y1="12" x2="14" y2="12.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="12" x2="28" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="19" x2="14" y2="19.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="19" x2="28" y2="19" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="26" x2="14" y2="26.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="26" x2="28" y2="26" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(245,158,11,.08)'},
@@ -1911,7 +1911,7 @@ function getSidebarHTML(activePage){
   ];
   return `<aside class="dash-sidebar">
     <div class="dash-sidebar-label">주요 기능</div>
-    ${items.map(it=>`<div class="dash-sidebar-item${activePage===it.page?' active':''}" onclick="${it.action}"><div class="dash-sidebar-icon" style="background:${it.bg}">${it.icon}</div>${it.label}</div>`).join('')}
+    ${items.map((it,i)=>`<div class="dash-sidebar-item${activePage===it.page?' active':''}" data-idx="${i}"><div class="dash-sidebar-icon" style="background:${it.bg}">${it.icon}</div>${it.label}</div>`).join('')}
     <div class="dash-sidebar-label" style="margin-top:12px">바로가기</div>
     <div class="dash-sidebar-item" onclick="showPage('page-home')"><div class="dash-sidebar-icon" style="background:rgba(0,0,0,.04)"><svg width="18" height="18" viewBox="0 0 40 40" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M6 18l14-12 14 12v16a2 2 0 01-2 2H8a2 2 0 01-2-2z"/></svg></div>홈으로</div>
   </aside>`;
@@ -1933,6 +1933,26 @@ function injectSidebar(pageId){
   wrapper.appendChild(content);
   main.appendChild(wrapper);
   main.style.padding='0';main.style.maxWidth='100%';
+  // 클릭 이벤트 바인딩
+  const sidebarItems=wrapper.querySelectorAll('.dash-sidebar-item[data-idx]');
+  const actions=[
+    ()=>{initDashboard();showPage('page-dashboard')},
+    ()=>openStreaming(),
+    ()=>openAnalysis(),
+    ()=>{if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-dashboard')}else{showPage('page-myprofile')}},
+    ()=>openVoiceAnalysis(),
+    ()=>openLearningLinks(),
+    ()=>openChecklist(),
+    ()=>openAdmin(),
+  ];
+  sidebarItems.forEach(item=>{
+    const idx=parseInt(item.dataset.idx);
+    if(actions[idx]) item.addEventListener('click',actions[idx]);
+  });
+  // 홈으로 버튼
+  wrapper.querySelectorAll('.dash-sidebar-item:not([data-idx])').forEach(item=>{
+    item.addEventListener('click',()=>showPage('page-home'));
+  });
 }
 
 // 사이드바 적용 대상 페이지들
