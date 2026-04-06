@@ -23,7 +23,7 @@ body{background:#ffffff;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,
 .neu-in{box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}
 .neu-btn{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.08);border-radius:var(--r1);cursor:pointer;transition:box-shadow .15s,transform .1s}
 .neu-btn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1);transform:scale(.98)}
-input,select,textarea{background:#fff;border:1px solid #ddd;outline:none;box-shadow:none;border-radius:var(--r1);padding:11px 14px;font-size:15px;color:var(--t1);width:100%;transition:border-color .2s}
+input,select,textarea{background:#fff;border:1px solid #ddd;outline:none;box-shadow:none;border-radius:var(--r1);padding:11px 14px;font-size:15px;color:var(--t1);width:100%;transition:border-color .2s;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:var(--t1)}
 textarea{resize:vertical;min-height:80px}
 
@@ -975,12 +975,20 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-group" style="margin:0">
-        <label class="form-lbl">시작</label>
-        <input type="datetime-local" class="form-input" id="cal-ev-start">
+        <label class="form-lbl">시작 날짜</label>
+        <input type="date" class="form-input" id="cal-ev-start-date">
       </div>
       <div class="form-group" style="margin:0">
-        <label class="form-lbl">종료</label>
-        <input type="datetime-local" class="form-input" id="cal-ev-end">
+        <label class="form-lbl">시작 시간</label>
+        <input type="time" class="form-input" id="cal-ev-start-time" value="09:00">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">종료 날짜</label>
+        <input type="date" class="form-input" id="cal-ev-end-date">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">종료 시간</label>
+        <input type="time" class="form-input" id="cal-ev-end-time" value="10:00">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
@@ -3269,15 +3277,11 @@ function openCalEventModal(dateStr){
   el('cal-ev-err').textContent='';
   el('cal-ev-del-btn').style.display='none';
 
-  if(dateStr){
-    el('cal-ev-start').value=dateStr+'T09:00';
-    el('cal-ev-end').value=dateStr+'T10:00';
-  } else {
-    const now=new Date();
-    const d=now.toISOString().slice(0,10);
-    el('cal-ev-start').value=d+'T09:00';
-    el('cal-ev-end').value=d+'T10:00';
-  }
+  const dateVal=dateStr||new Date().toISOString().slice(0,10);
+  el('cal-ev-start-date').value=dateVal;
+  el('cal-ev-start-time').value='09:00';
+  el('cal-ev-end-date').value=dateVal;
+  el('cal-ev-end-time').value='10:00';
   el('cal-event-overlay').classList.add('show');
 }
 
@@ -3291,9 +3295,13 @@ function editCalEvent(id){
   el('cal-ev-cat').value=ev.category||'교육';
   el('cal-ev-color').value=ev.color||'#0078C8';
 
-  const fmt=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  el('cal-ev-start').value=fmt(new Date(ev.start_time));
-  el('cal-ev-end').value=fmt(new Date(ev.end_time));
+  const s=new Date(ev.start_time), e2=new Date(ev.end_time);
+  const fmtD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const fmtT=d=>`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  el('cal-ev-start-date').value=fmtD(s);
+  el('cal-ev-start-time').value=fmtT(s);
+  el('cal-ev-end-date').value=fmtD(e2);
+  el('cal-ev-end-time').value=fmtT(e2);
 
   // 수정/삭제 권한: 본인 또는 관리자
   const canEdit=CU&&(CU.isAdmin||(ev.user_id&&CU.id===ev.user_id));
@@ -3305,15 +3313,15 @@ function editCalEvent(id){
 async function saveCalEvent(){
   const title=v('cal-ev-title').trim();
   if(!title){el('cal-ev-err').textContent='제목을 입력하세요.';return;}
-  const start=v('cal-ev-start');
-  const end=v('cal-ev-end');
-  if(!start||!end){el('cal-ev-err').textContent='시간을 입력하세요.';return;}
+  const startDate=v('cal-ev-start-date'), startTime=v('cal-ev-start-time');
+  const endDate=v('cal-ev-end-date'), endTime=v('cal-ev-end-time');
+  if(!startDate||!endDate){el('cal-ev-err').textContent='날짜를 입력하세요.';return;}
 
   const data={
     title,
     description:v('cal-ev-desc'),
-    start_time:new Date(start).toISOString(),
-    end_time:new Date(end).toISOString(),
+    start_time:new Date(`${startDate}T${startTime||'09:00'}`).toISOString(),
+    end_time:new Date(`${endDate}T${endTime||'10:00'}`).toISOString(),
     color:v('cal-ev-color'),
     category:v('cal-ev-cat'),
     user_id:CU?.id||null
