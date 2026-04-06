@@ -608,7 +608,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <main style="max-width:900px">
   <!-- Logo hero with particle effect -->
   <div class="home-hero" style="position:relative">
-    <canvas id="logo-canvas" style="display:block;margin:0 auto;max-width:100%;height:auto"></canvas>
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
+    <canvas id="logo-canvas" style="display:block"></canvas>
   </div>
 
   <!-- 8 Icon Grid (중앙 정렬) -->
@@ -2111,8 +2112,9 @@ function initLogoParticles(){
   const canvas=el('logo-canvas');
   if(!canvas||logoInitialized) return;
 
-  const W=600, H=200;
+  const W=window.innerWidth, H=window.innerHeight-60;
   canvas.width=W; canvas.height=H;
+  canvas.style.position='fixed';canvas.style.top='60px';canvas.style.left='0';canvas.style.zIndex='50';canvas.style.width='100vw';canvas.style.height='calc(100vh - 60px)';
   const ctx=canvas.getContext('2d');
 
   // Load logo image
@@ -2123,7 +2125,7 @@ function initLogoParticles(){
     const off=document.createElement('canvas');
     off.width=W; off.height=H;
     const offCtx=off.getContext('2d');
-    const scale=Math.min((W-40)/img.width, (H-20)/img.height);
+    const scale=Math.min(400/img.width, 200/img.height);
     const dw=img.width*scale, dh=img.height*scale;
     offCtx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
 
@@ -2140,11 +2142,18 @@ function initLogoParticles(){
         if(a>50){
           const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
           // Random start position (scattered)
-          const angle=Math.random()*Math.PI*2;
-          const dist=300+Math.random()*600;
+          // 화면 사방에서 랜덤 출발
+          const edge=Math.floor(Math.random()*4);
+          let sx,sy;
+          if(edge===0){sx=Math.random()*W;sy=-20-Math.random()*100;} // 위
+          else if(edge===1){sx=Math.random()*W;sy=H+20+Math.random()*100;} // 아래
+          else if(edge===2){sx=-20-Math.random()*100;sy=Math.random()*H;} // 왼쪽
+          else{sx=W+20+Math.random()*100;sy=Math.random()*H;} // 오른쪽
+          const angle=0;
+          const dist=0;
           logoParticles.push({
-            x: W/2+Math.cos(angle)*dist,
-            y: H/2+Math.sin(angle)*dist,
+            x: sx,
+            y: sy,
             tx: x, ty: y,
             vx: 0, vy: 0,
             r, g, b, a,
@@ -2198,17 +2207,16 @@ function animateLogo(){
   if(!allArrived){
     logoAnimId=requestAnimationFrame(animateLogo);
   } else {
-    // Final: draw crisp logo image on top
+    // Final: fade out canvas, show normal page
     setTimeout(()=>{
-      const img=new Image();
-      img.onload=()=>{
-        ctx.clearRect(0,0,W,H);
-        const scale=Math.min((W-40)/img.width,(H-20)/img.height);
-        const dw=img.width*scale, dh=img.height*scale;
-        ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
-      };
-      img.src='assets/logo/인터비즈로고.png';
-    },300);
+      canvas.style.transition='opacity 0.8s ease';
+      canvas.style.opacity='0';
+      setTimeout(()=>{
+        canvas.style.display='none';
+        canvas.style.position='';canvas.style.top='';canvas.style.left='';canvas.style.zIndex='';
+        canvas.style.width='';canvas.style.height='';canvas.style.opacity='';canvas.style.transition='';
+      },800);
+    },500);
   }
 }
 
