@@ -2055,38 +2055,6 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
    HOME PAGE
 ════════════════════════════════ */
 function initHome(){
-  // Carousel: DB 영상 + 기본 유튜브 5개
-  const defaultVids=[
-    {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
-    {title:'백화점 VS 매장 비교 강의',yt:'rcRCF3gPSAo',name:'이수연',team:'수도권2팀',channel:'가전AM',score:91},
-    {title:'로보락 S 시리즈 출시 교육',yt:'OxALSj3q-QE',name:'박도윤',team:'중부팀',channel:'하이케어솔루션',score:88},
-    {title:'현장 트러블 대응 시나리오',yt:'ZOw_yYqgULk',name:'최지아',team:'수도권1팀',channel:'가전AM',score:85},
-    {title:'고객 클레임 실전 롤플레잉',yt:'Z0Sw-G-S14g',name:'정현서',team:'남부팀',channel:'하이케어솔루션',score:82},
-  ];
-  const dbVids=D.videos.filter(v=>v.status==='분석완료').map(vid=>{
-    const u=D.users.find(x=>x.id===vid.userId);
-    const m=vid.youtube?vid.youtube.match(/[?&]v=([^&]+)/):null;
-    return {title:vid.title, yt:m?m[1]:'', meta:u?.name||'', id:vid.id};
-  });
-  const carouselItems=dbVids.length>0?dbVids:defaultVids;
-  const items=[...carouselItems,...carouselItems];
-  el('home-track').innerHTML=items.map((v,i)=>{
-    const thumb=v.yt?`background-image:url('https://img.youtube.com/vi/${v.yt}/hqdefault.jpg')`:'background:#1a1a2e';
-    const onclick=v.id?`onclick="openVideo(${v.id})"`:`onclick="window.open('https://www.youtube.com/watch?v=${v.yt}','_blank')"`;
-    return `<div class="carousel-card" ${onclick}>
-      <div class="carousel-card-bg" style="${thumb}"></div>
-      <div class="carousel-top">
-        <span class="ct-chip">${v.channel||''}</span>
-        <span>${v.name||v.meta||''}</span>
-        <span>${v.team||''}</span>
-        ${v.score?`<span class="ct-score">${v.score}점</span>`:''}
-      </div>
-      <div class="carousel-overlay">
-        <div class="carousel-title">${v.title}</div>
-      </div>
-    </div>`;
-  }).join('');
-  // home icon animations
   startHomeIconAnimations();
 }
 function startHomeIconAnimations(){
