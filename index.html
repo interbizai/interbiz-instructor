@@ -102,30 +102,30 @@ textarea{resize:vertical;min-height:80px}
 .btn:active{transform:scale(.97)}
 
 /* ── Section label ── */
-.sec-lbl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;margin-bottom:16px}
+.sec-lbl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;margin-bottom:10px}
 .sec-lbl::before{content:'';width:4px;height:20px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
-.sec-lbl-sm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;margin-bottom:12px;color:var(--t1)}
+.sec-lbl-sm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;margin-bottom:8px;color:var(--t1)}
 .sec-lbl-sm::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
 
 /* ── Main layout ── */
-main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
+main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 
 /* ── Filter bar ── */
-.filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+.filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 @media(min-width:900px){.filter-bar{grid-template-columns:repeat(6,1fr)}}
 .f-item{display:flex;flex-direction:column;gap:5px}
 .f-lbl{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .filter-bar select{padding:9px 12px}
 
 /* ── AI Summary strip ── */
-.ai-strip{border-radius:var(--r2);padding:14px 20px;margin-bottom:26px;border:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .4s ease both}
+.ai-strip{border-radius:var(--r2);padding:12px 18px;margin-bottom:14px;border:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .4s ease both}
 .ai-strip-ico{width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ai-strip-text{font-size:14px;color:var(--t2);line-height:1.7}
 .ai-strip-text strong{color:var(--t1);font-weight:700}
 
 /* ── Stats row ── */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
-.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.stat-card{padding:14px;border-radius:var(--r2);display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease both}
 .stat-card:nth-child(2){animation-delay:.06s}.stat-card:nth-child(3){animation-delay:.12s}.stat-card:nth-child(4){animation-delay:.18s}
 .icon-card{width:52px;height:52px;border-radius:16px;border:1px solid rgba(0,0,0,.18);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:center}
 .stat-val{font-size:32px;font-weight:900;line-height:1}
@@ -196,7 +196,7 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 .dual-pane{display:none}.dual-pane.active{display:block}
 
 /* ── Top 5 highlight ── */
-.top5-scroll{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;margin-bottom:28px;scroll-snap-type:x mandatory}
+.top5-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scroll-snap-type:x mandatory}
 .top5-card{min-width:200px;max-width:220px;border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;scroll-snap-align:start;flex-shrink:0;animation:fadeUp .4s ease both;cursor:pointer;transition:transform .2s}
 .top5-card:hover{transform:translateY(-3px)}
 .top5-rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;font-size:11px;font-weight:900}
@@ -210,7 +210,7 @@ main{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
 .rec-bar{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700}
 
 /* ── Lecturer grid ── */
-.lect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.lect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .lect-card{padding:20px;border-radius:var(--r3);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
 .lect-card:hover{transform:translateY(-3px)}
 .lect-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -887,7 +887,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- 랭킹 -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px" id="ranking-area"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px" id="ranking-area"></div>
 
   <!-- Top 5 Video Highlights -->
   <div class="sec-lbl-sm">베스트 영상 하이라이트</div>
