@@ -72,8 +72,8 @@ a,span[onclick],div[onclick]{transition:color .15s}
 input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(0,120,200,.1)}
 
 /* ── Cards & Buttons (white clean) ── */
-.neu{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.06);border-radius:var(--r2)}
-.neu-sm{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.06);border-radius:var(--r1)}
+.neu{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.12);border-radius:var(--r2)}
+.neu-sm{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.12);border-radius:var(--r1)}
 .neu-in{box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}
 .neu-btn{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.08);border-radius:var(--r1);cursor:pointer;transition:box-shadow .15s,transform .1s}
 .neu-btn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1);transform:scale(.98)}
@@ -454,7 +454,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .stream-layout{display:grid;grid-template-columns:1fr 380px;gap:22px}
 @media(max-width:900px){.stream-layout{grid-template-columns:1fr}}
 .stream-info{display:flex;flex-direction:column;gap:14px}
-.stream-info-card{border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff}
+.stream-info-card{border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:18px;background:#fff}
 .stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
 .ss-ready{background:#f0fdf4;color:#16a34a}
 .ss-recording{background:#fef2f2;color:#dc2626}
@@ -468,7 +468,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .step-text.active{color:var(--t1);font-weight:700}
 
 /* ── Hero Feature Cards ── */
-.hero-card{padding:18px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:8px}
+.hero-card{padding:18px;border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:8px}
 .hero-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-3px)}
 .hero-card:active{transform:scale(.98)}
 .hero-card-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center}
@@ -928,7 +928,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="an-step1">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
       <!-- YouTube 링크 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:22px;background:#fff">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 8 16 12 10 16" fill="var(--red)" stroke="none"/></svg>
           <span style="font-size:14px;font-weight:800">YouTube 링크</span>
@@ -938,7 +938,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
       </div>
       <!-- 파일 업로드 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:22px;background:#fff">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span style="font-size:14px;font-weight:800">영상 파일 업로드</span>
@@ -951,7 +951,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
     </div>
     <!-- 영상 정보 -->
-    <div style="max-width:900px;margin-top:18px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+    <div style="max-width:900px;margin-top:18px;border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:22px;background:#fff">
       <div style="font-size:14px;font-weight:800;margin-bottom:14px">영상 정보</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
         <div class="form-group" style="margin:0">
@@ -1001,14 +1001,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <!-- 좌우 분할: 평가안 기준 | AI 독자 분석 -->
     <div id="an-split" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
       <!-- 왼쪽: 평가안 기준 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;overflow:hidden">
         <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:6px">
           <span style="font-size:13px;font-weight:800">📋 평가안 기준 분석</span>
         </div>
         <div style="padding:16px" id="an-criteria-result"></div>
       </div>
       <!-- 오른쪽: AI 독자 분석 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;overflow:hidden">
         <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:6px">
           <span style="font-size:13px;font-weight:800">🤖 AI 독자 분석</span>
         </div>
@@ -1162,7 +1162,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <p style="font-size:12px;color:var(--t3);margin-bottom:18px">교육 평가에 사용할 체크리스트, 평가안, 교안 등을 등록하고 관리하세요.</p>
 
   <!-- 파일 업로드 (관리자만) -->
-  <div id="cl-upload-area" style="display:none;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:20px;background:#fff;margin-bottom:20px">
+  <div id="cl-upload-area" style="display:none;border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:20px;background:#fff;margin-bottom:20px">
     <div style="font-size:14px;font-weight:800;margin-bottom:14px">📁 새 파일 등록</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
       <div class="form-group" style="margin:0">
@@ -1254,7 +1254,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="link-list" style="margin-bottom:18px"></div>
 
   <!-- 관리자만 보이는 추가 영역 -->
-  <div id="link-admin-area" style="display:none;border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff">
+  <div id="link-admin-area" style="display:none;border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:18px;background:#fff">
     <div style="font-size:13px;font-weight:700;margin-bottom:12px">+ 새 링크 추가 (관리자 전용)</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px">
       <div class="form-group" style="margin:0">
@@ -1302,10 +1302,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="va-step1">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
       <!-- 왼쪽: 녹음/업로드 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:22px;background:#fff">
         <div style="font-size:14px;font-weight:800;margin-bottom:14px">🎤 음성 입력</div>
         <!-- 실시간 녹음 -->
-        <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r1);padding:14px;margin-bottom:12px;background:#f8f9fa">
+        <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r1);padding:14px;margin-bottom:12px;background:#f8f9fa">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
             <button class="btn btn-red" id="va-rec-btn" onclick="toggleVoiceRec()" style="padding:8px 18px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
@@ -1329,7 +1329,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
 
       <!-- 오른쪽: 설정 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:22px;background:#fff">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:22px;background:#fff">
         <div style="font-size:14px;font-weight:800;margin-bottom:14px">⚙️ 분석 설정</div>
         <div class="form-group">
           <label class="form-lbl">강의 제목</label>
@@ -1387,14 +1387,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <!-- 좌우 분할 -->
     <div id="va-split" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
       <!-- 왼쪽: 평가안 기준 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;overflow:hidden">
         <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06)">
           <span style="font-size:13px;font-weight:800">📋 평가안 기준 음성 분석</span>
         </div>
         <div style="padding:16px" id="va-criteria-result"></div>
       </div>
       <!-- 오른쪽: AI 독자 분석 -->
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;overflow:hidden">
         <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.06)">
           <span style="font-size:13px;font-weight:800">🤖 AI 음성 독자 분석</span>
         </div>
@@ -3317,7 +3317,7 @@ function renderChecklists(){
     const icon=typeIcons[c.category]||'📎';
     const sizeKB=c.fileSize?Math.round(c.fileSize/1024):0;
     const ext=c.fileName?.split('.').pop()?.toUpperCase()||'';
-    return `<div style="display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r1);background:#fff;margin-bottom:8px;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.06)'" onmouseout="this.style.boxShadow=''">
+    return `<div style="display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(0,0,0,.12);border-radius:var(--r1);background:#fff;margin-bottom:8px;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.06)'" onmouseout="this.style.boxShadow=''">
       <div style="width:44px;height:44px;border-radius:12px;background:${color}12;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
@@ -3531,7 +3531,7 @@ function renderLinks(){
   el('link-list').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">${links.map((lk,i)=>{
     const c=colors[i%colors.length];
     const initial=lk.name[0]||'?';
-    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="window.open('${lk.url}','_blank')">
+    return `<div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="window.open('${lk.url}','_blank')">
       <div style="height:80px;background:linear-gradient(135deg,${c},${c}cc);display:flex;align-items:center;justify-content:center;position:relative">
         <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -3808,7 +3808,7 @@ function renderVoiceResult(r,hasCL,count,tone){
   // 습관어 (코칭형 대체 문구 포함)
   const habitHtml=(r.habits||[]).map(h=>{
     const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
-    return `<div style="padding:10px;border:1px solid rgba(0,0,0,.06);border-radius:8px;margin-bottom:6px">
+    return `<div style="padding:10px;border:1px solid rgba(0,0,0,.12);border-radius:8px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>
       </div>
@@ -3886,7 +3886,7 @@ function renderVoiceResult(r,hasCL,count,tone){
   const vaTsHtml=(r.voice_timestamps||[]).length?`
     <div style="margin-bottom:18px">
       <div class="sec-lbl-sm">음성 타임스탬프 피드</div>
-      <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);overflow:auto">
+      <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);overflow:auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.08)">
             <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:70px">구분</th>
@@ -4401,7 +4401,7 @@ function renderRanking(filtered){
         <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>
       </div>`).join('');
 
-    return `<div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);background:#fff;padding:16px">
+    return `<div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);background:#fff;padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:14px;font-weight:800">${title}</div>
         <div style="font-size:11px;color:var(--t3)">${subtitle}</div>
@@ -4683,7 +4683,7 @@ function openLecturer(id, fromPage){
         <!-- 멘토찾기 (독립 섹션) -->
         <div style="margin-top:22px">
           <div class="sec-lbl">🔍 멘토찾기</div>
-          <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:20px;background:#fff">
+          <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:20px;background:#fff">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
               <div style="width:42px;height:42px;border-radius:12px;background:rgba(236,72,153,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg>
@@ -4798,7 +4798,7 @@ function doCompare(myId,otherId){
   const tdc=td>0?'var(--green)':td<0?'var(--red)':'var(--t3)';
   const otBg=['#E21E26','#0078C8','#10b981','#f59e0b'][(otherId-1)%4];
   el('compare-result-'+myId).innerHTML=`
-    <div style="border:1px solid rgba(0,0,0,.06);border-radius:var(--r2);padding:18px;background:#fff">
+    <div style="border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:18px;background:#fff">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px;flex:1">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${me.photo?'<img src="'+me.photo+'" style="width:100%;height:100%;object-fit:cover">':me.name[0]}</div>
