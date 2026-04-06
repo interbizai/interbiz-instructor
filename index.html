@@ -2816,7 +2816,7 @@ type이 bad일 때는 solution에 구체적 개선 방법을 작성하세요.
     });
     const data=await resp.json();
     let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    // JSON 블록 추출 (```json ... ``` 제거)
+    // JSON 블록 추출
     const jsonMatch=txt.match(/\{[\s\S]*\}/);
     if(!jsonMatch) throw new Error('JSON not found');
     const json=JSON.parse(jsonMatch[0]);
