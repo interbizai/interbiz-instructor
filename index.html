@@ -3027,10 +3027,13 @@ type이 bad일 때는 solution에 구체적 개선 방법을 작성하세요.
     if(!jsonMatch) throw new Error('JSON not found');
     const json=JSON.parse(jsonMatch[0]);
     renderAnalysisResult(json,hasChecklist,studentCount);
+    autoSaveAnalysis(json);
   } catch(e){
     console.error('Gemini API error:',e);
     // API 에러 시 → 자체 생성 (Mock)
-    renderAnalysisResult(generateMockResult(studentCount),hasChecklist,studentCount);
+    const mock=generateMockResult(studentCount);
+    renderAnalysisResult(mock,hasChecklist,studentCount);
+    autoSaveAnalysis(mock);
   }
 }
 
@@ -3446,6 +3449,24 @@ function seekToTime(timeStr){
   if(iframe && window._anYtId){
     iframe.src=`https://www.youtube.com/embed/${window._anYtId}?enablejsapi=1&autoplay=1&start=${sec}`;
   }
+}
+
+async function autoSaveAnalysis(resultJson){
+  if(!CU) return;
+  try{
+    const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
+    const yt=v('an-youtube').trim();
+    const result=await dbCreateVideo({
+      userId:userId, title:v('an-title'), youtube:yt,
+      date:new Date().toISOString().split('T')[0], duration:'—',
+      studentCount:parseInt(v('an-count'))||0, status:'분석완료',
+      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료'
+    });
+    if(result && resultJson.timestamps?.length){
+      for(const ts of resultJson.timestamps){ await dbAddTimestamp(result.id,ts); }
+    }
+    await loadFromDB();
+  }catch(e){console.error('auto save error:',e);}
 }
 
 async function saveAnalysisVideo(){
@@ -4014,10 +4035,14 @@ async function runVoiceAnalysis(){
     const data=await resp.json();
     let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
     const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('no json');
-    renderVoiceResult(JSON.parse(m[0]),hasCL,count,tone);
+    const parsed=JSON.parse(m[0]);
+    renderVoiceResult(parsed,hasCL,count,tone);
+    autoSaveVoice(parsed,count,tone);
   } catch(e){
     console.error('Gemini voice error:',e);
-    renderVoiceResult(generateMockVoice(count,tone),hasCL,count,tone);
+    const mock=generateMockVoice(count,tone);
+    renderVoiceResult(mock,hasCL,count,tone);
+    autoSaveVoice(mock,count,tone);
   }
 }
 
@@ -4344,6 +4369,22 @@ function openVoiceTimestamp(idx){
   el('ts-modal-edit-btn').style.display='none';
   el('ts-modal-edit').style.display='none';
   el('ts-modal-overlay').classList.add('show');
+}
+
+async function autoSaveVoice(resultJson,count,tone){
+  if(!CU) return;
+  try{
+    const title=v('va-title').trim()||'음성 분석';
+    const score=resultJson.overall_score||resultJson.overallScore||0;
+    const product=v('va-product')||'';
+    const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
+    const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
+      tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
+      result_data:{product,analysis:resultJson}};
+    if(userId) insertData.user_id=userId;
+    await sb.from('voice_evals').insert(insertData);
+    await loadFromDB();
+  }catch(e){console.error('auto voice save error:',e);}
 }
 
 async function saveVoiceAnalysis(){
