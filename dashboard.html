@@ -2142,6 +2142,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
+console.log('=== JS LOADED ===');
 /* ════════════════════════════════
    SUPABASE CONNECTION
 ════════════════════════════════ */
@@ -4770,17 +4771,17 @@ function renderDashboard(){
   const filtered=getFiltered();
   const filteredVids=getFilteredVideos(filtered);
   // stats
-  el('sv-total').textContent=filtered.length;
-  el('sv-vids').textContent=filteredVids.length;
+  if(el('sv-total')) el('sv-total').textContent=filtered.length;
+  if(el('sv-vids')) el('sv-vids').textContent=filteredVids.length;
   const allScores=filteredVids.map(vid=>{
     const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
     return goodCount*10+(vid.timestamps||[]).length*3;
   });
   const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
-  el('sv-avg').textContent=avg;
+  if(el('sv-avg')) el('sv-avg').textContent=avg;
   const lowVidCount=allScores.filter(s=>s<=70).length;
   const noVidUsers=filtered.filter(u=>!filteredVids.some(vid=>vid.userId===u.id)).length;
-  el('sv-s').textContent=lowVidCount+noVidUsers;
+  if(el('sv-s')) el('sv-s').textContent=lowVidCount+noVidUsers;
   try{renderAIStrip(filtered);}catch(e){console.error('aistrip:',e);}
   try{renderRanking(filtered);}catch(e){console.error('ranking:',e);}
   try{renderEvalHistory(filtered);}catch(e){console.error('evalHistory:',e);}
@@ -6000,7 +6001,7 @@ function saveProfile(){
 /* ════════════════════════════════
    UTILS
 ════════════════════════════════ */
-function el(id){ return document.getElementById(id); }
+function el(id){ return document.getElementById(id)||null; }
 function v(id){ const e=el(id); return e?(e.value||''):''; }
 
 /* ════════════════════════════════
