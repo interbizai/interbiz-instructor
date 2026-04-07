@@ -112,7 +112,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 
 /* ── Filter bar ── */
 .filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-@media(min-width:900px){.filter-bar{grid-template-columns:repeat(6,1fr)}}
+@media(min-width:900px){.filter-bar{grid-template-columns:repeat(6,1fr) auto}}
 .f-item{display:flex;flex-direction:column;gap:5px}
 .f-lbl{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .filter-bar select{padding:9px 12px}
@@ -210,10 +210,10 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 .rec-bar{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700}
 
 /* ── Lecturer grid ── */
-.lect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.lect-card{padding:14px;border-radius:var(--r2);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
+.lect-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.lect-card{padding:10px 12px;border-radius:var(--r1);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
 .lect-card:hover{transform:translateY(-3px)}
-.lect-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lect-card-top{display:flex;align-items:center;gap:10px;margin-bottom:0}
 .lect-photo{width:46px;height:46px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
 .lect-info{flex:1}
 .lect-name{font-size:16px;font-weight:800}
@@ -836,6 +836,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="f-item"><label class="f-lbl">이름</label>
       <select id="f-name" onchange="renderDashboard()"><option value="">전체</option></select>
     </div>
+    <div class="f-item" style="justify-content:flex-end">
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px;margin-top:18px" onclick="resetFilters()">↺ 초기화</button>
+    </div>
   </div>
 
   <!-- AI Summary (hidden) -->
@@ -916,7 +919,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- Lecturer Grid -->
-  <div class="sec-lbl-sm">강사 목록</div>
+  <div class="sec-lbl-sm">강사 정보</div>
   <div class="lect-grid" id="lect-grid"></div>
 
   <div class="sec-lbl-sm" style="margin-top:20px">베스트 영상 하이라이트</div>
@@ -4533,6 +4536,11 @@ function retakeStream(){
 /* ════════════════════════════════
    DASHBOARD
 ════════════════════════════════ */
+function resetFilters(){
+  ['f-date','f-ch','f-team','f-product','f-tenure','f-name'].forEach(id=>{const e=el(id);if(e)e.value='';});
+  renderDashboard();
+}
+
 function initDashboard(){
   // populate channel filter (dynamic from DB)
   const chs=el('f-ch'); const prevCh=chs.value; chs.innerHTML='<option value="">전체</option>';
@@ -4856,14 +4864,7 @@ function renderAIStrip(filtered){
 }
 
 function renderGrid(users){
-  const fills=['bf-red','bf-blue','bf-green'];
   el('lect-grid').innerHTML=users.map((u,i)=>{
-    const scoreKeys=Object.keys(u.scores).slice(0,3);
-    const bars=scoreKeys.map((k,j)=>{
-      const pct=Math.round(u.scores[k]/u.maxes[k]*100);
-      return `<div class="mini-bar-row"><div class="mini-bar-hdr"><span>${k}</span><span>${u.scores[k]}/${u.maxes[k]}</span></div>
-        <div class="bar-track"><div class="bar-fill ${fills[j]}" data-pct="${pct}" style="width:0%"></div></div></div>`;
-    }).join('');
     const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][i%6];
     return `<div class="lect-card neu" onclick="openLecturer(${u.id},'page-dashboard')" style="animation-delay:${i*.07}s">
       <div class="lect-card-top">
@@ -4873,7 +4874,6 @@ function renderGrid(users){
           <div class="lect-meta">${u.team} · ${u.position}</div>
         </div>
       </div>
-      ${bars}
     </div>`;
   }).join('');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
