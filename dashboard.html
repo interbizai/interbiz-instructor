@@ -4071,8 +4071,9 @@ async function saveVoiceAnalysis(){
   initDashboard(); showPage('page-dashboard');
 }
 
-function renderVoiceHighlight(){
-  const vaData=(D.voiceEvals||[]).map(v=>({id:v.id,userId:v.user_id,userName:v.user_name,title:v.title,score:v.score,tone:v.tone,studentCount:v.student_count,date:v.eval_date}));
+function renderVoiceHighlight(filtered){
+  const fIds=new Set((filtered||D.users).map(u=>u.id));
+  const vaData=(D.voiceEvals||[]).filter(v=>fIds.has(v.user_id)).map(v=>({id:v.id,userId:v.user_id,userName:v.user_name,title:v.title,score:v.score,tone:v.tone,studentCount:v.student_count,date:v.eval_date}));
   if(!vaData.length){
     el('voice-highlight').innerHTML='<div style="font-size:12px;color:var(--t3);padding:12px">저장된 음성 평가가 없습니다.</div>';
     return;
@@ -4363,12 +4364,36 @@ function initDashboard(){
 }
 
 function getFiltered(){
-  const ch=v('f-ch'),team=v('f-team'),tenure=v('f-tenure'),name=v('f-name');
+  const ch=v('f-ch'),team=v('f-team'),tenure=v('f-tenure'),name=v('f-name'),product=v('f-product'),dateFilter=v('f-date');
   const now=new Date();
+
+  // 기간 필터로 영상 날짜 범위 계산
+  let dateFrom=null;
+  if(dateFilter==='this-month'){dateFrom=new Date(now.getFullYear(),now.getMonth(),1);}
+  else if(dateFilter==='3month'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-3);}
+  else if(dateFilter==='this-year'){dateFrom=new Date(now.getFullYear(),0,1);}
+
+  // 가전 필터: 해당 가전으로 영상을 등록한 강사만
+  let productUserIds=null;
+  if(product){
+    productUserIds=new Set(D.videos.filter(vid=>(vid.videoType||vid.video_type)===product).map(vid=>vid.userId));
+  }
+
+  // 기간 필터: 해당 기간에 영상이 있는 강사만
+  let dateUserIds=null;
+  if(dateFrom){
+    dateUserIds=new Set(D.videos.filter(vid=>{
+      const vd=new Date(vid.date);
+      return vd>=dateFrom;
+    }).map(vid=>vid.userId));
+  }
+
   return D.users.filter(u=>{
     if(ch && u.channel!==ch) return false;
     if(team && u.team!==team) return false;
     if(name && u.name!==name) return false;
+    if(productUserIds && !productUserIds.has(u.id)) return false;
+    if(dateUserIds && !dateUserIds.has(u.id)) return false;
     if(tenure && u.hireDate){
       const hire=new Date(u.hireDate);
       const months=Math.round((now-hire)/(1000*60*60*24*30));
@@ -4396,8 +4421,8 @@ function renderDashboard(){
   // ranking + evalHistory + top5 + grid
   renderRanking(filtered);
   renderEvalHistory(filtered);
-  renderTop5();
-  renderVoiceHighlight();
+  renderTop5(filtered);
+  renderVoiceHighlight(filtered);
   renderGrid(filtered);
 }
 
@@ -5338,8 +5363,9 @@ function startIconAnimations(){
 /* ════════════════════════════════
    TOP 5 HIGHLIGHTS
 ════════════════════════════════ */
-function renderTop5(){
-  const allVids=D.videos.filter(v=>v.status==='분석완료').map(vid=>{
+function renderTop5(filtered){
+  const fIds=new Set((filtered||D.users).map(u=>u.id));
+  const allVids=D.videos.filter(v=>v.status==='분석완료'&&fIds.has(v.userId)).map(vid=>{
     const u=D.users.find(x=>x.id===vid.userId);
     const score=vid.timestamps.filter(t=>t.type==='good').length*10+vid.timestamps.length*3;
     return {...vid,user:u,score};
