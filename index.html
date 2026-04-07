@@ -4806,7 +4806,7 @@ function renderRanking(filtered){
   const videoRank=fVids.map(v=>{
     const u=filtered.find(x=>x.id===v.userId);
     const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
-    return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id};
+    return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id,channel:u?.channel||'',team:u?.team||'',product:v.videoType||v.video_type||''};
   }).sort((a,b)=>b.score-a.score).slice(0,5);
 
   // 3. 음성 랭킹
@@ -4838,8 +4838,8 @@ function renderRanking(filtered){
   }
 
   const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.score,userId:u.id}));
-  const videoItems=videoRank.map(v=>({name:v.name,sub:v.title,score:v.score,userId:D.videos.find(vid=>vid.id===v.videoId)?.userId}));
-  const voiceItems=voiceRank.map(v=>({name:v.user_name||'—',sub:v.tone||'',score:v.score,userId:v.user_id}));
+  const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.channel} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,userId:D.videos.find(vid=>vid.id===v.videoId)?.userId}));
+  const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,userId:v.user_id};});
 
   rankArea.innerHTML=
     buildRankCard('개인 종합 랭킹','평균 점수',personalItems,'#0078C8')+
