@@ -196,8 +196,8 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 .dual-pane{display:none}.dual-pane.active{display:block}
 
 /* ── Top 5 highlight ── */
-.top5-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scroll-snap-type:x mandatory}
-.top5-card{min-width:200px;max-width:220px;border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;scroll-snap-align:start;flex-shrink:0;animation:fadeUp .4s ease both;cursor:pointer;transition:transform .2s}
+.top5-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scroll-snap-type:x mandatory;flex-wrap:wrap}
+.top5-card{width:200px;min-height:110px;border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;scroll-snap-align:start;flex-shrink:0;animation:fadeUp .4s ease both;cursor:pointer;transition:transform .2s;box-sizing:border-box}
 .top5-card:hover{transform:translateY(-3px)}
 .top5-rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;font-size:11px;font-weight:900}
 .t5r-1{background:rgba(245,158,11,.14);color:#d97706}.t5r-2{background:rgba(156,163,175,.14);color:#6b7280}.t5r-3{background:rgba(180,83,9,.12);color:#b45309}.t5r-4,.t5r-5{background:rgba(0,0,0,.06);color:var(--t3)}
@@ -210,14 +210,14 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 .rec-bar{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700}
 
 /* ── Lecturer grid ── */
-.lect-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.lect-card{padding:10px 12px;border-radius:var(--r1);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
+.lect-grid{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;flex-wrap:wrap}
+.lect-card{width:200px;min-height:110px;border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;scroll-snap-align:start;flex-shrink:0;animation:fadeUp .4s ease both;cursor:pointer;transition:transform .2s;box-sizing:border-box;display:flex;align-items:center}
 .lect-card:hover{transform:translateY(-3px)}
-.lect-card-top{display:flex;align-items:center;gap:10px;margin-bottom:0}
-.lect-photo{width:46px;height:46px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
-.lect-info{flex:1}
-.lect-name{font-size:16px;font-weight:800}
-.lect-meta{font-size:12px;color:var(--t3);margin-top:2px}
+.lect-card-top{display:flex;align-items:center;gap:10px}
+.lect-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.lect-info{flex:1;min-width:0}
+.lect-name{font-size:13px;font-weight:800;white-space:nowrap}
+.lect-meta{font-size:10px;color:var(--t3);margin-top:1px;white-space:nowrap}
 .channel-chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .ch-가전{background:rgba(226,30,38,.1);color:var(--red)}
 .ch-IT{background:rgba(0,120,200,.1);color:var(--blue)}
@@ -409,7 +409,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Home Page ── */
 #page-home .hdr{padding-left:16px}
-.home-hero{text-align:center;padding:60px 0 32px}
+.home-hero{text-align:center;padding:40px 0 20px}
 .home-hero img{height:130px}
 .home-carousel{overflow:hidden;position:relative;margin-bottom:36px}
 .home-track{display:flex;gap:18px;animation:marquee 50s linear infinite;width:max-content}
@@ -437,6 +437,27 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes waveUp{0%,100%{transform:scaleY(1);opacity:.4}50%{transform:scaleY(1.8);opacity:1}}
 .hi-wave{transform-origin:center;animation:waveUp 1.2s ease-in-out infinite}
 .hi-w1{animation-delay:0s}.hi-w2{animation-delay:.3s}.hi-w3{animation-delay:.15s}.hi-w4{animation-delay:.45s}
+
+/* ── Home Search Bar ── */
+.home-search-wrap{max-width:560px;margin:0 auto;position:relative}
+.home-search-box{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid #000;border-radius:999px;padding:12px 20px;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:box-shadow .3s,border-color .3s}
+.home-search-box.active{box-shadow:0 8px 32px rgba(0,0,0,.13);border-color:rgba(0,0,0,.35)}
+.home-search-box svg{flex-shrink:0;color:var(--t3)}
+.home-search-input{flex:1;border:none;outline:none;font-size:14px;background:transparent;font-family:inherit;color:var(--t1)}
+.home-search-input::placeholder{color:#aaa}
+.home-search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:16px;border:1px solid var(--bdr);box-shadow:0 12px 40px rgba(0,0,0,.14);max-height:280px;overflow-y:auto;z-index:50;display:none;animation:fadeUp .2s ease}
+.home-search-results.show{display:block}
+.home-search-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .15s}
+.home-search-item:first-child{border-radius:16px 16px 0 0}
+.home-search-item:last-child{border-radius:0 0 16px 16px}
+.home-search-item:hover{background:rgba(0,120,200,.06)}
+.home-search-item .hs-photo{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.home-search-item .hs-info{flex:1}
+.home-search-item .hs-name{font-size:13px;font-weight:700}
+.home-search-item .hs-meta{font-size:11px;color:var(--t3)}
+.home-search-item .hs-arrow{color:var(--t3);opacity:0;transition:opacity .15s,transform .15s}
+.home-search-item:hover .hs-arrow{opacity:1;transform:translateX(2px)}
+.home-search-empty{padding:20px;text-align:center;font-size:12px;color:var(--t3)}
 /* 내페이지 뱃지 팝 */
 @keyframes badgePop{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
 .hi-badge{animation:badgePop 2s ease-in-out infinite}
@@ -513,7 +534,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Responsive ── */
 @media(max-width:900px){
-  .lect-grid{grid-template-columns:1fr 1fr}
+  .lect-grid{flex-wrap:wrap}
   .video-layout{grid-template-columns:1fr}
   .prof-layout{grid-template-columns:1fr}
   #an-split,#va-split{grid-template-columns:1fr!important}
@@ -522,7 +543,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   main{padding:10px 10px 48px}
   .filter-bar{grid-template-columns:repeat(2,1fr);gap:8px}
   .stats-row{grid-template-columns:repeat(2,1fr);gap:8px}
-  .lect-grid{grid-template-columns:1fr}
+  .lect-card{min-width:160px;max-width:180px}
   #ranking-area{grid-template-columns:1fr!important}
   .hdr{padding:10px 8px}
   .hdr-logo img{height:32px!important}
@@ -591,7 +612,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   #an-split,#va-split{grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:8px!important}
   .prof-layout{grid-template-columns:180px 1fr!important;gap:10px!important}
   .stream-layout{grid-template-columns:1fr!important}
-  .lect-grid{grid-template-columns:1fr 1fr 1fr!important;gap:6px!important}
+  .lect-grid{gap:6px!important}
   .stats-row{grid-template-columns:repeat(4,1fr)!important;gap:6px!important}
   /* 여백 최소화 */
   .sec-lbl{font-size:11px!important;margin:8px 0 4px!important}
@@ -764,7 +785,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- 8 Icon Grid (중앙 정렬) -->
-  <div class="home-icons" style="justify-content:center;margin-top:40px">
+  <div class="home-icons" style="justify-content:center;margin-top:24px">
     <div class="home-icon-cell" onclick="initDashboard();showPage('page-dashboard')"><div class="home-icon-box hi-anim" id="hi1"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".2"/><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" class="si-arc"/><path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="si-check"/></svg></div><span class="home-icon-lbl">평가결과</span></div>
     <div class="home-icon-cell" onclick="openStreaming()"><div class="home-icon-box hi-anim" id="hi2"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/><rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/><rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/></svg></div><span class="home-icon-lbl">영상 스트리밍</span></div>
     <div class="home-icon-cell" onclick="openAnalysis()"><div class="home-icon-box" id="hi3"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/><text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text><g class="hi-robot-hand"><path d="M34 18c2-1 4 0 4 2s-2 3-4 2" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.15)" stroke-linecap="round"/><line x1="36" y1="17" x2="37" y2="14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/><line x1="38" y1="18" x2="39" y2="15" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/></g></svg></div><span class="home-icon-lbl">영상등록 분석</span></div>
@@ -773,6 +794,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="home-icon-cell" onclick="openLearningLinks()"><div class="home-icon-box" id="hi6"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="14" height="14" rx="2.5" stroke="#10b981" stroke-width="1.8"/><g class="hi-link-arrow"><path d="M14 3h7v7" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="21" y1="3" x2="10" y2="14" stroke="#10b981" stroke-width="1.8" stroke-linecap="round"/></g></svg></div><span class="home-icon-lbl">학습링크이동</span></div>
     <div class="home-icon-cell" onclick="openChecklist()"><div class="home-icon-box" id="hi7"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect x="6" y="4" width="22" height="32" rx="2" stroke="#f59e0b" stroke-width="2"/><line x1="12" y1="12" x2="12" y2="12.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="16" y1="12" x2="24" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="19.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="16" y1="19" x2="24" y2="19" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="26" x2="12" y2="26.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="16" y1="26" x2="24" y2="26" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><g class="hi-pen"><path d="M30 8l4-4 4 4-4 4z" fill="#f59e0b" opacity=".9"/><line x1="30" y1="8" x2="26" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></g></svg></div><span class="home-icon-lbl">체크리스트<br>평가안</span></div>
     <div class="home-icon-cell" onclick="openAdmin()"><div class="home-icon-box hi-anim" id="hi8"><svg width="36" height="36" viewBox="0 0 40 40" fill="none" class="si-bell"><path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/><circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/></svg></div><span class="home-icon-lbl">관리자</span></div>
+  </div>
+
+  <!-- 강사 검색 -->
+  <div class="home-search-wrap" id="home-search-wrap" style="margin-top:30px">
+    <div class="home-search-box" id="home-search-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="home-search-input" id="home-search-input" type="text" placeholder="강사 이름으로 검색..." autocomplete="off" style="font-size:15px">
+    </div>
+    <div class="home-search-results" id="home-search-results"></div>
   </div>
 </main>
 </div>
@@ -2479,6 +2509,33 @@ async function doLogin(){
   initHome(); showPage('page-home');
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); showPage('page-login'); }
+/* ── Home Search ── */
+(function(){
+  const inp=()=>document.getElementById('home-search-input');
+  const box=()=>document.getElementById('home-search-box');
+  const res=()=>document.getElementById('home-search-results');
+  const wrap=()=>document.getElementById('home-search-wrap');
+  const colors=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'];
+  function renderResults(q){
+    const r=res(); if(!r) return;
+    if(!q){r.classList.remove('show');r.innerHTML='';return;}
+    const users=(D.users||[]).filter(u=>u.name.includes(q)||u.team.includes(q)||u.channel.includes(q));
+    if(!users.length){r.innerHTML='<div class="home-search-empty">검색 결과가 없습니다</div>';r.classList.add('show');return;}
+    r.innerHTML=users.map((u,i)=>{
+      const bg=colors[(u.id-1)%6];
+      return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-home');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
+        <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
+        <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.channel}</span></div><div class="hs-meta">${u.team} · ${u.position||'강사'}</div></div>
+        <svg class="hs-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>`;
+    }).join('');
+    r.classList.add('show');
+  }
+  document.addEventListener('input',function(e){if(e.target.id==='home-search-input'){const b=box();if(b)b.classList.add('active');renderResults(e.target.value.trim());}});
+  document.addEventListener('focus',function(e){if(e.target.id==='home-search-input'){const b=box();if(b)b.classList.add('active');renderResults(e.target.value.trim());}},true);
+  document.addEventListener('click',function(e){const w=wrap();if(w&&!w.contains(e.target)){const b=box(),r2=res();if(b)b.classList.remove('active');if(r2)r2.classList.remove('show');}});
+})();
+
 function goMyPage(){
   if(CU&&CU.isAdmin){ openAdmin(); }
   else if(CU&&CU.id){ openLecturer(CU.id,'page-home'); }
@@ -4270,7 +4327,7 @@ function renderVoiceHighlight(filtered){
   const sorted=[...vaData].sort((a,b)=>b.score-a.score).slice(0,5);
   const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
   el('voice-highlight').innerHTML=sorted.map((v,i)=>`
-    <div class="top5-card neu" style="animation-delay:${i*.08}s;min-width:200px;cursor:pointer" onclick="openVoiceResult(${v.id})">
+    <div class="top5-card neu" style="animation-delay:${i*.08}s;cursor:pointer" onclick="openVoiceResult(${v.id})">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <span class="top5-rank t5r-${i+1}">${i+1}</span>
         <div>
@@ -4278,8 +4335,8 @@ function renderVoiceHighlight(filtered){
           <div style="font-size:10px;color:var(--t3)">${v.userName} · ${v.date}</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:22px;font-weight:900;color:${v.score>=80?'var(--green)':v.score>=60?'var(--blue)':'var(--red)'}">${v.score}</span>
+      <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
+        <span style="font-size:18px;font-weight:900;color:${v.score>=80?'var(--green)':v.score>=60?'var(--blue)':'var(--red)'}">${v.score}</span>
         <span style="font-size:10px;color:var(--t3)">/100</span>
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -4870,8 +4927,8 @@ function renderGrid(users){
       <div class="lect-card-top">
         <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
         <div class="lect-info">
-          <div style="display:flex;align-items:center;gap:6px"><span class="lect-name">${u.name}</span><span class="channel-chip ch-${u.channel}" style="font-size:10px">${u.channel}</span></div>
-          <div class="lect-meta">${u.team} · ${u.position}</div>
+          <span class="lect-name">${u.name}</span>
+          <div class="lect-meta">${u.team}<span class="channel-chip ch-${u.channel}" style="font-size:9px;margin-left:4px">${u.channel}</span></div>
         </div>
       </div>
     </div>`;
