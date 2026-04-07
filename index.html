@@ -4983,8 +4983,9 @@ function renderRanking(filtered){
   const rankArea=el('ranking-area');
   if(!rankArea) return;
 
-  // 1. 개인 종합 랭킹 (필터된 영상 평균 점수 기준)
+  // 1. 개인 종합 랭킹 (영상 평균 점수 기준)
   const fVids=getFilteredVideos(filtered);
+  const fIds=new Set(filtered.map(u=>u.id));
   const personalWithAvg=filtered.map(u=>{
     const userVids=fVids.filter(v=>v.userId===u.id);
     if(!userVids.length) return {...u, avgScore:0};
@@ -5004,7 +5005,6 @@ function renderRanking(filtered){
   }).sort((a,b)=>b.score-a.score).slice(0,5);
 
   // 3. 음성 랭킹
-  const fIds=new Set(filtered.map(u=>u.id));
   const voiceRank=(D.voiceEvals||[]).filter(ve=>fIds.has(ve.user_id))
     .sort((a,b)=>b.score-a.score).slice(0,5);
 
@@ -5036,7 +5036,7 @@ function renderRanking(filtered){
   const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,userId:v.user_id};});
 
   rankArea.innerHTML=
-    buildRankCard('개인 종합 랭킹','평균 점수',personalItems,'#0078C8')+
+    buildRankCard('개인 종합 랭킹','영상 평균 점수',personalItems,'#0078C8')+
     buildRankCard('영상 랭킹 (TOP 5)','AI 점수',videoItems,'#E21E26')+
     buildRankCard('음성 랭킹 (TOP 5)','AI 점수',voiceItems,'#8b5cf6');
 }
