@@ -876,8 +876,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/>
         </svg>
       </div>
-      <div class="stat-val" id="sv-s" style="color:var(--orange)">3</div>
-      <div class="stat-lbl">S등급 우수 강사</div>
+      <div class="stat-val" id="sv-s" style="color:var(--red)">0</div>
+      <div class="stat-lbl">70점 이하 개선 필요</div>
     </div>
   </div>
 
@@ -1365,6 +1365,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="form-group">
           <label class="form-lbl">강의 제목</label>
           <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">가전</label>
+          <input type="text" class="form-input" id="va-product" placeholder="예: 에어컨, TV, 냉장고">
         </div>
         <div class="form-group">
           <label class="form-lbl">교육생 인원수</label>
@@ -4061,8 +4065,10 @@ async function saveVoiceAnalysis(){
   const tone=v('va-tone');
   const count=parseInt(v('va-count'))||0;
   const userId=CU?.id||null;
+  const product=v('va-product')||'';
   const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
-    tone, student_count:count, eval_date:new Date().toISOString().split('T')[0]};
+    tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
+    result_data:{product}};
   if(userId) insertData.user_id=userId;
   const {error}=await sb.from('voice_evals').insert(insertData);
   if(error) console.error('voice save error:',error);
@@ -4073,7 +4079,12 @@ async function saveVoiceAnalysis(){
 
 function renderVoiceHighlight(filtered){
   const fIds=new Set((filtered||D.users).map(u=>u.id));
-  const vaData=(D.voiceEvals||[]).filter(v=>fIds.has(v.user_id)).map(v=>({id:v.id,userId:v.user_id,userName:v.user_name,title:v.title,score:v.score,tone:v.tone,studentCount:v.student_count,date:v.eval_date}));
+  const productFilter=v('f-product')||'';
+  const vaData=(D.voiceEvals||[]).filter(ve=>{
+    if(!fIds.has(ve.user_id)) return false;
+    if(productFilter && ve.result_data?.product!==productFilter) return false;
+    return true;
+  }).map(ve=>({id:ve.id,userId:ve.user_id,userName:ve.user_name,title:ve.title,score:ve.score,tone:ve.tone,studentCount:ve.student_count,date:ve.eval_date,product:ve.result_data?.product||''}));
   if(!vaData.length){
     el('voice-highlight').innerHTML='<div style="font-size:12px;color:var(--t3);padding:12px">저장된 음성 평가가 없습니다.</div>';
     return;
@@ -4432,7 +4443,13 @@ function renderDashboard(){
   el('sv-vids').textContent=filteredVids.length;
   const avg=filtered.length ? (filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1) : '—';
   el('sv-avg').textContent=avg;
-  el('sv-s').textContent=filtered.filter(u=>u.grade==='S').length;
+  // 70점 이하 개선 필요 강사 수 (영상 평가 기준)
+  const lowScoreCount=filteredVids.filter(vid=>{
+    const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
+    const score=goodCount*10+(vid.timestamps||[]).length*3;
+    return score<=70;
+  }).length;
+  el('sv-s').textContent=lowScoreCount;
   // AI strip
   renderAIStrip(filtered);
   // ranking + evalHistory + top5 + grid
