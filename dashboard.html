@@ -211,7 +211,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
 
 /* ── Lecturer grid ── */
 .lect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.lect-card{padding:20px;border-radius:var(--r3);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
+.lect-card{padding:14px;border-radius:var(--r2);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s;animation:fadeUp .45s ease both}
 .lect-card:hover{transform:translateY(-3px)}
 .lect-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .lect-photo{width:46px;height:46px;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
@@ -4869,17 +4869,11 @@ function renderGrid(users){
       <div class="lect-card-top">
         <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
         <div class="lect-info">
-          <div class="lect-name">${u.name}</div>
+          <div style="display:flex;align-items:center;gap:6px"><span class="lect-name">${u.name}</span><span class="channel-chip ch-${u.channel}" style="font-size:10px">${u.channel}</span></div>
           <div class="lect-meta">${u.team} · ${u.position}</div>
-          <div style="margin-top:4px"><span class="channel-chip ch-${u.channel}">${u.channel}</span></div>
         </div>
-        <div class="grade-badge g-${u.grade}">${u.grade}</div>
       </div>
       ${bars}
-      <div class="lect-footer">
-        <div><span class="total-score">${u.score}</span><span style="font-size:11px;color:var(--t3)"> / 100점</span></div>
-        <button class="btn btn-blue" style="padding:6px 12px;font-size:11px" onclick="event.stopPropagation();openLecturer(${u.id},'page-dashboard')">상세 보기 →</button>
-      </div>
     </div>`;
   }).join('');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
