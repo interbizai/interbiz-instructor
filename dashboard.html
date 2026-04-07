@@ -4403,8 +4403,8 @@ function getFiltered(){
     if(ch && u.channel!==ch) return false;
     if(team && u.team!==team) return false;
     if(name && u.name!==name) return false;
-    if(productUserIds && !productUserIds.has(u.id)) return false;
-    if(dateUserIds && !dateUserIds.has(u.id)) return false;
+    if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
+    if(dateFrom && (!dateUserIds || !dateUserIds.has(u.id))) return false;
     if(tenure && u.hireDate){
       const hire=new Date(u.hireDate);
       const months=Math.round((now-hire)/(1000*60*60*24*30));
@@ -4478,7 +4478,7 @@ function renderEvalHistory(filtered){
         const score=goodCount*10+(v.timestamps||[]).length*3;
         evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
       });
-    } else {
+    } else if(!v('f-product')){
       evalHistoryRows.push({date:u.registered||'—',channel:u.channel||'—',team:u.team||'—',product:'—',name:u.name,score:u.score||0,userId:u.id,videoId:null,hireDate:u.hireDate});
     }
   });
