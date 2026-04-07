@@ -4569,9 +4569,8 @@ function getFiltered(){
     }).map(vid=>vid.userId));
   }
 
-  console.log('FILTER:',{ch,team,name,product,dateFilter,userCount:D.users.length,users:D.users.map(u=>({name:u.name,channel:u.channel}))});
   return D.users.filter(u=>{
-    if(ch && (u.channel||'').trim()!==ch.trim()){console.log('EXCLUDED by channel:',u.name,u.channel,'!==',ch);return false;}
+    if(ch && (u.channel||'').trim()!==ch.trim()) return false;
     if(team && (u.team||'').trim()!==team.trim()) return false;
     if(name && (u.name||'').trim()!==name.trim()) return false;
     if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
@@ -4840,16 +4839,11 @@ function renderRanking(filtered){
 }
 
 function renderAIStrip(filtered){
-  const ch=v('f-ch'), dt=v('f-date'), team=v('f-team');
-  let txt='';
-  if(!ch && !dt && !team){
-    txt=`<strong>전체 강사 ${filtered.length}명</strong> 기준, 평균 점수 ${filtered.length?(filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1):'—'}점. S등급 ${filtered.filter(u=>u.grade==='S').length}명 배출. 상호작용 항목 집중 개선 권장.`;
-  } else {
-    const avg=filtered.length?(filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1):'—';
-    const bestItem=filtered.length ? Object.entries(filtered[0].scores).sort((a,b)=>b[1]/filtered[0].maxes[b[0]]-a[1]/filtered[0].maxes[a[0]])[0][0] : '';
-    txt=`<strong>${ch||'전체'} ${team||''} ${dt||''}</strong> 필터 기준 — ${filtered.length}명 평균 <strong>${avg}점</strong>. ${bestItem ? `'${bestItem}' 항목이 가장 우수합니다.` : ''} 세부 데이터는 각 강사 카드에서 확인하세요.`;
-  }
-  el('ai-strip-text').innerHTML=txt;
+  try{
+    const stripEl=el('ai-strip-text');
+    if(!stripEl) return;
+    stripEl.innerHTML='';
+  }catch(e){}
 }
 
 function renderGrid(users){
