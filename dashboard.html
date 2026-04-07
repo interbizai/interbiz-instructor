@@ -4839,8 +4839,8 @@ function renderEvalRows(){
   });
 
   tbody.innerHTML=sorted.map((r,i)=>{
-    const scoreColor=r.score>=80?'#10b981':r.score>=50?'#0078C8':'#E21E26';
-    const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=50?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
+    const scoreColor=r.score>70?'#10b981':'#E21E26';
+    const scoreBg=r.score>70?'rgba(16,185,129,.1)':'rgba(226,30,38,.1)';
     // 같은 사람의 이전 점수 찾기
     const sameUser=sorted.filter(x=>x.userId===r.userId&&x.date<r.date);
     const prevScore=sameUser.length?sameUser[0].score:null;
@@ -4917,8 +4917,8 @@ function renderVoiceRows(){
   const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
 
   tbody.innerHTML=display.map(r=>{
-    const scoreColor=r.score>=80?'#10b981':r.score>=60?'#0078C8':'#E21E26';
-    const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=60?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
+    const scoreColor=r.score>70?'#10b981':'#E21E26';
+    const scoreBg=r.score>70?'rgba(16,185,129,.1)':'rgba(226,30,38,.1)';
     const tc=toneColors[r.tone]||'var(--t3)';
     // 추세 그래프 (같은 사람의 이전 점수)
     const sameUser=sorted.filter(x=>x.userId===r.userId&&x.date<r.date);
@@ -5123,7 +5123,7 @@ function renderRanking(filtered){
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
           ${item.sub?`<div style="font-size:10px;color:var(--t3)">${item.sub}</div>`:''}
         </div>
-        <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>${item.extra?`<div style="font-size:9px;color:var(--t3)">${item.extra}</div>`:''}</div>
+        <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:${item.score>70?'#10b981':'#E21E26'}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>${item.extra?`<div style="font-size:9px;color:var(--t3)">${item.extra}</div>`:''}</div>
       </div>`).join('');
 
     return `<div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);background:#fff;padding:16px">
