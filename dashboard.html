@@ -982,10 +982,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('date')">평가일시 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('channel')">소속 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('team')">팀 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('tone')">분위기 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('product')">가전 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('name')">이름 ↕</th>
           <th style="cursor:pointer;user-select:none;text-align:center" onclick="sortVoiceHistory('score')">점수 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('career')">경력 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('tone')">분위기 ↕</th>
           <th style="text-align:center" colspan="2">관리</th>
         </tr>
       </thead>
@@ -4849,7 +4850,8 @@ function renderVoiceHistory(filtered){
   const fIds=new Set(filtered.map(u=>u.id));
   voiceHistoryRows=(D.voiceEvals||[]).filter(ve=>fIds.has(ve.user_id)).map(ve=>{
     const u=D.users.find(x=>x.id===ve.user_id);
-    return {date:ve.date||ve.created_at?.slice(0,10)||'—',channel:u?.channel||'—',team:u?.team||'—',tone:ve.tone||'—',name:ve.user_name||u?.name||'—',score:ve.score||0,userId:ve.user_id,voiceId:ve.id,hireDate:u?.hireDate};
+    const product=(ve.result_data?.product)||'—';
+    return {date:ve.eval_date||ve.created_at?.slice(0,10)||'—',channel:u?.channel||'—',team:u?.team||'—',product,tone:ve.tone||'—',name:ve.user_name||u?.name||'—',score:ve.score||0,userId:ve.user_id,voiceId:ve.id,hireDate:u?.hireDate};
   });
   voiceSortKey='date';voiceSortAsc=false;voiceShowAll=false;
   renderVoiceRows();
@@ -4883,25 +4885,37 @@ function renderVoiceRows(){
   const moreBtn=el('voice-history-more');
   if(moreBtn) moreBtn.style.display=sorted.length>5&&!voiceShowAll?'block':'none';
 
+  const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
+
   tbody.innerHTML=display.map(r=>{
     const scoreColor=r.score>=80?'#10b981':r.score>=60?'#0078C8':'#E21E26';
     const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=60?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
-    const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
     const tc=toneColors[r.tone]||'var(--t3)';
+    // 추세 그래프 (같은 사람의 이전 점수)
+    const sameUser=sorted.filter(x=>x.userId===r.userId&&x.date<r.date);
+    const prevScore=sameUser.length?sameUser[0].score:null;
+    const trendIcon=prevScore===null?'—':r.score>prevScore
+      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>'
+      :r.score<prevScore?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>'
+      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>';
+
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="openVoiceResult(${r.voiceId})">
       <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
       <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
       <td style="padding:10px 12px;font-size:13px">${r.team}</td>
-      <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${tc}">${r.tone}</td>
+      <td style="padding:10px 12px;font-size:13px">${r.product}</td>
       <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
       <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
       <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${tc}">${r.tone}</td>
+      <td style="padding:10px 12px;text-align:center" onclick="event.stopPropagation();showVoiceTrendChart(${r.userId},'${r.name}')">${trendIcon}</td>
       <td style="padding:10px 12px;text-align:center;white-space:nowrap">
-        <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer" onclick="event.stopPropagation();openVoiceResult(${r.voiceId})">리포트</span>
-        ${CU?.isAdmin?` <span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer;margin-left:8px" onclick="event.stopPropagation();adminDeleteVoice(${r.voiceId})">삭제</span>`:''}
+        <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();openVoiceResult(${r.voiceId})">리포트</span>
+        ${CU?.isAdmin?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();adminDeleteVoice(${r.voiceId})">삭제</span>`
+        :(!CU?.isAdmin&&CU?.id===r.userId)?`<span style="font-size:11px;color:var(--orange);font-weight:700;cursor:pointer" onclick="event.stopPropagation();alert('음성 평가 삭제 요청은 관리자에게 문의하세요')">삭제요청</span>`:''}
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--t3)">음성 평가 내역이 없습니다</td></tr>';
+  }).join('')||'<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--t3)">음성 평가 내역이 없습니다</td></tr>';
 }
 
 function showTrendChart(userId,name){
@@ -4976,6 +4990,67 @@ function showTrendChart(userId,name){
       <div>평가 횟수: <strong>${scores.length}회</strong></div>
     </div>`;
 
+  el('trend-overlay').classList.add('show');
+}
+
+function showVoiceTrendChart(userId,name){
+  el('trend-title').textContent=name+' 음성 점수 추이';
+  const userRows=voiceHistoryRows.filter(r=>r.userId===userId).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if(!userRows.length) return;
+
+  const canvas=el('trend-chart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8f9fa';ctx.fillRect(0,0,W,H);
+
+  const scores=userRows.map(r=>r.score);
+  const maxS=Math.max(...scores,100);
+  const minS=Math.min(...scores,0);
+  const range=maxS-minS||1;
+  const pad={t:20,b:30,l:40,r:20};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+
+  ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='var(--t3)';ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(minS+(range*i/4)),pad.l-6,y+3);
+  }
+
+  if(scores.length>1){
+    ctx.beginPath();ctx.strokeStyle='#8b5cf6';ctx.lineWidth=2.5;ctx.lineJoin='round';
+    scores.forEach((s,i)=>{
+      const x=pad.l+(cw*i/(scores.length-1));
+      const y=pad.t+ch*(1-(s-minS)/range);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();
+    ctx.fillStyle='rgba(139,92,246,.08)';ctx.fill();
+    scores.forEach((s,i)=>{
+      const x=pad.l+(cw*i/(scores.length-1));
+      const y=pad.t+ch*(1-(s-minS)/range);
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle='#8b5cf6';ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    });
+  }
+
+  ctx.fillStyle='#718096';ctx.font='10px sans-serif';ctx.textAlign='center';
+  userRows.forEach((r,i)=>{
+    const x=pad.l+(scores.length>1?cw*i/(scores.length-1):cw/2);
+    ctx.fillText(r.date?.slice(5)||'',x,H-8);
+  });
+
+  const latest=scores[scores.length-1], first=scores[0], diff=latest-first;
+  el('trend-details').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div>최초: <strong>${first}점</strong></div>
+      <div>최근: <strong>${latest}점</strong></div>
+      <div>변화: <strong style="color:${diff>0?'#10b981':diff<0?'#E21E26':'var(--t3)'}">${diff>0?'+':''}${diff}점</strong></div>
+      <div>평가 횟수: <strong>${scores.length}회</strong></div>
+    </div>`;
   el('trend-overlay').classList.add('show');
 }
 
