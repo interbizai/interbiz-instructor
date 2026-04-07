@@ -4365,12 +4365,12 @@ function renderVoiceHighlight(filtered){
     el('voice-highlight').innerHTML='<div style="font-size:12px;color:var(--t3);padding:12px">저장된 음성 평가가 없습니다.</div>';
     return;
   }
-  const sorted=[...vaData].sort((a,b)=>b.score-a.score).slice(0,5);
+  const sorted=[...vaData].sort((a,b)=>b.score-a.score);
   const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
   el('voice-highlight').innerHTML=sorted.map((v,i)=>`
     <div class="top5-card neu" style="animation-delay:${i*.08}s;cursor:pointer" onclick="openVoiceResult(${v.id})">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span class="top5-rank t5r-${i+1}">${i+1}</span>
+        <span class="top5-rank ${['t5r-1','t5r-2','t5r-3','t5r-4','t5r-5'][i]||'t5r-5'}">${i+1}</span>
         <div>
           <div style="font-size:12px;font-weight:800">${v.title}</div>
           <div style="font-size:10px;color:var(--t3)">${v.userName} · ${v.date}</div>
@@ -5766,14 +5766,14 @@ function renderTop5(filtered){
     const u=D.users.find(x=>x.id===vid.userId);
     const score=vid.timestamps.filter(t=>t.type==='good').length*10+vid.timestamps.length*3;
     return {...vid,user:u,score};
-  }).sort((a,b)=>b.score-a.score).slice(0,5);
+  }).sort((a,b)=>b.score-a.score);
 
-  const ranks=['t5r-1','t5r-2','t5r-3','t5r-4','t5r-5'];
+  const rankCls=['t5r-1','t5r-2','t5r-3','t5r-4','t5r-5'];
   el('top5-scroll').innerHTML=allVids.map((v,i)=>{
     const bg=['var(--red)','var(--blue)','var(--green)','var(--orange)','var(--purple)'][i%5];
     return `<div class="top5-card neu" style="animation-delay:${i*.08}s" onclick="openVideo(${v.id})">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span class="top5-rank ${ranks[i]}">${i+1}</span>
+        <span class="top5-rank ${rankCls[i]||'t5r-5'}">${i+1}</span>
         <div><div style="font-size:12px;font-weight:800">${v.title}</div><div style="font-size:10px;color:var(--t3)">${v.user?.name||'—'} · ${v.date}</div></div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:8px">
