@@ -1054,10 +1054,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="an-report"></div>
     </div>
 
-    <!-- 저장 -->
-    <div style="display:flex;gap:10px">
+    <!-- 저장 + 삭제 -->
+    <div style="display:flex;gap:10px" id="an-action-btns">
       <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
       <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
+      <span id="an-delete-area"></span>
     </div>
   </div>
 </main>
@@ -1473,9 +1474,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <!-- 종합 솔루션 -->
     <div style="margin-bottom:18px" id="va-report"></div>
 
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px" id="va-action-btns">
       <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
       <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none'">← 다시 녹음</button>
+      <span id="va-delete-area"></span>
     </div>
   </div>
 </main>
@@ -4587,24 +4589,21 @@ function getFilteredVideos(filtered){
 function renderDashboard(){
   const filtered=getFiltered();
   const filteredVids=getFilteredVideos(filtered);
-  // stats
+  // stats — 필터된 유저의 모든 영상 기반
   el('sv-total').textContent=filtered.length;
+  // 분석 완료 영상 = 필터된 유저의 전체 영상 수 (가전/기간 필터 적용)
   el('sv-vids').textContent=filteredVids.length;
-  const avg=filtered.length ? (filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1) : '—';
-  el('sv-avg').textContent=avg;
-  // 70점 이하 개선 필요 강사 수 (영상 + 개인 점수 모두)
-  const lowScoreUsers=filtered.filter(u=>{
-    const userVids=filteredVids.filter(vid=>vid.userId===u.id);
-    if(userVids.length){
-      return userVids.some(vid=>{
-        const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
-        const score=goodCount*10+(vid.timestamps||[]).length*3;
-        return score<=70;
-      });
-    }
-    return (u.score||0)<=70;
+  // 전체 평균 점수 = 영상 점수 평균
+  const allScores=filteredVids.map(vid=>{
+    const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
+    return goodCount*10+(vid.timestamps||[]).length*3;
   });
-  el('sv-s').textContent=lowScoreUsers.length;
+  const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
+  el('sv-avg').textContent=avg;
+  // 70점 이하 개선 필요 = 70점 이하 영상 건수 + 영상 없는 유저 수
+  const lowVidCount=allScores.filter(s=>s<=70).length;
+  const noVidUsers=filtered.filter(u=>!filteredVids.some(vid=>vid.userId===u.id)).length;
+  el('sv-s').textContent=lowVidCount+noVidUsers;
   // AI strip
   renderAIStrip(filtered);
   // ranking + evalHistory + top5 + grid
@@ -4685,8 +4684,8 @@ function renderEvalRows(){
       <td style="padding:10px 12px;text-align:center;cursor:pointer" onclick="event.stopPropagation();showTrendChart(${r.userId},'${r.name}')">${trendIcon}</td>
       <td style="padding:10px 12px;text-align:center;white-space:nowrap">
         <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">리포트</span>
-        ${CU?.isAdmin&&r.videoId?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();adminDeleteVideo(${r.videoId})">삭제</span>`
-        :(!CU?.isAdmin&&r.videoId&&CU?.id===r.userId)?`<span style="font-size:11px;color:var(--orange);font-weight:700;cursor:pointer" onclick="event.stopPropagation();openDeleteRequest(${r.videoId},'${(r.name+' '+r.date).replace(/'/g,'')}')"  >삭제요청</span>`:''}
+        ${CU?.isAdmin?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'adminDeleteVideo('+r.videoId+')':'alert(&quot;영상이 없는 평가입니다&quot;)'}">삭제</span>`
+        :(!CU?.isAdmin&&CU?.id===r.userId)?`<span style="font-size:11px;color:var(--orange);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'openDeleteRequest('+r.videoId+',&quot;'+(r.name+' '+r.date).replace(/"/g,'')+'&quot;)':'alert(&quot;삭제 요청할 영상이 없습니다&quot;)'}">삭제요청</span>`:''}
       </td>
     </tr>`;
   }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t3)">평가 내역이 없습니다</td></tr>';
