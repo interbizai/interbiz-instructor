@@ -4407,12 +4407,29 @@ function getFiltered(){
   });
 }
 
+function getFilteredVideos(filtered){
+  const fIds=new Set(filtered.map(u=>u.id));
+  const product=v('f-product'), dateFilter=v('f-date');
+  const now=new Date();
+  let dateFrom=null;
+  if(dateFilter==='this-month') dateFrom=new Date(now.getFullYear(),now.getMonth(),1);
+  else if(dateFilter==='3month'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-3);}
+  else if(dateFilter==='this-year') dateFrom=new Date(now.getFullYear(),0,1);
+
+  return D.videos.filter(vid=>{
+    if(!fIds.has(vid.userId)) return false;
+    if(product && (vid.videoType||vid.video_type)!==product) return false;
+    if(dateFrom && new Date(vid.date)<dateFrom) return false;
+    return true;
+  });
+}
+
 function renderDashboard(){
   const filtered=getFiltered();
+  const filteredVids=getFilteredVideos(filtered);
   // stats
   el('sv-total').textContent=filtered.length;
-  const totalVids=D.videos.filter(v=>filtered.some(u=>u.id===v.userId)).length;
-  el('sv-vids').textContent=totalVids;
+  el('sv-vids').textContent=filteredVids.length;
   const avg=filtered.length ? (filtered.reduce((a,b)=>a+b.score,0)/filtered.length).toFixed(1) : '—';
   el('sv-avg').textContent=avg;
   el('sv-s').textContent=filtered.filter(u=>u.grade==='S').length;
@@ -4433,10 +4450,11 @@ let evalSortAsc=false;
 function renderEvalHistory(filtered){
   const tbody=el('eval-history-tbody');
   if(!tbody) return;
+  const fVids=getFilteredVideos(filtered);
 
   evalHistoryRows=[];
   filtered.forEach(u=>{
-    const userVids=D.videos.filter(v=>v.userId===u.id);
+    const userVids=fVids.filter(v=>v.userId===u.id);
     if(userVids.length){
       userVids.forEach(v=>{
         const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
@@ -4580,15 +4598,17 @@ function renderRanking(filtered){
   // 1. 개인 종합 랭킹 (score 기준)
   const personalRank=[...filtered].sort((a,b)=>b.score-a.score).slice(0,5);
 
-  // 2. 영상 랭킹 (영상 분석 점수 = 타임스탬프 good 수 기준)
-  const videoRank=D.videos.filter(v=>filtered.some(u=>u.id===v.userId)).map(v=>{
+  // 2. 영상 랭킹 (필터된 영상만)
+  const fVids=getFilteredVideos(filtered);
+  const videoRank=fVids.map(v=>{
     const u=filtered.find(x=>x.id===v.userId);
     const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
     return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id};
   }).sort((a,b)=>b.score-a.score).slice(0,5);
 
   // 3. 음성 랭킹
-  const voiceRank=(D.voiceEvals||[]).filter(ve=>!filtered.length||filtered.some(u=>u.id===ve.user_id))
+  const fIds=new Set(filtered.map(u=>u.id));
+  const voiceRank=(D.voiceEvals||[]).filter(ve=>fIds.has(ve.user_id))
     .sort((a,b)=>b.score-a.score).slice(0,5);
 
   const rankColors=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6'];
