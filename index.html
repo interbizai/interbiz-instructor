@@ -2353,7 +2353,7 @@ function showPage(id){
   // 사이드바 주입
   if(sidebarPages.includes(id)) injectSidebar(id);
   // 사이드바 active 상태 업데이트
-  const pageToIdx={'page-dashboard':0,'page-streaming':1,'page-analysis':2,'page-lecturer':3,'page-voice':4,'page-links':5,'page-checklist':6,'page-admin':7,'page-myprofile':3,'page-video':2};
+  const pageToIdx={'page-dashboard':0,'page-streaming':1,'page-analysis':2,'page-voice':3,'page-lecturer':4,'page-links':5,'page-checklist':6,'page-admin':7,'page-myprofile':4,'page-video':2};
   const activeIdx=pageToIdx[id];
   document.querySelectorAll('.dash-sidebar-item[data-idx]').forEach(it=>{
     it.classList.toggle('active',parseInt(it.dataset.idx)===activeIdx);
