@@ -409,6 +409,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .modal-sub{font-size:11px;color:var(--t3);margin-bottom:20px}
 
 /* ── Animations ── */
+.pdf-bottom{display:flex;justify-content:flex-end;padding:20px 0;margin-top:20px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 
@@ -845,7 +846,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz">
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month">2026년 4월</span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -999,7 +999,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Lecturer Grid -->
   <div class="sec-lbl-sm">강사 정보</div>
   <div class="lect-grid" id="lect-grid"></div>
-
+  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
 </main>
 </div>
 
@@ -1016,7 +1016,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -1139,6 +1138,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <span id="an-delete-area"></span>
     </div>
   </div>
+  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
 </main>
 </div>
 
@@ -1431,7 +1431,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -1558,6 +1557,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <span id="va-delete-area"></span>
     </div>
   </div>
+  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
 </main>
 </div>
 
@@ -1732,7 +1732,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -1754,7 +1753,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </button>
   </div>
   <div class="hdr-right">
-    <button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -5405,7 +5403,8 @@ function openLecturer(id, fromPage){
         </div>
 
       </div>
-    </div>`;
+    </div>
+    <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>`;
   showPage('page-lecturer');
   requestAnimationFrame(()=>{
     document.querySelectorAll('#lecturer-main .bar-fill').forEach(e=>{ e.style.width=e.dataset.pct+'%'; });
@@ -5704,7 +5703,8 @@ function openVideo(id){
           <div class="ts-list" id="ts-list">${tsHtml||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">타임스탬프가 없습니다</div>'}</div>
         </div>
       </div>
-    </div>`;
+    </div>
+    <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>`;
   showPage('page-video');
 }
 
