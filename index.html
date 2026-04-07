@@ -940,9 +940,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- 랭킹 -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px" id="ranking-area"></div>
 
-  <!-- Top 5 Video Highlights -->
-  <!-- 평가 내역 목록 -->
-  <div class="sec-lbl-sm">평가 내역 목록</div>
+  <!-- 평가 내역 목록 (영상) -->
+  <div class="sec-lbl-sm">평가 내역 목록 (영상)</div>
   <div class="eval-table-wrap">
     <div class="eval-table-scroll">
     <table class="tbl" style="white-space:nowrap">
@@ -961,6 +960,29 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <tbody id="eval-history-tbody"></tbody>
     </table>
     </div>
+  </div>
+
+  <!-- 평가 내역 목록 (음성) -->
+  <div class="sec-lbl-sm">평가 내역 목록 (음성)</div>
+  <div class="eval-table-wrap">
+    <div class="eval-table-scroll" style="max-height:none">
+    <table class="tbl" style="white-space:nowrap">
+      <thead>
+        <tr>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('date')">평가일시 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('channel')">소속 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('team')">팀 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('tone')">분위기 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('name')">이름 ↕</th>
+          <th style="cursor:pointer;user-select:none;text-align:center" onclick="sortVoiceHistory('score')">점수 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('career')">경력 ↕</th>
+          <th style="text-align:center" colspan="2">관리</th>
+        </tr>
+      </thead>
+      <tbody id="voice-history-tbody"></tbody>
+    </table>
+    </div>
+    <div id="voice-history-more" style="text-align:center;padding:8px;display:none;cursor:pointer;font-size:12px;color:var(--blue);font-weight:700;border-top:1px solid var(--bdr)" onclick="showAllVoiceHistory()">더보기 ▼</div>
   </div>
 
   <!-- Lecturer Grid -->
@@ -989,6 +1011,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" id="an-pdf-btn" style="display:none" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -1107,7 +1130,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <!-- 저장 + 삭제 -->
     <div style="display:flex;gap:10px" id="an-action-btns">
       <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
-      <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none'">← 다시 입력</button>
+      <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none';var pb=el('an-pdf-btn');if(pb)pb.style.display='none'">← 다시 입력</button>
       <span id="an-delete-area"></span>
     </div>
   </div>
@@ -1403,6 +1426,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
   <div class="hdr-right">
+    <button class="btn btn-blue btn-pdf" id="va-pdf-btn" style="display:none" onclick="window.print()">PDF 출력</button>
     <span class="chip hdr-month"></span>
     <div class="avatar hdr-av" onclick="goMyPage()" title="내 프로필">?</div>
     <button class="btn btn-ghost hdr-admin-btn" style="padding:7px 14px;display:none" onclick="openAdmin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 관리자</button>
@@ -1525,7 +1549,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
     <div style="display:flex;gap:10px" id="va-action-btns">
       <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
-      <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none'">← 다시 녹음</button>
+      <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none';var pb=el('va-pdf-btn');if(pb)pb.style.display='none'">← 다시 녹음</button>
       <span id="va-delete-area"></span>
     </div>
   </div>
@@ -2876,6 +2900,7 @@ function downloadExcel(rows,filename){
 function openAnalysis(){
   el('an-step1').style.display='';
   el('an-step2').style.display='none';
+  const pdfBtn=el('an-pdf-btn');if(pdfBtn)pdfBtn.style.display='none';
   el('an-youtube').value='';el('an-title').value='';el('an-count').value='';
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
@@ -2922,6 +2947,7 @@ function runAnalysis(){
 
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
+  var apb=el('an-pdf-btn');if(apb)apb.style.display='';
 
   // 로딩 표시
   el('an-criteria-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">분석 중...</div>';
@@ -3831,6 +3857,7 @@ async function removeLearningLink(id){
 function openVoiceAnalysis(){
   el('va-step1').style.display='';
   el('va-step2').style.display='none';
+  const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='none';
   el('va-title').value='';el('va-count').value='';
   el('va-file-name').textContent='음성/영상 파일 업로드 (mp3, wav, mp4)';
   el('va-cl-name').textContent='없음';
@@ -4049,6 +4076,7 @@ function generateMockVoice(count,tone){
 }
 
 function renderVoiceResult(r,hasCL,count,tone){
+  const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='';
   // 평가안 기준
   if(hasCL && r.criteriaScores?.length){
     el('va-criteria-result').parentElement.parentElement.style.display='';
@@ -4538,6 +4566,7 @@ function finishStreamRecord(){
   // analysis 페이지 세팅
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
+  var apb2=el('an-pdf-btn');if(apb2)apb2.style.display='';
 
   // 영상 플레이어
   if(streamBlob){
@@ -4714,6 +4743,7 @@ function renderDashboard(){
   // ranking + evalHistory + top5 + grid
   renderRanking(filtered);
   renderEvalHistory(filtered);
+  renderVoiceHistory(filtered);
   renderTop5(filtered);
   renderVoiceHighlight(filtered);
   renderGrid(filtered);
@@ -4794,6 +4824,73 @@ function renderEvalRows(){
       </td>
     </tr>`;
   }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t3)">평가 내역이 없습니다</td></tr>';
+}
+
+/* ── 음성 평가 내역 ── */
+let voiceHistoryRows=[];
+let voiceSortKey='date';
+let voiceSortAsc=false;
+let voiceShowAll=false;
+
+function renderVoiceHistory(filtered){
+  const tbody=el('voice-history-tbody');
+  if(!tbody) return;
+  const fIds=new Set(filtered.map(u=>u.id));
+  voiceHistoryRows=(D.voiceEvals||[]).filter(ve=>fIds.has(ve.user_id)).map(ve=>{
+    const u=D.users.find(x=>x.id===ve.user_id);
+    return {date:ve.date||ve.created_at?.slice(0,10)||'—',channel:u?.channel||'—',team:u?.team||'—',tone:ve.tone||'—',name:ve.user_name||u?.name||'—',score:ve.score||0,userId:ve.user_id,voiceId:ve.id,hireDate:u?.hireDate};
+  });
+  voiceSortKey='date';voiceSortAsc=false;voiceShowAll=false;
+  renderVoiceRows();
+}
+
+function sortVoiceHistory(key){
+  if(voiceSortKey===key) voiceSortAsc=!voiceSortAsc;
+  else {voiceSortKey=key;voiceSortAsc=true;}
+  renderVoiceRows();
+}
+
+function showAllVoiceHistory(){voiceShowAll=true;renderVoiceRows();}
+
+function renderVoiceRows(){
+  const tbody=el('voice-history-tbody');
+  if(!tbody) return;
+  const now=new Date();
+  const getCareerMonths=hd=>hd?Math.round((now-new Date(hd))/(1000*60*60*24*30)):0;
+  const getCareer=hd=>{if(!hd)return'—';const m=getCareerMonths(hd);return m<12?m+'개월':Math.floor(m/12)+'년 '+m%12+'개월';};
+
+  const sorted=[...voiceHistoryRows].sort((a,b)=>{
+    let va,vb;
+    if(voiceSortKey==='score'){va=a.score;vb=b.score;}
+    else if(voiceSortKey==='career'){va=getCareerMonths(a.hireDate);vb=getCareerMonths(b.hireDate);}
+    else{va=(a[voiceSortKey]||'').toString();vb=(b[voiceSortKey]||'').toString();}
+    if(typeof va==='string') return voiceSortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return voiceSortAsc?va-vb:vb-va;
+  });
+
+  const display=voiceShowAll?sorted:sorted.slice(0,5);
+  const moreBtn=el('voice-history-more');
+  if(moreBtn) moreBtn.style.display=sorted.length>5&&!voiceShowAll?'block':'none';
+
+  tbody.innerHTML=display.map(r=>{
+    const scoreColor=r.score>=80?'#10b981':r.score>=60?'#0078C8':'#E21E26';
+    const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=60?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
+    const toneColors={'진지하고 엄중한':'var(--t1)','밝고 경쾌한':'var(--blue)','재미있는':'var(--orange)','차분하고 신뢰감 있는':'var(--green)','열정적이고 에너지 넘치는':'var(--red)'};
+    const tc=toneColors[r.tone]||'var(--t3)';
+    return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="openVoiceResult(${r.voiceId})">
+      <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
+      <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
+      <td style="padding:10px 12px;font-size:13px">${r.team}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${tc}">${r.tone}</td>
+      <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
+      <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
+      <td style="padding:10px 12px;text-align:center;white-space:nowrap">
+        <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer" onclick="event.stopPropagation();openVoiceResult(${r.voiceId})">리포트</span>
+        ${CU?.isAdmin?` <span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer;margin-left:8px" onclick="event.stopPropagation();adminDeleteVoice(${r.voiceId})">삭제</span>`:''}
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--t3)">음성 평가 내역이 없습니다</td></tr>';
 }
 
 function showTrendChart(userId,name){
@@ -5371,6 +5468,7 @@ function openVideo(id){
   // page-analysis의 Step2 결과 화면으로 표시
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
+  var apb3=el('an-pdf-btn');if(apb3)apb3.style.display='';
 
   // 영상 플레이어
   window._anYtId=null;
