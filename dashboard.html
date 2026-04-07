@@ -4569,8 +4569,9 @@ function getFiltered(){
     }).map(vid=>vid.userId));
   }
 
+  console.log('FILTER:',{ch,team,name,product,dateFilter,userCount:D.users.length,users:D.users.map(u=>({name:u.name,channel:u.channel}))});
   return D.users.filter(u=>{
-    if(ch && (u.channel||'').trim()!==ch.trim()) return false;
+    if(ch && (u.channel||'').trim()!==ch.trim()){console.log('EXCLUDED by channel:',u.name,u.channel,'!==',ch);return false;}
     if(team && (u.team||'').trim()!==team.trim()) return false;
     if(name && (u.name||'').trim()!==name.trim()) return false;
     if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
