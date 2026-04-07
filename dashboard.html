@@ -5098,12 +5098,12 @@ function renderRanking(filtered){
   const fIds=new Set(filtered.map(u=>u.id));
   const personalWithAvg=filtered.map(u=>{
     const userVids=fVids.filter(v=>v.userId===u.id);
-    if(!userVids.length) return {...u, avgScore:0};
+    if(!userVids.length) return {...u, avgScore:0, vidCount:0};
     const scores=userVids.map(v=>{
       const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
       return goodCount*10+(v.timestamps||[]).length*3;
     });
-    return {...u, avgScore:scores.reduce((a,b)=>a+b,0)/scores.length};
+    return {...u, avgScore:scores.reduce((a,b)=>a+b,0)/scores.length, vidCount:userVids.length};
   });
   const personalRank=[...personalWithAvg].sort((a,b)=>b.avgScore-a.avgScore).slice(0,5);
 
@@ -5129,7 +5129,7 @@ function renderRanking(filtered){
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
           ${item.sub?`<div style="font-size:10px;color:var(--t3)">${item.sub}</div>`:''}
         </div>
-        <div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>
+        <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:${rankColors[i]}">${Number(item.score).toFixed(1)}<span style="font-size:10px;color:var(--t3)">점</span></div>${item.extra?`<div style="font-size:9px;color:var(--t3)">${item.extra}</div>`:''}</div>
       </div>`).join('');
 
     return `<div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);background:#fff;padding:16px">
@@ -5141,7 +5141,7 @@ function renderRanking(filtered){
     </div>`;
   }
 
-  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.avgScore,userId:u.id}));
+  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.avgScore,userId:u.id,extra:u.vidCount?u.vidCount+'건':''}));
   const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.channel} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,userId:D.videos.find(vid=>vid.id===v.videoId)?.userId}));
   const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,userId:v.user_id};});
 
