@@ -5587,8 +5587,8 @@ function startIconAnimations(){
    TOP 5 HIGHLIGHTS
 ════════════════════════════════ */
 function renderTop5(filtered){
-  const fIds=new Set((filtered||D.users).map(u=>u.id));
-  const allVids=D.videos.filter(v=>v.status==='분석완료'&&fIds.has(v.userId)).map(vid=>{
+  const fVids=getFilteredVideos(filtered||D.users);
+  const allVids=fVids.filter(v=>v.status==='분석완료').map(vid=>{
     const u=D.users.find(x=>x.id===vid.userId);
     const score=vid.timestamps.filter(t=>t.type==='good').length*10+vid.timestamps.length*3;
     return {...vid,user:u,score};
