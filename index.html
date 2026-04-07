@@ -805,13 +805,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <option value="">전체</option><option value="가전AM">가전AM</option><option value="하이케어솔루션">하이케어솔루션</option>
       </select>
     </div>
-    <div class="f-item"><label class="f-lbl">가전</label>
-      <select id="f-product" onchange="renderDashboard()">
+    <div class="f-item"><label class="f-lbl">팀</label>
+      <select id="f-team" onchange="renderDashboard()">
         <option value="">전체</option>
       </select>
     </div>
-    <div class="f-item"><label class="f-lbl">팀</label>
-      <select id="f-team" onchange="renderDashboard()">
+    <div class="f-item"><label class="f-lbl">가전</label>
+      <select id="f-product" onchange="renderDashboard()">
         <option value="">전체</option>
       </select>
     </div>
@@ -890,6 +890,26 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px" id="ranking-area"></div>
 
   <!-- Top 5 Video Highlights -->
+  <!-- 평가 내역 목록 -->
+  <div class="sec-lbl-sm">평가 내역 목록</div>
+  <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:auto;margin-bottom:14px;background:#fff">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
+      <thead>
+        <tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">평가일시</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">소속</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">팀</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">가전</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">이름</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:700;color:var(--t3);font-size:12px">점수</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">경력</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:700;color:var(--t3);font-size:12px" colspan="2">관리</th>
+        </tr>
+      </thead>
+      <tbody id="eval-history-tbody"></tbody>
+    </table>
+  </div>
+
   <div class="sec-lbl-sm">베스트 영상 하이라이트</div>
   <div class="top5-scroll" id="top5-scroll"></div>
 
@@ -4364,11 +4384,65 @@ function renderDashboard(){
   el('sv-s').textContent=filtered.filter(u=>u.grade==='S').length;
   // AI strip
   renderAIStrip(filtered);
-  // ranking + top5 + grid
+  // ranking + evalHistory + top5 + grid
   renderRanking(filtered);
+  renderEvalHistory(filtered);
   renderTop5();
   renderVoiceHighlight();
   renderGrid(filtered);
+}
+
+function renderEvalHistory(filtered){
+  const tbody=el('eval-history-tbody');
+  if(!tbody) return;
+
+  // 영상 평가 기록 기반
+  const rows=[];
+  filtered.forEach(u=>{
+    const userVids=D.videos.filter(v=>v.userId===u.id);
+    if(userVids.length){
+      userVids.forEach(v=>{
+        const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
+        const score=goodCount*10+(v.timestamps||[]).length*3;
+        rows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
+      });
+    } else {
+      rows.push({date:u.registered||'—',channel:u.channel||'—',team:u.team||'—',product:'—',name:u.name,score:u.score||0,userId:u.id,videoId:null,hireDate:u.hireDate});
+    }
+  });
+
+  // 최신순 정렬
+  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const now=new Date();
+  function getCareer(hd){
+    if(!hd) return '—';
+    const m=Math.round((now-new Date(hd))/(1000*60*60*24*30));
+    if(m<3) return m+'개월';
+    if(m<12) return m+'개월';
+    return Math.floor(m/12)+'년 '+m%12+'개월';
+  }
+
+  tbody.innerHTML=rows.slice(0,20).map((r,i)=>{
+    const scoreColor=r.score>=80?'#10b981':r.score>=50?'#0078C8':'#E21E26';
+    const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=50?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
+    // 추이 아이콘 (간단히 이전 대비)
+    const trendIcon=i===0?'—':rows[i-1]?.score>r.score
+      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>'
+      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>';
+
+    return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">
+      <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
+      <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
+      <td style="padding:10px 12px;font-size:13px">${r.team}</td>
+      <td style="padding:10px 12px;font-size:13px">${r.product}</td>
+      <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
+      <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
+      <td style="padding:10px 12px;text-align:center">${trendIcon}</td>
+      <td style="padding:10px 12px;text-align:center"><span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">리포트</span></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t3)">평가 내역이 없습니다</td></tr>';
 }
 
 function renderRanking(filtered){
