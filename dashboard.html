@@ -892,22 +892,24 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Top 5 Video Highlights -->
   <!-- 평가 내역 목록 -->
   <div class="sec-lbl-sm">평가 내역 목록</div>
-  <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:auto;margin-bottom:14px;background:#fff">
+  <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff">
+    <div style="overflow:auto;max-height:600px">
     <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
-      <thead>
+      <thead style="position:sticky;top:0;z-index:2">
         <tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">평가일시</th>
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">소속</th>
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">팀</th>
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">가전</th>
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">이름</th>
-          <th style="padding:10px 12px;text-align:center;font-weight:700;color:var(--t3);font-size:12px">점수</th>
-          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px">경력</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('date')">평가일시 ↕</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('channel')">소속 ↕</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('team')">팀 ↕</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('product')">가전 ↕</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('name')">이름 ↕</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('score')">점수 ↕</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:12px;cursor:pointer;user-select:none" onclick="sortEvalHistory('career')">경력 ↕</th>
           <th style="padding:10px 12px;text-align:center;font-weight:700;color:var(--t3);font-size:12px" colspan="2">관리</th>
         </tr>
       </thead>
       <tbody id="eval-history-tbody"></tbody>
     </table>
+    </div>
   </div>
 
   <div class="sec-lbl-sm">베스트 영상 하이라이트</div>
@@ -1100,6 +1102,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </div>
 
 <!-- ── Calendar Event Modal ── -->
+<!-- ── Score Trend Modal ── -->
+<div class="overlay" id="trend-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="auth-card" style="width:500px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:16px;font-weight:800" id="trend-title">점수 추이</div>
+      <button class="ts-modal-close" onclick="el('trend-overlay').classList.remove('show')">✕</button>
+    </div>
+    <canvas id="trend-chart" width="460" height="200" style="width:100%;height:200px;display:block;border-radius:8px;background:#f8f9fa"></canvas>
+    <div id="trend-details" style="margin-top:12px;font-size:12px;color:var(--t2)"></div>
+  </div>
+</div>
+
 <div class="overlay" id="cal-event-overlay" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="auth-card" style="width:440px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
     <div style="font-size:18px;font-weight:800;margin-bottom:16px" id="cal-modal-title">일정 추가</div>
@@ -4392,44 +4406,63 @@ function renderDashboard(){
   renderGrid(filtered);
 }
 
+let evalHistoryRows=[];
+let evalSortKey='date';
+let evalSortAsc=false;
+
 function renderEvalHistory(filtered){
   const tbody=el('eval-history-tbody');
   if(!tbody) return;
 
-  // 영상 평가 기록 기반
-  const rows=[];
+  evalHistoryRows=[];
   filtered.forEach(u=>{
     const userVids=D.videos.filter(v=>v.userId===u.id);
     if(userVids.length){
       userVids.forEach(v=>{
         const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
         const score=goodCount*10+(v.timestamps||[]).length*3;
-        rows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
+        evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
       });
     } else {
-      rows.push({date:u.registered||'—',channel:u.channel||'—',team:u.team||'—',product:'—',name:u.name,score:u.score||0,userId:u.id,videoId:null,hireDate:u.hireDate});
+      evalHistoryRows.push({date:u.registered||'—',channel:u.channel||'—',team:u.team||'—',product:'—',name:u.name,score:u.score||0,userId:u.id,videoId:null,hireDate:u.hireDate});
     }
   });
+  evalSortKey='date'; evalSortAsc=false;
+  renderEvalRows();
+}
 
-  // 최신순 정렬
-  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+function sortEvalHistory(key){
+  if(evalSortKey===key) evalSortAsc=!evalSortAsc;
+  else { evalSortKey=key; evalSortAsc=true; }
+  renderEvalRows();
+}
 
+function renderEvalRows(){
+  const tbody=el('eval-history-tbody');
+  if(!tbody) return;
   const now=new Date();
-  function getCareer(hd){
-    if(!hd) return '—';
-    const m=Math.round((now-new Date(hd))/(1000*60*60*24*30));
-    if(m<3) return m+'개월';
-    if(m<12) return m+'개월';
-    return Math.floor(m/12)+'년 '+m%12+'개월';
-  }
+  const getCareerMonths=hd=>hd?Math.round((now-new Date(hd))/(1000*60*60*24*30)):0;
+  const getCareer=hd=>{if(!hd)return'—';const m=getCareerMonths(hd);return m<12?m+'개월':Math.floor(m/12)+'년 '+m%12+'개월';};
 
-  tbody.innerHTML=rows.slice(0,20).map((r,i)=>{
+  const sorted=[...evalHistoryRows].sort((a,b)=>{
+    let va,vb;
+    if(evalSortKey==='score'){va=a.score;vb=b.score;}
+    else if(evalSortKey==='career'){va=getCareerMonths(a.hireDate);vb=getCareerMonths(b.hireDate);}
+    else{va=(a[evalSortKey]||'').toString();vb=(b[evalSortKey]||'').toString();}
+    if(typeof va==='string') return evalSortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return evalSortAsc?va-vb:vb-va;
+  });
+
+  tbody.innerHTML=sorted.map((r,i)=>{
     const scoreColor=r.score>=80?'#10b981':r.score>=50?'#0078C8':'#E21E26';
     const scoreBg=r.score>=80?'rgba(16,185,129,.1)':r.score>=50?'rgba(0,120,200,.1)':'rgba(226,30,38,.1)';
-    // 추이 아이콘 (간단히 이전 대비)
-    const trendIcon=i===0?'—':rows[i-1]?.score>r.score
-      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>'
-      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>';
+    // 같은 사람의 이전 점수 찾기
+    const sameUser=sorted.filter(x=>x.userId===r.userId&&x.date<r.date);
+    const prevScore=sameUser.length?sameUser[0].score:null;
+    const trendIcon=prevScore===null?'—':r.score>prevScore
+      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>'
+      :r.score<prevScore?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>'
+      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>';
 
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">
       <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
@@ -4439,10 +4472,85 @@ function renderEvalHistory(filtered){
       <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
       <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
       <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
-      <td style="padding:10px 12px;text-align:center">${trendIcon}</td>
+      <td style="padding:10px 12px;text-align:center;cursor:pointer" onclick="event.stopPropagation();showTrendChart(${r.userId},'${r.name}')">${trendIcon}</td>
       <td style="padding:10px 12px;text-align:center"><span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">리포트</span></td>
     </tr>`;
   }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t3)">평가 내역이 없습니다</td></tr>';
+}
+
+function showTrendChart(userId,name){
+  el('trend-title').textContent=name+' 점수 추이';
+  const userRows=evalHistoryRows.filter(r=>r.userId===userId).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if(!userRows.length) return;
+
+  const canvas=el('trend-chart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8f9fa';ctx.fillRect(0,0,W,H);
+
+  const scores=userRows.map(r=>r.score);
+  const maxS=Math.max(...scores,100);
+  const minS=Math.min(...scores,0);
+  const range=maxS-minS||1;
+  const pad={t:20,b:30,l:40,r:20};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+
+  // 격자
+  ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='var(--t3)';ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(minS+(range*i/4)),pad.l-6,y+3);
+  }
+
+  // 선 그래프
+  if(scores.length>1){
+    ctx.beginPath();
+    ctx.strokeStyle='#0078C8';ctx.lineWidth=2.5;ctx.lineJoin='round';
+    scores.forEach((s,i)=>{
+      const x=pad.l+(cw*i/(scores.length-1));
+      const y=pad.t+ch*(1-(s-minS)/range);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // 면적
+    ctx.lineTo(pad.l+cw,pad.t+ch);
+    ctx.lineTo(pad.l,pad.t+ch);
+    ctx.closePath();
+    ctx.fillStyle='rgba(0,120,200,.08)';ctx.fill();
+
+    // 점
+    scores.forEach((s,i)=>{
+      const x=pad.l+(cw*i/(scores.length-1));
+      const y=pad.t+ch*(1-(s-minS)/range);
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle='#0078C8';ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    });
+  }
+
+  // X축 날짜
+  ctx.fillStyle='#718096';ctx.font='10px sans-serif';ctx.textAlign='center';
+  userRows.forEach((r,i)=>{
+    const x=pad.l+(scores.length>1?cw*i/(scores.length-1):cw/2);
+    ctx.fillText(r.date?.slice(5)||'',x,H-8);
+  });
+
+  // 상세
+  const latest=scores[scores.length-1];
+  const first=scores[0];
+  const diff=latest-first;
+  el('trend-details').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div>최초: <strong>${first}점</strong></div>
+      <div>최근: <strong>${latest}점</strong></div>
+      <div>변화: <strong style="color:${diff>0?'#10b981':diff<0?'#E21E26':'var(--t3)'}">${diff>0?'+':''}${diff}점</strong></div>
+      <div>평가 횟수: <strong>${scores.length}회</strong></div>
+    </div>`;
+
+  el('trend-overlay').classList.add('show');
 }
 
 function renderRanking(filtered){
