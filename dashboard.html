@@ -807,7 +807,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
     <div class="f-item"><label class="f-lbl">소속</label>
       <select id="f-ch" onchange="renderDashboard()">
-        <option value="">전체</option><option value="가전AM">가전AM</option><option value="하이케어솔루션">하이케어솔루션</option>
+        <option value="">전체</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">팀</label>
@@ -4150,7 +4150,22 @@ function openVoiceResult(vaId){
   const mock=generateMockVoice(v.studentCount||20, v.tone||'밝고 경쾌한');
   mock.overall_score=v.score;
   renderVoiceResult(mock, false, v.studentCount||20, v.tone||'밝고 경쾌한');
+  // 삭제 버튼
+  const delArea=el('va-delete-area');
+  if(delArea){
+    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn btn-red" style="padding:8px 16px;font-size:13px" onclick="adminDeleteVoice(${v.id})">삭제</button>`;
+    else if(CU?.id===v.user_id) delArea.innerHTML=`<button class="btn" style="padding:8px 16px;font-size:13px;color:var(--orange);border:1px solid var(--orange)" onclick="alert('음성 평가 삭제 요청은 관리자에게 문의하세요')">삭제 요청</button>`;
+    else delArea.innerHTML='';
+  }
   showPage('page-voice');
+}
+// 관리자 음성 삭제
+async function adminDeleteVoice(voiceId){
+  if(!confirm('이 음성 평가를 삭제하시겠습니까?')) return;
+  await sb.from('voice_evals').delete().eq('id',voiceId);
+  await loadFromDB();
+  alert('삭제되었습니다.');
+  initDashboard();showPage('page-dashboard');
 }
 
 function openVoiceTimestamp(idx){
@@ -4510,14 +4525,18 @@ function retakeStream(){
    DASHBOARD
 ════════════════════════════════ */
 function initDashboard(){
+  // populate channel filter (dynamic from DB)
+  const chs=el('f-ch'); const prevCh=chs.value; chs.innerHTML='<option value="">전체</option>';
+  [...new Set(D.users.map(u=>(u.channel||'').trim()).filter(Boolean))].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; chs.appendChild(o); });
+  chs.value=prevCh;
   // populate product filter (from videos)
-  const ps=el('f-product'); ps.innerHTML='<option value="">전체</option>';
-  const products=[...new Set(D.videos.map(v=>v.videoType||v.video_type).filter(Boolean))];
-  products.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
+  const ps=el('f-product'); const prevP=ps.value; ps.innerHTML='<option value="">전체</option>';
+  [...new Set(D.videos.map(v=>(v.videoType||v.video_type||'').trim()).filter(Boolean))].forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
+  ps.value=prevP;
   // populate team filter (dynamic)
-  const ts=el('f-team'); ts.innerHTML='<option value="">전체</option>';
-  const teams=[...new Set(D.users.map(u=>u.team).filter(Boolean))];
-  teams.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o); });
+  const ts=el('f-team'); const prevT=ts.value; ts.innerHTML='<option value="">전체</option>';
+  [...new Set(D.users.map(u=>(u.team||'').trim()).filter(Boolean))].forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o); });
+  ts.value=prevT;
   // populate name filter
   const ns=el('f-name'); ns.innerHTML='<option value="">전체</option>';
   D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o); });
@@ -4551,9 +4570,9 @@ function getFiltered(){
   }
 
   return D.users.filter(u=>{
-    if(ch && u.channel!==ch) return false;
-    if(team && u.team!==team) return false;
-    if(name && u.name!==name) return false;
+    if(ch && (u.channel||'').trim()!==ch.trim()) return false;
+    if(team && (u.team||'').trim()!==team.trim()) return false;
+    if(name && (u.name||'').trim()!==name.trim()) return false;
     if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
     if(dateFrom && (!dateUserIds || !dateUserIds.has(u.id))) return false;
     if(tenure && u.hireDate){
@@ -5306,7 +5325,15 @@ function openVideo(id){
 
   showPage('page-analysis');
 
-  // Gemini AI로 전체 분석 호출 (저장된 타임스탬프 포함)
+  // 삭제 버튼
+  const delArea=el('an-delete-area');
+  if(delArea){
+    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn btn-red" style="padding:8px 16px;font-size:13px" onclick="adminDeleteVideo(${vid.id})">삭제</button>`;
+    else if(CU?.id===vid.userId) delArea.innerHTML=`<button class="btn" style="padding:8px 16px;font-size:13px;color:var(--orange);border:1px solid var(--orange)" onclick="openDeleteRequest(${vid.id},'${(vid.title||'').replace(/'/g,'')}')">삭제 요청</button>`;
+    else delArea.innerHTML='';
+  }
+
+  // Gemini AI로 전체 분석 호출
   generateFullAnalysis(title, count, vid.timestamps||[], vid.youtube||'');
   return;
 
