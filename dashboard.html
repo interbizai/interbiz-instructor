@@ -602,7 +602,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .dash-content{padding:24px 28px}
 
 /* ── Right Panel (추천영상) ── */
-.r-panel{position:fixed;top:0;right:0;height:100vh;width:370px;background:#fff;border-left:1px solid rgba(0,0,0,.08);z-index:240;display:flex;flex-direction:column;transition:transform .3s ease;transform:translateX(0);overflow:hidden}
+.r-panel{position:fixed;top:0;right:0;height:100vh;width:370px;background:#f7f8fa;border-left:none;z-index:240;display:flex;flex-direction:column;transition:transform .3s ease;transform:translateX(0);overflow:hidden}
 .r-panel.hidden{transform:translateX(100%)}
 .r-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(0,0,0,.06)}
 .r-panel-header h3{font-size:15px;font-weight:800;color:var(--t1);margin:0}
@@ -2607,7 +2607,7 @@ function addBurgerToHeaders(){
 /* ── Global Sidebar ── */
 /* ── Global Sidebar Logic ── */
 const sbMenuItems=[
-  {label:'평가결과',page:'page-dashboard',action:()=>{showPage('page-dashboard');setTimeout(initDashboard,50)},icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#0078C8" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
+  {label:'평가결과',page:'page-dashboard',action:()=>{showPage('page-dashboard');setTimeout(initDashboard,50)},icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
   {label:'영상 스트리밍',page:'page-streaming',action:()=>openStreaming(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'},
   {label:'영상등록 분석',page:'page-analysis',action:()=>openAnalysis(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'},
   {label:'음성분석',page:'page-voice',action:()=>openVoiceAnalysis(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>'},
