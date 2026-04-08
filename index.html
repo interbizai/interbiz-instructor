@@ -15,7 +15,7 @@
   --sh-sm:0 1px 4px rgba(0,0,0,.05);--sh-md:0 4px 16px rgba(0,0,0,.08);--sh-lg:0 8px 32px rgba(0,0,0,.14);
 }
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
-body{background:#f3f4f6;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
+body{background:#ffffff;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#ffffff}
 #page-login,#page-register{background:#fafafa}
 .page{display:none;min-height:100vh}
@@ -550,19 +550,55 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .notif-btn:hover{background:rgba(0,0,0,.05)}
 .notif-badge{position:absolute;top:0;right:0;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
 
-/* ── Dashboard Sidebar Layout ── */
-.dash-layout{display:grid;grid-template-columns:220px 1fr;gap:0;min-height:calc(100vh - 50px)}
-.dash-sidebar{border-right:1px solid rgba(0,0,0,.06);padding:20px 0;background:#fafafa;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto}
-.dash-sidebar-label{padding:18px 14px 6px}
-.dash-sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:all .15s;font-size:14px;font-weight:600;color:var(--t2);border-left:3px solid transparent}
-.dash-sidebar-item:hover{background:rgba(0,0,0,.03);color:var(--t1)}
-.dash-sidebar-item.active{background:rgba(0,120,200,.12);color:var(--blue);border-left-color:var(--blue);font-weight:700}
-.dash-sidebar-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.dash-sidebar-label{font-size:12px;font-weight:700;color:var(--t3);padding:18px 18px 6px;text-transform:uppercase;letter-spacing:.8px}
-.dash-content{padding:24px 28px;overflow-y:auto}
-.dash-layout.sidebar-hidden{grid-template-columns:1fr}
-.dash-layout.sidebar-hidden .dash-sidebar{display:none}
-@media(max-width:900px){.dash-layout{grid-template-columns:1fr}.dash-sidebar{display:none}}
+/* ── Global Sidebar ── */
+.g-sidebar{position:fixed;top:0;left:0;height:100vh;width:240px;background:#fff;border-right:1px solid rgba(0,0,0,.08);z-index:250;display:flex;flex-direction:column;transition:width .25s ease;overflow:hidden}
+.g-sidebar.collapsed{width:68px}
+.g-sidebar .sb-logo{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.g-sidebar .sb-logo img{height:36px;transition:opacity .2s}
+.g-sidebar.collapsed .sb-logo img{opacity:0;width:0;height:0}
+.g-sidebar.collapsed .sb-logo{justify-content:center}
+.sb-collapse-btn{width:28px;height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.1);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;flex-shrink:0}
+.sb-collapse-btn:hover{background:rgba(0,0,0,.04)}
+.sb-nav{flex:1;overflow-y:auto;padding:8px}
+.sb-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;color:var(--t2);white-space:nowrap;position:relative;margin-bottom:2px}
+.sb-item:hover{background:rgba(0,0,0,.04);color:var(--t1)}
+.sb-item.active{background:rgba(0,120,200,.08);color:var(--blue)}
+.sb-item-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-item-label{overflow:hidden;transition:opacity .2s}
+.g-sidebar.collapsed .sb-item-label{opacity:0;width:0}
+.g-sidebar.collapsed .sb-item{justify-content:center;padding:10px}
+.sb-tooltip{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);background:var(--t1);color:#fff;font-size:11px;padding:4px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:300}
+.g-sidebar.collapsed .sb-item:hover .sb-tooltip{opacity:1}
+.sb-bottom{border-top:1px solid rgba(0,0,0,.06);padding:12px}
+.sb-profile{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:rgba(0,0,0,.02)}
+.sb-profile-photo{width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden}
+.sb-profile-photo img{width:100%;height:100%;object-fit:cover}
+.sb-profile-info{flex:1;min-width:0;overflow:hidden;transition:opacity .2s}
+.sb-profile-name{font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-profile-sub{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-sidebar.collapsed .sb-profile-info{opacity:0;width:0}
+.g-sidebar.collapsed .sb-profile{justify-content:center;padding:8px 4px}
+.sb-logout{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--red);transition:background .15s;margin-top:8px}
+.sb-logout:hover{background:rgba(226,30,38,.06)}
+.g-sidebar.collapsed .sb-logout span{display:none}
+.g-sidebar.collapsed .sb-logout{justify-content:center}
+/* Main content offset */
+.g-main{margin-left:240px;transition:margin-left .25s ease;min-height:100vh;background:#fff}
+.g-sidebar.collapsed~.g-main{margin-left:68px}
+/* Mobile */
+.sb-hamburger{display:none;position:fixed;top:16px;left:16px;z-index:260;width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,0,0,.1);background:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-sm)}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);backdrop-filter:blur(3px);z-index:240}
+@media(max-width:768px){
+  .g-sidebar{transform:translateX(-100%);width:260px}
+  .g-sidebar.mobile-open{transform:translateX(0)}
+  .g-sidebar.mobile-open~.sb-overlay{display:block}
+  .g-main{margin-left:0!important}
+  .sb-hamburger{display:flex}
+}
+/* Hide old dash-layout sidebar */
+.dash-layout{display:block!important}
+.dash-sidebar{display:none!important}
+.dash-content{padding:24px 28px}
 
 /* ── Responsive ── */
 @media(max-width:900px){
@@ -689,6 +725,36 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </style>
 </head>
 <body>
+
+<!-- ── Global Sidebar (로그인 후 표시) ── -->
+<nav class="g-sidebar" id="g-sidebar" style="display:none">
+  <div class="sb-logo">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="cursor:pointer" onclick="showPage('page-home')">
+    <button class="sb-collapse-btn" onclick="toggleGlobalSidebar()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="sb-collapse-icon"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+  <div class="sb-nav" id="sb-nav"></div>
+  <div class="sb-bottom">
+    <div class="sb-profile">
+      <div class="sb-profile-photo" id="sb-profile-photo">?</div>
+      <div class="sb-profile-info">
+        <div class="sb-profile-name" id="sb-profile-name">—</div>
+        <div class="sb-profile-sub" id="sb-profile-sub">—</div>
+      </div>
+    </div>
+    <div class="sb-logout" onclick="doLogout()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>로그아웃</span>
+    </div>
+  </div>
+</nav>
+<div class="sb-overlay" id="sb-overlay" onclick="closeMobileSidebar()"></div>
+<button class="sb-hamburger" id="sb-hamburger" style="display:none" onclick="openMobileSidebar()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<div class="g-main" id="g-main">
 
 <!-- ════════════════════════════════════
      PAGE: LOGIN
@@ -2441,36 +2507,28 @@ function save(){ /* DB 저장은 각 함수에서 직접 처리 */ }
 ════════════════════════════════ */
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.getElementById(id)?.classList.add('active');
   window.scrollTo(0,0);
-  if(CU) updateHeaderUI();
-  // 버거 버튼 삽입
-  addBurgerToHeaders();
-  // 사이드바 상태 유지
-  document.querySelectorAll('.dash-layout').forEach(dl=>{
-    dl.classList.toggle('sidebar-hidden',!sidebarVisible);
-  });
-  // 페이지 라벨 업데이트
-  const activePage=document.getElementById(id);
-  if(activePage){
-    activePage.querySelectorAll('.hdr-page-label').forEach(lbl=>{
-      lbl.textContent=pageLabels[id]||'';
-      lbl.style.display=sidebarVisible?'none':'';
-    });
+  // 로그인/회원가입은 사이드바 숨김
+  const noSidebar=['page-login','page-register'];
+  if(noSidebar.includes(id)){
+    hideGlobalSidebar();
+    document.getElementById('g-main')?.style && (document.getElementById('g-main').style.marginLeft='0');
+  } else if(CU){
+    showGlobalSidebar();
+    renderGlobalSidebar(id);
+    // 홈에서는 사이드바 숨김
+    if(id==='page-home'){
+      hideGlobalSidebar();
+      document.getElementById('g-main')?.style && (document.getElementById('g-main').style.marginLeft='0');
+    }
   }
-  // 사이드바 주입
-  if(sidebarPages.includes(id)) injectSidebar(id);
-  // 사이드바 active 상태 업데이트
-  const pageToIdx={'page-dashboard':0,'page-streaming':1,'page-analysis':2,'page-voice':3,'page-lecturer':4,'page-links':5,'page-checklist':6,'page-admin':7,'page-myprofile':4,'page-video':2};
-  const activeIdx=pageToIdx[id];
-  document.querySelectorAll('.dash-sidebar-item[data-idx]').forEach(it=>{
-    it.classList.toggle('active',parseInt(it.dataset.idx)===activeIdx);
-  });
-  // nav-back (홈 버튼) 숨기기 (사이드바 있는 페이지)
-  if(sidebarPages.includes(id)){
-    const page=document.getElementById(id);
-    page?.querySelectorAll('.nav-back').forEach(b=>b.style.display='none');
+  // 헤더 숨기기 (사이드바가 대체)
+  const page=document.getElementById(id);
+  if(page && !noSidebar.includes(id) && id!=='page-home'){
+    page.querySelectorAll('.hdr').forEach(h=>h.style.display='none');
   }
+  if(CU) try{updateHeaderUI();}catch(e){}
 }
 /* ── Sidebar Toggle ── */
 let sidebarVisible=true;
@@ -2509,65 +2567,74 @@ function addBurgerToHeaders(){
 }
 
 /* ── Global Sidebar ── */
-function getSidebarHTML(activePage){
-  const items=[
-    {label:'평가결과',page:'page-dashboard',action:"initDashboard();showPage('page-dashboard')",icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#0078C8" stroke-width="2" opacity=".3"/><path d="M12 20l6 6 10-12" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',bg:'rgba(0,120,200,.08)'},
-    {label:'영상 스트리밍',page:'page-streaming',action:'openStreaming()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><polygon points="14,10 30,20 14,30" fill="#E21E26"/></svg>',bg:'rgba(226,30,38,.08)'},
-    {label:'영상등록 분석',page:'page-analysis',action:'openAnalysis()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/><text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text></svg>',bg:'rgba(139,92,246,.08)'},
-    {label:'음성분석',page:'page-voice',action:'openVoiceAnalysis()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="16" y="8" width="8" height="14" rx="4" stroke="#0078C8" stroke-width="2"/><path d="M10 20a10 10 0 0020 0" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="30" x2="20" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="34" x2="25" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(0,120,200,.08)'},
-    {label:'내페이지',page:'page-lecturer',action:"if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-dashboard')}else{showPage('page-myprofile')}",icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/><path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(16,185,129,.08)'},
-    {label:'학습링크이동',page:'page-links',action:'openLearningLinks()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H8a2 2 0 00-2 2v24a2 2 0 002 2h24a2 2 0 002-2V22"/><path d="M24 4h12v12"/><line x1="16" y1="24" x2="36" y2="4"/></svg>',bg:'rgba(16,185,129,.08)'},
-    {label:'체크리스트',page:'page-checklist',action:'openChecklist()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><rect x="8" y="4" width="24" height="32" rx="2" stroke="#f59e0b" stroke-width="2"/><line x1="14" y1="12" x2="14" y2="12.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="12" x2="28" y2="12" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="19" x2="14" y2="19.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="19" x2="28" y2="19" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="26" x2="14" y2="26.01" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><line x1="19" y1="26" x2="28" y2="26" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>',bg:'rgba(245,158,11,.08)'},
-    {label:'관리자',page:'page-admin',action:'openAdmin()',icon:'<svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/><circle cx="29" cy="11" r="4" fill="#EF4444"/></svg>',bg:'rgba(245,158,11,.08)'},
-  ];
-  return `<aside class="dash-sidebar">
-    <div class="dash-sidebar-label">주요 기능</div>
-    ${items.map((it,i)=>`<div class="dash-sidebar-item${activePage===it.page?' active':''}" data-idx="${i}"><div class="dash-sidebar-icon" style="background:${it.bg}">${it.icon}</div>${it.label}</div>`).join('')}
-    <div class="dash-sidebar-label" style="margin-top:12px">바로가기</div>
-    <div class="dash-sidebar-item" onclick="showPage('page-home')"><div class="dash-sidebar-icon" style="background:rgba(0,0,0,.04)"><svg width="18" height="18" viewBox="0 0 40 40" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M6 18l14-12 14 12v16a2 2 0 01-2 2H8a2 2 0 01-2-2z"/></svg></div>홈으로</div>
-  </aside>`;
-}
+/* ── Global Sidebar Logic ── */
+const sbMenuItems=[
+  {label:'홈',page:'page-home',action:()=>showPage('page-home'),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>'},
+  {label:'평가결과',page:'page-dashboard',action:()=>{initDashboard();showPage('page-dashboard')},icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'},
+  {label:'영상 스트리밍',page:'page-streaming',action:()=>openStreaming(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'},
+  {label:'영상등록 분석',page:'page-analysis',action:()=>openAnalysis(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'},
+  {label:'음성분석',page:'page-voice',action:()=>openVoiceAnalysis(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>'},
+  {label:'내페이지',page:'page-lecturer',action:()=>{if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}},icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
+  {label:'학습링크',page:'page-links',action:()=>openLearningLinks(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'},
+  {label:'체크리스트',page:'page-checklist',action:()=>openChecklist(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'},
+  {label:'관리자',page:'page-admin',action:()=>openAdmin(),icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',adminOnly:true},
+];
 
-function injectSidebar(pageId){
-  const page=document.getElementById(pageId);
-  if(!page||page.querySelector('.dash-sidebar')) return;
-  const main=page.querySelector('main');
-  if(!main) return;
-  // wrap main content in dash-layout
-  const wrapper=document.createElement('div');
-  wrapper.className='dash-layout';
-  wrapper.innerHTML=getSidebarHTML(pageId);
-  const content=document.createElement('div');
-  content.className='dash-content';
-  // move main's children into content
-  while(main.firstChild) content.appendChild(main.firstChild);
-  wrapper.appendChild(content);
-  main.appendChild(wrapper);
-  main.style.padding='0';main.style.maxWidth='100%';
-  // 클릭 이벤트 바인딩
-  const sidebarItems=wrapper.querySelectorAll('.dash-sidebar-item[data-idx]');
-  const actions=[
-    ()=>{initDashboard();showPage('page-dashboard')},
-    ()=>openStreaming(),
-    ()=>openAnalysis(),
-    ()=>openVoiceAnalysis(),
-    ()=>{if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-dashboard')}else{showPage('page-myprofile')}},
-    ()=>openLearningLinks(),
-    ()=>openChecklist(),
-    ()=>openAdmin(),
-  ];
-  sidebarItems.forEach(item=>{
-    const idx=parseInt(item.dataset.idx);
-    if(actions[idx]) item.addEventListener('click',actions[idx]);
+let sbCollapsed=false;
+function renderGlobalSidebar(activePage){
+  const nav=document.getElementById('sb-nav');
+  if(!nav) return;
+  nav.innerHTML=sbMenuItems.filter(it=>!it.adminOnly||CU?.isAdmin).map(it=>`
+    <div class="sb-item${activePage===it.page?' active':''}" data-page="${it.page}">
+      <div class="sb-item-icon">${it.icon}</div>
+      <span class="sb-item-label">${it.label}</span>
+      <div class="sb-tooltip">${it.label}</div>
+    </div>`).join('');
+  nav.querySelectorAll('.sb-item').forEach(item=>{
+    const page=item.dataset.page;
+    const mi=sbMenuItems.find(m=>m.page===page);
+    if(mi) item.addEventListener('click',()=>{mi.action();closeMobileSidebar();});
   });
-  // 홈으로 버튼
-  wrapper.querySelectorAll('.dash-sidebar-item:not([data-idx])').forEach(item=>{
-    item.addEventListener('click',()=>showPage('page-home'));
-  });
+  // 프로필 업데이트
+  const u=D.users?.find(x=>x.id===CU?.id);
+  const photo=CU?.isAdmin?'assets/logo/image.png':(u?.photo||CU?.photo||'');
+  const pEl=document.getElementById('sb-profile-photo');
+  if(pEl){pEl.innerHTML=photo?`<img src="${photo}">`:(CU?.name?CU.name[0]:'?');}
+  const nEl=document.getElementById('sb-profile-name');
+  if(nEl) nEl.textContent=CU?.isAdmin?'관리자':(CU?.name||'—');
+  const sEl=document.getElementById('sb-profile-sub');
+  if(sEl) sEl.textContent=CU?.isAdmin?'interbiz':(u?`${u.channel} · ${u.team}`:'—');
 }
-
-// 사이드바 적용 대상 페이지들
-const sidebarPages=['page-dashboard','page-analysis','page-streaming','page-voice','page-links','page-checklist','page-lecturer','page-video','page-myprofile','page-admin','page-calendar'];
+function showGlobalSidebar(){
+  const sb=document.getElementById('g-sidebar');
+  const hb=document.getElementById('sb-hamburger');
+  if(sb) sb.style.display='flex';
+  if(hb) hb.style.display='';
+}
+function hideGlobalSidebar(){
+  const sb=document.getElementById('g-sidebar');
+  const hb=document.getElementById('sb-hamburger');
+  if(sb) sb.style.display='none';
+  if(hb) hb.style.display='none';
+}
+function toggleGlobalSidebar(){
+  const sb=document.getElementById('g-sidebar');
+  const icon=document.getElementById('sb-collapse-icon');
+  sbCollapsed=!sbCollapsed;
+  sb.classList.toggle('collapsed',sbCollapsed);
+  if(icon) icon.innerHTML=sbCollapsed?'<polyline points="9 18 15 12 9 6"/>':'<polyline points="15 18 9 12 15 6"/>';
+}
+function openMobileSidebar(){
+  document.getElementById('g-sidebar')?.classList.add('mobile-open');
+  document.getElementById('sb-overlay')?.style && (document.getElementById('sb-overlay').style.display='block');
+}
+function closeMobileSidebar(){
+  document.getElementById('g-sidebar')?.classList.remove('mobile-open');
+  document.getElementById('sb-overlay')?.style && (document.getElementById('sb-overlay').style.display='none');
+}
+// 기존 호환용 (빈 함수)
+function injectSidebar(){}
+const sidebarPages=[];
 
 function updateHeaderUI(){
   const now=new Date();
@@ -6112,5 +6179,6 @@ window.showPage=function(id){
   _showPage(id);
 };
 </script>
+</div><!-- /g-main -->
 </body>
 </html>
