@@ -125,7 +125,7 @@ textarea{resize:vertical;min-height:80px}
 .sec-lbl-sm::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
 
 /* ── Main layout ── */
-main{max-width:1180px;margin:0 auto;padding:16px 20px 40px}
+main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 
 /* ── Filter bar ── */
 .filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
@@ -2526,6 +2526,8 @@ function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   window.scrollTo(0,0);
+  // 페이지 기억 (F5 복원용)
+  if(id!=='page-login'&&id!=='page-register') localStorage.setItem('ib_last_page',id);
   // 로그인/회원가입은 사이드바 숨김
   const noSidebar=['page-login','page-register'];
   if(noSidebar.includes(id)){
@@ -2734,7 +2736,7 @@ async function doLogin(){
   localStorage.setItem('ib_user',JSON.stringify(CU));
   initHome(); showPage('page-home');
 }
-function doLogout(){ CU=null; localStorage.removeItem('ib_user'); showPage('page-login'); }
+function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
 /* ── Home Search ── */
 (function(){
   const inp=()=>document.getElementById('home-search-input');
@@ -5420,7 +5422,7 @@ function openLecturer(id, fromPage){
   const isOwner=CU && (CU.id===u.id || CU.isAdmin);
 
   el('lecturer-main').innerHTML=`
-    <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h2>${u?.name||'내페이지'}</h2></div>
+    <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h2>내페이지</h2></div>
     <div class="prof-layout">
       <!-- LEFT: Profile card -->
       <div>
@@ -6198,8 +6200,16 @@ window.addEventListener('load',async ()=>{
     await loadFromDB();
     // CU 정보 최신화
     if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh) CU=fresh; }
-    initHome(); showPage('page-home');
+    initHome();
+    const lastPage=localStorage.getItem('ib_last_page');
+    if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
+      try{
+        if(lastPage==='page-dashboard'){initDashboard();showPage('page-dashboard');}
+        else showPage(lastPage);
+      }catch(e){showPage('page-home');}
+    } else {showPage('page-home');}
   } else {
+    hideGlobalSidebar();
     showPage('page-login');
   }
 });
