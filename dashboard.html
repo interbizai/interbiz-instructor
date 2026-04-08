@@ -2530,16 +2530,20 @@ function showPage(id){
   if(id!=='page-login'&&id!=='page-register') localStorage.setItem('ib_last_page',id);
   // 로그인/회원가입은 사이드바 숨김
   const noSidebar=['page-login','page-register'];
+  const gm=document.getElementById('g-main');
   if(noSidebar.includes(id)){
     hideGlobalSidebar();
-    document.getElementById('g-main')?.style && (document.getElementById('g-main').style.marginLeft='0');
+    if(gm) gm.style.marginLeft='0';
   } else if(CU){
-    showGlobalSidebar();
-    renderGlobalSidebar(id);
-    // 홈에서는 사이드바 숨김
     if(id==='page-home'){
       hideGlobalSidebar();
-      document.getElementById('g-main')?.style && (document.getElementById('g-main').style.marginLeft='0');
+      if(gm) gm.style.marginLeft='0';
+    } else {
+      showGlobalSidebar();
+      renderGlobalSidebar(id);
+      const sb=document.getElementById('g-sidebar');
+      const w=sb&&sb.classList.contains('collapsed')?'68px':'200px';
+      if(gm) gm.style.marginLeft=window.innerWidth<=768?'0':w;
     }
   }
   // 헤더 숨기기 (사이드바가 대체)
