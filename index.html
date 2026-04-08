@@ -2657,9 +2657,11 @@ function hideGlobalSidebar(){
 function toggleGlobalSidebar(){
   const sb=document.getElementById('g-sidebar');
   const icon=document.getElementById('sb-collapse-icon');
+  const gm=document.getElementById('g-main');
   sbCollapsed=!sbCollapsed;
   sb.classList.toggle('collapsed',sbCollapsed);
   if(icon) icon.innerHTML=sbCollapsed?'<polyline points="9 18 15 12 9 6"/>':'<polyline points="15 18 9 12 15 6"/>';
+  if(gm && window.innerWidth>768) gm.style.marginLeft=sbCollapsed?'68px':'200px';
 }
 function openMobileSidebar(){
   document.getElementById('g-sidebar')?.classList.add('mobile-open');
