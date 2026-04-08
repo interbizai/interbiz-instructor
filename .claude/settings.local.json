@@ -4,7 +4,12 @@
       "Bash(node -e ':*)",
       "Bash(grep -c '`' dashboard.html)",
       "Read(//^<script>$/,/^</**)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/User/AppData/Roaming/**)",
+      "Bash(cmd.exe /c \"where node\")",
+      "WebFetch(domain:interbiz-instructor.vercel.app)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
