@@ -144,11 +144,12 @@ main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 
 /* ── Stats row ── */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;gap:6px;animation:fadeUp .4s ease both}
+.stat-card{padding:18px;border-radius:var(--r2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;animation:fadeUp .4s ease both}
 .stat-card:nth-child(2){animation-delay:.06s}.stat-card:nth-child(3){animation-delay:.12s}.stat-card:nth-child(4){animation-delay:.18s}
 .icon-card{width:52px;height:52px;border-radius:16px;border:1px solid var(--bdr);background:#fff;box-shadow:var(--sh-sm);display:flex;align-items:center;justify-content:center}
-.stat-val{font-size:28px;font-weight:900;line-height:1;color:var(--t1)}
-.stat-lbl{font-size:12px;color:var(--t3);font-weight:600;letter-spacing:.3px}
+.stat-val{font-size:28px;font-weight:900;line-height:1;color:var(--t1);display:flex;align-items:baseline;gap:3px;justify-content:center}
+.stat-unit{font-size:14px;font-weight:700;color:var(--t1)}
+.stat-lbl{font-size:12px;color:var(--t3);font-weight:500;margin-top:4px}
 
 /* ── Morphing icons CSS ── */
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -1049,20 +1050,20 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Stats row -->
   <div class="stats-row">
     <div class="stat-card neu">
+      <div class="stat-val"><span id="sv-total">6</span><span class="stat-unit">명</span></div>
       <div class="stat-lbl">총 강사 수</div>
-      <div class="stat-val" id="sv-total">6</div>
     </div>
     <div class="stat-card neu">
+      <div class="stat-val"><span id="sv-vids">12</span><span class="stat-unit">개</span></div>
       <div class="stat-lbl">분석 완료 영상</div>
-      <div class="stat-val" id="sv-vids">12</div>
     </div>
     <div class="stat-card neu">
+      <div class="stat-val"><span id="sv-avg">85.3</span><span class="stat-unit">점</span></div>
       <div class="stat-lbl">전체 평균 점수</div>
-      <div class="stat-val" id="sv-avg">85.3</div>
     </div>
     <div class="stat-card neu">
+      <div class="stat-val"><span id="sv-s">0</span><span class="stat-unit">개</span></div>
       <div class="stat-lbl">70점 이하 개선 필요</div>
-      <div class="stat-val" id="sv-s">0</div>
     </div>
   </div>
 
