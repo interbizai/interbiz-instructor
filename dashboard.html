@@ -602,7 +602,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .dash-content{padding:24px 28px}
 
 /* ── Right Panel (추천영상) ── */
-.r-panel{position:fixed;top:0;right:0;height:100vh;width:370px;background:#f7f8fa;border-left:none;z-index:240;display:flex;flex-direction:column;transition:transform .3s ease;transform:translateX(0);overflow:hidden}
+.r-panel{position:fixed;top:0;right:0;height:100vh;width:370px;background:#fff;border-left:none;z-index:240;display:flex;flex-direction:column;transition:transform .3s ease;transform:translateX(0);overflow:hidden}
 .r-panel.hidden{transform:translateX(100%)}
 .r-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(0,0,0,.06)}
 .r-panel-header h3{font-size:15px;font-weight:800;color:var(--t1);margin:0}
@@ -617,7 +617,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .r-vid-info{padding:10px 12px}
 .r-vid-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .r-vid-meta{font-size:11px;color:var(--t3)}
-.r-panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:241;width:32px;height:64px;background:#fff;border:1px solid rgba(0,0,0,.12);border-right:none;border-radius:10px 0 0 10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s ease;box-shadow:var(--sh-md)}
+.r-panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:241;width:32px;height:64px;background:#fff;border:1px solid rgba(0,0,0,.08);border-right:none;border-radius:10px 0 0 10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s ease;box-shadow:-2px 0 8px rgba(0,0,0,.04)}
 .r-panel-toggle.shifted{right:370px}
 .g-main.has-panel{margin-right:370px;transition:margin-right .3s ease}
 @media(max-width:1200px){.r-panel{width:300px}.r-panel-toggle.shifted{right:300px}.g-main.has-panel{margin-right:300px}}
