@@ -98,8 +98,9 @@ textarea{resize:vertical;min-height:80px}
 .chip{padding:5px 13px;border-radius:20px;font-size:13px;font-weight:600;color:var(--t3);border:1px solid #eee;background:#fff}
 .avatar{width:40px;height:40px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.avatar-wrap{position:relative}
-.avatar-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:12px;border:1px solid var(--bdr);box-shadow:var(--sh-lg);min-width:200px;z-index:300;animation:fadeUp .15s ease}
+.avatar-wrap{position:relative;padding-bottom:6px;margin-bottom:-6px}
+.avatar-dropdown{display:none;position:absolute;top:100%;right:0;background:#fff;border-radius:12px;border:1px solid var(--bdr);box-shadow:var(--sh-lg);min-width:200px;z-index:300;animation:fadeUp .15s ease;padding-top:6px}
+.avatar-dropdown::before{content:'';position:absolute;top:-10px;right:0;width:60px;height:16px}
 .avatar-wrap:hover .avatar-dropdown{display:block}
 .avatar-dd-header{padding:14px 16px;border-bottom:1px solid var(--bdr)}
 .avatar-dd-name{font-size:14px;font-weight:800;color:var(--t1)}
@@ -2592,7 +2593,8 @@ function updateHeaderUI(){
     img.style.cursor='pointer';
     img.onclick=()=>showPage('page-home');
   });
-  // 관리자 알림 뱃지
+  // 관리자 알림 뱃지 (비관리자는 숨김)
+  document.querySelectorAll('.notif-btn').forEach(b=>b.style.display=CU?.isAdmin?'flex':'none');
   if(CU?.isAdmin){
     const pendingCount=(D.deleteRequests||[]).filter(r=>r.status==='pending').length;
     document.querySelectorAll('.hdr-right').forEach(hr=>{
