@@ -17,7 +17,8 @@
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
 body{background:#ffffff;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#ffffff}
-#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0}
+#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
+#page-home main{max-width:900px;margin:0 auto}
 #page-login,#page-register{background:#fafafa}
 .page{display:none;min-height:100vh}
 .page.active{display:block}
@@ -616,7 +617,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .r-vid-info{padding:10px 12px}
 .r-vid-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .r-vid-meta{font-size:11px;color:var(--t3)}
-.r-panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:241;width:24px;height:48px;background:#fff;border:1px solid rgba(0,0,0,.1);border-right:none;border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s ease;box-shadow:var(--sh-sm)}
+.r-panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:241;width:32px;height:64px;background:#fff;border:1px solid rgba(0,0,0,.12);border-right:none;border-radius:10px 0 0 10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s ease;box-shadow:var(--sh-md)}
 .r-panel-toggle.shifted{right:420px}
 .g-main.has-panel{margin-right:420px;transition:margin-right .3s ease}
 @media(max-width:1200px){.r-panel{width:340px}.r-panel-toggle.shifted{right:340px}.g-main.has-panel{margin-right:340px}}
