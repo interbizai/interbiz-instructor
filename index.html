@@ -17,6 +17,7 @@
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
 body{background:#ffffff;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#ffffff}
+#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0}
 #page-login,#page-register{background:#fafafa}
 .page{display:none;min-height:100vh}
 .page.active{display:block}
@@ -581,7 +582,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .g-sidebar.collapsed .sb-logout span{display:none}
 .g-sidebar.collapsed .sb-logout{justify-content:center}
 /* Main content offset */
-.g-main{margin-left:200px;transition:margin-left .25s ease;min-height:100vh;background:#fff;overflow-x:hidden}
+.g-main{margin-left:200px;transition:margin-left .25s ease,margin-right .3s ease;min-height:100vh;background:#f7f8fa;overflow-x:hidden}
+.g-main main{background:#fff;border-radius:16px;margin:16px;padding:24px;box-shadow:var(--sh-sm)}
 .g-sidebar.collapsed~.g-main{margin-left:68px}
 /* Mobile */
 .sb-hamburger{display:none;position:fixed;top:16px;left:16px;z-index:260;width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,0,0,.1);background:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-sm)}
@@ -597,6 +599,28 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .dash-layout{display:block!important}
 .dash-sidebar{display:none!important}
 .dash-content{padding:24px 28px}
+
+/* ── Right Panel (추천영상) ── */
+.r-panel{position:fixed;top:0;right:0;height:100vh;width:420px;background:#fff;border-left:1px solid rgba(0,0,0,.08);z-index:240;display:flex;flex-direction:column;transition:transform .3s ease;transform:translateX(0);overflow:hidden}
+.r-panel.hidden{transform:translateX(100%)}
+.r-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(0,0,0,.06)}
+.r-panel-header h3{font-size:15px;font-weight:800;color:var(--t1);margin:0}
+.r-panel-close{width:28px;height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.1);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
+.r-panel-close:hover{background:rgba(0,0,0,.04)}
+.r-panel-body{flex:1;overflow-y:auto;padding:12px 16px}
+.r-vid-card{border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);margin-bottom:14px;cursor:pointer;transition:box-shadow .2s,transform .15s}
+.r-vid-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.r-vid-thumb{width:100%;aspect-ratio:16/9;background:#111;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:12px;overflow:hidden;position:relative}
+.r-vid-thumb img{width:100%;height:100%;object-fit:cover}
+.r-vid-play{position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+.r-vid-info{padding:10px 12px}
+.r-vid-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-vid-meta{font-size:11px;color:var(--t3)}
+.r-panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:241;width:24px;height:48px;background:#fff;border:1px solid rgba(0,0,0,.1);border-right:none;border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s ease;box-shadow:var(--sh-sm)}
+.r-panel-toggle.shifted{right:420px}
+.g-main.has-panel{margin-right:420px;transition:margin-right .3s ease}
+@media(max-width:1200px){.r-panel{width:340px}.r-panel-toggle.shifted{right:340px}.g-main.has-panel{margin-right:340px}}
+@media(max-width:900px){.r-panel{width:100%;max-width:380px}.r-panel-toggle{display:none}.g-main.has-panel{margin-right:0}}
 
 /* ── Responsive ── */
 @media(max-width:900px){
@@ -768,6 +792,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <button class="sb-hamburger" id="sb-hamburger" style="display:none" onclick="openMobileSidebar()">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
 </button>
+
+<!-- ── Right Panel (추천영상) ── -->
+<aside class="r-panel hidden" id="r-panel" style="display:none">
+  <div class="r-panel-header">
+    <h3>📺 추천 영상</h3>
+    <button class="r-panel-close" onclick="toggleRightPanel()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="r-panel-body" id="r-panel-body"></div>
+</aside>
+<div class="r-panel-toggle" id="r-panel-toggle" style="display:none" onclick="toggleRightPanel()">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="r-toggle-icon"><polyline points="15 18 9 12 15 6"/></svg>
+</div>
 
 <div class="g-main" id="g-main">
 
@@ -2533,14 +2569,17 @@ function showPage(id){
   const gm=document.getElementById('g-main');
   if(noSidebar.includes(id)){
     hideGlobalSidebar();
+    hideRightPanel();
     if(gm) gm.style.marginLeft='0';
   } else if(CU){
     if(id==='page-home'){
       hideGlobalSidebar();
+      hideRightPanel();
       if(gm) gm.style.marginLeft='0';
     } else {
       showGlobalSidebar();
       renderGlobalSidebar(id);
+      showRightPanel();
       const sb=document.getElementById('g-sidebar');
       const w=sb&&sb.classList.contains('collapsed')?'68px':'200px';
       if(gm) gm.style.marginLeft=window.innerWidth<=768?'0':w;
@@ -2670,6 +2709,62 @@ function openMobileSidebar(){
 function closeMobileSidebar(){
   document.getElementById('g-sidebar')?.classList.remove('mobile-open');
   document.getElementById('sb-overlay')?.style && (document.getElementById('sb-overlay').style.display='none');
+}
+/* ── Right Panel (추천영상) ── */
+let rPanelOpen=false;
+function toggleRightPanel(){
+  const panel=document.getElementById('r-panel');
+  const toggle=document.getElementById('r-panel-toggle');
+  const gm=document.getElementById('g-main');
+  const icon=document.getElementById('r-toggle-icon');
+  rPanelOpen=!rPanelOpen;
+  panel.classList.toggle('hidden',!rPanelOpen);
+  toggle.classList.toggle('shifted',rPanelOpen);
+  gm.classList.toggle('has-panel',rPanelOpen);
+  if(icon) icon.innerHTML=rPanelOpen?'<polyline points="9 18 15 12 9 6"/>':'<polyline points="15 18 9 12 15 6"/>';
+}
+function showRightPanel(){
+  const panel=document.getElementById('r-panel');
+  const toggle=document.getElementById('r-panel-toggle');
+  if(panel) panel.style.display='flex';
+  if(toggle) toggle.style.display='flex';
+  renderRecommendedVideos();
+}
+function hideRightPanel(){
+  const panel=document.getElementById('r-panel');
+  const toggle=document.getElementById('r-panel-toggle');
+  const gm=document.getElementById('g-main');
+  if(panel){panel.style.display='none';panel.classList.add('hidden');}
+  if(toggle){toggle.style.display='none';toggle.classList.remove('shifted');}
+  if(gm) gm.classList.remove('has-panel');
+  rPanelOpen=false;
+}
+function renderRecommendedVideos(){
+  const body=document.getElementById('r-panel-body');
+  if(!body) return;
+  // DB 영상 + 유튜브 추천
+  const vids=(D.videos||[]).filter(v=>v.status==='분석완료').slice(0,8);
+  const ytRecs=[
+    {title:'LG 에어컨 세일즈 화법',thumb:'',yt:''},
+    {title:'현장 강의 스킬업 가이드',thumb:'',yt:''},
+    {title:'고객 상담 실전 노하우',thumb:'',yt:''}
+  ];
+  let html='<div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">전체 영상 재생</div>';
+  html+=vids.map(v=>{
+    const u=D.users?.find(x=>x.id===v.userId);
+    const ytId=v.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
+    const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
+    return `<div class="r-vid-card" onclick="${v.id?'openVideo('+v.id+')':''}">
+      <div class="r-vid-thumb">${thumb?`<img src="${thumb}">`:'영상이 등록되지 않았습니다'}<div class="r-vid-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+      <div class="r-vid-info"><div class="r-vid-title">${v.title||'—'}</div><div class="r-vid-meta">${u?.name||'—'} · ${v.date||''}</div></div>
+    </div>`;
+  }).join('');
+  if(!vids.length) html+='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">등록된 영상이 없습니다</div>';
+  html+='<div style="font-size:11px;font-weight:700;color:var(--t3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">공유 링크 복사</div>';
+  html+='<div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.03);border-radius:8px;cursor:pointer" onclick="navigator.clipboard.writeText(location.href);alert(\'링크가 복사되었습니다\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span style="font-size:12px;color:var(--blue);font-weight:600">공유 링크 복사</span></div>';
+  html+='<div style="font-size:11px;font-weight:700;color:var(--t3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">PDF 및 인쇄</div>';
+  html+='<div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.03);border-radius:8px;cursor:pointer" onclick="window.print()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span style="font-size:12px;color:var(--red);font-weight:600">PDF 및 인쇄</span></div>';
+  body.innerHTML=html;
 }
 // 기존 호환용 (빈 함수)
 function injectSidebar(){}
