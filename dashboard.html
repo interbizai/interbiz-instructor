@@ -399,9 +399,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Table ── */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{padding:10px 12px;text-align:left;font-weight:700;color:var(--t3);border-bottom:1px solid var(--bdr);font-size:12px}
-.tbl td{padding:10px 12px;border-bottom:1px solid var(--bdr);color:var(--t2)}
-.tbl tbody tr:hover td{background:rgba(0,120,200,.04)}
+.tbl th{padding:10px 12px;text-align:left;font-weight:800;color:var(--t1);border-bottom:2px solid rgba(0,0,0,.12);font-size:11px;letter-spacing:.3px}
+.tbl td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.05);color:var(--t2);font-size:12px;font-weight:400}
+.tbl tbody tr:hover td{background:rgba(0,120,200,.03)}
 .tbl tr:last-child td{border-bottom:none}
 .eval-table-wrap{border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff}
 .eval-table-scroll{overflow:auto;max-height:50vh}
@@ -436,7 +436,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 /* ── Home Page ── */
 #page-home .hdr{padding-left:16px;background:transparent;box-shadow:none;border-bottom:none}
 #page-home .hdr .hdr-logo{visibility:hidden}
-.home-hero{text-align:center;padding:48px 0 12px}
+.home-hero{text-align:center;padding:4vh 0 1vh}
 .home-hero img{height:110px}
 .home-carousel{overflow:hidden;position:relative;margin-bottom:36px}
 .home-track{display:flex;gap:18px;animation:marquee 50s linear infinite;width:max-content}
@@ -454,7 +454,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .carousel-meta{font-size:10px;color:rgba(255,255,255,.6);margin-top:3px}
 
 /* ── 8-Icon Grid ── */
-.home-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:720px;margin:24px auto 0}
+.home-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:720px;margin:2vh auto 0}
 @media(max-width:600px){.home-icons{grid-template-columns:repeat(2,1fr)}}
 .home-icon-cell{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer}
 .home-icon-box{width:90px;height:90px;border-radius:var(--r2);border:1px solid var(--bdr);background:#fff;display:flex;align-items:center;justify-content:center;transition:box-shadow .2s,transform .15s;box-shadow:var(--sh-sm);color:var(--t1)}
@@ -466,9 +466,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .hi-w1{animation-delay:0s}.hi-w2{animation-delay:.3s}.hi-w3{animation-delay:.15s}.hi-w4{animation-delay:.45s}
 
 /* ── Home Search Bar ── */
-.home-search-wrap{max-width:560px;margin:120px auto 0;position:relative}
-@media(max-width:768px){.home-search-wrap{margin-top:60px}}
-@media(max-width:600px){.home-search-wrap{margin-top:40px;max-width:90%}}
+.home-search-wrap{max-width:560px;margin:6vh auto 0;position:relative}
+@media(max-width:600px){.home-search-wrap{max-width:90%}}
 .home-search-box{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid rgba(0,0,0,.25);border-radius:999px;padding:6px 18px;box-shadow:var(--sh-sm);transition:box-shadow .3s,border-color .3s}
 .home-search-box.active{box-shadow:var(--sh-lg);border-color:rgba(0,0,0,.35)}
 .home-search-box svg{flex-shrink:0;color:var(--t3)}
@@ -5110,9 +5109,9 @@ function renderEvalRows(){
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">
       <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
       <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
-      <td style="padding:10px 12px;font-size:13px">${r.team}</td>
-      <td style="padding:10px 12px;font-size:13px">${r.product}</td>
-      <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
+      <td style="padding:10px 12px">${r.team}</td>
+      <td style="padding:10px 12px">${r.product}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600">${r.name}</td>
       <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
       <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
       <td style="padding:10px 12px;text-align:center;cursor:pointer" onclick="event.stopPropagation();showTrendChart(${r.userId},'${r.name}')">${trendIcon}</td>
@@ -5189,9 +5188,9 @@ function renderVoiceRows(){
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="openVoiceResult(${r.voiceId})">
       <td style="padding:10px 12px;font-size:12px;color:var(--t2)">${r.date}</td>
       <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
-      <td style="padding:10px 12px;font-size:13px">${r.team}</td>
-      <td style="padding:10px 12px;font-size:13px">${r.product}</td>
-      <td style="padding:10px 12px;font-size:13px;font-weight:700">${r.name}</td>
+      <td style="padding:10px 12px">${r.team}</td>
+      <td style="padding:10px 12px">${r.product}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600">${r.name}</td>
       <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:800;background:${scoreBg};color:${scoreColor}">${Number(r.score).toFixed(0)}</span></td>
       <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${getCareer(r.hireDate)}</td>
       <td style="padding:10px 12px;font-size:12px;font-weight:600;color:${tc}">${r.tone}</td>
