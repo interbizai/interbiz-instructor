@@ -116,6 +116,9 @@ textarea{resize:vertical;min-height:80px}
 .btn:active{transform:scale(.97)}
 
 /* ── Section label ── */
+.page-title{display:flex;align-items:center;gap:10px;padding:24px 0 16px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.06)}
+.page-title-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-title h2{font-size:20px;font-weight:800;color:var(--t1);margin:0}
 .sec-lbl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;margin-bottom:10px}
 .sec-lbl::before{content:'';width:4px;height:20px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
 .sec-lbl-sm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;margin-bottom:8px;color:var(--t1)}
@@ -402,16 +405,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .eval-table-scroll{overflow:auto;max-height:50vh}
 .eval-table-scroll thead{position:sticky;top:0;z-index:2}
 .eval-table-scroll thead tr{background:#f8f9fa;border-bottom:2px solid var(--bdr)}
-.eval-table-wrap table{table-layout:fixed;width:100%}
-.eval-table-wrap th:nth-child(1),.eval-table-wrap td:nth-child(1){width:12%}
-.eval-table-wrap th:nth-child(2),.eval-table-wrap td:nth-child(2){width:11%}
-.eval-table-wrap th:nth-child(3),.eval-table-wrap td:nth-child(3){width:10%}
-.eval-table-wrap th:nth-child(4),.eval-table-wrap td:nth-child(4){width:12%}
-.eval-table-wrap th:nth-child(5),.eval-table-wrap td:nth-child(5){width:10%}
-.eval-table-wrap th:nth-child(6),.eval-table-wrap td:nth-child(6){width:9%}
-.eval-table-wrap th:nth-child(7),.eval-table-wrap td:nth-child(7){width:11%}
-.eval-table-wrap th:nth-child(8),.eval-table-wrap td:nth-child(8){width:12%}
-.eval-table-wrap th:nth-child(9),.eval-table-wrap td:nth-child(9){width:13%}
+.eval-table-wrap table{width:100%}
+.eval-table-wrap td,.eval-table-wrap th{white-space:nowrap}
 
 /* ── Modal ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.28);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:500}
@@ -586,7 +581,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .g-sidebar.collapsed .sb-logout span{display:none}
 .g-sidebar.collapsed .sb-logout{justify-content:center}
 /* Main content offset */
-.g-main{margin-left:200px;transition:margin-left .25s ease;min-height:100vh;background:#fff}
+.g-main{margin-left:200px;transition:margin-left .25s ease;min-height:100vh;background:#fff;overflow-x:hidden}
 .g-sidebar.collapsed~.g-main{margin-left:68px}
 /* Mobile */
 .sb-hamburger{display:none;position:fixed;top:16px;left:16px;z-index:260;width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,0,0,.1);background:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-sm)}
@@ -965,6 +960,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
+  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#0078C8" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2>평가결과</h2></div>
   <!-- Filter bar -->
   <div class="filter-bar" style="animation:fadeUp .35s ease both">
     <div class="f-item"><label class="f-lbl">기간</label>
@@ -1060,13 +1056,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- 랭킹 -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px" id="ranking-area"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;overflow:hidden" id="ranking-area"></div>
 
   <!-- 평가 내역 목록 (영상) -->
   <div class="sec-lbl-sm">평가 내역 목록 (영상)</div>
   <div class="eval-table-wrap">
     <div class="eval-table-scroll">
-    <table class="tbl" style="white-space:nowrap">
+    <table class="tbl">
       <thead>
         <tr>
           <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('date')">평가일시 ↕</th>
@@ -1088,7 +1084,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="sec-lbl-sm">평가 내역 목록 (음성)</div>
   <div class="eval-table-wrap">
     <div class="eval-table-scroll" style="max-height:none">
-    <table class="tbl" style="white-space:nowrap">
+    <table class="tbl">
       <thead>
         <tr>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('date')">평가일시 ↕</th>
@@ -1141,7 +1137,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="sec-lbl">영상등록 & AI 분석</div>
+  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><h2>영상등록 & AI 분석</h2></div>
 
   <!-- Step 1: 영상 입력 -->
   <div id="an-step1">
@@ -1580,7 +1576,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="sec-lbl">음성 분석 & AI 진단</div>
+  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div><h2>음성 분석 & AI 진단</h2></div>
 
   <!-- Step 1: 설정 -->
   <div id="va-step1">
@@ -1729,7 +1725,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="sec-lbl" style="margin-bottom:20px">영상 스트리밍 & AI 평가</div>
+  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><h2>영상 스트리밍 & AI 평가</h2></div>
 
   <!-- 대기 화면 (1번 사진 형태) -->
   <div id="stream-step0">
