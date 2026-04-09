@@ -727,6 +727,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .mobile-nav-item.active{color:var(--blue)}
 .mobile-nav-item svg{width:22px;height:22px}
 .mobile-nav-item{min-width:44px;min-height:44px;justify-content:center}
+/* Mobile AI dropdown */
+.mob-ai-dropdown{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;box-shadow:var(--sh-lg);padding:6px;min-width:140px;z-index:310}
+.mob-ai-dropdown.show{display:block}
+.mob-ai-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;transition:background .15s;white-space:nowrap}
+.mob-ai-item:hover{background:rgba(0,120,200,.06);color:var(--blue)}
 @media(max-width:600px){
   .mobile-nav{display:block}
   body{padding-bottom:60px}
@@ -2014,9 +2019,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#f59e0b" stroke="#f59e0b"/></svg>
       인터PICK
     </div>
-    <div class="mobile-nav-item" onclick="openAnalysis()">
+    <div class="mobile-nav-item" style="position:relative" onclick="toggleMobileAI(event)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       AI 코칭
+      <div class="mob-ai-dropdown" id="mob-ai-dropdown">
+        <div class="mob-ai-item" onclick="event.stopPropagation();openAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 영상</div>
+        <div class="mob-ai-item" onclick="event.stopPropagation();openStreaming();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 스트리밍</div>
+        <div class="mob-ai-item" onclick="event.stopPropagation();openVoiceAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg> 보이스</div>
+      </div>
     </div>
     <div class="mobile-nav-item" onclick="showPage('page-edu')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
@@ -2654,6 +2664,14 @@ function topSearchHandler(q){
   }
   res.innerHTML=html;
 }
+// Mobile AI dropdown
+function toggleMobileAI(e){
+  e.stopPropagation();
+  const dd=document.getElementById('mob-ai-dropdown');
+  dd.classList.toggle('show');
+}
+function closeMobAI(){document.getElementById('mob-ai-dropdown')?.classList.remove('show');}
+document.addEventListener('click',function(){closeMobAI();});
 // 호환용 빈 함수
 function showGlobalSidebar(){}
 function hideGlobalSidebar(){}
