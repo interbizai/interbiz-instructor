@@ -6527,6 +6527,7 @@ window.addEventListener('load',async ()=>{
     if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
       try{
         if(lastPage==='page-dashboard'){showPage('page-dashboard');initDashboard();}
+        else if(lastPage==='page-admin'){renderAdmin();showPage('page-admin');}
         else showPage(lastPage);
       }catch(e){showPage('page-home');}
     } else {showPage('page-pick');}
