@@ -1948,7 +1948,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- 관리 -->
   <div class="tab-pane active" id="tab-관리">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <span style="font-size:12px;font-weight:700;color:var(--t3)">평균 점수 기간:</span>
+      <span style="font-size:12px;font-weight:700;color:var(--t3)">가입 시기:</span>
       <select class="form-input" id="admin-avg-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px">
         <option value="all">전체</option>
         <option value="1">최근 1개월</option>
@@ -2302,7 +2302,8 @@ async function dbGetUsers(){
     scores:r.scores||{}, maxes:r.maxes||{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
     habits:r.habits||[], habitCounts:r.habit_counts||[], engagementGaps:r.engagement_gaps||[],
     decibel:r.decibel||0, tempo:r.tempo||0, studentCount:r.student_count||0,
-    registered:r.created_at?r.created_at.split('T')[0]:''
+    registered:r.created_at?r.created_at.split('T')[0]:'',
+    isSubAdmin:r.is_sub_admin||false
   }));
 }
 // DB에서 모든 영상 가져오기
@@ -2348,6 +2349,7 @@ async function dbUpdateUser(id,fields){
   if('score' in fields) map.score=fields.score;
   if('grade' in fields) map.grade=fields.grade;
   if('scores' in fields) map.scores=fields.scores;
+  if('isSubAdmin' in fields) map.is_sub_admin=fields.isSubAdmin;
   const {error}=await sb.from('users').update(map).eq('id',id);
   if(error) console.error('dbUpdateUser:',error);
 }
@@ -2799,6 +2801,7 @@ async function doLogin(){
   el('li-err').textContent='';
   await loadFromDB();
   CU=D.users.find(x=>x.id===data.id);
+  if(CU?.isSubAdmin) CU.isAdmin=true;
   localStorage.setItem('ib_user',JSON.stringify(CU));
   initHome(); showPage('page-pick');
 }
@@ -6466,7 +6469,7 @@ window.addEventListener('load',async ()=>{
   if(CU){
     await loadFromDB();
     // CU 정보 최신화
-    if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh) CU=fresh; }
+    if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh){CU=fresh; if(CU.isSubAdmin) CU.isAdmin=true;} }
     initHome();
     const lastPage=localStorage.getItem('ib_last_page');
     if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
