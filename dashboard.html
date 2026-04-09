@@ -2971,7 +2971,7 @@ async function deleteLink(id){
 }
 
 function openAdminWithAuth(){
-  if(CU?.isAdmin){ showPage('page-admin'); return; }
+  if(CU?.isAdmin){ renderAdmin(); showPage('page-admin'); return; }
   openAdmin();
 }
 function openAdmin(){ el('admin-pw').value=''; el('admin-err').textContent=''; el('admin-overlay').classList.add('show'); setTimeout(()=>el('admin-pw').focus(),100); }
