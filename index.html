@@ -5165,7 +5165,7 @@ function renderEvalRows(){
       <td style="padding:10px 12px;text-align:center;white-space:nowrap">
         <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">결과</span>
         ${CU?.isAdmin?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'adminDeleteVideo('+r.videoId+')':'alert(&quot;영상이 없는 평가입니다&quot;)'}">삭제</span>`
-        :(!CU?.isAdmin&&CU?.id===r.userId)?`<span style="font-size:11px;color:var(--orange);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'openDeleteRequest('+r.videoId+',&quot;'+(r.name+' '+r.date).replace(/"/g,'')+'&quot;)':'alert(&quot;삭제 요청할 영상이 없습니다&quot;)'}">삭제요청</span>`:''}
+:''}
       </td>
     </tr>`;
   }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t3)">평가 내역이 없습니다</td></tr>';
@@ -5245,7 +5245,7 @@ function renderVoiceRows(){
       <td style="padding:10px 12px;text-align:center;white-space:nowrap">
         <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();openVoiceResult(${r.voiceId})">결과</span>
         ${CU?.isAdmin?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();adminDeleteVoice(${r.voiceId})">삭제</span>`
-        :(!CU?.isAdmin&&CU?.id===r.userId)?`<span style="font-size:11px;color:var(--orange);font-weight:700;cursor:pointer" onclick="event.stopPropagation();alert('음성 평가 삭제 요청은 관리자에게 문의하세요')">삭제요청</span>`:''}
+:''}
       </td>
     </tr>`;
   }).join('')||'<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--t3)">음성 평가 내역이 없습니다</td></tr>';
