@@ -6,7 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>interbiz — 현장강사 역량 평가</title>
 <link rel="icon" type="image/x-icon" href="assets/logo/파비콘/1-Photoroom.ico">
-<link rel="icon" href="assets/logo/인터비즈로고.png" type="image/png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/파비콘/1-Photoroom.ico">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="인터비즈">
+<meta property="og:title" content="interbiz — 현장강사 역량 평가">
+<meta property="og:description" content="현장강사 역량 평가 및 AI 코칭 플랫폼">
+<meta property="og:image" content="https://interbiz-instructor.vercel.app/assets/logo/logo_1.png">
+<meta property="og:url" content="https://interbiz-instructor.vercel.app">
+<meta property="og:type" content="website">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -151,8 +159,10 @@ main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 .f-item{display:flex;flex-direction:column;gap:6px;position:relative}
 .f-lbl{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .filter-bar select{padding:10px 14px}
-.filter-bar select[multiple]{height:34px;overflow:hidden}
-.filter-bar select[multiple]:focus{height:auto;max-height:120px;overflow-y:auto;position:absolute;z-index:10;background:#fff;box-shadow:var(--sh-lg)}
+.filter-bar select[multiple]{height:38px;overflow:hidden;cursor:pointer}
+.filter-bar select[multiple]:focus{height:auto;max-height:150px;overflow-y:auto;position:absolute;z-index:10;background:#fff;box-shadow:var(--sh-lg);border-color:var(--blue)}
+.filter-bar select[multiple] option{padding:6px 10px;border-radius:4px;margin:1px 0}
+.filter-bar select[multiple] option:checked{background:rgba(0,120,200,.1);color:var(--blue);font-weight:700}
 
 /* ── AI Summary strip ── */
 .ai-strip{border-radius:var(--r2);padding:12px 18px;margin-bottom:14px;border:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .4s ease both}
@@ -1076,17 +1086,17 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">소속</label>
-      <select id="f-ch" multiple onchange="renderDashboard()" style="height:34px">
+      <select id="f-ch" multiple onchange="renderDashboard()" size="1">
         <option value="">전체</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">팀</label>
-      <select id="f-team" multiple onchange="renderDashboard()" style="height:34px">
+      <select id="f-team" multiple onchange="renderDashboard()" size="1">
         <option value="">전체</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">가전</label>
-      <select id="f-product" multiple onchange="renderDashboard()" style="height:34px">
+      <select id="f-product" multiple onchange="renderDashboard()" size="1">
         <option value="">전체</option>
       </select>
     </div>
@@ -1101,7 +1111,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">이름</label>
-      <select id="f-name" multiple onchange="renderDashboard()" style="height:34px"><option value="">전체</option></select>
+      <select id="f-name" multiple onchange="renderDashboard()" size="1"><option value="">전체</option></select>
     </div>
     <div class="f-item" style="justify-content:flex-end">
       <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px;margin-top:18px" onclick="resetFilters()">↺ 초기화</button>
@@ -2026,7 +2036,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 <!-- ── Admin Password Modal ── -->
 <!-- Mobile Bottom Nav -->
-<div class="mobile-nav">
+<div class="mobile-nav" id="mobile-nav" style="display:none">
   <div class="mobile-nav-inner">
     <div class="mobile-nav-item" onclick="showPage('page-pick')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#f59e0b" stroke="#f59e0b"/></svg>
@@ -2526,11 +2536,14 @@ function showPage(id){
   // 상단 네비 표시/숨김
   const noNav=['page-login','page-register'];
   const tn=document.getElementById('topnav');
+  const mn=document.getElementById('mobile-nav');
   if(noNav.includes(id)){
     if(tn) tn.classList.remove('show');
+    if(mn) mn.style.display='none';
     hideRightPanel();
   } else if(CU){
     if(tn) tn.classList.add('show');
+    if(mn) mn.style.display='';
     updateTopNav(id);
     if(id==='page-home') hideRightPanel();
     else showRightPanel();
@@ -5257,13 +5270,12 @@ function getFiltered(){
     productUserIds=new Set(D.videos.filter(vid=>products.includes((vid.videoType||vid.video_type||'').trim())).map(vid=>vid.userId));
   }
 
-  // 기간 필터: 해당 기간에 영상이 있는 강사만
+  // 기간 필터: 해당 기간에 영상 또는 음성 평가가 있는 강사만
   let dateUserIds=null;
   if(dateFrom){
-    dateUserIds=new Set(D.videos.filter(vid=>{
-      const vd=new Date(vid.date);
-      return vd>=dateFrom;
-    }).map(vid=>vid.userId));
+    const vidIds=D.videos.filter(vid=>new Date(vid.date)>=dateFrom).map(vid=>vid.userId);
+    const voiceIds=(D.voiceEvals||[]).filter(ve=>new Date(ve.eval_date||ve.created_at)>=dateFrom).map(ve=>ve.user_id);
+    dateUserIds=new Set([...vidIds,...voiceIds]);
   }
 
   return D.users.filter(u=>{
