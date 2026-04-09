@@ -2584,13 +2584,15 @@ function updateTopNav(activePage){
   if(ddCnt) ddCnt.textContent=cnt?cnt+'건':'';
   // 프로필 업데이트
   const u=D.users?.find(x=>x.id===CU?.id);
-  const photo=CU?.isAdmin?'assets/logo/3.png':(u?.photo||CU?.photo||'');
+  const isRA2=CU?.isAdmin&&!CU?.isSubAdmin;
+  const photo=isRA2?'assets/logo/3.png':(u?.photo||CU?.photo||'');
   const pEl=document.getElementById('tn-profile-photo');
   if(pEl){pEl.innerHTML=photo?`<img src="${photo}">`:(CU?.name?CU.name[0]:'?');}
   const nEl=document.getElementById('tn-profile-name');
-  if(nEl) nEl.textContent=CU?.isAdmin?'관리자':(CU?.name||'—');
+  const isRealAdmin=CU?.isAdmin&&!CU?.isSubAdmin;
+  if(nEl) nEl.textContent=isRealAdmin?'관리자':(CU?.name||'—');
   const sEl=document.getElementById('tn-profile-sub');
-  if(sEl) sEl.textContent=CU?.isAdmin?'interbiz':(u?`${u.channel} · ${u.team}`:'—');
+  if(sEl) sEl.textContent=isRealAdmin?'interbiz':(u?`${u.channel} · ${u.team}`:'—');
 }
 // 검색
 function toggleTopSearch(){
@@ -2801,8 +2803,9 @@ function updateHeaderUI(){
   });
   // 드롭다운 이름/소속
   const u=D.users.find(x=>x.id===CU?.id);
-  const userName=CU?.isAdmin?'관리자':(CU?.name||'—');
-  const userSub=CU?.isAdmin?'interbiz':(u?`${u.channel} · ${u.team}`:(CU?.email||'—'));
+  const isRA=CU?.isAdmin&&!CU?.isSubAdmin;
+  const userName=isRA?'관리자':(CU?.name||'—');
+  const userSub=isRA?'interbiz':(u?`${u.channel} · ${u.team}`:(CU?.email||'—'));
   document.querySelectorAll('.hdr-user-name').forEach(e=>e.textContent=userName);
   document.querySelectorAll('.hdr-user-sub').forEach(e=>e.textContent=userSub);
   // 관리자 버튼: 관리자 로그인일 때만 표시
@@ -2886,8 +2889,8 @@ function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.r
 })();
 
 function goMyPage(){
-  if(CU&&CU.isAdmin){ openAdmin(); }
-  else if(CU&&CU.id){ openLecturer(CU.id,'page-home'); }
+  if(CU&&CU.isAdmin&&!CU.isSubAdmin){ openAdmin(); }
+  else if(CU&&CU.id){ openLecturer(CU.id,'page-pick'); }
   else { showPage('page-myprofile'); }
 }
 async function doRegister(){
@@ -6259,9 +6262,9 @@ function renderAdmin(){
       <td style="white-space:nowrap">
         <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
         <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
-        ${isSubAdmin
+        ${CU?.isSubAdmin?'':(isSubAdmin
           ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--orange)" onclick="toggleSubAdmin(${u.id},false)">권한취소</button>`
-          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;color:var(--blue)" onclick="toggleSubAdmin(${u.id},true)">부관리자</button>`}
+          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;color:var(--blue)" onclick="toggleSubAdmin(${u.id},true)">부관리자</button>`)}
       </td>
     </tr>`;
   }).join('');
@@ -6276,6 +6279,7 @@ function renderAdmin(){
   renderStatChart();
 }
 async function toggleSubAdmin(id,grant){
+  if(CU?.isSubAdmin){alert('부관리자 등록/취소는 관리자만 가능합니다.');return;}
   await dbUpdateUser(id,{isSubAdmin:grant});
   const u=D.users.find(x=>x.id===id);
   if(u) u.isSubAdmin=grant;
