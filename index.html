@@ -558,8 +558,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .topnav.show{display:flex}
 /* Left: favicon + logo */
 .tn-left{display:flex;align-items:center;gap:12px;margin-right:32px;flex-shrink:0}
-.tn-favicon{width:32px;height:32px;border-radius:50%;overflow:hidden;cursor:pointer}
+.tn-favicon{width:32px;height:32px;border-radius:50%;overflow:hidden;cursor:pointer;animation:tnJump 2.5s ease infinite}
 .tn-favicon img{width:100%;height:100%;object-fit:contain}
+@keyframes tnJump{0%,100%{transform:translateY(0)}8%{transform:translateY(-8px)}16%{transform:translateY(0)}24%{transform:translateY(-4px)}32%{transform:translateY(0)}}
 /* Icon animations */
 .tn-icon-star{animation:tnTwinkle 2s ease infinite}
 @keyframes tnTwinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.15) rotate(8deg)}}
@@ -596,7 +597,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .tn-search-btn:hover{background:rgba(0,0,0,.04)}
 .tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px;border-radius:10px;transition:background .15s;position:relative}
 .tn-profile:hover{background:rgba(0,0,0,.03)}
-.tn-profile-photo{width:34px;height:34px;border-radius:50%;overflow:hidden;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.tn-profile-photo{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .tn-profile-photo img{width:100%;height:100%;object-fit:cover}
 .tn-profile-info{text-align:right}
 .tn-profile-name{font-size:12px;font-weight:700;color:var(--t1)}
@@ -779,8 +780,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <nav class="topnav" id="topnav">
   <!-- Left: favicon + logo -->
   <div class="tn-left">
-    <div class="tn-favicon" onclick="showPage('page-home')"><img src="assets/logo/파비콘/1-Photoroom.ico" alt=""></div>
-    <img class="tn-logo" src="assets/logo/인터비즈로고.png" alt="interbiz" onclick="showPage('page-home')">
+    <div class="tn-favicon" onclick="showPage('page-pick')"><img src="assets/logo/파비콘/1-Photoroom.ico" alt=""></div>
+    <img class="tn-logo" src="assets/logo/인터비즈로고.png" alt="interbiz" onclick="showPage('page-pick')">
   </div>
   <!-- Center: menu -->
   <div class="tn-menu" id="tn-menu">
@@ -2689,7 +2690,7 @@ function updateHeaderUI(){
 ════════════════════════════════ */
 async function doLogin(){
   const em=v('li-email').trim(), pw=v('li-pw').trim();
-  if(em==='admin' && pw==='7152'){ CU={id:0,name:'관리자',email:'admin',grade:'A',channel:'',isAdmin:true}; localStorage.setItem('ib_user',JSON.stringify(CU)); await loadFromDB(); initHome(); showPage('page-home'); return; }
+  if(em==='admin' && pw==='7152'){ CU={id:0,name:'관리자',email:'admin',grade:'A',channel:'',isAdmin:true}; localStorage.setItem('ib_user',JSON.stringify(CU)); await loadFromDB(); initHome(); showPage('page-pick'); return; }
   // DB에서 확인
   const {data,error}=await sb.from('users').select('*').eq('email',em).eq('pw',pw).single();
   if(error||!data){ el('li-err').textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
@@ -2697,7 +2698,7 @@ async function doLogin(){
   await loadFromDB();
   CU=D.users.find(x=>x.id===data.id);
   localStorage.setItem('ib_user',JSON.stringify(CU));
-  initHome(); showPage('page-home');
+  initHome(); showPage('page-pick');
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
 /* ── Home Search ── */
@@ -2746,7 +2747,7 @@ async function doRegister(){
   await loadFromDB();
   CU=D.users.find(x=>x.id===result.id);
   localStorage.setItem('ib_user',JSON.stringify(CU));
-  initHome(); showPage('page-home');
+  initHome(); showPage('page-pick');
 }
 /* ── PW visibility toggle ── */
 function togglePwVis(inputId,btn){
@@ -6283,7 +6284,7 @@ window.addEventListener('load',async ()=>{
         if(lastPage==='page-dashboard'){showPage('page-dashboard');initDashboard();}
         else showPage(lastPage);
       }catch(e){showPage('page-home');}
-    } else {showPage('page-home');}
+    } else {showPage('page-pick');}
   } else {
     hideGlobalSidebar();
     showPage('page-login');
