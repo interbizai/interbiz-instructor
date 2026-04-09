@@ -134,8 +134,8 @@ textarea{resize:vertical;min-height:80px}
 .btn:active{transform:scale(.97)}
 
 /* ── Section label ── */
-.page-title{display:flex;align-items:center;gap:0;padding:8px 0 16px;margin-bottom:12px}
-.page-title-icon{display:none}
+.page-title{display:flex;align-items:center;gap:8px;padding:8px 0 16px;margin-bottom:12px}
+.page-title-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .page-title h2{font-size:22px;font-weight:900;color:var(--t1);margin:0}
 .sec-lbl{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;margin-bottom:10px}
 .sec-lbl::before{content:'';width:4px;height:20px;border-radius:2px;background:linear-gradient(var(--red),var(--blue))}
@@ -1887,7 +1887,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-pick" class="page">
 <header class="hdr" style="display:none"></header>
 <main>
-  <div class="page-title"><h2>인터 PICK</h2></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2></div>
   <div style="padding:60px 0;text-align:center;color:var(--t3)">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5" style="margin-bottom:12px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     <div style="font-size:16px;font-weight:700">준비 중입니다</div>
@@ -1902,7 +1902,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-edu" class="page">
 <header class="hdr" style="display:none"></header>
 <main>
-  <div class="page-title"><h2>교육컨텐츠</h2></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><h2>교육컨텐츠</h2></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="edu-grid">
     <div>
       <div class="sec-lbl-sm" style="margin-bottom:12px">교육자료</div>
@@ -1930,7 +1930,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="page-title"><h2>관리자</h2></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h2>관리자</h2></div>
   <div class="tab-bar">
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
