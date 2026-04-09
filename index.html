@@ -148,9 +148,11 @@ main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 /* ── Filter bar ── */
 .filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 @media(min-width:900px){.filter-bar{grid-template-columns:repeat(6,1fr) auto}}
-.f-item{display:flex;flex-direction:column;gap:6px}
+.f-item{display:flex;flex-direction:column;gap:6px;position:relative}
 .f-lbl{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .filter-bar select{padding:10px 14px}
+.filter-bar select[multiple]{height:34px;overflow:hidden}
+.filter-bar select[multiple]:focus{height:auto;max-height:120px;overflow-y:auto;position:absolute;z-index:10;background:#fff;box-shadow:var(--sh-lg)}
 
 /* ── AI Summary strip ── */
 .ai-strip{border-radius:var(--r2);padding:12px 18px;margin-bottom:14px;border:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .4s ease both}
@@ -1065,24 +1067,26 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="filter-bar" style="animation:fadeUp .35s ease both">
     <div class="f-item"><label class="f-lbl">기간</label>
       <select id="f-date" onchange="renderDashboard()">
-        <option value="">전체 기간</option>
-        <option value="this-month">이번 달</option>
-        <option value="3month">최근 3개월</option>
-        <option value="this-year">올해</option>
+        <option value="">전체</option>
+        <option value="3m">3개월 미만</option>
+        <option value="1y">1년 미만</option>
+        <option value="1y+">1년 이상</option>
+        <option value="5y+">5년 이상</option>
+        <option value="10y+">10년 이상</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">소속</label>
-      <select id="f-ch" onchange="renderDashboard()">
+      <select id="f-ch" multiple onchange="renderDashboard()" style="height:34px">
         <option value="">전체</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">팀</label>
-      <select id="f-team" onchange="renderDashboard()">
+      <select id="f-team" multiple onchange="renderDashboard()" style="height:34px">
         <option value="">전체</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">가전</label>
-      <select id="f-product" onchange="renderDashboard()">
+      <select id="f-product" multiple onchange="renderDashboard()" style="height:34px">
         <option value="">전체</option>
       </select>
     </div>
@@ -1097,7 +1101,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">이름</label>
-      <select id="f-name" onchange="renderDashboard()"><option value="">전체</option></select>
+      <select id="f-name" multiple onchange="renderDashboard()" style="height:34px"><option value="">전체</option></select>
     </div>
     <div class="f-item" style="justify-content:flex-end">
       <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px;margin-top:18px" onclick="resetFilters()">↺ 초기화</button>
@@ -5234,36 +5238,32 @@ function initDashboard(){
 }
 
 function getFiltered(){
-  const ch=v('f-ch'),team=v('f-team'),tenure=v('f-tenure'),name=v('f-name'),product=v('f-product'),dateFilter=v('f-date');
+  const getMulti=id=>[...document.getElementById(id)?.selectedOptions||[]].map(o=>o.value).filter(v=>v);
+  const chs=getMulti('f-ch'),teams=getMulti('f-team'),names=getMulti('f-name'),products=getMulti('f-product');
+  const tenure=v('f-tenure'),dateFilter=v('f-date');
   const now=new Date();
-
-  // 기간 필터로 영상 날짜 범위 계산
-  let dateFrom=null;
-  if(dateFilter==='this-month'){dateFrom=new Date(now.getFullYear(),now.getMonth(),1);}
-  else if(dateFilter==='3month'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-3);}
-  else if(dateFilter==='this-year'){dateFrom=new Date(now.getFullYear(),0,1);}
 
   // 가전 필터: 해당 가전으로 영상을 등록한 강사만
   let productUserIds=null;
-  if(product){
-    productUserIds=new Set(D.videos.filter(vid=>(vid.videoType||vid.video_type)===product).map(vid=>vid.userId));
-  }
-
-  // 기간 필터: 해당 기간에 영상이 있는 강사만
-  let dateUserIds=null;
-  if(dateFrom){
-    dateUserIds=new Set(D.videos.filter(vid=>{
-      const vd=new Date(vid.date);
-      return vd>=dateFrom;
-    }).map(vid=>vid.userId));
+  if(products.length){
+    productUserIds=new Set(D.videos.filter(vid=>products.includes((vid.videoType||vid.video_type||'').trim())).map(vid=>vid.userId));
   }
 
   return D.users.filter(u=>{
-    if(ch && (u.channel||'').trim()!==ch.trim()) return false;
-    if(team && (u.team||'').trim()!==team.trim()) return false;
-    if(name && (u.name||'').trim()!==name.trim()) return false;
-    if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
-    if(dateFrom && (!dateUserIds || !dateUserIds.has(u.id))) return false;
+    if(chs.length && !chs.includes((u.channel||'').trim())) return false;
+    if(teams.length && !teams.includes((u.team||'').trim())) return false;
+    if(names.length && !names.includes((u.name||'').trim())) return false;
+    if(products.length && (!productUserIds || !productUserIds.has(u.id))) return false;
+    if(dateFilter){
+      if(!u.hireDate) return false;
+      const hd2=new Date(u.hireDate);
+      const dm=(now.getFullYear()-hd2.getFullYear())*12+(now.getMonth()-hd2.getMonth());
+      if(dateFilter==='3m' && dm>=3) return false;
+      if(dateFilter==='1y' && dm>=12) return false;
+      if(dateFilter==='1y+' && dm<12) return false;
+      if(dateFilter==='5y+' && dm<60) return false;
+      if(dateFilter==='10y+' && dm<120) return false;
+    }
     if(tenure){
       if(!u.hireDate) return false;
       const hire=new Date(u.hireDate);
