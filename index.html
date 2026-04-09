@@ -1959,7 +1959,16 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
     <div class="acc-wrap neu" style="overflow:auto">
       <table class="tbl" id="admin-user-tbl">
-        <thead><tr><th>이름</th><th>이메일</th><th>번호</th><th>소속</th><th>팀</th><th>생년</th><th>입사</th><th>권한</th><th>관리</th></tr></thead>
+        <thead><tr>
+          <th style="cursor:pointer" onclick="sortAdminTable('name')">이름 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('email')">이메일 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('phone')">번호 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('channel')">소속 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('team')">팀 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('birthYear')">생년 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('hireDate')">입사 ↕</th>
+          <th>권한</th><th>관리</th>
+        </tr></thead>
         <tbody id="admin-user-tbody"></tbody>
       </table>
     </div>
@@ -6265,9 +6274,20 @@ async function openRegisterVideo(userId){
 /* ════════════════════════════════
    ADMIN PANEL
 ════════════════════════════════ */
+let adminSortKey='name',adminSortAsc=true;
+function sortAdminTable(key){
+  if(adminSortKey===key) adminSortAsc=!adminSortAsc;
+  else {adminSortKey=key;adminSortAsc=true;}
+  renderAdmin();
+}
 function renderAdmin(){
-  // User table
-  el('admin-user-tbody').innerHTML=D.users.map(u=>{
+  // User table (정렬)
+  const sortedUsers=[...D.users].sort((a,b)=>{
+    let va=(a[adminSortKey]||'').toString(), vb=(b[adminSortKey]||'').toString();
+    if(adminSortKey==='birthYear'){va=parseInt(va)||0;vb=parseInt(vb)||0;return adminSortAsc?va-vb:vb-va;}
+    return adminSortAsc?va.localeCompare(vb):vb.localeCompare(va);
+  });
+  el('admin-user-tbody').innerHTML=sortedUsers.map(u=>{
     const isSubAdmin=u.isSubAdmin;
     return `<tr>
       <td><strong>${u.name}</strong></td>
