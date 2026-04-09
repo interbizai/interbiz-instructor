@@ -1598,6 +1598,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
     <div style="display:flex;gap:10px" id="va-action-btns">
       <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
+      <button class="btn btn-ghost" style="color:var(--green);border-color:var(--green)" onclick="downloadVoiceExcel()">엑셀 다운로드</button>
       <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none';var pb=el('va-pdf-btn');if(pb)pb.style.display='none'">← 다시 녹음</button>
       <span id="va-delete-area"></span>
     </div>
@@ -4684,6 +4685,43 @@ async function autoSaveVoice(resultJson,count,tone){
     await sb.from('voice_evals').insert(insertData);
     await loadFromDB();
   }catch(e){console.error('auto voice save error:',e);}
+}
+
+function downloadVoiceExcel(){
+  const ts=window._vaTimestamps||[];
+  if(!ts.length){alert('분석 데이터가 없습니다');return;}
+  const title=v('va-title')||'음성분석';
+  const date=new Date().toISOString().split('T')[0];
+  // CSV 생성 (엑셀 호환 UTF-8 BOM)
+  let csv='\uFEFF';
+  csv+='음성 분석 시나리오 리포트\n';
+  csv+=`제목,${title}\n`;
+  csv+=`분석일,${date}\n`;
+  csv+=`강사,${CU?.name||'—'}\n\n`;
+  csv+='구분,평가 항목,점수,시점,유형,분석 피드백,솔루션\n';
+  ts.forEach(t=>{
+    const cat=(t.category||'—').replace(/,/g,' ');
+    const item=(t.item||'—').replace(/,/g,' ');
+    const score=t.score||0;
+    const maxS=t.maxScore||5;
+    const time=(t.t||'—').replace(/,/g,' ');
+    const type=t.type==='good'?'잘함':t.type==='bad'?'취약':'Tip';
+    const text=(t.text||'').replace(/,/g,' ').replace(/\n/g,' ');
+    const sol=(t.solution||'').replace(/,/g,' ').replace(/\n/g,' ');
+    csv+=`${cat},${item},${score}/${maxS},${time},${type},${text},${sol}\n`;
+  });
+  // 종합 정보 추가
+  const scoreEl=el('va-ai-result')?.querySelector('div[style*="font-size:36px"]');
+  const overallScore=scoreEl?.textContent||'—';
+  csv+=`\n종합 점수,${overallScore}\n`;
+  // 다운로드
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${title}_시나리오_${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function saveVoiceAnalysis(){
