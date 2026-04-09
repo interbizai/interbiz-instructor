@@ -2050,8 +2050,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
+  <div class="page-title" style="gap:10px"><img src="assets/logo/파비콘/1-Photoroom.ico" style="width:28px;height:28px;border-radius:50%"><h2>관리자</h2></div>
   <div class="tab-bar">
-    <button class="tab-btn" onclick="switchTab('평가결과',this);setTimeout(initDashboard,50)">평가결과</button>
+    <button class="tab-btn" onclick="showPage('page-dashboard');setTimeout(initDashboard,50)">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
     <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
@@ -2934,34 +2935,54 @@ function renderEduPage(){
   if(!clArea||!lkArea) return;
   // 교육자료 (체크리스트)
   const isAdmin=CU?.isAdmin;
-  let clHtml=isAdmin?`<div style="margin-bottom:12px">
+  let clHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <input type="date" id="edu-cl-date" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+    </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-      <input type="text" id="edu-cl-name" placeholder="자료명" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <select id="edu-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
+        <option value="체크리스트">체크리스트</option><option value="평가안">평가안</option><option value="교안">교안</option><option value="기타">기타</option>
+      </select>
       <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="document.getElementById('edu-cl-fname').textContent=this.files[0]?.name||''">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-cl-file').click()">파일 선택</button>
       <span id="edu-cl-fname" style="font-size:10px;color:var(--t3)"></span>
     </div>
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
-  clHtml+=(D.checklists||[]).map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:8px">
-    <div style="flex:1"><div style="font-size:13px;font-weight:700">${c.name}</div><div style="font-size:10px;color:var(--t3)">${c.file_name||''}</div></div>
+  clHtml+=(D.checklists||[]).map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:8px">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;font-weight:700">${c.name}</span><span style="font-size:9px;padding:2px 6px;border-radius:10px;background:rgba(0,120,200,.08);color:var(--blue);font-weight:600">${c.category||'체크리스트'}</span></div>
+      <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
+    </div>
     <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px">다운로드</a>
     ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
   </div>`).join('')||'<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
   clArea.innerHTML=clHtml;
-  // 교육링크
-  let lkHtml=isAdmin?`<div style="margin-bottom:12px">
+  // 교육링크 (카드형 3개 가로)
+  const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
+  let lkHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
       <input type="text" id="edu-lk-url" placeholder="URL" style="flex:2;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
     </div>
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="addEduLink()">등록</button>
   </div>`:'';
-  lkHtml+=(D.learningLinks||[]).map(lk=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="window.open('${lk.url}','_blank')">
-    <div style="width:40px;height:40px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
-    <div style="flex:1"><div style="font-size:13px;font-weight:700">${lk.name}</div><div style="font-size:10px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.url}</div></div>
-    ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="event.stopPropagation();deleteLink(${lk.id})">삭제</button>`:''}
-  </div>`).join('')||'<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육링크가 없습니다</div>';
+  lkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+  lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
+    const bg=linkColors[i%linkColors.length];
+    return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      ${isAdmin?`<button style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})">×</button>`:''}
+      <div style="height:90px;background:${bg};display:flex;align-items:center;justify-content:center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </div>
+      <div style="padding:10px 12px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${lk.name}</div>
+        <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${lk.url}</div>
+      </div>
+    </div>`;
+  }).join('')||'<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육링크가 없습니다</div>';
+  lkHtml+='</div>';
   lkArea.innerHTML=lkHtml;
 }
 async function uploadEduChecklist(){
@@ -2972,7 +2993,9 @@ async function uploadEduChecklist(){
   const{error:ue}=await sb.storage.from('files').upload(path,file);
   if(ue){alert('업로드 실패: '+ue.message);return;}
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:'체크리스트',month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
+  const cat=document.getElementById('edu-cl-cat')?.value||'체크리스트';
+  const dt=document.getElementById('edu-cl-date')?.value||new Date().toISOString().split('T')[0];
+  await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
   await loadFromDB();renderEduPage();alert('등록 완료');
 }
 async function addEduLink(){
