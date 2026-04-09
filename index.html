@@ -1506,6 +1506,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <span style="font-size:16px;font-weight:900;color:var(--t1)" id="va-db-live">0 <span style="font-size:10px;color:var(--t3)">dB</span></span>
           </div>
         </div>
+        <!-- 실시간 텍스트 변환 -->
+        <div id="va-stt-area" style="display:none;border:1px solid rgba(0,0,0,.1);border-radius:var(--r1);padding:12px;margin-bottom:12px;max-height:200px;overflow-y:auto;background:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;color:var(--t3)">실시간 텍스트 변환</span>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--green);border-color:var(--green)" onclick="downloadSTTExcel()">엑셀 다운로드</button>
+          </div>
+          <div id="va-stt-text" style="font-size:13px;color:var(--t1);line-height:1.8;white-space:pre-wrap"></div>
+        </div>
         <!-- 또는 파일 업로드 -->
         <div style="text-align:center;font-size:11px;color:var(--t3);margin-bottom:10px">또는</div>
         <div class="upload-zone" onclick="document.getElementById('va-file').click()" style="padding:16px">
@@ -3791,6 +3799,7 @@ async function saveAnalysisVideo(){
    VOICE ANALYSIS PAGE
 ════════════════════════════════ */
 let vaStream=null,vaRecorder=null,vaChunks=[],vaTimerID=null,vaSec=0,vaAudioCtx=null,vaAnalyser=null,vaAnimId=null;
+let vaRecognition=null,vaSTTText='',vaSTTLines=[];
 
 /* ════════════════════════════════
    LEARNING LINKS
@@ -4219,16 +4228,50 @@ function toggleVoiceRec(){
       vaAnalyser=vaAudioCtx.createAnalyser();vaAnalyser.fftSize=256;vaAnalyser.smoothingTimeConstant=0.75;
       src.connect(vaAnalyser);
       drawVaWave();
+      // Speech-to-Text (Web Speech API)
+      try{
+        const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+        if(SR){
+          vaRecognition=new SR();
+          vaRecognition.lang='ko-KR';
+          vaRecognition.continuous=true;
+          vaRecognition.interimResults=true;
+          vaSTTText='';vaSTTLines=[];
+          el('va-stt-area').style.display='block';
+          el('va-stt-text').textContent='음성 인식 대기 중...';
+          vaRecognition.onresult=function(e){
+            let interim='',final='';
+            for(let i=e.resultIndex;i<e.results.length;i++){
+              if(e.results[i].isFinal){
+                const txt=e.results[i][0].transcript.trim();
+                if(txt){
+                  const time=String(Math.floor(vaSec/60)).padStart(2,'0')+':'+String(vaSec%60).padStart(2,'0');
+                  vaSTTLines.push({time,text:txt});
+                  final+=txt+' ';
+                }
+              } else {interim+=e.results[i][0].transcript;}
+            }
+            if(final) vaSTTText+=final;
+            el('va-stt-text').textContent=(vaSTTText||'')+interim;
+            el('va-stt-area').scrollTop=el('va-stt-area').scrollHeight;
+          };
+          vaRecognition.onerror=function(e){console.log('STT error:',e.error);};
+          vaRecognition.onend=function(){if(vaRecorder&&vaRecorder.state==='recording')try{vaRecognition.start();}catch(e){}};
+          vaRecognition.start();
+        }
+      }catch(e){console.log('Speech API not supported');}
     }).catch(err=>alert('마이크 권한이 필요합니다: '+err.message));
   } else {
     vaRecorder.stop();
     if(vaStream){vaStream.getTracks().forEach(t=>t.stop());vaStream=null;}
+    if(vaRecognition){try{vaRecognition.stop();}catch(e){}vaRecognition=null;}
     btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg> 다시 녹음';
     btn.style.background='';btn.style.color='';
     el('va-status').textContent='녹음 완료'; el('va-status').className='stream-status ss-done';
     clearInterval(vaTimerID);
     if(vaAnimId){cancelAnimationFrame(vaAnimId);vaAnimId=null;}
     if(vaAudioCtx){vaAudioCtx.close();vaAudioCtx=null;vaAnalyser=null;}
+    if(vaSTTText) el('va-stt-text').textContent=vaSTTText;
   }
 }
 
@@ -4685,6 +4728,31 @@ async function autoSaveVoice(resultJson,count,tone){
     await sb.from('voice_evals').insert(insertData);
     await loadFromDB();
   }catch(e){console.error('auto voice save error:',e);}
+}
+
+function downloadSTTExcel(){
+  if(!vaSTTLines.length&&!vaSTTText){alert('텍스트 변환 데이터가 없습니다');return;}
+  const title=v('va-title')||'음성분석';
+  const date=new Date().toISOString().split('T')[0];
+  let csv='\uFEFF';
+  csv+='음성 텍스트 변환 (시나리오)\n';
+  csv+=`제목,${title}\n`;
+  csv+=`강사,${CU?.name||'—'}\n`;
+  csv+=`날짜,${date}\n\n`;
+  csv+='시간,내용\n';
+  if(vaSTTLines.length){
+    vaSTTLines.forEach(l=>{csv+=`${l.time},"${l.text.replace(/"/g,'""')}"\n`;});
+  } else {
+    csv+=`00:00,"${vaSTTText.replace(/"/g,'""')}"\n`;
+  }
+  csv+=`\n전체 텍스트\n"${vaSTTText.replace(/"/g,'""')}"\n`;
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${title}_시나리오_${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function downloadVoiceExcel(){
