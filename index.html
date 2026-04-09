@@ -5267,7 +5267,7 @@ function getFiltered(){
     if(tenure){
       if(!u.hireDate) return false;
       const hire=new Date(u.hireDate);
-      const months=Math.round((now-hire)/(1000*60*60*24*30));
+      const months=(now.getFullYear()-hire.getFullYear())*12+(now.getMonth()-hire.getMonth());
       if(tenure==='3m' && months>=3) return false;
       if(tenure==='1y' && months>=12) return false;
       if(tenure==='1y+' && months<12) return false;
@@ -5973,8 +5973,10 @@ function renderCompareResults(myId){
     if(ch&&u.channel!==ch) return false;
     if(team&&u.team!==team) return false;
     if(name&&u.name!==name) return false;
-    if(tenure&&u.hireDate){
-      const m=Math.round((now-new Date(u.hireDate))/(1000*60*60*24*30));
+    if(tenure){
+      if(!u.hireDate) return false;
+      const hd=new Date(u.hireDate);
+      const m=(now.getFullYear()-hd.getFullYear())*12+(now.getMonth()-hd.getMonth());
       if(tenure==='3m'&&m>=3) return false;
       if(tenure==='1y'&&m>=12) return false;
       if(tenure==='1y+'&&m<12) return false;
