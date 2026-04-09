@@ -87,6 +87,20 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(0,120,200,.1)}
 .neu-btn:active{box-shadow:inset 0 1px 3px rgba(0,0,0,.1);transform:scale(.98)}
 input,select,textarea{background:#fff;border:1px solid #bbb;outline:none;box-shadow:none;border-radius:var(--r1);padding:10px 14px;font-size:14px;color:var(--t1);width:100%;transition:border-color .2s;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:var(--t1)}
+/* Date picker styling */
+input[type="date"]{appearance:none;-webkit-appearance:none;position:relative;cursor:pointer}
+input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;transition:opacity .2s}
+input[type="date"]:hover::-webkit-calendar-picker-indicator{opacity:1}
+::-webkit-datetime-edit{font-family:inherit;font-size:13px;color:var(--t1)}
+::-webkit-datetime-edit-fields-wrapper{padding:0}
+/* Calendar page styling */
+.cal-day{min-height:100px;border-bottom:1px solid rgba(0,0,0,.06);border-right:1px solid rgba(0,0,0,.03);padding:6px;cursor:pointer;transition:background .15s;border-radius:4px}
+.cal-day:hover{background:rgba(0,120,200,.03)}
+.cal-day-num{font-size:13px;font-weight:600;color:var(--t2);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:4px}
+.cal-day-num.today{background:var(--blue);color:#fff;font-weight:800}
+.cal-day-num.other{color:#d0d0d0}
+.cal-day-hdr{padding:10px;text-align:center;font-size:12px;font-weight:700;color:var(--t3)}
+.cal-ev-chip{padding:2px 6px;border-radius:6px;font-size:10px;font-weight:600;color:#fff;margin-bottom:3px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:transform .15s;height:18px;line-height:14px}
 textarea{resize:vertical;min-height:80px}
 
 /* ── Header ── */
@@ -1349,8 +1363,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;white-space:nowrap" onclick="openCalEventModal()">+ 일정 추가</button>
   </div>
   <!-- 달력 그리드 -->
-  <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:hidden">
-    <div id="cal-header" style="display:grid;grid-template-columns:repeat(7,1fr);background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.18)"></div>
+  <div style="border:1px solid rgba(0,0,0,.08);border-radius:var(--r2);overflow:hidden;background:#fff">
+    <div id="cal-header" style="display:grid;grid-template-columns:repeat(7,1fr);background:#fafafa;border-bottom:1px solid rgba(0,0,0,.06)"></div>
     <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr)"></div>
   </div>
 </main>
