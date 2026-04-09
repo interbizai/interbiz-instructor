@@ -611,8 +611,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .tn-search-btn:hover{background:rgba(0,0,0,.04)}
 .tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px 10px;margin-bottom:-10px;border-radius:10px;transition:background .15s;position:relative}
 .tn-profile:hover{background:rgba(0,0,0,.03)}
-.tn-profile-photo{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
-.tn-profile-photo img{width:100%;height:100%;object-fit:cover;image-rendering:high-quality}
+.tn-profile-photo{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#1a1a1a;border:2px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.tn-profile-photo img{width:100%;height:100%;object-fit:cover;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 .tn-profile-info{text-align:right}
 .tn-profile-name{font-size:13px;font-weight:700;color:var(--t1)}
 .tn-profile-sub{font-size:11px;color:var(--t3)}
@@ -1933,7 +1933,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h2>관리자</h2></div>
   <div class="tab-bar">
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
-    <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
+    <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
     <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
@@ -1945,8 +1945,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div id="admin-dashboard-area"></div>
   </div>
 
-  <!-- 강사 관리 -->
-  <div class="tab-pane active" id="tab-강사관리">
+  <!-- 관리 -->
+  <div class="tab-pane active" id="tab-관리">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <span style="font-size:12px;font-weight:700;color:var(--t3)">평균 점수 기간:</span>
       <select class="form-input" id="admin-avg-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px">
@@ -1959,7 +1959,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
     <div class="acc-wrap neu" style="overflow:auto">
       <table class="tbl" id="admin-user-tbl">
-        <thead><tr><th>이름</th><th>이메일</th><th>번호</th><th>소속</th><th>팀</th><th>생년</th><th>입사</th><th>최근 점수</th><th>평균 점수</th><th>관리</th></tr></thead>
+        <thead><tr><th>이름</th><th>이메일</th><th>번호</th><th>소속</th><th>팀</th><th>생년</th><th>입사</th><th>권한</th><th>관리</th></tr></thead>
         <tbody id="admin-user-tbody"></tbody>
       </table>
     </div>
@@ -5710,8 +5710,8 @@ function openLecturer(id, fromPage){
           <!-- 1. 역량 평가 점수 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
-              <div class="acc-ico" style="background:rgba(0,120,200,.09)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <div class="acc-ico" style="background:rgba(0,0,0,.05)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               </div>
               <span class="acc-title">역량 평가 점수</span>
               <span style="font-size:18px;font-weight:900;color:var(--blue);margin-right:8px">${u.score}</span>
@@ -5729,8 +5729,8 @@ function openLecturer(id, fromPage){
           <!-- 2. 등록 영상 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
-              <div class="acc-ico" style="background:rgba(226,30,38,.09)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              <div class="acc-ico" style="background:rgba(0,0,0,.05)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
               <span class="acc-title">등록 영상 목록</span>
               <span style="font-size:11px;color:var(--t3);margin-right:8px">${userVids.length}개</span>
@@ -5747,8 +5747,8 @@ function openLecturer(id, fromPage){
           <!-- 2.5 등록 음성 목록 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
-              <div class="acc-ico" style="background:rgba(139,92,246,.09)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              <div class="acc-ico" style="background:rgba(0,0,0,.05)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
               </div>
               <span class="acc-title">등록 음성 목록</span>
               <span style="font-size:11px;color:var(--t3);margin-right:8px" id="voice-count-${u.id}">0개</span>
@@ -5762,8 +5762,8 @@ function openLecturer(id, fromPage){
           <!-- 3. AI 분석 리포트 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
-              <div class="acc-ico" style="background:rgba(16,185,129,.09)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              <div class="acc-ico" style="background:rgba(0,0,0,.05)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
               <span class="acc-title">AI 분석 리포트</span>
               <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -5789,8 +5789,8 @@ function openLecturer(id, fromPage){
           <!-- 5. 솔루션 -->
           <div class="acc-item">
             <button class="acc-trigger" onclick="toggleAcc(this)">
-              <div class="acc-ico" style="background:rgba(139,92,246,.09)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+              <div class="acc-ico" style="background:rgba(0,0,0,.05)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
               </div>
               <span class="acc-title">솔루션 & 권장 시나리오</span>
               <div class="acc-toggle"><svg class="icon-plus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg class="icon-minus" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -6191,8 +6191,7 @@ async function openRegisterVideo(userId){
 function renderAdmin(){
   // User table
   el('admin-user-tbody').innerHTML=D.users.map(u=>{
-    const latestScore=u.score||'—';
-    const avgScore=u.score||'—';
+    const isSubAdmin=u.isSubAdmin;
     return `<tr>
       <td><strong>${u.name}</strong></td>
       <td style="color:var(--t3);font-size:11px">${u.email}</td>
@@ -6201,10 +6200,14 @@ function renderAdmin(){
       <td>${u.team||'—'}</td>
       <td style="color:var(--t3)">${u.birthYear?u.birthYear+'년':'—'}</td>
       <td style="color:var(--t3);font-size:11px">${u.hireDate||'—'}</td>
-      <td style="font-weight:700;color:var(--blue)">${latestScore}</td>
-      <td style="font-weight:700;color:var(--green)">${avgScore}</td>
-      <td><button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
-          <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button></td>
+      <td>${isSubAdmin?'<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(0,120,200,.1);color:var(--blue);font-weight:700">부관리자</span>':''}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
+        <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
+        ${isSubAdmin
+          ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--orange)" onclick="toggleSubAdmin(${u.id},false)">권한취소</button>`
+          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;color:var(--blue)" onclick="toggleSubAdmin(${u.id},true)">부관리자</button>`}
+      </td>
     </tr>`;
   }).join('');
   // PDF select
@@ -6216,6 +6219,13 @@ function renderAdmin(){
   renderRefVideos();
   // Stats chart
   renderStatChart();
+}
+async function toggleSubAdmin(id,grant){
+  await dbUpdateUser(id,{isSubAdmin:grant});
+  const u=D.users.find(x=>x.id===id);
+  if(u) u.isSubAdmin=grant;
+  alert(grant?`${u?.name||''} 님에게 부관리자 권한을 부여했습니다.`:`${u?.name||''} 님의 부관리자 권한을 취소했습니다.`);
+  renderAdmin();
 }
 async function resetPw(id){ await dbUpdateUser(id,{pw:'0000'}); const u=D.users.find(x=>x.id===id); if(u) u.pw='0000'; alert(`${u?.name||''} 님의 비밀번호가 0000으로 초기화되었습니다.`); }
 async function deleteUser(id){ if(!confirm('강사를 삭제하시겠습니까?')) return; await dbDeleteUser(id); D.users=D.users.filter(x=>x.id!==id); renderAdmin(); }
