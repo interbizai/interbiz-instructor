@@ -2417,6 +2417,9 @@ async function loadFromDB(){
   // 삭제 요청
   const {data:dr}=await sb.from('delete_requests').select('*').order('created_at',{ascending:false});
   D.deleteRequests=dr||[];
+  // 추천영상
+  const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
+  D.recVideos=rv||[];
 }
 
 /* ════════════════════════════════
@@ -2713,25 +2716,74 @@ function hideRightPanel(){
 function renderRecommendedVideos(){
   const body=document.getElementById('r-panel-body');
   if(!body) return;
-  // DB 영상 + 유튜브 추천
-  const vids=(D.videos||[]).filter(v=>v.status==='분석완료').slice(0,8);
-  const ytRecs=[
-    {title:'LG 에어컨 세일즈 화법',thumb:'',yt:''},
-    {title:'현장 강의 스킬업 가이드',thumb:'',yt:''},
-    {title:'고객 상담 실전 노하우',thumb:'',yt:''}
-  ];
-  let html='<div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">전체 영상 재생</div>';
-  html+=vids.map(v=>{
-    const u=D.users?.find(x=>x.id===v.userId);
-    const ytId=v.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
-    const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
-    return `<div class="r-vid-card" onclick="${v.id?'openVideo('+v.id+')':''}">
-      <div class="r-vid-thumb">${thumb?`<img src="${thumb}">`:'영상이 등록되지 않았습니다'}<div class="r-vid-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg></div></div>
-      <div class="r-vid-info"><div class="r-vid-title">${v.title||'—'}</div><div class="r-vid-meta">${u?.name||'—'} · ${v.date||''}</div></div>
+  const isAdmin=CU?.isAdmin;
+  let html='';
+  // 관리자: 영상 추가 버튼
+  if(isAdmin){
+    html+=`<div style="margin-bottom:12px">
+      <button class="btn btn-blue" style="width:100%;padding:10px;font-size:12px" onclick="openRecVideoModal()">+ 영상 추가</button>
     </div>`;
-  }).join('');
-  if(!vids.length) html+='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">등록된 영상이 없습니다</div>';
+  }
+  // 추천영상 목록 (DB)
+  const recVids=D.recVideos||[];
+  if(recVids.length){
+    html+=recVids.map(v=>{
+      const ytId=v.url?.match(/[?&]v=([^&]+)/)?.[1]||v.url?.match(/youtu\.be\/([^?]+)/)?.[1]||'';
+      const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:(v.thumbnail||'');
+      const onclick=v.url?`window.open('${v.url}','_blank')`:(v.file_url?`window.open('${v.file_url}','_blank')`:'');
+      return `<div class="r-vid-card" style="position:relative" onclick="${onclick}">
+        ${isAdmin?`<button style="position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteRecVideo(${v.id})">×</button>`:''}
+        <div class="r-vid-thumb">${thumb?`<img src="${thumb}">`:'<span style="font-size:11px">미리보기 없음</span>'}<div class="r-vid-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+        <div class="r-vid-info"><div class="r-vid-title">${v.title||'—'}</div><div class="r-vid-meta">${v.created_by||'관리자'} · ${v.created_at?.slice(0,10)||''}</div></div>
+      </div>`;
+    }).join('');
+  } else {
+    html+='<div style="padding:30px;text-align:center;font-size:12px;color:var(--t3)">등록된 추천 영상이 없습니다</div>';
+  }
   body.innerHTML=html;
+}
+// 추천영상 추가 모달
+function openRecVideoModal(){
+  const html=`<div style="padding:20px">
+    <div style="font-size:16px;font-weight:800;margin-bottom:16px">추천 영상 추가</div>
+    <div style="margin-bottom:10px"><label style="font-size:12px;font-weight:700;color:var(--t3);display:block;margin-bottom:4px">제목</label><input type="text" id="rec-title" class="form-input" placeholder="영상 제목"></div>
+    <div style="margin-bottom:10px"><label style="font-size:12px;font-weight:700;color:var(--t3);display:block;margin-bottom:4px">YouTube/영상 링크</label><input type="text" id="rec-url" class="form-input" placeholder="https://youtube.com/..."></div>
+    <div style="margin-bottom:10px"><label style="font-size:12px;font-weight:700;color:var(--t3);display:block;margin-bottom:4px">또는 파일 업로드</label>
+      <input type="file" id="rec-file" accept="video/*" style="font-size:12px">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-blue" style="flex:1" onclick="saveRecVideo()">등록</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeOverlay('rec-video-overlay')">취소</button>
+    </div>
+  </div>`;
+  let ov=document.getElementById('rec-video-overlay');
+  if(!ov){ov=document.createElement('div');ov.id='rec-video-overlay';ov.className='overlay';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="modal modal-sm" style="width:400px">${html}</div>`;
+  ov.classList.add('show');
+}
+async function saveRecVideo(){
+  const title=document.getElementById('rec-title')?.value?.trim();
+  const url=document.getElementById('rec-url')?.value?.trim();
+  const file=document.getElementById('rec-file')?.files?.[0];
+  if(!title){alert('제목을 입력하세요');return;}
+  let fileUrl='';
+  if(file){
+    const path=`rec_videos/${Date.now()}_${file.name}`;
+    const{error:ue}=await sb.storage.from('files').upload(path,file);
+    if(ue){alert('파일 업로드 실패');return;}
+    const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+    fileUrl=publicUrl;
+  }
+  await sb.from('recommended_videos').insert({title,url:url||null,file_url:fileUrl||null,created_by:CU?.name||'관리자'});
+  await loadFromDB();
+  closeOverlay('rec-video-overlay');
+  renderRecommendedVideos();
+}
+async function deleteRecVideo(id){
+  if(!confirm('이 추천 영상을 삭제하시겠습니까?'))return;
+  await sb.from('recommended_videos').delete().eq('id',id);
+  await loadFromDB();
+  renderRecommendedVideos();
 }
 // 기존 호환용 (빈 함수)
 function injectSidebar(){}
