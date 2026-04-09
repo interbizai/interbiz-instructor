@@ -6279,6 +6279,8 @@ function loadAdminDashboard(){
   // 실제 DOM 노드를 이동 (이벤트 유지)
   area.innerHTML='';
   while(src.firstChild) area.appendChild(src.firstChild);
+  // 관리자 안에서는 평가결과 아이콘 제거
+  area.querySelectorAll('.page-title-icon').forEach(ic=>ic.style.display='none');
   setTimeout(()=>{try{initDashboard();}catch(e){}},50);
 }
 function switchTab(name,btn){
