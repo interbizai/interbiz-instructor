@@ -2770,7 +2770,8 @@ async function saveRecVideo(){
   if(!title){alert('제목을 입력하세요');return;}
   let fileUrl='';
   if(file){
-    const path=`rec_videos/${Date.now()}_${file.name}`;
+    const ext2=file.name.split('.').pop()||'mp4';
+    const path=`rec_videos/${Date.now()}.${ext2}`;
     const{error:ue}=await sb.storage.from('files').upload(path,file);
     if(ue){alert('파일 업로드 실패');return;}
     const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
@@ -3016,7 +3017,8 @@ async function uploadEduChecklist(){
   const name=document.getElementById('edu-cl-name')?.value?.trim();
   const file=document.getElementById('edu-cl-file')?.files?.[0];
   if(!name||!file){alert('자료명과 파일을 입력하세요');return;}
-  const path=`checklists/${Date.now()}_${file.name}`;
+  const ext=file.name.split('.').pop()||'file';
+  const path=`checklists/${Date.now()}.${ext}`;
   const{error:ue}=await sb.storage.from('files').upload(path,file);
   if(ue){alert('업로드 실패: '+ue.message);return;}
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
