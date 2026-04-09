@@ -3031,7 +3031,8 @@ async function addEduLink(){
   const name=document.getElementById('edu-lk-name')?.value?.trim();
   const url=document.getElementById('edu-lk-url')?.value?.trim();
   if(!name||!url){alert('링크명과 URL을 입력하세요');return;}
-  await sb.from('learning_links').insert({name,url,category:'학습'});
+  const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습'});
+  if(lkErr){alert('등록 실패: '+lkErr.message);return;}
   await loadFromDB();renderEduPage();alert('등록 완료');
 }
 async function deleteChecklist(id){
