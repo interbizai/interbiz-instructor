@@ -1067,12 +1067,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="filter-bar" style="animation:fadeUp .35s ease both">
     <div class="f-item"><label class="f-lbl">기간</label>
       <select id="f-date" onchange="renderDashboard()">
-        <option value="">전체</option>
-        <option value="3m">3개월 미만</option>
-        <option value="1y">1년 미만</option>
-        <option value="1y+">1년 이상</option>
-        <option value="5y+">5년 이상</option>
-        <option value="10y+">10년 이상</option>
+        <option value="">전체 기간</option>
+        <option value="1w">최근 1주</option>
+        <option value="1m">최근 1개월</option>
+        <option value="3m">최근 3개월</option>
+        <option value="6m">최근 6개월</option>
+        <option value="1y">최근 1년</option>
       </select>
     </div>
     <div class="f-item"><label class="f-lbl">소속</label>
@@ -5243,10 +5243,27 @@ function getFiltered(){
   const tenure=v('f-tenure'),dateFilter=v('f-date');
   const now=new Date();
 
-  // 가전 필터: 해당 가전으로 영상을 등록한 강사만
+  // 기간 필터: 평가 일시(영상 날짜) 기준
+  let dateFrom=null;
+  if(dateFilter==='1w'){dateFrom=new Date();dateFrom.setDate(dateFrom.getDate()-7);}
+  else if(dateFilter==='1m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-1);}
+  else if(dateFilter==='3m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-3);}
+  else if(dateFilter==='6m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-6);}
+  else if(dateFilter==='1y'){dateFrom=new Date();dateFrom.setFullYear(dateFrom.getFullYear()-1);}
+
+  // 가전 필터
   let productUserIds=null;
   if(products.length){
     productUserIds=new Set(D.videos.filter(vid=>products.includes((vid.videoType||vid.video_type||'').trim())).map(vid=>vid.userId));
+  }
+
+  // 기간 필터: 해당 기간에 영상이 있는 강사만
+  let dateUserIds=null;
+  if(dateFrom){
+    dateUserIds=new Set(D.videos.filter(vid=>{
+      const vd=new Date(vid.date);
+      return vd>=dateFrom;
+    }).map(vid=>vid.userId));
   }
 
   return D.users.filter(u=>{
@@ -5254,16 +5271,7 @@ function getFiltered(){
     if(teams.length && !teams.includes((u.team||'').trim())) return false;
     if(names.length && !names.includes((u.name||'').trim())) return false;
     if(products.length && (!productUserIds || !productUserIds.has(u.id))) return false;
-    if(dateFilter){
-      if(!u.hireDate) return false;
-      const hd2=new Date(u.hireDate);
-      const dm=(now.getFullYear()-hd2.getFullYear())*12+(now.getMonth()-hd2.getMonth());
-      if(dateFilter==='3m' && dm>=3) return false;
-      if(dateFilter==='1y' && dm>=12) return false;
-      if(dateFilter==='1y+' && dm<12) return false;
-      if(dateFilter==='5y+' && dm<60) return false;
-      if(dateFilter==='10y+' && dm<120) return false;
-    }
+    if(dateFrom && (!dateUserIds || !dateUserIds.has(u.id))) return false;
     if(tenure){
       if(!u.hireDate) return false;
       const hire=new Date(u.hireDate);
