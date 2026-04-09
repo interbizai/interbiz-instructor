@@ -595,14 +595,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .tn-right{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0}
 .tn-search-btn{width:36px;height:36px;border-radius:50%;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;color:var(--t2)}
 .tn-search-btn:hover{background:rgba(0,0,0,.04)}
-.tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px;border-radius:10px;transition:background .15s;position:relative}
+.tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px 10px;margin-bottom:-10px;border-radius:10px;transition:background .15s;position:relative}
 .tn-profile:hover{background:rgba(0,0,0,.03)}
 .tn-profile-photo{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .tn-profile-photo img{width:100%;height:100%;object-fit:cover}
 .tn-profile-info{text-align:right}
 .tn-profile-name{font-size:12px;font-weight:700;color:var(--t1)}
 .tn-profile-sub{font-size:10px;color:var(--t3)}
-.tn-profile-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;box-shadow:var(--sh-lg);min-width:160px;padding:6px;z-index:300}
+.tn-profile-dropdown{display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;box-shadow:var(--sh-lg);min-width:180px;padding:6px;z-index:300;padding-top:10px}
+.tn-profile-dropdown::before{content:'';position:absolute;top:-12px;right:0;width:80px;height:16px}
 .tn-profile:hover .tn-profile-dropdown{display:block}
 /* Search overlay */
 .tn-search-overlay{display:none;position:fixed;top:56px;left:0;right:0;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);padding:12px 24px;z-index:249;box-shadow:var(--sh-md)}
@@ -2557,8 +2558,23 @@ function updateTopNav(activePage){
 function toggleTopSearch(){
   const ov=document.getElementById('tn-search-overlay');
   ov.classList.toggle('show');
-  if(ov.classList.contains('show')) document.getElementById('tn-search-input')?.focus();
+  if(ov.classList.contains('show')){
+    document.getElementById('tn-search-input')?.focus();
+  } else {
+    document.getElementById('tn-search-input').value='';
+    document.getElementById('tn-search-results').innerHTML='';
+  }
 }
+// 바깥 클릭 시 검색 닫기
+document.addEventListener('click',function(e){
+  const ov=document.getElementById('tn-search-overlay');
+  const btn=document.querySelector('.tn-search-btn');
+  if(ov&&ov.classList.contains('show')&&!ov.contains(e.target)&&!btn?.contains(e.target)){
+    ov.classList.remove('show');
+    document.getElementById('tn-search-input').value='';
+    document.getElementById('tn-search-results').innerHTML='';
+  }
+});
 function topSearchHandler(q){
   const res=document.getElementById('tn-search-results');
   if(!res) return;
