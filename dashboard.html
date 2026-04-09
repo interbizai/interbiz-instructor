@@ -2544,7 +2544,7 @@ function updateTopNav(activePage){
   if(ddCnt) ddCnt.textContent=cnt?cnt+'건':'';
   // 프로필 업데이트
   const u=D.users?.find(x=>x.id===CU?.id);
-  const photo=CU?.isAdmin?'assets/logo/image.png':(u?.photo||CU?.photo||'');
+  const photo=CU?.isAdmin?'assets/logo/1.png':(u?.photo||CU?.photo||'');
   const pEl=document.getElementById('tn-profile-photo');
   if(pEl){pEl.innerHTML=photo?`<img src="${photo}">`:(CU?.name?CU.name[0]:'?');}
   const nEl=document.getElementById('tn-profile-name');
