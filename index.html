@@ -565,7 +565,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes tnTwinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.15) rotate(8deg)}}
 .tn-icon-my svg{animation:tnPulse 2.5s ease infinite}
 @keyframes tnPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
-.tn-icon-admin svg,.tn-icon-admin img{animation:tnSpin 6s linear infinite}
+.tn-icon-admin img{width:20px;height:20px;border-radius:50%}
 @keyframes tnSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .tn-icon-ai svg{animation:tnFloat 3s ease-in-out infinite}
 @keyframes tnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
@@ -2051,7 +2051,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="page-title" style="gap:10px"><img src="assets/logo/파비콘/1-Photoroom.ico" style="width:28px;height:28px;border-radius:50%"><h2>관리자</h2></div>
+  <div class="page-title" style="gap:10px"><img src="assets/logo/1.png" style="width:28px;height:28px;border-radius:50%"><h2>관리자</h2></div>
   <div class="tab-bar">
     <button class="tab-btn" onclick="showPage('page-dashboard');setTimeout(initDashboard,50)">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
@@ -2970,10 +2970,13 @@ function renderEduPage(){
   lkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
   lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
     const bg=linkColors[i%linkColors.length];
+    let domain='';try{domain=new URL(lk.url).hostname;}catch(e){}
+    const faviconUrl=domain?`https://www.google.com/s2/favicons?domain=${domain}&sz=128`:'';
     return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
       ${isAdmin?`<button style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})">×</button>`:''}
-      <div style="height:120px;background:${bg};display:flex;align-items:center;justify-content:center">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <div style="height:120px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+        ${faviconUrl?`<img src="${faviconUrl}" style="width:40px;height:40px;border-radius:8px;background:#fff;padding:4px">`:''}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </div>
       <div style="padding:10px 12px">
         <div style="font-size:13px;font-weight:700;color:var(--t1)">${lk.name}</div>
