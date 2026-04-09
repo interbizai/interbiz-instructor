@@ -3024,7 +3024,8 @@ async function uploadEduChecklist(){
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
   const cat=document.getElementById('edu-cl-cat')?.value||'체크리스트';
   const dt=document.getElementById('edu-cl-date')?.value||new Date().toISOString().split('T')[0];
-  await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
+  const{error:dbErr}=await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
+  if(dbErr){alert('DB 저장 실패: '+dbErr.message);return;}
   await loadFromDB();renderEduPage();alert('등록 완료');
 }
 async function addEduLink(){
