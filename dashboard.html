@@ -2959,14 +2959,29 @@ function renderEduPage(){
     </div>
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
-  clHtml+=(D.checklists||[]).map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:8px">
-    <div style="flex:1">
-      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;font-weight:700">${c.name}</span><span style="font-size:9px;padding:2px 6px;border-radius:10px;background:rgba(0,120,200,.08);color:var(--blue);font-weight:600">${c.category||'체크리스트'}</span></div>
-      <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
-    </div>
-    <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px">다운로드</a>
-    ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
-  </div>`).join('')||'<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
+  // 카테고리별 그룹 + 최신순
+  const cats=['체크리스트','평가안','교안','기타'];
+  const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  cats.forEach(cat=>{
+    const items=sorted.filter(c=>(c.category||'체크리스트')===cat);
+    if(!items.length) return;
+    const catColors={'체크리스트':'#0078C8','평가안':'#10b981','교안':'#f59e0b','기타':'#8b5cf6'};
+    clHtml+=`<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:800;color:${catColors[cat]||'var(--t1)'}">${cat}</span>
+        <span style="font-size:10px;color:var(--t3)">(${items.length})</span>
+      </div>`;
+    clHtml+=items.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${c.name}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
+      </div>
+      <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px">다운로드</a>
+      ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
+    </div>`).join('');
+    clHtml+='</div>';
+  });
+  if(!sorted.length) clHtml+='<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
   clArea.innerHTML=clHtml;
   // 교육링크 (카드형 3개 가로)
   const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
