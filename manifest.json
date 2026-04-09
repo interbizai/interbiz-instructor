@@ -7,6 +7,11 @@
   "theme_color": "#ffffff",
   "icons": [
     {
+      "src": "assets/logo/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    },
+    {
       "src": "assets/logo/파비콘/1-Photoroom.ico",
       "sizes": "64x64",
       "type": "image/x-icon"

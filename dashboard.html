@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>interbiz — 현장강사 역량 평가</title>
 <link rel="icon" type="image/x-icon" href="assets/logo/파비콘/1-Photoroom.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/logo_1.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/apple-icon.svg">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="인터비즈">
@@ -688,48 +688,67 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .home-icon-box{width:80px;height:80px}
 }
 @media(max-width:600px){
-  main{padding:10px 10px 48px}
-  .filter-bar{grid-template-columns:repeat(2,1fr);gap:8px}
+  /* 기본 레이아웃 */
+  main{padding:12px 12px 60px!important}
+  .g-main main{margin:8px!important;padding:16px 12px!important;border-radius:12px!important}
+  .page-title{padding:4px 0 12px}
+  .page-title h2{font-size:18px}
+  /* 필터 */
+  .filter-bar{grid-template-columns:1fr 1fr;gap:6px}
+  .filter-bar select{padding:8px 10px;font-size:12px}
+  .f-lbl{font-size:10px}
+  /* 통계 카드 */
   .stats-row{grid-template-columns:repeat(2,1fr);gap:8px}
-  .lect-card{min-width:160px;max-width:180px}
-  #ranking-area{grid-template-columns:1fr!important}
-  .hdr{padding:10px 8px}
-  .hdr-logo img{height:32px!important}
-  .hdr-right{gap:6px}
-  .hdr-right .chip{display:none}
-  .hdr-right .btn{padding:5px 8px;font-size:11px}
-  .avatar{width:32px;height:32px;font-size:10px}
-  .sec-lbl{font-size:16px}
-  .sec-lbl-sm{font-size:13px}
   .stat-card{padding:12px}
-  .stat-val{font-size:24px}
-  .stat-lbl{font-size:12px}
-  .home-hero img{height:80px!important}
-  .home-icons{grid-template-columns:repeat(2,1fr);gap:14px;max-width:100%;margin-top:20px!important}
-  .home-icon-box{width:70px;height:70px}
-  .home-icon-lbl{font-size:12px}
-  /* 달력 모바일 */
-  .cal-day{min-height:60px;padding:2px}
-  .cal-day-num{font-size:11px;width:22px;height:22px}
-  .cal-day-hdr{padding:6px;font-size:11px}
-  .cal-ev-chip{font-size:9px;height:14px;line-height:10px;padding:2px 4px}
+  .stat-val{font-size:22px}
+  .stat-unit{font-size:12px}
+  .stat-lbl{font-size:10px}
+  /* 랭킹 */
+  #ranking-area{grid-template-columns:1fr!important}
+  /* 테이블 */
+  .eval-table-wrap{border-radius:10px}
+  .eval-table-scroll{max-height:40vh}
+  .tbl th{font-size:10px;padding:8px 6px}
+  .tbl td{font-size:11px;padding:8px 6px}
+  .sec-lbl-sm{font-size:12px}
+  /* 강사 카드 */
+  .lect-card{min-width:140px;max-width:160px;padding:10px}
+  .lect-name{font-size:12px}
+  /* 교육콘텐츠 반반 → 세로 */
+  #edu-grid{grid-template-columns:1fr!important}
+  /* 음성/영상 분석 좌우 → 세로 */
+  #an-split,#va-split{grid-template-columns:1fr!important}
+  .video-layout{grid-template-columns:1fr!important}
+  .stream-layout{grid-template-columns:1fr!important}
+  /* 프로필 세로 */
+  .prof-layout{grid-template-columns:1fr!important}
+  .prof-photo{width:60px!important;height:60px!important}
+  /* 관리자 탭 */
+  .tab-bar{flex-wrap:wrap;gap:0}
+  .tab-btn{padding:8px 12px;font-size:11px}
+  /* 레이더 차트 */
+  svg[viewBox]{max-width:100%;height:auto}
   /* 모달 */
   .auth-card{width:95vw!important;padding:20px!important}
   .ts-modal{width:95vw!important}
   .ts-modal-body{grid-template-columns:1fr!important}
   .modal{width:95vw!important;padding:20px!important}
-  /* 테이블 스크롤 */
-  table{display:block;overflow-x:auto;white-space:nowrap}
-  thead,tbody,tr{display:table;width:100%;table-layout:auto}
-  /* 레이더 차트 */
-  svg[viewBox]{max-width:100%;height:auto}
-  /* 프로필 */
-  .prof-photo{width:70px!important;height:70px!important}
-  /* 사이드바 모바일 토글 */
-  .sidebar-toggle{display:flex}
+  /* 홈 */
+  .home-hero img{height:80px!important}
+  .home-icons{grid-template-columns:repeat(2,1fr);gap:14px;max-width:100%;margin-top:20px!important}
+  .home-icon-box{width:70px;height:70px}
+  .home-icon-lbl{font-size:12px}
+  /* 달력 */
+  .cal-day{min-height:50px;padding:2px}
+  .cal-day-num{font-size:10px;width:20px;height:20px}
+  .cal-day-hdr{padding:4px;font-size:10px}
+  .cal-ev-chip{font-size:8px;height:14px;padding:1px 3px}
+  /* 추천영상 패널 숨김 */
+  .r-panel{display:none!important}
+  .r-panel-toggle{display:none!important}
   /* 버튼 */
+  .btn{padding:7px 14px;font-size:12px}
   .auth-btn{font-size:14px;padding:12px}
-  .btn-blue,.btn-red,.btn-ghost{font-size:12px}
 }
 
 /* 모바일 하단 네비게이션 */
