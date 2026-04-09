@@ -5264,11 +5264,12 @@ function getFiltered(){
     if(name && (u.name||'').trim()!==name.trim()) return false;
     if(product && (!productUserIds || !productUserIds.has(u.id))) return false;
     if(dateFrom && (!dateUserIds || !dateUserIds.has(u.id))) return false;
-    if(tenure && u.hireDate){
+    if(tenure){
+      if(!u.hireDate) return false;
       const hire=new Date(u.hireDate);
       const months=Math.round((now-hire)/(1000*60*60*24*30));
       if(tenure==='3m' && months>=3) return false;
-      if(tenure==='1y' && (months<3||months>=12)) return false;
+      if(tenure==='1y' && months>=12) return false;
       if(tenure==='1y+' && months<12) return false;
       if(tenure==='5y+' && months<60) return false;
       if(tenure==='10y+' && months<120) return false;
@@ -5975,7 +5976,7 @@ function renderCompareResults(myId){
     if(tenure&&u.hireDate){
       const m=Math.round((now-new Date(u.hireDate))/(1000*60*60*24*30));
       if(tenure==='3m'&&m>=3) return false;
-      if(tenure==='1y'&&(m<3||m>=12)) return false;
+      if(tenure==='1y'&&m>=12) return false;
       if(tenure==='1y+'&&m<12) return false;
       if(tenure==='5y+'&&m<60) return false;
       if(tenure==='10y+'&&m<120) return false;
