@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>interbiz — 현장강사 역량 평가</title>
 <link rel="icon" type="image/x-icon" href="assets/logo/파비콘/1-Photoroom.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/파비콘/1-Photoroom.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/logo_1.png">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="인터비즈">
@@ -5275,13 +5275,14 @@ function getFiltered(){
     productUserIds=new Set(D.videos.filter(vid=>products.includes((vid.videoType||vid.video_type||'').trim())).map(vid=>vid.userId));
   }
 
-  // 기간 필터: 해당 기간에 영상 또는 음성 평가가 있는 강사만
+  // 기간 필터: 해당 기간에 영상/음성 평가 또는 등록이 있는 강사
   let dateUserIds=null;
   if(dateFrom){
-    const toDate=s=>{const d=new Date(s);d.setHours(0,0,0,0);return d;};
+    const toDate=s=>{if(!s)return new Date(0);const d=new Date(s);d.setHours(0,0,0,0);return d;};
     const vidIds=D.videos.filter(vid=>vid.date&&toDate(vid.date)>=dateFrom).map(vid=>vid.userId);
     const voiceIds=(D.voiceEvals||[]).filter(ve=>{const d=ve.eval_date||ve.created_at;return d&&toDate(d)>=dateFrom;}).map(ve=>ve.user_id);
-    dateUserIds=new Set([...vidIds,...voiceIds]);
+    const regIds=D.users.filter(u=>u.registered&&toDate(u.registered)>=dateFrom).map(u=>u.id);
+    dateUserIds=new Set([...vidIds,...voiceIds,...regIds]);
   }
 
   return D.users.filter(u=>{
