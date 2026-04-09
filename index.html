@@ -1900,9 +1900,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="page-title" style="gap:10px"><img src="assets/logo/1.png" style="width:28px;height:28px;border-radius:50%"><h2>관리자</h2></div>
+  <div class="page-title"><h2>관리자</h2></div>
   <div class="tab-bar">
-    <button class="tab-btn" onclick="switchTab('평가결과',this);setTimeout(()=>{initDashboard();const src=document.querySelector('#page-dashboard main');const area=el('admin-dashboard-area');if(src&&area)area.innerHTML=src.innerHTML;},100)">평가결과</button>
+    <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('강사관리',this)">강사 관리</button>
     <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
@@ -2544,7 +2544,7 @@ function updateTopNav(activePage){
   if(ddCnt) ddCnt.textContent=cnt?cnt+'건':'';
   // 프로필 업데이트
   const u=D.users?.find(x=>x.id===CU?.id);
-  const photo=CU?.isAdmin?'assets/logo/2.png':(u?.photo||CU?.photo||'');
+  const photo=CU?.isAdmin?'assets/logo/3.png':(u?.photo||CU?.photo||'');
   const pEl=document.getElementById('tn-profile-photo');
   if(pEl){pEl.innerHTML=photo?`<img src="${photo}">`:(CU?.name?CU.name[0]:'?');}
   const nEl=document.getElementById('tn-profile-name');
@@ -5360,7 +5360,7 @@ function renderRanking(filtered){
 
   function buildRankCard(title,subtitle,items,topColor){
     const rows=items.map((item,i)=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.18)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.userId?'openLecturer('+item.userId+',&quot;page-dashboard&quot;)':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.18)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.videoId?'openVideo('+item.videoId+')':item.voiceId?'openVoiceResult('+item.voiceId+')':item.userId?'openLecturer('+item.userId+',&quot;page-dashboard&quot;)':''}">
         <div style="width:24px;height:24px;border-radius:50%;background:${medalBg[i]||'rgba(0,0,0,.04)'};display:flex;align-items:center;justify-content:center;font-size:${i<3?'14px':'11px'};font-weight:800;color:${rankColors[i]||'var(--t1)'};flex-shrink:0">${medals[i]||(i+1)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
@@ -5379,8 +5379,8 @@ function renderRanking(filtered){
   }
 
   const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.avgScore,userId:u.id,extra:u.vidCount?u.vidCount+'건':''}));
-  const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.channel} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,userId:D.videos.find(vid=>vid.id===v.videoId)?.userId}));
-  const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,userId:v.user_id};});
+  const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.channel} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,videoId:v.videoId}));
+  const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,voiceId:v.id};});
 
   rankArea.innerHTML=
     buildRankCard('개인 종합 랭킹','영상 평균 점수',personalItems,'#0078C8')+
@@ -6071,15 +6071,28 @@ function renderStatChart(){
     </div>`;
   }).join('');
 }
+function loadAdminDashboard(){
+  const area=el('admin-dashboard-area');
+  if(!area) return;
+  const src=document.querySelector('#page-dashboard main');
+  if(!src) return;
+  // 실제 DOM 노드를 이동 (이벤트 유지)
+  area.innerHTML='';
+  while(src.firstChild) area.appendChild(src.firstChild);
+  setTimeout(()=>{try{initDashboard();}catch(e){}},50);
+}
 function switchTab(name,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   el('tab-'+name)?.classList.add('active');
-  if(name==='평가결과'){
-    const src=document.querySelector('#page-dashboard main');
+  // 평가결과 탭에서 벗어나면 대시보드 노드 원복
+  if(name!=='평가결과'){
     const area=el('admin-dashboard-area');
-    if(src&&area) area.innerHTML=src.innerHTML;
+    const dashMain=document.querySelector('#page-dashboard main');
+    if(area&&dashMain&&area.firstChild){
+      while(area.firstChild) dashMain.appendChild(area.firstChild);
+    }
   }
 }
 
