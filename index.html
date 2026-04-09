@@ -5256,13 +5256,18 @@ function getFiltered(){
   const tenure=v('f-tenure'),dateFilter=v('f-date');
   const now=new Date();
 
-  // 기간 필터: 평가 일시(영상 날짜) 기준
+  // 기간 필터: 평가 일시(영상/음성 날짜) 기준
   let dateFrom=null;
-  if(dateFilter==='1w'){dateFrom=new Date();dateFrom.setDate(dateFrom.getDate()-7);}
-  else if(dateFilter==='1m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-1);}
-  else if(dateFilter==='3m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-3);}
-  else if(dateFilter==='6m'){dateFrom=new Date();dateFrom.setMonth(dateFrom.getMonth()-6);}
-  else if(dateFilter==='1y'){dateFrom=new Date();dateFrom.setFullYear(dateFrom.getFullYear()-1);}
+  if(dateFilter){
+    dateFrom=new Date();
+    if(dateFilter==='1w') dateFrom.setDate(dateFrom.getDate()-7);
+    else if(dateFilter==='1m') dateFrom.setMonth(dateFrom.getMonth()-1);
+    else if(dateFilter==='3m') dateFrom.setMonth(dateFrom.getMonth()-3);
+    else if(dateFilter==='6m') dateFrom.setMonth(dateFrom.getMonth()-6);
+    else if(dateFilter==='1y') dateFrom.setFullYear(dateFrom.getFullYear()-1);
+    else dateFrom=null;
+    if(dateFrom) dateFrom.setHours(0,0,0,0);
+  }
 
   // 가전 필터
   let productUserIds=null;
@@ -5273,8 +5278,9 @@ function getFiltered(){
   // 기간 필터: 해당 기간에 영상 또는 음성 평가가 있는 강사만
   let dateUserIds=null;
   if(dateFrom){
-    const vidIds=D.videos.filter(vid=>new Date(vid.date)>=dateFrom).map(vid=>vid.userId);
-    const voiceIds=(D.voiceEvals||[]).filter(ve=>new Date(ve.eval_date||ve.created_at)>=dateFrom).map(ve=>ve.user_id);
+    const toDate=s=>{const d=new Date(s);d.setHours(0,0,0,0);return d;};
+    const vidIds=D.videos.filter(vid=>vid.date&&toDate(vid.date)>=dateFrom).map(vid=>vid.userId);
+    const voiceIds=(D.voiceEvals||[]).filter(ve=>{const d=ve.eval_date||ve.created_at;return d&&toDate(d)>=dateFrom;}).map(ve=>ve.user_id);
     dateUserIds=new Set([...vidIds,...voiceIds]);
   }
 
