@@ -1948,12 +1948,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">과정 제품별 영상</div>
         </div>
-        <!-- 필터 2종 (작게) -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="pick-filter-row">
-          <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
+        <!-- 필터 2종 (pill 스타일, 작게) -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="pick-filter-row">
+          <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 카테고리</option>
           </select>
-          <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
+          <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 제품</option>
           </select>
         </div>
@@ -3440,7 +3440,7 @@ function renderPickVideos(){
     const score=pickVidScore(vid);
     const isAdmin=featuredIds.includes(vid.id);
     const isSel=vid.id===PICK_SELECTED_VID;
-    return `<div style="border:2px solid ${isSel?'#0078C8':'var(--bdr)'};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;background:#fff;box-shadow:${isSel?'0 4px 14px rgba(0,120,200,.15)':'none'}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow=''}">
+    return `<div style="border:2px solid ${isSel?'#f87171':'var(--bdr)'};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;background:${isSel?'rgba(248,113,113,.04)':'#fff'};box-shadow:${isSel?'0 4px 14px rgba(248,113,113,.22)':'none'}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow=''}">
       <div style="height:110px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
         ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:11px;color:var(--t3)">미리보기 없음</span>'}
         ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
@@ -3478,17 +3478,17 @@ function renderPickDetail(){
   const title=vid.title||'—';
   const product=vid.videoType||vid.video_type||'—';
 
-  // 공통 카드 스타일 (3컬럼 통일)
-  const cardStyle='padding:14px 16px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.06);border-left:3px solid #0078C8;min-height:72px;display:flex;flex-direction:column;justify-content:center';
+  // 공통 카드 스타일 (3컬럼 통일 — 파란 좌측 border 제거)
+  const cardStyle='padding:14px 16px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.08);min-height:72px;display:flex;flex-direction:column;justify-content:center';
 
   detailEl.innerHTML=`
     <!-- 선택 영상 정보 스트립 -->
-    <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:rgba(0,120,200,.04);border:1px solid rgba(0,120,200,.15);margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.25);margin-bottom:18px">
       <div style="width:72px;height:48px;border-radius:8px;background:#e9ecef;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center">
         ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'}
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:2px">선택 영상</div>
+        <div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:2px">선택 영상</div>
         <div style="font-size:13px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</div>
         <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
       </div>
