@@ -595,6 +595,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes tnPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .tn-icon-admin svg{animation:tnSpin 6s linear infinite}
 @keyframes tnSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@property --pick-angle{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes pickBorderRot{to{--pick-angle:360deg}}
+.pick-top-card{position:relative;padding:2.5px;border-radius:16px;background:conic-gradient(from var(--pick-angle),#fecaca,#fca5a5,#f87171,#ef4444,#fb7185,#fda4af,#fecaca);animation:pickBorderRot 5s linear infinite;cursor:pointer;transition:transform .2s}
+.pick-top-card:hover{transform:translateY(-3px)}
+.pick-top-card-inner{background:#fff;border-radius:13.5px;padding:20px}
+@supports not (background:conic-gradient(from 0deg,red,red)){.pick-top-card{background:#f87171;animation:none}}
 .tn-icon-ai svg{animation:tnFloat 3s ease-in-out infinite}
 @keyframes tnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tn-icon-edu svg{animation:tnFlip 4s ease infinite}
@@ -1944,7 +1950,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
 
       <!-- 과정 제품별 영상 -->
-      <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:20px;background:#fff">
+      <div id="pick-section-box" style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:20px;background:#fff;transition:background .25s">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">과정 제품별 영상</div>
         </div>
@@ -1959,8 +1965,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <!-- 영상 카드 -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
-        <!-- 선택 영상 정보 + 3컬럼 상세 (항상 노출) -->
-        <div id="pick-video-detail" style="margin-top:18px"></div>
+        <!-- 선택 영상 정보 + 3컬럼 상세 (항상 노출, 선택 시 같은 영역으로 확장) -->
+        <div id="pick-video-detail"></div>
       </div>
 
       <!-- 추천 학습 콘텐츠 -->
@@ -3306,7 +3312,7 @@ function renderPick(){
     const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
     const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
-    return `<div style="border:1px solid rgba(0,0,0,.1);border-radius:14px;padding:20px;cursor:pointer;transition:transform .2s;background:#fff" onclick="openLecturer(${u.id},'page-pick')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner">
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
         <div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
@@ -3333,9 +3339,9 @@ function renderPick(){
       </div>
       <!-- 키워드 -->
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${keywords.length?keywords.map(k=>`<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,120,200,.08);color:var(--blue)">${k}</span>`).join(''):'<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 키워드 생성</span>'}
+        ${keywords.length?keywords.map(k=>`<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(248,113,113,.1);color:#dc2626">${k}</span>`).join(''):'<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 키워드 생성</span>'}
       </div>
-    </div>`;
+    </div></div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
 
   // 교안 카테고리 필터
@@ -3433,6 +3439,13 @@ function renderPickVideos(){
     PICK_SELECTED_VID=vids[0]?.id||null;
   }
 
+  // 섹션 박스 선택 상태 배경
+  const sectionBox=el('pick-section-box');
+  if(sectionBox){
+    sectionBox.style.background=PICK_SELECTED_VID?'rgba(248,113,113,.05)':'#fff';
+    sectionBox.style.borderColor=PICK_SELECTED_VID?'rgba(248,113,113,.28)':'var(--bdr)';
+  }
+
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
     const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
@@ -3487,54 +3500,53 @@ function renderPickDetail(){
   const product=vid.videoType||vid.video_type||'—';
   const comment=pickAIComment(score);
 
-  // 공통 카드 스타일 (3컬럼 통일)
+  // 공통 카드 스타일 (3컬럼 완전 통일)
   const cardStyle='padding:14px 16px;border-radius:10px;background:#fff;border:1px solid rgba(0,0,0,.08);min-height:72px;display:flex;flex-direction:column;justify-content:center';
+  const titleStyle='font-size:12px;font-weight:700;color:var(--t1);line-height:1.4';
+  const subStyle='font-size:10px;color:var(--t3);margin-top:4px';
 
   detailEl.innerHTML=`
-    <!-- 선택 그룹 전체 컨테이너 (연빨강 프레임) -->
-    <div style="padding:18px;border-radius:14px;background:rgba(248,113,113,.05);border:1.5px solid rgba(248,113,113,.28)">
-      <!-- 선택 영상 정보 스트립 + AI 코멘트 -->
-      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.2);margin-bottom:18px">
-        <div style="width:76px;height:52px;border-radius:8px;background:#f8f9fa;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <span style="font-size:10px;font-weight:800;color:#dc2626;letter-spacing:.3px">선택 영상</span>
-            <span style="font-size:13px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
-          </div>
-          <div style="font-size:10.5px;color:var(--t3);margin-bottom:6px">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
-          <div style="font-size:12px;font-weight:700;color:#dc2626;font-style:italic;line-height:1.5;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25)">${comment}</div>
-        </div>
-        <span style="padding:4px 12px;border-radius:10px;font-size:11px;font-weight:800;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);flex-shrink:0;align-self:flex-start">AI ${score}점</span>
+    <!-- 선택 영상 정보 스트립 + AI 코멘트 (섹션과 같은 영역으로 확장) -->
+    <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.2);margin-top:16px;margin-bottom:16px">
+      <div style="width:76px;height:52px;border-radius:8px;background:#f8f9fa;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center">
+        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'}
       </div>
-      <!-- 3컬럼 상세 (카드 크기/스타일 통일) -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start" id="pick-detail-cols">
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>추천 시나리오</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">냉장고 에너지 절감 고객 설명 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">워시타워 첫 사용 온보딩 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">에어컨 실외기 소음 민원 처리 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-size:10px;font-weight:800;color:#dc2626;letter-spacing:.3px">선택 영상</span>
+          <span style="font-size:13px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
         </div>
+        <div style="font-size:10.5px;color:var(--t3);margin-bottom:6px">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
+        <div style="font-size:12px;font-weight:700;color:#dc2626;font-style:italic;line-height:1.5;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25)">${comment}</div>
       </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>강의 레벨 UP TIP</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">도입 3분이 강의 전체를 결정한다</div><div style="font-size:10px;color:var(--t3);margin-top:4px">오프닝 질문 기법 · 실제 사례 적용법</div></div>
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">실습 피드백은 즉각적·구체적으로</div><div style="font-size:10px;color:var(--t3);margin-top:4px">행동 변화 유도하는 코칭 언어 패턴</div></div>
-          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">AI 평가 후 자동 생성 예정</div><div style="font-size:10px;color:var(--t3);margin-top:4px">제미나이 분석 결과 연동</div></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#0078C8"></span>강사 교육 화법</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">도입 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div></div>
-          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">피드백 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div></div>
-          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">마무리 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 배운 것 중 하나만 내일 꼭 써보세요."</div></div>
-        </div>
-      </div>
+      <span style="padding:4px 12px;border-radius:10px;font-size:11px;font-weight:800;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);flex-shrink:0;align-self:flex-start">AI ${score}점</span>
     </div>
+    <!-- 3컬럼 상세 (글씨체/크기/색 완전 통일) -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start" id="pick-detail-cols">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>추천 시나리오</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="${cardStyle}"><div style="${titleStyle}">냉장고 에너지 절감 고객 설명 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">워시타워 첫 사용 온보딩 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">에어컨 실외기 소음 민원 처리 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>강의 레벨 UP TIP</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="${cardStyle}"><div style="${titleStyle}">도입 3분이 강의 전체를 결정한다</div><div style="${subStyle}">오프닝 질문 기법 · 실제 사례 적용법</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">실습 피드백은 즉각적·구체적으로</div><div style="${subStyle}">행동 변화 유도하는 코칭 언어 패턴</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">AI 평가 후 자동 생성 예정</div><div style="${subStyle}">제미나이 분석 결과 연동</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>강사 교육 화법</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="${cardStyle}"><div style="${titleStyle}">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div><div style="${subStyle}">도입 화법</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div><div style="${subStyle}">피드백 화법</div></div>
+          <div style="${cardStyle}"><div style="${titleStyle}">"오늘 배운 것 중 하나만 내일 꼭 써보세요."</div><div style="${subStyle}">마무리 화법</div></div>
+        </div>
+      </div>
     </div>`;
 }
 
