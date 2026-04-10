@@ -600,9 +600,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-top-card-inner{background:#fff;border-radius:14px;padding:20px;position:relative;z-index:1;overflow:visible}
 .pick-shell-card{transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s,border-color .2s;cursor:default}
 .pick-shell-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(248,113,113,.14);border-color:rgba(248,113,113,.35)!important}
-.pick-lecturer-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:linear-gradient(135deg,#fee2e2,#fecaca);border:1px solid rgba(248,113,113,.45);font-size:11.5px;font-weight:700;color:#b91c1c;margin-bottom:10px}
-.pick-lecturer-chip button{background:rgba(0,0,0,.08);border:none;width:18px;height:18px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7f1d1d;font-weight:900;font-size:11px;line-height:1}
-.pick-lecturer-chip button:hover{background:rgba(0,0,0,.18)}
 .tn-icon-ai svg{animation:tnFloat 3s ease-in-out infinite}
 @keyframes tnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tn-icon-edu svg{animation:tnFlip 4s ease infinite}
@@ -1971,8 +1968,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <!-- 영상카드 + 상세 그룹 wrapper (핑크 색상은 선택 카드 + 상세 영역에만 적용) -->
         <div id="pick-selected-group">
-          <!-- 강사 필터 칩 (TOP3 클릭 시 표시) -->
-          <div id="pick-lecturer-chip-wrap"></div>
           <!-- 영상 카드 -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
           <!-- 선택 영상 정보 + 3컬럼 상세 -->
@@ -3323,13 +3318,13 @@ function renderPick(){
     const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
     const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
-    return `<div class="pick-top-card" onclick="pickTop3Click(${u.id},'${u.name}')"><div class="pick-top-card-inner">
+    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner">
       <!-- 상단: 사진 + 이름 -->
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;min-width:0">
         <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
-        <div>
-          <div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px;font-weight:800">${u.name}</span><span style="font-size:14px">${medals2[i]}</span></div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px">${u.channel} · ${u.team}</div>
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</span><span style="font-size:14px;flex-shrink:0">${medals2[i]}</span></div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.channel} · ${u.team}</div>
         </div>
       </div>
       <!-- 점수 + 달성 바 -->
@@ -3421,23 +3416,8 @@ function pickVidScore(vid){
 
 let PICK_SELECTED_VID=null;
 let PICK_CURRENT_VIDS=[];
-let PICK_LECTURER_FILTER=null; // {id, name} — TOP3 클릭으로 해당 강사 영상만 필터
 let PICK_USER_CLEARED=false;   // X 닫기 버튼으로 명시적 해제 시 true
 
-function pickTop3Click(uid,uname){
-  PICK_LECTURER_FILTER={id:uid,name:uname};
-  PICK_SELECTED_VID=null;
-  PICK_USER_CLEARED=false;
-  renderPickVideos();
-  const sec=el('pick-selected-group');
-  if(sec) setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),60);
-}
-function pickClearLecturer(){
-  PICK_LECTURER_FILTER=null;
-  PICK_SELECTED_VID=null;
-  PICK_USER_CLEARED=false;
-  renderPickVideos();
-}
 function clearPickSelection(){
   PICK_USER_CLEARED=true;
   PICK_SELECTED_VID=null;
@@ -3452,10 +3432,9 @@ function renderPickVideos(){
   const now=new Date();
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
 
-  // 기본 풀: 분석완료 + 당월 (강사 필터가 있으면 전체 기간)
+  // 기본 풀: 분석완료 + 당월
   let pool=(D.videos||[]).filter(vd=>{
     if(vd.status!=='분석완료') return false;
-    if(PICK_LECTURER_FILTER) return vd.userId===PICK_LECTURER_FILTER.id;
     const d=new Date(vd.date||vd.created_at||0);
     return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;
   });
@@ -3476,12 +3455,6 @@ function renderPickVideos(){
 
   // 선택 카드 인덱스 저장 (상세 포인터 위치용)
   PICK_CURRENT_VIDS=vids;
-
-  // 강사 필터 칩
-  const chipWrap=el('pick-lecturer-chip-wrap');
-  if(chipWrap){
-    chipWrap.innerHTML=PICK_LECTURER_FILTER?`<div class="pick-lecturer-chip"><span>🎯 ${PICK_LECTURER_FILTER.name} 강사 영상만</span><button onclick="pickClearLecturer()" title="해제">✕</button></div>`:'';
-  }
 
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
