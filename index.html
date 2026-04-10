@@ -1929,7 +1929,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-pick" class="page">
 <header class="hdr" style="display:none"></header>
 <main>
-  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:var(--blue)"></span></div>
 
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:28px;position:relative" id="pick-layout">
     <!-- 왼쪽 2/3 -->
@@ -1939,10 +1939,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
       <!-- 이달의 인터PICK 강사 -->
       <div style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:15px;font-weight:800;color:var(--t1)">이달의 인터PICK 강사</div>
-          <span style="font-size:11px;color:var(--t3)" id="pick-month-label"></span>
-        </div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">이달의 인터PICK 강사</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-top3"></div>
       </div>
 
@@ -1950,12 +1947,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:20px;background:#fff">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">과정 제품별 영상</div>
-          <span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b">★ 관리자 등록 우선</span>
         </div>
         <!-- 필터 2종 (작게) -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="pick-filter-row">
           <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
-            <option value="">전체 교안</option>
+            <option value="">전체 카테고리</option>
           </select>
           <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
             <option value="">전체 제품</option>
@@ -1963,8 +1959,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <!-- 영상 카드 -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
-        <!-- 클릭 상세 3컬럼 -->
-        <div id="pick-video-detail" style="display:none;margin-top:18px;padding-top:18px;border-top:1px dashed rgba(0,0,0,.12)"></div>
+        <!-- 선택 영상 정보 + 3컬럼 상세 (항상 노출) -->
+        <div id="pick-video-detail" style="margin-top:18px;padding-top:18px;border-top:1px dashed rgba(0,0,0,.12)"></div>
       </div>
 
       <!-- 추천 학습 콘텐츠 -->
@@ -3238,24 +3234,44 @@ async function deleteLink(id){
 function renderPick(){
   const now=new Date();
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
-  const mEl=el('pick-month-label');if(mEl)mEl.textContent=monthLabel;
+  const ymEl=el('pick-title-ym');if(ymEl)ymEl.textContent=monthLabel;
 
   // 당월 기준 데이터
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
+  const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
   const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   const totalEvals=monthVids.length+monthVoice.length;
-  const allScores=[...monthVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...monthVoice.map(v=>v.score||0)];
-  const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
-  const lowCount=allScores.filter(s=>s<=70).length;
+
+  // 당월 말 기준 누적 등록 강사 수
+  const cumUsers=(D.users||[]).filter(u=>{
+    const hd=u.hireDate||u.registered||u.created_at;
+    if(!hd) return true;
+    return new Date(hd)<=monthEnd;
+  }).length;
+
+  // 전체 평균 AI 점수 (전체 기간, 모든 영상+음성 평가)
+  const allVidScores=(D.videos||[]).map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
+  const allVoiceScores=(D.voiceEvals||[]).map(v=>v.score||0);
+  const allScoresAll=[...allVidScores,...allVoiceScores].filter(s=>s>0);
+  const avgAll=allScoresAll.length?(allScoresAll.reduce((a,b)=>a+b,0)/allScoresAll.length).toFixed(1):'0.0';
+
+  // 이번 주 신규 콘텐츠 (월~일)
+  const todayDow=now.getDay();
+  const daysSinceMon=todayDow===0?6:todayDow-1;
+  const weekStart=new Date(thisYear,thisMonth,now.getDate()-daysSinceMon,0,0,0);
+  const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
+  const weekNew=(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}).length
+    +(D.learningLinks||[]).filter(l=>{const d=new Date(l.created_at||0);return d>=weekStart&&d<=weekEnd;}).length
+    +(D.checklists||[]).filter(c=>{const d=new Date(c.created_at||0);return d>=weekStart&&d<=weekEnd;}).length;
 
   // 통계 카드
   const statsEl=el('pick-stats');
   if(statsEl) statsEl.innerHTML=[
-    {val:D.users?.length||0,unit:'명',lbl:'총 강사 수'},
-    {val:totalEvals,unit:'건',lbl:'당월 평가 건수'},
-    {val:avg,unit:'점',lbl:'평균 점수'},
-    {val:lowCount,unit:'건',lbl:'70점 이하'}
+    {val:cumUsers,unit:'명',lbl:'전체 등록 강사 수'},
+    {val:totalEvals,unit:'건',lbl:'이번 달 AI 평가 완료'},
+    {val:avgAll,unit:'점',lbl:'전체 평균 AI 점수'},
+    {val:weekNew,unit:'건',lbl:'이번 주 신규 콘텐츠'}
   ].map(s=>`<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;text-align:center">
     <div style="font-size:24px;font-weight:900;color:var(--t1)">${s.val}<span style="font-size:12px;font-weight:700">${s.unit}</span></div>
     <div style="font-size:11px;color:var(--t3);margin-top:4px">${s.lbl}</div>
@@ -3386,6 +3402,8 @@ function pickVidScore(vid){
   return Math.min(100,good*10+(vid.timestamps||[]).length*3);
 }
 
+let PICK_SELECTED_VID=null;
+
 function renderPickVideos(){
   const vidsEl=el('pick-videos');
   if(!vidsEl) return;
@@ -3410,13 +3428,19 @@ function renderPickVideos(){
   const others=pool.filter(vd=>!featuredIds.includes(vd.id)).sort((a,b)=>pickVidScore(b)-pickVidScore(a));
   const vids=[...featured,...others].slice(0,3);
 
+  // 기본 선택 영상: 현재 선택된 게 풀에 없으면 첫 번째
+  if(!vids.find(x=>x.id===PICK_SELECTED_VID)){
+    PICK_SELECTED_VID=vids[0]?.id||null;
+  }
+
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
     const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
     const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
     const score=pickVidScore(vid);
     const isAdmin=featuredIds.includes(vid.id);
-    return `<div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s;background:#fff" onclick="togglePickDetail(${vid.id})" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+    const isSel=vid.id===PICK_SELECTED_VID;
+    return `<div style="border:2px solid ${isSel?'#0078C8':'var(--bdr)'};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;background:#fff;box-shadow:${isSel?'0 4px 14px rgba(0,120,200,.15)':'none'}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow=''}">
       <div style="height:110px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
         ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:11px;color:var(--t3)">미리보기 없음</span>'}
         ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
@@ -3430,47 +3454,70 @@ function renderPickVideos(){
     </div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:12px;color:var(--t3)">당월 영상이 없습니다</div>';
 
-  // 상세 영역 초기화
-  const detailEl=el('pick-video-detail');
-  if(detailEl){detailEl.style.display='none';detailEl.innerHTML='';}
+  // 상세 영역 항상 렌더
+  renderPickDetail();
 }
 
-function togglePickDetail(vidId){
+function selectPickVideo(vidId){
+  PICK_SELECTED_VID=vidId;
+  renderPickVideos();
+}
+
+function renderPickDetail(){
   const detailEl=el('pick-video-detail');
   if(!detailEl) return;
-  const vid=(D.videos||[]).find(x=>x.id===vidId);
-  if(!vid){detailEl.style.display='none';return;}
-  // 토글: 같은 영상 다시 클릭 시 닫기
-  if(detailEl.dataset.vidId==String(vidId)&&detailEl.style.display!=='none'){
-    detailEl.style.display='none';detailEl.dataset.vidId='';return;
+  const vid=PICK_SELECTED_VID?(D.videos||[]).find(x=>x.id===PICK_SELECTED_VID):null;
+  if(!vid){
+    detailEl.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">영상 카드를 선택하면 상세 내용이 표시됩니다</div>';
+    return;
   }
-  detailEl.dataset.vidId=String(vidId);
   const u=D.users?.find(x=>x.id===vid.userId);
+  const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
+  const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
+  const score=pickVidScore(vid);
   const title=vid.title||'—';
-  detailEl.style.display='block';
+  const product=vid.videoType||vid.video_type||'—';
+
+  // 공통 카드 스타일 (3컬럼 통일)
+  const cardStyle='padding:14px 16px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.06);border-left:3px solid #0078C8;min-height:72px;display:flex;flex-direction:column;justify-content:center';
+
   detailEl.innerHTML=`
-    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">선택 영상: <strong style="color:var(--t1)">${title}</strong> · ${u?.name||'—'} 강사</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px" id="pick-detail-cols">
+    <!-- 선택 영상 정보 스트립 -->
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:rgba(0,120,200,.04);border:1px solid rgba(0,120,200,.15);margin-bottom:18px">
+      <div style="width:72px;height:48px;border-radius:8px;background:#e9ecef;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center">
+        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:2px">선택 영상</div>
+        <div style="font-size:13px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
+      </div>
+      <span style="padding:4px 12px;border-radius:10px;font-size:11px;font-weight:800;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);flex-shrink:0">AI ${score}점</span>
+    </div>
+    <!-- 3컬럼 상세 (카드 크기/스타일 통일) -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start" id="pick-detail-cols">
       <div>
         <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>추천 시나리오</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">냉장고 에너지 절감 고객 설명 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">워시타워 첫 사용 온보딩 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">에어컨 실외기 소음 민원 처리 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">냉장고 에너지 절감 고객 설명 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">워시타워 첫 사용 온보딩 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">에어컨 실외기 소음 민원 처리 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
         </div>
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>강의 레벨 UP TIP</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">도입 3분이 강의 전체를 결정한다</div><div style="font-size:10px;color:var(--t3);margin-top:4px">오프닝 질문 기법 · 실제 사례 적용법</div></div>
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">실습 피드백은 즉각적·구체적으로</div><div style="font-size:10px;color:var(--t3);margin-top:4px">행동 변화 유도하는 코칭 언어 패턴</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">도입 3분이 강의 전체를 결정한다</div><div style="font-size:10px;color:var(--t3);margin-top:4px">오프닝 질문 기법 · 실제 사례 적용법</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">실습 피드백은 즉각적·구체적으로</div><div style="font-size:10px;color:var(--t3);margin-top:4px">행동 변화 유도하는 코칭 언어 패턴</div></div>
+          <div style="${cardStyle}"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">AI 평가 후 자동 생성 예정</div><div style="font-size:10px;color:var(--t3);margin-top:4px">제미나이 분석 결과 연동</div></div>
         </div>
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#0078C8"></span>강사 교육 화법</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border-left:3px solid #0078C8"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">도입 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div></div>
-          <div style="padding:12px;border-radius:10px;background:#fafafa;border-left:3px solid #0078C8"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">피드백 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div></div>
+          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">도입 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div></div>
+          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">피드백 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div></div>
+          <div style="${cardStyle}"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">마무리 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 배운 것 중 하나만 내일 꼭 써보세요."</div></div>
         </div>
       </div>
     </div>`;
