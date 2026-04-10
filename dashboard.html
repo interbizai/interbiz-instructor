@@ -717,10 +717,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .lect-name{font-size:12px}
   /* 교육콘텐츠 반반 → 세로 */
   #edu-grid{grid-template-columns:1fr!important}
-  #pick-layout{grid-template-columns:1fr!important}
+  #pick-layout{grid-template-columns:1fr!important;gap:16px!important}
+  #pick-layout>div:last-child{border-left:none!important;padding-left:0!important;padding-top:16px;border-top:1px solid var(--bdr)}
   #pick-stats{grid-template-columns:repeat(2,1fr)!important}
   #pick-top3{grid-template-columns:1fr!important}
-  #pick-videos{grid-template-columns:repeat(2,1fr)!important}
+  #pick-videos{grid-template-columns:1fr!important}
+  #pick-filter-row{flex-direction:column!important}
+  #pick-filter-row select{width:100%!important}
+  #pick-detail-cols{grid-template-columns:1fr!important;gap:18px!important}
   /* 음성/영상 분석 좌우 → 세로 */
   #an-split,#va-split{grid-template-columns:1fr!important}
   .video-layout{grid-template-columns:1fr!important}
@@ -1926,9 +1930,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <header class="hdr" style="display:none"></header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2></div>
-  <div id="pick-date" style="font-size:16px;font-weight:700;color:var(--blue);margin-bottom:16px"></div>
 
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px" id="pick-layout">
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:28px;position:relative" id="pick-layout">
     <!-- 왼쪽 2/3 -->
     <div>
       <!-- 당월 통계 -->
@@ -1943,15 +1946,25 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-top3"></div>
       </div>
 
-      <!-- 교육 영상 -->
-      <div style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 영상</div>
-          <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:5px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
-            <option value="">전체카테고리</option>
+      <!-- 과정 제품별 영상 -->
+      <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:20px;background:#fff">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">과정 제품별 영상</div>
+          <span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b">★ 관리자 등록 우선</span>
+        </div>
+        <!-- 필터 2종 (작게) -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="pick-filter-row">
+          <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
+            <option value="">전체 교안</option>
+          </select>
+          <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:6px 28px 6px 12px;border:1px solid #ddd;border-radius:10px;font-size:11px;font-weight:600;color:var(--t2);background:#fafafa;cursor:pointer">
+            <option value="">전체 제품</option>
           </select>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-videos"></div>
+        <!-- 영상 카드 -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
+        <!-- 클릭 상세 3컬럼 -->
+        <div id="pick-video-detail" style="display:none;margin-top:18px;padding-top:18px;border-top:1px dashed rgba(0,0,0,.12)"></div>
       </div>
 
       <!-- 추천 학습 콘텐츠 -->
@@ -1962,7 +1975,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
 
     <!-- 오른쪽 1/3 -->
-    <div>
+    <div style="padding-left:20px;border-left:1px solid var(--bdr)">
       <!-- 이번 주 일정 -->
       <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:16px">
         <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">이번 주 일정</div>
@@ -2030,6 +2043,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
     <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
+    <button class="tab-btn" onclick="switchTab('인터PICK',this);renderPickAdmin()">인터PICK 영상</button>
     <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
     <button class="tab-btn" onclick="switchTab('PDF',this)">PDF 내보내기</button>
   </div>
@@ -2084,6 +2098,21 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="sec-lbl">채널별 기준 영상 등록</div>
       <p style="font-size:12px;color:var(--t3);margin-bottom:16px">기준 영상은 관리자 및 로그인한 강사 누구나 등록 가능합니다.</p>
       <div id="ref-video-list"></div>
+    </div>
+  </div>
+
+  <!-- 인터PICK 영상 관리 -->
+  <div class="tab-pane" id="tab-인터PICK">
+    <div class="acc-wrap neu" style="padding:20px">
+      <div class="sec-lbl">인터PICK 등록 영상 (관리자 우선 노출)</div>
+      <p style="font-size:12px;color:var(--t3);margin-bottom:16px">인터PICK 메인 "과정 제품별 영상"에 우선 노출할 영상을 등록하세요. 위쪽 순서대로 최대 3개 노출됩니다.</p>
+      <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+        <select id="pick-admin-select" style="flex:1;min-width:240px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+          <option value="">영상 선택 —</option>
+        </select>
+        <button class="btn btn-blue" style="font-size:12px;padding:8px 16px" onclick="addPickFeatured()">+ 등록</button>
+      </div>
+      <div id="pick-admin-list"></div>
     </div>
   </div>
 
@@ -2526,6 +2555,9 @@ async function loadFromDB(){
   // 추천영상
   const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
   D.recVideos=rv||[];
+  // 인터PICK 관리자 등록 영상
+  const {data:pfv}=await sb.from('pick_featured_videos').select('*').order('order_index',{ascending:true});
+  D.pickFeaturedVideos=pfv||[];
 }
 
 /* ════════════════════════════════
@@ -3207,7 +3239,6 @@ function renderPick(){
   const now=new Date();
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
   const mEl=el('pick-month-label');if(mEl)mEl.textContent=monthLabel;
-  const dEl=el('pick-date');if(dEl)dEl.textContent=monthLabel;
 
   // 당월 기준 데이터
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
@@ -3291,10 +3322,19 @@ function renderPick(){
     </div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
 
-  // 카테고리 필터
+  // 교안 카테고리 필터
   const catFilter=el('pick-cat-filter');
   if(catFilter&&catFilter.options.length<=1){
     getEduCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catFilter.appendChild(o);});
+  }
+  // 제품 필터 (optgroup 트리)
+  const prodFilter=el('pick-prod-filter');
+  if(prodFilter&&prodFilter.options.length<=1){
+    Object.entries(PRODUCT_TREE).forEach(([group,items])=>{
+      const og=document.createElement('optgroup');og.label=group;
+      items.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;og.appendChild(o);});
+      prodFilter.appendChild(og);
+    });
   }
   renderPickVideos();
 
@@ -3334,33 +3374,163 @@ function renderPick(){
   }
 }
 
+const PRODUCT_TREE={
+  '키친':['냉장고','김치냉장고','전기레인지','식기세척기','정수기'],
+  '리빙':['워시타워','워시콤보','스타일러','청소기'],
+  'MS':['TV'],
+  '에어솔루션':['에어컨','공기청정기','하이드로타워','환기/버스에어']
+};
+
+function pickVidScore(vid){
+  const good=(vid.timestamps||[]).filter(t=>t.type==='good').length;
+  return Math.min(100,good*10+(vid.timestamps||[]).length*3);
+}
+
 function renderPickVideos(){
   const vidsEl=el('pick-videos');
   if(!vidsEl) return;
   const catVal=v('pick-cat-filter');
+  const prodVal=v('pick-prod-filter');
   const now=new Date();
-  let vids=(D.videos||[]).filter(v=>v.status==='분석완료');
-  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
-  vids=vids.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+  const thisMonth=now.getMonth(),thisYear=now.getFullYear();
+
+  // 기본 풀: 분석완료 + 당월
+  let pool=(D.videos||[]).filter(vd=>{
+    if(vd.status!=='분석완료') return false;
+    const d=new Date(vd.date||vd.created_at||0);
+    return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;
+  });
+  if(catVal) pool=pool.filter(vd=>(vd.videoType||vd.video_type||'')===catVal);
+  if(prodVal) pool=pool.filter(vd=>(vd.productName||vd.product_name||vd.videoType||vd.video_type||'').includes(prodVal));
+
+  // 관리자 등록 우선 (pickFeaturedVideos 순서)
+  const featuredList=(D.pickFeaturedVideos||[]).slice().sort((a,b)=>(a.order_index||0)-(b.order_index||0));
+  const featuredIds=featuredList.map(f=>f.video_id);
+  const featured=featuredIds.map(id=>pool.find(vd=>vd.id===id)).filter(Boolean);
+  const others=pool.filter(vd=>!featuredIds.includes(vd.id)).sort((a,b)=>pickVidScore(b)-pickVidScore(a));
+  const vids=[...featured,...others].slice(0,3);
 
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
     const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
     const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
-    const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
-    const score=goodCount*10+(vid.timestamps||[]).length*3;
-    return `<div style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .2s" onclick="openVideo(${vid.id})" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-      <div style="height:100px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+    const score=pickVidScore(vid);
+    const isAdmin=featuredIds.includes(vid.id);
+    return `<div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s;background:#fff" onclick="togglePickDetail(${vid.id})" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="height:110px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
         ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:11px;color:var(--t3)">미리보기 없음</span>'}
-        <div style="position:absolute;bottom:6px;right:6px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700">${score}점</div>
+        ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
+        <span style="position:absolute;top:8px;right:8px;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3)">AI ${score}점</span>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div>
       </div>
-      <div style="padding:10px">
-        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'—'} · ${vid.date||''}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.videoType||vid.video_type||''}</div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--t1);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:34px">${vid.title||'—'}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:6px">${u?.name||'—'} 강사</div>
       </div>
     </div>`;
-  }).join(''):'<div style="grid-column:1/-1;padding:20px;text-align:center;font-size:12px;color:var(--t3)">영상이 없습니다</div>';
+  }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:12px;color:var(--t3)">당월 영상이 없습니다</div>';
+
+  // 상세 영역 초기화
+  const detailEl=el('pick-video-detail');
+  if(detailEl){detailEl.style.display='none';detailEl.innerHTML='';}
+}
+
+function togglePickDetail(vidId){
+  const detailEl=el('pick-video-detail');
+  if(!detailEl) return;
+  const vid=(D.videos||[]).find(x=>x.id===vidId);
+  if(!vid){detailEl.style.display='none';return;}
+  // 토글: 같은 영상 다시 클릭 시 닫기
+  if(detailEl.dataset.vidId==String(vidId)&&detailEl.style.display!=='none'){
+    detailEl.style.display='none';detailEl.dataset.vidId='';return;
+  }
+  detailEl.dataset.vidId=String(vidId);
+  const u=D.users?.find(x=>x.id===vid.userId);
+  const title=vid.title||'—';
+  detailEl.style.display='block';
+  detailEl.innerHTML=`
+    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">선택 영상: <strong style="color:var(--t1)">${title}</strong> · ${u?.name||'—'} 강사</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px" id="pick-detail-cols">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>추천 시나리오</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">냉장고 에너지 절감 고객 설명 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">워시타워 첫 사용 온보딩 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">에어컨 실외기 소음 민원 처리 시나리오</div><div style="font-size:10px;color:var(--t3);margin-top:4px">AI 평가 후 자동 생성 예정</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>강의 레벨 UP TIP</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">도입 3분이 강의 전체를 결정한다</div><div style="font-size:10px;color:var(--t3);margin-top:4px">오프닝 질문 기법 · 실제 사례 적용법</div></div>
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.05)"><div style="font-size:12px;font-weight:700;color:var(--t1);line-height:1.4">실습 피드백은 즉각적·구체적으로</div><div style="font-size:10px;color:var(--t3);margin-top:4px">행동 변화 유도하는 코칭 언어 패턴</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#0078C8"></span>강사 교육 화법</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border-left:3px solid #0078C8"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">도입 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div></div>
+          <div style="padding:12px;border-radius:10px;background:#fafafa;border-left:3px solid #0078C8"><div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">피드백 화법</div><div style="font-size:12px;color:var(--t1);line-height:1.5;font-style:italic">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── 인터PICK 관리자 영상 관리 ── */
+function renderPickAdmin(){
+  const sel=el('pick-admin-select');
+  const listEl=el('pick-admin-list');
+  if(!sel||!listEl) return;
+  // 셀렉트: 분석완료 영상 전체
+  const featuredIds=(D.pickFeaturedVideos||[]).map(f=>f.video_id);
+  const availVids=(D.videos||[]).filter(vd=>vd.status==='분석완료'&&!featuredIds.includes(vd.id));
+  sel.innerHTML='<option value="">영상 선택 —</option>'+availVids.map(vd=>{
+    const u=D.users?.find(x=>x.id===vd.userId);
+    return `<option value="${vd.id}">${vd.title||'—'} · ${u?.name||'—'} · ${vd.date||''}</option>`;
+  }).join('');
+  // 목록
+  const featured=(D.pickFeaturedVideos||[]).slice().sort((a,b)=>(a.order_index||0)-(b.order_index||0));
+  if(!featured.length){listEl.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3);border:1px dashed rgba(0,0,0,.15);border-radius:10px">등록된 인터PICK 영상이 없습니다</div>';return;}
+  listEl.innerHTML=featured.map((f,i)=>{
+    const vd=(D.videos||[]).find(x=>x.id===f.video_id);
+    const u=D.users?.find(x=>x.id===vd?.userId);
+    if(!vd) return `<div style="padding:12px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(226,30,38,.25);background:rgba(226,30,38,.04);display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:12px;color:var(--red)">삭제된 영상 (ID: ${f.video_id})</span><button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:var(--red)" onclick="removePickFeatured(${f.id})">삭제</button></div>`;
+    return `<div style="padding:12px 14px;margin-bottom:8px;border-radius:10px;border:1px solid var(--bdr);display:flex;align-items:center;gap:12px;background:#fff">
+      <div style="width:28px;height:28px;border-radius:50%;background:#f59e0b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vd.title||'—'}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'—'} 강사 · ${vd.date||''} · ${vd.videoType||vd.video_type||'—'}</div></div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="movePickFeatured(${f.id},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="movePickFeatured(${f.id},1)" ${i===featured.length-1?'disabled':''}>▼</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--red)" onclick="removePickFeatured(${f.id})">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function addPickFeatured(){
+  const sel=el('pick-admin-select');if(!sel) return;
+  const vidId=parseInt(sel.value);if(!vidId){alert('영상을 선택하세요');return;}
+  const order=(D.pickFeaturedVideos||[]).length;
+  const {error}=await sb.from('pick_featured_videos').insert({video_id:vidId,order_index:order});
+  if(error){alert('등록 실패: '+error.message);return;}
+  await loadFromDB();renderPickAdmin();
+}
+async function removePickFeatured(rowId){
+  if(!confirm('등록 영상을 삭제하시겠습니까?'))return;
+  const {error}=await sb.from('pick_featured_videos').delete().eq('id',rowId);
+  if(error){alert('삭제 실패: '+error.message);return;}
+  await loadFromDB();renderPickAdmin();
+}
+async function movePickFeatured(rowId,dir){
+  const list=(D.pickFeaturedVideos||[]).slice().sort((a,b)=>(a.order_index||0)-(b.order_index||0));
+  const idx=list.findIndex(f=>f.id===rowId);
+  if(idx<0) return;
+  const swapIdx=idx+dir;
+  if(swapIdx<0||swapIdx>=list.length) return;
+  const a=list[idx],b=list[swapIdx];
+  const {error:e1}=await sb.from('pick_featured_videos').update({order_index:b.order_index}).eq('id',a.id);
+  const {error:e2}=await sb.from('pick_featured_videos').update({order_index:a.order_index}).eq('id',b.id);
+  if(e1||e2){alert('순서 변경 실패');return;}
+  await loadFromDB();renderPickAdmin();
 }
 
 function openAdminWithAuth(){
