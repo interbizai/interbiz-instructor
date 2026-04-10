@@ -1115,7 +1115,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <option value="">전체</option>
       </select>
     </div>
-    <div class="f-item"><label class="f-lbl">가전</label>
+    <div class="f-item"><label class="f-lbl">교육자료</label>
       <select id="f-product" multiple onchange="renderDashboard()" size="1">
         <option value="">전체</option>
       </select>
@@ -1289,8 +1289,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </select>
         </div>
         <div class="form-group" style="margin:0">
-          <label class="form-lbl">가전</label>
-          <input type="text" class="form-input" id="an-product" placeholder="예: 에어컨, TV, 냉장고">
+          <label class="form-lbl">교육자료</label>
+          <select class="form-input" id="an-product"></select>
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육생 인원수</label>
@@ -1584,8 +1584,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
         </div>
         <div class="form-group">
-          <label class="form-lbl">가전</label>
-          <input type="text" class="form-input" id="va-product" placeholder="예: 에어컨, TV, 냉장고">
+          <label class="form-lbl">교육자료</label>
+          <select class="form-input" id="va-product"></select>
         </div>
         <div class="form-group">
           <label class="form-lbl">교육생 인원수</label>
@@ -2197,8 +2197,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <input type="text" class="form-input" id="st-title" placeholder="예: 에어컨 교육 3회차">
       </div>
       <div class="form-group" style="margin:0">
-        <label class="form-lbl">영상 종류 (직접 입력)</label>
-        <input type="text" class="form-input" id="st-type" placeholder="예: 판경상인, 거점교육">
+        <label class="form-lbl">교육자료</label>
+        <select class="form-input" id="st-type"></select>
       </div>
       <div class="form-group" style="margin:0">
         <label class="form-lbl">소속</label>
@@ -2988,6 +2988,15 @@ function doFindPw(){
 /* ════════════════════════════════
    ADMIN
 ════════════════════════════════ */
+function getEduCategories(){
+  const defaults=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
+  const db=(D.eduCategories||[]).map(c=>c.name);
+  return [...new Set([...defaults,...db])];
+}
+function buildCategorySelect(id,style){
+  const cats=getEduCategories();
+  return `<select id="${id}" style="${style||'padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px'}"><option value="">전체</option>${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`;
+}
 function renderEduPage(){
   const clArea=el('edu-checklist-area');
   const lkArea=el('edu-links-area');
@@ -3416,6 +3425,9 @@ function openAnalysis(){
   el('an-step2').style.display='none';
   const pdfBtn=el('an-pdf-btn');if(pdfBtn)pdfBtn.style.display='none';
   el('an-youtube').value='';el('an-title').value='';el('an-count').value='';
+  // 교육자료 카테고리 select 채우기
+  const anProd=el('an-product');
+  if(anProd){const cats=getEduCategories();anProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
   showPage('page-analysis');
@@ -4395,6 +4407,7 @@ function openVoiceAnalysis(){
   el('va-step2').style.display='none';
   const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='none';
   el('va-title').value='';el('va-count').value='';
+  const vaProd=el('va-product');if(vaProd){const cats=getEduCategories();vaProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('va-file-name').textContent='음성/영상 파일 업로드 (mp3, wav, mp4)';
   el('va-cl-name').textContent='없음';
   showPage('page-voice');
@@ -5046,7 +5059,8 @@ function openStreaming(){
   showPage('page-streaming');
 }
 function openStreamModal(){
-  el('st-title').value=''; el('st-type').value=''; el('st-count').value='';
+  el('st-title').value=''; el('st-count').value='';
+  const stType=el('st-type');if(stType){const cats=getEduCategories();stType.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('st-date').value=new Date().toISOString().split('T')[0];
   el('st-err').textContent='';
   el('stream-info-overlay').classList.add('show');
@@ -5297,7 +5311,7 @@ function initDashboard(){
   [...new Set(D.users.map(u=>(u.channel||'').trim()).filter(Boolean))].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; chs.appendChild(o); });
   chs.value=prevCh;}
   const ps=el('f-product'); const prevP=ps?.value||''; if(ps){ps.innerHTML='<option value="">전체</option>';
-  [...new Set(D.videos.map(v=>(v.videoType||v.video_type||'').trim()).filter(Boolean))].forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
+  getEduCategories().forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
   ps.value=prevP;}
   const ts=el('f-team'); const prevT=ts?.value||''; if(ts){ts.innerHTML='<option value="">전체</option>';
   [...new Set(D.users.map(u=>(u.team||'').trim()).filter(Boolean))].forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o); });
