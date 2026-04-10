@@ -1926,6 +1926,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <header class="hdr" style="display:none"></header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2></div>
+  <div id="pick-date" style="font-size:16px;font-weight:700;color:var(--blue);margin-bottom:16px"></div>
 
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px" id="pick-layout">
     <!-- 왼쪽 2/3 -->
@@ -3206,6 +3207,7 @@ function renderPick(){
   const now=new Date();
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
   const mEl=el('pick-month-label');if(mEl)mEl.textContent=monthLabel;
+  const dEl=el('pick-date');if(dEl)dEl.textContent=monthLabel;
 
   // 당월 기준 데이터
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
@@ -3228,35 +3230,66 @@ function renderPick(){
     <div style="font-size:11px;color:var(--t3);margin-top:4px">${s.lbl}</div>
   </div>`).join('');
 
-  // TOP 3 강사
+  // TOP 3 강사 (당월 + 전월 대비)
+  const prevMonth=now.getMonth()===0?11:now.getMonth()-1;
+  const prevYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  const prevVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+
   const userScores=(D.users||[]).map(u=>{
     const uVids=monthVids.filter(v=>v.userId===u.id);
     const uVoice=monthVoice.filter(v=>v.user_id===u.id);
     const scores=[...uVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...uVoice.map(v=>v.score||0)];
     const avg2=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
-    return {...u,pickScore:Math.round(avg2*10)/10,evalCount:scores.length};
+    // 전월
+    const pVids=prevVids.filter(v=>v.userId===u.id);
+    const pVoice=prevVoice.filter(v=>v.user_id===u.id);
+    const pScores=[...pVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...pVoice.map(v=>v.score||0)];
+    const pAvg=pScores.length?(pScores.reduce((a,b)=>a+b,0)/pScores.length):0;
+    const growth=pAvg>0?Math.round((avg2-pAvg)/pAvg*100):0;
+    return {...u,pickScore:Math.round(avg2*10)/10,evalCount:scores.length,growth};
   }).filter(u=>u.evalCount>0).sort((a,b)=>b.pickScore-a.pickScore).slice(0,3);
 
   const medals2=['🥇','🥈','🥉'];
-  const medalBg2=['rgba(255,215,0,.12)','rgba(192,192,192,.12)','rgba(205,127,50,.1)'];
   const top3El=el('pick-top3');
   if(top3El) top3El.innerHTML=userScores.length?userScores.map((u,i)=>{
     const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6'][i%5];
-    return `<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;cursor:pointer;transition:transform .2s" onclick="openLecturer(${u.id},'page-pick')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <span style="font-size:20px">${medals2[i]||''}</span>
-        <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+    const pct=Math.min(100,Math.round(u.pickScore));
+    const barColor=u.pickScore>70?'#0078C8':'#E21E26';
+    const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
+    const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
+    const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
+    return `<div style="border:1px solid rgba(0,0,0,.1);border-radius:14px;padding:20px;cursor:pointer;transition:transform .2s;background:#fff" onclick="openLecturer(${u.id},'page-pick')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <!-- 상단: 사진 + 이름 -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
         <div>
-          <div style="font-size:14px;font-weight:800">${u.name}</div>
-          <div style="font-size:11px;color:var(--t3)">${u.channel} · ${u.team}</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px;font-weight:800">${u.name}</span><span style="font-size:14px">${medals2[i]}</span></div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px">${u.channel} · ${u.team}</div>
         </div>
       </div>
-      <div style="display:flex;align-items:baseline;gap:4px">
-        <span style="font-size:22px;font-weight:900;color:${u.pickScore>70?'#10b981':'#E21E26'}">${u.pickScore}</span>
-        <span style="font-size:11px;color:var(--t3)">점 · ${u.evalCount}건</span>
+      <!-- 점수 + 달성 바 -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
+          <span style="font-size:28px;font-weight:900;color:var(--t1)">${u.pickScore}</span>
+          <span style="font-size:12px;color:var(--t3)">/ 100 AI 점수</span>
+        </div>
+        <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .8s ease"></div>
+        </div>
+      </div>
+      <!-- 건수 / LV / 성장률 -->
+      <div style="display:flex;gap:16px;margin-bottom:12px">
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${u.evalCount}</div><div style="font-size:10px;color:var(--t3)">건수</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t3)">—</div><div style="font-size:10px;color:var(--t3)">LV</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:${growthColor}">${growthTxt}</div><div style="font-size:10px;color:var(--t3)">성장</div></div>
+      </div>
+      <!-- 키워드 -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${keywords.length?keywords.map(k=>`<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,120,200,.08);color:var(--blue)">${k}</span>`).join(''):'<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 키워드 생성</span>'}
       </div>
     </div>`;
-  }).join(''):'<div style="grid-column:1/-1;padding:20px;text-align:center;font-size:12px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
+  }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
 
   // 카테고리 필터
   const catFilter=el('pick-cat-filter');
