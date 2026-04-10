@@ -717,6 +717,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .lect-name{font-size:12px}
   /* 교육콘텐츠 반반 → 세로 */
   #edu-grid{grid-template-columns:1fr!important}
+  #pick-layout{grid-template-columns:1fr!important}
+  #pick-stats{grid-template-columns:repeat(2,1fr)!important}
+  #pick-top3{grid-template-columns:1fr!important}
+  #pick-videos{grid-template-columns:repeat(2,1fr)!important}
   /* 음성/영상 분석 좌우 → 세로 */
   #an-split,#va-split{grid-template-columns:1fr!important}
   .video-layout{grid-template-columns:1fr!important}
@@ -1922,10 +1926,65 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <header class="hdr" style="display:none"></header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2></div>
-  <div style="padding:60px 0;text-align:center;color:var(--t3)">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5" style="margin-bottom:12px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    <div style="font-size:16px;font-weight:700">준비 중입니다</div>
-    <div style="font-size:13px;margin-top:6px">인터 PICK 대시보드가 곧 오픈됩니다</div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px" id="pick-layout">
+    <!-- 왼쪽 2/3 -->
+    <div>
+      <!-- 당월 통계 -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px" id="pick-stats"></div>
+
+      <!-- 이달의 인터PICK 강사 -->
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">이달의 인터PICK 강사</div>
+          <span style="font-size:11px;color:var(--t3)" id="pick-month-label"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-top3"></div>
+      </div>
+
+      <!-- 교육 영상 -->
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 영상</div>
+          <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:5px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+            <option value="">전체카테고리</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-videos"></div>
+      </div>
+
+      <!-- 추천 학습 콘텐츠 -->
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">추천 학습 콘텐츠</div>
+        <div id="pick-links"></div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 1/3 -->
+    <div>
+      <!-- 이번 주 일정 -->
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">이번 주 일정</div>
+        <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
+      </div>
+
+      <!-- 빠른 실행 -->
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">빠른 실행</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>영상 분석</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openVoiceAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>스피치 분석</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openStreaming()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>스트리밍</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="showPage('page-edu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>교육콘텐츠</button>
+        </div>
+      </div>
+
+      <!-- 공지 및 알림 -->
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">공지 및 알림</div>
+        <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
+      </div>
+    </div>
   </div>
 </main>
 </div>
@@ -2578,6 +2637,7 @@ function showPage(id){
   }
   if(CU) try{updateHeaderUI();}catch(e){}
   if(id==='page-edu') try{renderEduPage();}catch(e){}
+  if(id==='page-pick') try{renderPick();}catch(e){console.error('renderPick:',e);}
 }
 /* ── Sidebar Toggle ── */
 let sidebarVisible=true;
@@ -3139,6 +3199,135 @@ async function deleteLink(id){
   if(!confirm('삭제하시겠습니까?'))return;
   await sb.from('learning_links').delete().eq('id',id);
   await loadFromDB();renderEduPage();
+}
+
+/* ── 인터PICK 대시보드 ── */
+function renderPick(){
+  const now=new Date();
+  const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
+  const mEl=el('pick-month-label');if(mEl)mEl.textContent=monthLabel;
+
+  // 당월 기준 데이터
+  const thisMonth=now.getMonth(),thisYear=now.getFullYear();
+  const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const totalEvals=monthVids.length+monthVoice.length;
+  const allScores=[...monthVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...monthVoice.map(v=>v.score||0)];
+  const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
+  const lowCount=allScores.filter(s=>s<=70).length;
+
+  // 통계 카드
+  const statsEl=el('pick-stats');
+  if(statsEl) statsEl.innerHTML=[
+    {val:D.users?.length||0,unit:'명',lbl:'총 강사 수'},
+    {val:totalEvals,unit:'건',lbl:'당월 평가 건수'},
+    {val:avg,unit:'점',lbl:'평균 점수'},
+    {val:lowCount,unit:'건',lbl:'70점 이하'}
+  ].map(s=>`<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;text-align:center">
+    <div style="font-size:24px;font-weight:900;color:var(--t1)">${s.val}<span style="font-size:12px;font-weight:700">${s.unit}</span></div>
+    <div style="font-size:11px;color:var(--t3);margin-top:4px">${s.lbl}</div>
+  </div>`).join('');
+
+  // TOP 3 강사
+  const userScores=(D.users||[]).map(u=>{
+    const uVids=monthVids.filter(v=>v.userId===u.id);
+    const uVoice=monthVoice.filter(v=>v.user_id===u.id);
+    const scores=[...uVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...uVoice.map(v=>v.score||0)];
+    const avg2=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+    return {...u,pickScore:Math.round(avg2*10)/10,evalCount:scores.length};
+  }).filter(u=>u.evalCount>0).sort((a,b)=>b.pickScore-a.pickScore).slice(0,3);
+
+  const medals2=['🥇','🥈','🥉'];
+  const medalBg2=['rgba(255,215,0,.12)','rgba(192,192,192,.12)','rgba(205,127,50,.1)'];
+  const top3El=el('pick-top3');
+  if(top3El) top3El.innerHTML=userScores.length?userScores.map((u,i)=>{
+    const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6'][i%5];
+    return `<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;cursor:pointer;transition:transform .2s" onclick="openLecturer(${u.id},'page-pick')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:20px">${medals2[i]||''}</span>
+        <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+        <div>
+          <div style="font-size:14px;font-weight:800">${u.name}</div>
+          <div style="font-size:11px;color:var(--t3)">${u.channel} · ${u.team}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <span style="font-size:22px;font-weight:900;color:${u.pickScore>70?'#10b981':'#E21E26'}">${u.pickScore}</span>
+        <span style="font-size:11px;color:var(--t3)">점 · ${u.evalCount}건</span>
+      </div>
+    </div>`;
+  }).join(''):'<div style="grid-column:1/-1;padding:20px;text-align:center;font-size:12px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
+
+  // 카테고리 필터
+  const catFilter=el('pick-cat-filter');
+  if(catFilter&&catFilter.options.length<=1){
+    getEduCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catFilter.appendChild(o);});
+  }
+  renderPickVideos();
+
+  // 교육링크
+  const linksEl=el('pick-links');
+  if(linksEl){
+    const links=(D.learningLinks||[]).slice(0,5);
+    linksEl.innerHTML=links.length?links.map((lk,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="window.open('${lk.url}','_blank')">
+      <div style="width:28px;height:28px;border-radius:8px;background:${['#0078C8','#E21E26','#10b981','#f59e0b','#8b5cf6'][i%5]};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1)">${lk.name}</div><div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.url}</div></div>
+    </div>`).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--t3)">등록된 학습 콘텐츠가 없습니다</div>';
+  }
+
+  // 이번 주 일정
+  const eventsEl=el('pick-events');
+  if(eventsEl){
+    const today=new Date();const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
+    const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);
+    const events=(D.calendarEvents||[]).filter(e=>{const d=new Date(e.start_date);return d>=weekStart&&d<=weekEnd;});
+    eventsEl.innerHTML=events.length?events.map(e=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+      <div style="width:4px;height:24px;border-radius:2px;background:${e.color||'var(--blue)'};flex-shrink:0"></div>
+      <div><div style="font-size:12px;font-weight:600">${e.title}</div><div style="font-size:10px;color:var(--t3)">${e.start_date}</div></div>
+    </div>`).join(''):'<div style="padding:12px 0;color:var(--t3);font-size:12px">이번 주 일정이 없습니다</div>';
+  }
+
+  // 공지
+  const noticesEl=el('pick-notices');
+  if(noticesEl){
+    const pending=(D.deleteRequests||[]).filter(r=>r.status==='pending').length;
+    const totalUsers=D.users?.length||0;
+    const recentVid=(D.videos||[]).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+    let notices='';
+    if(pending) notices+=`<div style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04)">삭제 요청 <strong>${pending}건</strong> 대기 중</div>`;
+    notices+=`<div style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04)">총 <strong>${totalUsers}명</strong> 강사 등록</div>`;
+    if(recentVid) notices+=`<div style="padding:8px 0">최근 영상: <strong>${recentVid.title||'—'}</strong> (${recentVid.date||''})</div>`;
+    noticesEl.innerHTML=notices||'<div style="padding:8px 0;color:var(--t3)">알림이 없습니다</div>';
+  }
+}
+
+function renderPickVideos(){
+  const vidsEl=el('pick-videos');
+  if(!vidsEl) return;
+  const catVal=v('pick-cat-filter');
+  const now=new Date();
+  let vids=(D.videos||[]).filter(v=>v.status==='분석완료');
+  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
+  vids=vids.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+
+  vidsEl.innerHTML=vids.length?vids.map(vid=>{
+    const u=D.users?.find(x=>x.id===vid.userId);
+    const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
+    const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
+    const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
+    const score=goodCount*10+(vid.timestamps||[]).length*3;
+    return `<div style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .2s" onclick="openVideo(${vid.id})" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="height:100px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:11px;color:var(--t3)">미리보기 없음</span>'}
+        <div style="position:absolute;bottom:6px;right:6px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700">${score}점</div>
+      </div>
+      <div style="padding:10px">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'—'} · ${vid.date||''}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.videoType||vid.video_type||''}</div>
+      </div>
+    </div>`;
+  }).join(''):'<div style="grid-column:1/-1;padding:20px;text-align:center;font-size:12px;color:var(--t3)">영상이 없습니다</div>';
 }
 
 function openAdminWithAuth(){
