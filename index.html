@@ -2995,7 +2995,8 @@ function renderEduPage(){
   // 교육자료 (체크리스트)
   const isAdmin=CU?.isAdmin;
   const defaultCatsInit=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  const catsForSelect=D.eduCategories?.length?D.eduCategories.map(c=>c.name):defaultCatsInit;
+  const dbCats=(D.eduCategories||[]).map(c=>c.name);
+  const catsForSelect=[...new Set([...defaultCatsInit,...dbCats])];
   let clHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
@@ -3012,8 +3013,9 @@ function renderEduPage(){
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
   // 카테고리별 그룹 + 최신순
-  const defaultCats=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  const cats=D.eduCategories?.length?D.eduCategories.map(c=>c.name):defaultCats;
+  const defaultCats2=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
+  const dbCats2=(D.eduCategories||[]).map(c=>c.name);
+  const cats=[...new Set([...defaultCats2,...dbCats2])];
   const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
   // 카테고리 select 동적 생성
   const catSel=document.getElementById('edu-cl-cat');
@@ -3043,7 +3045,7 @@ function renderEduPage(){
   if(isAdmin){
     clHtml+=`<div style="margin-top:16px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
       <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">카테고리 관리</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cats.map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c}<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c}')">×</button></span>`).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cats.map(c=>{const isDef=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'].includes(c);return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c}${isDef?'':`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c}')">×</button>`}</span>`;}).join('')}</div>
       <div style="display:flex;gap:6px">
         <input type="text" id="new-edu-cat" placeholder="새 카테고리명" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
         <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addEduCategory()">추가</button>
@@ -3112,6 +3114,8 @@ async function addEduCategory(){
   await loadFromDB();renderEduPage();
 }
 async function deleteEduCategory(name){
+  const defaults=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
+  if(defaults.includes(name)){alert('기본 카테고리는 삭제할 수 없습니다.');return;}
   if(!confirm(`"${name}" 카테고리를 삭제하시겠습니까?`))return;
   const{error}=await sb.from('edu_categories').delete().eq('name',name);
   if(error){alert('삭제 실패: '+error.message);return;}
