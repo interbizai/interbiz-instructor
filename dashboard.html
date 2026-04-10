@@ -603,6 +603,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-top-card:hover{transform:translateY(-5px) scale(1.015)}
 .pick-top-card-inner{background:#fff;border-radius:14px;padding:20px;position:relative;z-index:1}
 @supports not (background:conic-gradient(from 0deg,red,red)){.pick-top-card{background:linear-gradient(135deg,#ef4444,#8b5cf6);animation:pickGlowPulse 2.8s ease-in-out infinite}.pick-top-card::before{display:none}}
+.pick-crown-hat{filter:drop-shadow(0 3px 4px rgba(139,94,0,.5)) drop-shadow(0 0 6px rgba(255,215,0,.45));transform:rotate(-18deg);transform-origin:60% 100%}
+.pick-shell-card{transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s,border-color .2s;cursor:default}
+.pick-shell-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(248,113,113,.14);border-color:rgba(248,113,113,.35)!important}
+.pick-lecturer-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:linear-gradient(135deg,#fee2e2,#fecaca);border:1px solid rgba(248,113,113,.45);font-size:11.5px;font-weight:700;color:#b91c1c;margin-bottom:10px}
+.pick-lecturer-chip button{background:rgba(0,0,0,.08);border:none;width:18px;height:18px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7f1d1d;font-weight:900;font-size:11px;line-height:1}
+.pick-lecturer-chip button:hover{background:rgba(0,0,0,.18)}
 .tn-icon-ai svg{animation:tnFloat 3s ease-in-out infinite}
 @keyframes tnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tn-icon-edu svg{animation:tnFlip 4s ease infinite}
@@ -733,6 +739,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   #pick-filter-row{flex-direction:column!important}
   #pick-filter-row select{width:100%!important}
   #pick-detail-cols{grid-template-columns:1fr!important;gap:18px!important}
+  #pick-selected-group{padding:8px!important;border-radius:12px!important}
+  .pick-crown-hat svg{width:48px!important;height:38px!important}
+  .pick-crown-hat{top:-20px!important;left:4px!important}
+  .pick-top-card-inner{padding:16px!important}
+  .pick-hero-thumb{width:96px!important;height:64px!important}
+  .pick-hero-title{font-size:12.5px!important}
   /* 음성/영상 분석 좌우 → 세로 */
   #an-split,#va-split{grid-template-columns:1fr!important}
   .video-layout{grid-template-columns:1fr!important}
@@ -1967,6 +1979,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <!-- 영상카드 + 상세 그룹 wrapper (선택 시 빨강 외곽 프레임) -->
         <div id="pick-selected-group" style="padding:14px;border-radius:14px;border:2px solid transparent;transition:border-color .25s,background .25s">
+          <!-- 강사 필터 칩 (TOP3 클릭 시 표시) -->
+          <div id="pick-lecturer-chip-wrap"></div>
           <!-- 영상 카드 -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
           <!-- 선택 영상 정보 + 3컬럼 상세 -->
@@ -3317,8 +3331,8 @@ function renderPick(){
     const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
     const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
-    const crown=i===0?`<div style="position:absolute;top:-22px;left:-10px;z-index:3;filter:drop-shadow(0 3px 4px rgba(139,94,0,.45)) drop-shadow(0 0 6px rgba(255,215,0,.4))"><svg width="46" height="40" viewBox="0 0 52 44" fill="none"><defs><linearGradient id="crownMain${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFF6CC"/><stop offset="18%" stop-color="#FFE27A"/><stop offset="50%" stop-color="#FFC728"/><stop offset="85%" stop-color="#D99200"/><stop offset="100%" stop-color="#8B5E00"/></linearGradient><linearGradient id="crownHL${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity=".85"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="crownBand${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="50%" stop-color="#FFB800"/><stop offset="100%" stop-color="#8B5E00"/></linearGradient><radialGradient id="rubyG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ff9bb0"/><stop offset="45%" stop-color="#ff2d55"/><stop offset="100%" stop-color="#7a0019"/></radialGradient><radialGradient id="pearlG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#edeff3"/><stop offset="100%" stop-color="#8892a3"/></radialGradient><radialGradient id="emerG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#9eefc4"/><stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#064e33"/></radialGradient></defs><path d="M4 33 L9 11 L19 23 L26 5 L33 23 L43 11 L48 33 Z" fill="url(#crownMain${u.id})" stroke="#6B4500" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 32 L10 14 L18 22 L26 9 L34 22 L42 14 L46 32 L44 28 L40 22 L33 19 L26 13 L19 19 L12 22 L8 28 Z" fill="url(#crownHL${u.id})" opacity=".55"/><rect x="4" y="32" width="44" height="8" rx="1.5" fill="url(#crownBand${u.id})" stroke="#6B4500" stroke-width="1.1"/><rect x="4" y="32" width="44" height="2" rx="1" fill="#fff" opacity=".4"/><circle cx="9" cy="10" r="2.6" fill="url(#pearlG${u.id})" stroke="#6B4500" stroke-width=".8"/><circle cx="8.2" cy="9.2" r=".9" fill="#fff" opacity=".9"/><circle cx="26" cy="4" r="3.4" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".9"/><ellipse cx="24.8" cy="2.8" rx="1.3" ry=".8" fill="#fff" opacity=".75"/><circle cx="43" cy="10" r="2.6" fill="url(#pearlG${u.id})" stroke="#6B4500" stroke-width=".8"/><circle cx="42.2" cy="9.2" r=".9" fill="#fff" opacity=".9"/><circle cx="15" cy="36" r="1.6" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".5"/><circle cx="26" cy="36" r="1.7" fill="url(#emerG${u.id})" stroke="#6B4500" stroke-width=".5"/><circle cx="37" cy="36" r="1.6" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".5"/></svg></div>`:'';
-    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner">
+    const crown=i===0?`<div class="pick-crown-hat" style="position:absolute;top:-24px;left:6px;z-index:3"><svg width="58" height="46" viewBox="0 0 64 52" fill="none"><defs><linearGradient id="crownMain${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFF8D6"/><stop offset="15%" stop-color="#FFE27A"/><stop offset="45%" stop-color="#FFC728"/><stop offset="80%" stop-color="#C98A00"/><stop offset="100%" stop-color="#6B4500"/></linearGradient><linearGradient id="crownHL${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity=".9"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="crownBand${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFE27A"/><stop offset="50%" stop-color="#FFB800"/><stop offset="100%" stop-color="#7A4E00"/></linearGradient><radialGradient id="rubyG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffb3c3"/><stop offset="45%" stop-color="#ff2d55"/><stop offset="100%" stop-color="#6b0017"/></radialGradient><radialGradient id="pearlG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#eef0f5"/><stop offset="100%" stop-color="#7c8699"/></radialGradient><radialGradient id="emerG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#b3f2d1"/><stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#064e33"/></radialGradient><radialGradient id="sapG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#b4ccff"/><stop offset="50%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0a1a52"/></radialGradient></defs><!-- 5-point crown body --><path d="M4 40 L8 16 L18 28 L24 10 L32 3 L40 10 L46 28 L56 16 L60 40 Z" fill="url(#crownMain${u.id})" stroke="#5a3a00" stroke-width="1.4" stroke-linejoin="round"/><!-- highlights --><path d="M6 38 L10 19 L18 26 L24 13 L32 7 L40 13 L46 26 L54 19 L58 38 L54 34 L46 24 L40 18 L32 12 L24 18 L18 24 L10 34 Z" fill="url(#crownHL${u.id})" opacity=".55"/><!-- jeweled base band --><rect x="3.5" y="40" width="57" height="9" rx="1.6" fill="url(#crownBand${u.id})" stroke="#5a3a00" stroke-width="1.2"/><rect x="3.5" y="40" width="57" height="2.2" rx="1" fill="#fff" opacity=".5"/><rect x="3.5" y="47" width="57" height="2.2" rx="1" fill="#fffbe6" opacity=".6"/><!-- top spheres on each point --><circle cx="8" cy="15" r="2.8" fill="url(#pearlG${u.id})" stroke="#5a3a00" stroke-width=".9"/><circle cx="7.3" cy="14.2" r="1" fill="#fff" opacity=".95"/><circle cx="24" cy="9" r="2.6" fill="url(#pearlG${u.id})" stroke="#5a3a00" stroke-width=".8"/><circle cx="23.3" cy="8.3" r=".9" fill="#fff" opacity=".95"/><circle cx="40" cy="9" r="2.6" fill="url(#pearlG${u.id})" stroke="#5a3a00" stroke-width=".8"/><circle cx="39.3" cy="8.3" r=".9" fill="#fff" opacity=".95"/><circle cx="56" cy="15" r="2.8" fill="url(#pearlG${u.id})" stroke="#5a3a00" stroke-width=".9"/><circle cx="55.3" cy="14.2" r="1" fill="#fff" opacity=".95"/><!-- center large ruby + cross --><circle cx="32" cy="3.5" r="3.8" fill="url(#rubyG${u.id})" stroke="#5a3a00" stroke-width="1"/><ellipse cx="30.6" cy="2" rx="1.6" ry="1" fill="#fff" opacity=".8"/><!-- band jewels: ruby-sapphire-emerald-sapphire-ruby --><circle cx="12" cy="44.5" r="2.1" fill="url(#emerG${u.id})" stroke="#5a3a00" stroke-width=".6"/><ellipse cx="11.3" cy="43.7" rx=".7" ry=".4" fill="#fff" opacity=".8"/><circle cx="22" cy="44.5" r="2.2" fill="url(#sapG${u.id})" stroke="#5a3a00" stroke-width=".6"/><ellipse cx="21.3" cy="43.7" rx=".7" ry=".4" fill="#fff" opacity=".8"/><circle cx="32" cy="44.5" r="2.5" fill="url(#rubyG${u.id})" stroke="#5a3a00" stroke-width=".7"/><ellipse cx="31.1" cy="43.6" rx=".8" ry=".5" fill="#fff" opacity=".85"/><circle cx="42" cy="44.5" r="2.2" fill="url(#sapG${u.id})" stroke="#5a3a00" stroke-width=".6"/><ellipse cx="41.3" cy="43.7" rx=".7" ry=".4" fill="#fff" opacity=".8"/><circle cx="52" cy="44.5" r="2.1" fill="url(#emerG${u.id})" stroke="#5a3a00" stroke-width=".6"/><ellipse cx="51.3" cy="43.7" rx=".7" ry=".4" fill="#fff" opacity=".8"/></svg></div>`:'';
+    return `<div class="pick-top-card" onclick="pickTop3Click(${u.id},'${u.name}')"><div class="pick-top-card-inner">
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
         <div style="position:relative;flex-shrink:0">${crown}<div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
@@ -3416,6 +3430,28 @@ function pickVidScore(vid){
 
 let PICK_SELECTED_VID=null;
 let PICK_CURRENT_VIDS=[];
+let PICK_LECTURER_FILTER=null; // {id, name} — TOP3 클릭으로 해당 강사 영상만 필터
+let PICK_USER_CLEARED=false;   // X 닫기 버튼으로 명시적 해제 시 true
+
+function pickTop3Click(uid,uname){
+  PICK_LECTURER_FILTER={id:uid,name:uname};
+  PICK_SELECTED_VID=null;
+  PICK_USER_CLEARED=false;
+  renderPickVideos();
+  const sec=el('pick-selected-group');
+  if(sec) setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function pickClearLecturer(){
+  PICK_LECTURER_FILTER=null;
+  PICK_SELECTED_VID=null;
+  PICK_USER_CLEARED=false;
+  renderPickVideos();
+}
+function clearPickSelection(){
+  PICK_USER_CLEARED=true;
+  PICK_SELECTED_VID=null;
+  renderPickVideos();
+}
 
 function renderPickVideos(){
   const vidsEl=el('pick-videos');
@@ -3425,9 +3461,10 @@ function renderPickVideos(){
   const now=new Date();
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
 
-  // 기본 풀: 분석완료 + 당월
+  // 기본 풀: 분석완료 + 당월 (강사 필터가 있으면 전체 기간)
   let pool=(D.videos||[]).filter(vd=>{
     if(vd.status!=='분석완료') return false;
+    if(PICK_LECTURER_FILTER) return vd.userId===PICK_LECTURER_FILTER.id;
     const d=new Date(vd.date||vd.created_at||0);
     return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;
   });
@@ -3441,8 +3478,8 @@ function renderPickVideos(){
   const others=pool.filter(vd=>!featuredIds.includes(vd.id)).sort((a,b)=>pickVidScore(b)-pickVidScore(a));
   const vids=[...featured,...others].slice(0,3);
 
-  // 기본 선택 영상: 현재 선택된 게 풀에 없으면 첫 번째
-  if(!vids.find(x=>x.id===PICK_SELECTED_VID)){
+  // 기본 선택 영상: 현재 선택된 게 풀에 없으면 첫 번째 (X 닫기로 해제한 경우는 유지)
+  if(!PICK_USER_CLEARED && !vids.find(x=>x.id===PICK_SELECTED_VID)){
     PICK_SELECTED_VID=vids[0]?.id||null;
   }
 
@@ -3452,13 +3489,19 @@ function renderPickVideos(){
   // 선택 그룹 wrapper 테두리 토글 (영상 + 상세 공통 영역)
   const groupEl=el('pick-selected-group');
   if(groupEl){
-    if(PICK_SELECTED_VID){
+    if(PICK_SELECTED_VID||PICK_LECTURER_FILTER){
       groupEl.style.borderColor='rgba(248,113,113,.55)';
       groupEl.style.background='rgba(248,113,113,.035)';
     }else{
       groupEl.style.borderColor='transparent';
       groupEl.style.background='transparent';
     }
+  }
+
+  // 강사 필터 칩
+  const chipWrap=el('pick-lecturer-chip-wrap');
+  if(chipWrap){
+    chipWrap.innerHTML=PICK_LECTURER_FILTER?`<div class="pick-lecturer-chip"><span>🎯 ${PICK_LECTURER_FILTER.name} 강사 영상만</span><button onclick="pickClearLecturer()" title="해제">✕</button></div>`:'';
   }
 
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
@@ -3487,8 +3530,14 @@ function renderPickVideos(){
 }
 
 function selectPickVideo(vidId){
+  PICK_USER_CLEARED=false;
   PICK_SELECTED_VID=vidId;
   renderPickVideos();
+  // 모바일: 상세 영역으로 자동 스크롤
+  if(window.innerWidth<=600){
+    const detailEl=el('pick-video-detail');
+    if(detailEl) setTimeout(()=>detailEl.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  }
 }
 
 function pickAIComment(score){
@@ -3515,62 +3564,77 @@ function renderPickDetail(){
   const product=vid.videoType||vid.video_type||'—';
   const comment=pickAIComment(score);
 
-  // 공통 카드 스타일 (3컬럼 완전 통일)
+  // 공통 카드 스타일 (3컬럼 완전 통일) - pick-shell-card 클래스로 hover 효과
   const cardStyle='padding:14px 16px;border-radius:10px;background:#fff;border:1px solid rgba(0,0,0,.08);min-height:72px;display:flex;flex-direction:column;justify-content:center';
   const titleStyle='font-size:12px;font-weight:700;color:var(--t1);line-height:1.4';
   const subStyle='font-size:10px;color:var(--t3);margin-top:4px';
 
-  // 선택 카드 인덱스 → 포인터 left 위치 계산 (0:16.67%, 1:50%, 2:83.33%)
+  // 블록 헤더 아이콘 (시나리오=영화, TIP=전구, 화법=말풍선)
+  const icoScenario='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>';
+  const icoTip='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17h8v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/></svg>';
+  const icoSpeech='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+  // 선택 카드 인덱스 → 포인터 left 위치 계산
   const selIdx=PICK_CURRENT_VIDS.findIndex(x=>x.id===PICK_SELECTED_VID);
   const pointerLeft=selIdx>=0?`${(selIdx*33.333+16.667).toFixed(2)}%`:'50%';
+
+  // 섹션 헤더 공통 렌더
+  const sectionHead=(ico,label)=>`<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:26px;height:26px;border-radius:8px;background:rgba(248,113,113,.12);display:inline-flex;align-items:center;justify-content:center">${ico}</span>${label}</div>`;
 
   detailEl.innerHTML=`
     <!-- 베이지 영역 컨테이너 + 선택 카드와 연결되는 포인터 tail -->
     <div style="position:relative;margin-top:18px;padding:20px;border-radius:14px;background:rgba(248,113,113,.06);border:1.5px solid rgba(248,113,113,.28)">
       <!-- Pointer tail (선택된 영상 카드 방향) -->
       <div style="position:absolute;top:-9px;left:${pointerLeft};transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:rgba(248,113,113,.06);border-top:1.5px solid rgba(248,113,113,.28);border-left:1.5px solid rgba(248,113,113,.28)"></div>
-      <!-- 선택 영상 정보 스트립 + AI 코멘트 -->
-      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.2);margin-bottom:16px">
-      <div style="width:76px;height:52px;border-radius:8px;background:#f8f9fa;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center">
-        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <span style="font-size:10px;font-weight:800;color:#dc2626;letter-spacing:.3px">선택 영상</span>
-          <span style="font-size:13px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
+
+      <!-- 히어로 헤더: 큰 썸네일 + 재생 오버레이 + X 닫기 -->
+      <div style="position:relative;display:flex;align-items:stretch;gap:16px;padding:14px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.22);margin-bottom:16px;box-shadow:0 2px 8px rgba(248,113,113,.06)">
+        <!-- 큰 썸네일 -->
+        <div class="pick-hero-thumb" style="width:140px;height:86px;border-radius:10px;background:#f1f3f5;flex-shrink:0;overflow:hidden;position:relative;cursor:${ytId?'pointer':'default'}" ${ytId?`onclick="window.open('${vid.youtube}','_blank')"`:''}>
+          ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:10px">미리보기 없음</div>'}
+          ${ytId?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);transition:background .2s"><div style="width:42px;height:42px;border-radius:50%;background:rgba(220,38,38,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div></div>':''}
         </div>
-        <div style="font-size:10.5px;color:var(--t3);margin-bottom:6px">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
-        <div style="font-size:12px;font-weight:700;color:#dc2626;font-style:italic;line-height:1.5;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25)">${comment}</div>
+        <!-- 텍스트 영역 -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="padding:2px 9px;border-radius:999px;font-size:9.5px;font-weight:800;background:#dc2626;color:#fff;letter-spacing:.4px">선택 영상</span>
+            <span style="padding:2px 9px;border-radius:999px;font-size:9.5px;font-weight:800;background:rgba(16,185,129,.14);color:#10b981;border:1px solid rgba(16,185,129,.35)">AI ${score}점</span>
+          </div>
+          <div class="pick-hero-title" style="font-size:14.5px;font-weight:800;color:var(--t1);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${title}</div>
+          <div style="font-size:11px;color:var(--t3)">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
+          <div style="font-size:12px;font-weight:700;color:#dc2626;font-style:italic;line-height:1.5;margin-top:4px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25)">${comment}</div>
+        </div>
+        <!-- X 닫기 -->
+        <button onclick="clearPickSelection()" title="선택 해제" style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:14px;font-weight:900" onmouseover="this.style.background='rgba(220,38,38,.12)';this.style.color='#dc2626'" onmouseout="this.style.background='rgba(0,0,0,.06)';this.style.color='#6b7280'">✕</button>
       </div>
-      <span style="padding:4px 12px;border-radius:10px;font-size:11px;font-weight:800;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);flex-shrink:0;align-self:flex-start">AI ${score}점</span>
-    </div>
-    <!-- 3컬럼 상세 (글씨체/크기/색 완전 통일) -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start" id="pick-detail-cols">
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>추천 시나리오</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="${titleStyle}">냉장고 에너지 절감 고객 설명 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">워시타워 첫 사용 온보딩 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">에어컨 실외기 소음 민원 처리 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+
+      <!-- 3컬럼 상세 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start" id="pick-detail-cols">
+        <div>
+          ${sectionHead(icoScenario,'추천 시나리오')}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">냉장고 에너지 절감 고객 설명 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">워시타워 첫 사용 온보딩 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">에어컨 실외기 소음 민원 처리 시나리오</div><div style="${subStyle}">AI 평가 후 자동 생성 예정</div></div>
+          </div>
+        </div>
+        <div>
+          ${sectionHead(icoTip,'강의 레벨 UP TIP')}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">도입 3분이 강의 전체를 결정한다</div><div style="${subStyle}">오프닝 질문 기법 · 실제 사례 적용법</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">실습 피드백은 즉각적·구체적으로</div><div style="${subStyle}">행동 변화 유도하는 코칭 언어 패턴</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">AI 평가 후 자동 생성 예정</div><div style="${subStyle}">제미나이 분석 결과 연동</div></div>
+          </div>
+        </div>
+        <div>
+          ${sectionHead(icoSpeech,'강사 교육 화법')}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div><div style="${subStyle}">도입 화법</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div><div style="${subStyle}">피드백 화법</div></div>
+            <div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">"오늘 배운 것 중 하나만 내일 꼭 써보세요."</div><div style="${subStyle}">마무리 화법</div></div>
+          </div>
         </div>
       </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>강의 레벨 UP TIP</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="${titleStyle}">도입 3분이 강의 전체를 결정한다</div><div style="${subStyle}">오프닝 질문 기법 · 실제 사례 적용법</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">실습 피드백은 즉각적·구체적으로</div><div style="${subStyle}">행동 변화 유도하는 코칭 언어 패턴</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">AI 평가 후 자동 생성 예정</div><div style="${subStyle}">제미나이 분석 결과 연동</div></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>강사 교육 화법</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="${cardStyle}"><div style="${titleStyle}">"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."</div><div style="${subStyle}">도입 화법</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">"한 가지만 바꿔 보면 더 잘 될 것 같아서요."</div><div style="${subStyle}">피드백 화법</div></div>
-          <div style="${cardStyle}"><div style="${titleStyle}">"오늘 배운 것 중 하나만 내일 꼭 써보세요."</div><div style="${subStyle}">마무리 화법</div></div>
-        </div>
-      </div>
-    </div>
     </div>`;
 }
 
