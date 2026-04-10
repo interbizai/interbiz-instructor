@@ -2994,6 +2994,8 @@ function renderEduPage(){
   if(!clArea||!lkArea) return;
   // 교육자료 (체크리스트)
   const isAdmin=CU?.isAdmin;
+  const defaultCatsInit=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
+  const catsForSelect=D.eduCategories?.length?D.eduCategories.map(c=>c.name):defaultCatsInit;
   let clHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
@@ -3001,6 +3003,7 @@ function renderEduPage(){
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <select id="edu-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
+        ${catsForSelect.map(c=>`<option value="${c}">${c}</option>`).join('')}
       </select>
       <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="document.getElementById('edu-cl-fname').textContent=this.files[0]?.name||''">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-cl-file').click()">파일 선택</button>
