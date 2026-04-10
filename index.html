@@ -846,7 +846,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="tn-dropdown">
         <div class="tn-dd-item" onclick="openAnalysis()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>영상</div>
         <div class="tn-dd-item" onclick="openStreaming()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>스트리밍</div>
-        <div class="tn-dd-item" onclick="openVoiceAnalysis()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div>보이스</div>
+        <div class="tn-dd-item" onclick="openVoiceAnalysis()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div>스피치</div>
       </div>
     </div>
     <div class="tn-item" data-page="page-edu" onclick="showPage('page-edu')">
@@ -2067,7 +2067,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="mob-ai-dropdown" id="mob-ai-dropdown">
         <div class="mob-ai-item" onclick="event.stopPropagation();openAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 영상</div>
         <div class="mob-ai-item" onclick="event.stopPropagation();openStreaming();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 스트리밍</div>
-        <div class="mob-ai-item" onclick="event.stopPropagation();openVoiceAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg> 보이스</div>
+        <div class="mob-ai-item" onclick="event.stopPropagation();openVoiceAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg> 스피치</div>
       </div>
     </div>
     <div class="mobile-nav-item" onclick="showPage('page-edu')">
@@ -2459,6 +2459,9 @@ async function loadFromDB(){
   // 삭제 요청
   const {data:dr}=await sb.from('delete_requests').select('*').order('created_at',{ascending:false});
   D.deleteRequests=dr||[];
+  // 교육자료 카테고리
+  const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
+  D.eduCategories=ec||[];
   // 추천영상
   const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
   D.recVideos=rv||[];
@@ -2997,7 +3000,6 @@ function renderEduPage(){
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <select id="edu-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
-        <option value="체크리스트">체크리스트</option><option value="평가안">평가안</option><option value="교안">교안</option><option value="기타">기타</option>
       </select>
       <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="document.getElementById('edu-cl-fname').textContent=this.files[0]?.name||''">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-cl-file').click()">파일 선택</button>
@@ -3006,12 +3008,17 @@ function renderEduPage(){
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
   // 카테고리별 그룹 + 최신순
-  const cats=['체크리스트','평가안','교안','기타'];
+  const defaultCats=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
+  const cats=D.eduCategories?.length?D.eduCategories.map(c=>c.name):defaultCats;
   const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  // 카테고리 select 동적 생성
+  const catSel=document.getElementById('edu-cl-cat');
+  if(catSel){catSel.innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   cats.forEach(cat=>{
     const items=sorted.filter(c=>(c.category||'체크리스트')===cat);
     if(!items.length) return;
-    const catColors={'체크리스트':'#0078C8','평가안':'#10b981','교안':'#f59e0b','기타':'#8b5cf6'};
+    const colorPool=['#0078C8','#10b981','#f59e0b','#8b5cf6','#E21E26','#ec4899','#06b6d4'];
+    const catColors={};cats.forEach((c,i)=>catColors[c]=colorPool[i%colorPool.length]);
     clHtml+=`<div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <span style="font-size:12px;font-weight:800;color:${catColors[cat]||'var(--t1)'}">${cat}</span>
@@ -3028,6 +3035,17 @@ function renderEduPage(){
     clHtml+='</div>';
   });
   if(!sorted.length) clHtml+='<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
+  // 카테고리 관리 (관리자/부관리자만)
+  if(isAdmin){
+    clHtml+=`<div style="margin-top:16px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">카테고리 관리</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cats.map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c}<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c}')">×</button></span>`).join('')}</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="new-edu-cat" placeholder="새 카테고리명" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addEduCategory()">추가</button>
+      </div>
+    </div>`;
+  }
   clArea.innerHTML=clHtml;
   // 교육링크 (카드형 3개 가로)
   const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
@@ -3080,6 +3098,20 @@ async function addEduLink(){
   const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습'});
   if(lkErr){alert('등록 실패: '+lkErr.message);return;}
   await loadFromDB();renderEduPage();alert('등록 완료');
+}
+async function addEduCategory(){
+  const name=document.getElementById('new-edu-cat')?.value?.trim();
+  if(!name){alert('카테고리명을 입력하세요');return;}
+  const order=(D.eduCategories||[]).length+1;
+  const{error}=await sb.from('edu_categories').insert({name,sort_order:order});
+  if(error){alert('추가 실패: '+error.message);return;}
+  await loadFromDB();renderEduPage();
+}
+async function deleteEduCategory(name){
+  if(!confirm(`"${name}" 카테고리를 삭제하시겠습니까?`))return;
+  const{error}=await sb.from('edu_categories').delete().eq('name',name);
+  if(error){alert('삭제 실패: '+error.message);return;}
+  await loadFromDB();renderEduPage();
 }
 async function deleteChecklist(id){
   if(!confirm('삭제하시겠습니까?'))return;
