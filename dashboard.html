@@ -597,12 +597,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @keyframes tnSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @property --pick-angle{syntax:"<angle>";initial-value:0deg;inherits:false}
 @keyframes pickBorderRot{to{--pick-angle:360deg}}
-@keyframes pickGlowPulse{0%,100%{box-shadow:0 0 22px rgba(244,63,94,.28),0 6px 20px rgba(244,63,94,.14),inset 0 0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 38px rgba(244,63,94,.48),0 12px 28px rgba(244,63,94,.22),inset 0 0 0 0 rgba(255,255,255,0)}}
-.pick-top-card{position:relative;padding:3px;border-radius:17px;background:conic-gradient(from var(--pick-angle),#fff1f2,#fecdd3,#fda4af,#fb7185,#f43f5e,#e11d48,#ec4899,#f472b6,#fb7185,#fda4af,#fecdd3,#fff1f2);animation:pickBorderRot 3.5s linear infinite,pickGlowPulse 2.8s ease-in-out infinite;cursor:pointer;transition:transform .28s cubic-bezier(.22,1,.36,1)}
-.pick-top-card::before{content:'';position:absolute;inset:-6px;border-radius:22px;background:conic-gradient(from var(--pick-angle),transparent 0%,rgba(244,63,94,.35) 20%,transparent 40%,rgba(236,72,153,.35) 60%,transparent 80%,rgba(251,113,133,.35) 100%);filter:blur(14px);z-index:-1;animation:pickBorderRot 3.5s linear infinite;opacity:.85}
+@keyframes pickGlowPulse{0%,100%{box-shadow:0 0 22px rgba(139,92,246,.28),0 6px 20px rgba(236,72,153,.16)}50%{box-shadow:0 0 40px rgba(59,130,246,.42),0 12px 28px rgba(236,72,153,.24)}}
+.pick-top-card{position:relative;padding:3px;border-radius:17px;background:conic-gradient(from var(--pick-angle),#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6,#ec4899,#ef4444);animation:pickBorderRot 3.5s linear infinite,pickGlowPulse 2.8s ease-in-out infinite;cursor:pointer;transition:transform .28s cubic-bezier(.22,1,.36,1)}
+.pick-top-card::before{content:'';position:absolute;inset:-6px;border-radius:22px;background:conic-gradient(from var(--pick-angle),rgba(239,68,68,.35),rgba(249,115,22,.35),rgba(234,179,8,.35),rgba(34,197,94,.35),rgba(6,182,212,.35),rgba(59,130,246,.35),rgba(139,92,246,.35),rgba(236,72,153,.35),rgba(239,68,68,.35));filter:blur(14px);z-index:-1;animation:pickBorderRot 3.5s linear infinite;opacity:.85}
 .pick-top-card:hover{transform:translateY(-5px) scale(1.015)}
 .pick-top-card-inner{background:#fff;border-radius:14px;padding:20px;position:relative;z-index:1}
-@supports not (background:conic-gradient(from 0deg,red,red)){.pick-top-card{background:#f87171;animation:pickGlowPulse 2.8s ease-in-out infinite}.pick-top-card::before{display:none}}
+@supports not (background:conic-gradient(from 0deg,red,red)){.pick-top-card{background:linear-gradient(135deg,#ef4444,#8b5cf6);animation:pickGlowPulse 2.8s ease-in-out infinite}.pick-top-card::before{display:none}}
 .tn-icon-ai svg{animation:tnFloat 3s ease-in-out infinite}
 @keyframes tnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tn-icon-edu svg{animation:tnFlip 4s ease infinite}
@@ -1965,10 +1965,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <option value="">전체 제품</option>
           </select>
         </div>
-        <!-- 영상 카드 -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
-        <!-- 선택 영상 정보 + 3컬럼 상세 (항상 노출, 선택 시 같은 영역으로 확장) -->
-        <div id="pick-video-detail"></div>
+        <!-- 영상카드 + 상세 그룹 wrapper (선택 시 빨강 외곽 프레임) -->
+        <div id="pick-selected-group" style="padding:14px;border-radius:14px;border:2px solid transparent;transition:border-color .25s,background .25s">
+          <!-- 영상 카드 -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
+          <!-- 선택 영상 정보 + 3컬럼 상세 -->
+          <div id="pick-video-detail"></div>
+        </div>
       </div>
 
       <!-- 추천 학습 콘텐츠 -->
@@ -3314,11 +3317,11 @@ function renderPick(){
     const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
     const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
-    const crown=i===0?`<div style="position:absolute;top:-14px;left:-6px;z-index:3;filter:drop-shadow(0 2px 6px rgba(218,165,32,.5))"><svg width="38" height="30" viewBox="0 0 48 38" fill="none"><defs><linearGradient id="crownG${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFE27A"/><stop offset="45%" stop-color="#FFC728"/><stop offset="100%" stop-color="#C98A00"/></linearGradient></defs><path d="M4 30 L8 10 L16 20 L24 6 L32 20 L40 10 L44 30 Z" fill="url(#crownG${u.id})" stroke="#8B5E00" stroke-width="1.2" stroke-linejoin="round"/><rect x="4" y="30" width="40" height="5" rx="1" fill="url(#crownG${u.id})" stroke="#8B5E00" stroke-width="1.2"/><circle cx="8" cy="10" r="2.2" fill="#fff" stroke="#8B5E00" stroke-width="1"/><circle cx="24" cy="6" r="2.4" fill="#ff4d6d" stroke="#8B5E00" stroke-width="1"/><circle cx="40" cy="10" r="2.2" fill="#fff" stroke="#8B5E00" stroke-width="1"/></svg></div>`:'';
-    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')">${crown}<div class="pick-top-card-inner">
+    const crown=i===0?`<div style="position:absolute;top:-22px;left:-10px;z-index:3;filter:drop-shadow(0 3px 4px rgba(139,94,0,.45)) drop-shadow(0 0 6px rgba(255,215,0,.4))"><svg width="46" height="40" viewBox="0 0 52 44" fill="none"><defs><linearGradient id="crownMain${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFF6CC"/><stop offset="18%" stop-color="#FFE27A"/><stop offset="50%" stop-color="#FFC728"/><stop offset="85%" stop-color="#D99200"/><stop offset="100%" stop-color="#8B5E00"/></linearGradient><linearGradient id="crownHL${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity=".85"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="crownBand${u.id}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="50%" stop-color="#FFB800"/><stop offset="100%" stop-color="#8B5E00"/></linearGradient><radialGradient id="rubyG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ff9bb0"/><stop offset="45%" stop-color="#ff2d55"/><stop offset="100%" stop-color="#7a0019"/></radialGradient><radialGradient id="pearlG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#edeff3"/><stop offset="100%" stop-color="#8892a3"/></radialGradient><radialGradient id="emerG${u.id}" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#9eefc4"/><stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#064e33"/></radialGradient></defs><path d="M4 33 L9 11 L19 23 L26 5 L33 23 L43 11 L48 33 Z" fill="url(#crownMain${u.id})" stroke="#6B4500" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 32 L10 14 L18 22 L26 9 L34 22 L42 14 L46 32 L44 28 L40 22 L33 19 L26 13 L19 19 L12 22 L8 28 Z" fill="url(#crownHL${u.id})" opacity=".55"/><rect x="4" y="32" width="44" height="8" rx="1.5" fill="url(#crownBand${u.id})" stroke="#6B4500" stroke-width="1.1"/><rect x="4" y="32" width="44" height="2" rx="1" fill="#fff" opacity=".4"/><circle cx="9" cy="10" r="2.6" fill="url(#pearlG${u.id})" stroke="#6B4500" stroke-width=".8"/><circle cx="8.2" cy="9.2" r=".9" fill="#fff" opacity=".9"/><circle cx="26" cy="4" r="3.4" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".9"/><ellipse cx="24.8" cy="2.8" rx="1.3" ry=".8" fill="#fff" opacity=".75"/><circle cx="43" cy="10" r="2.6" fill="url(#pearlG${u.id})" stroke="#6B4500" stroke-width=".8"/><circle cx="42.2" cy="9.2" r=".9" fill="#fff" opacity=".9"/><circle cx="15" cy="36" r="1.6" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".5"/><circle cx="26" cy="36" r="1.7" fill="url(#emerG${u.id})" stroke="#6B4500" stroke-width=".5"/><circle cx="37" cy="36" r="1.6" fill="url(#rubyG${u.id})" stroke="#6B4500" stroke-width=".5"/></svg></div>`:'';
+    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner">
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-        <div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+        <div style="position:relative;flex-shrink:0">${crown}<div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
         <div>
           <div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px;font-weight:800">${u.name}</span><span style="font-size:14px">${medals2[i]}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px">${u.channel} · ${u.team}</div>
@@ -3445,6 +3448,18 @@ function renderPickVideos(){
 
   // 선택 카드 인덱스 저장 (상세 포인터 위치용)
   PICK_CURRENT_VIDS=vids;
+
+  // 선택 그룹 wrapper 테두리 토글 (영상 + 상세 공통 영역)
+  const groupEl=el('pick-selected-group');
+  if(groupEl){
+    if(PICK_SELECTED_VID){
+      groupEl.style.borderColor='rgba(248,113,113,.55)';
+      groupEl.style.background='rgba(248,113,113,.035)';
+    }else{
+      groupEl.style.borderColor='transparent';
+      groupEl.style.background='transparent';
+    }
+  }
 
   vidsEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
