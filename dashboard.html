@@ -6616,7 +6616,7 @@ function renderRadarChart(userId){
         total+=Math.min(100,g*15-b*5);cnt++;
       });
     }
-    return cnt>0?Math.max(0,Math.min(100,Math.round(total/cnt))):Math.round(Math.random()*30+40);
+    return cnt>0?Math.max(0,Math.min(100,Math.round(total/cnt))):0;
   });
 
   const n=6,cx=200,cy=200,maxR=150;
@@ -6636,9 +6636,16 @@ function renderRadarChart(userId){
     const [x,y]=toXY(a,maxR);
     svg+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
   });
-  // 전기 역량 (회색, 있으면 표시)
-  const prevScores6=cats6.map(()=>Math.max(0,Math.round(Math.random()*20+30)));
-  const hasPrev=userVids.length>=2;
+  // 전기 역량 (이전 평가 데이터가 2건 이상일 때만)
+  const prevVidsAll=(D.videos||[]).filter(v=>v.userId===userId&&v.status==='분석완료'&&(v.timestamps||[]).length>0);
+  const hasPrev=prevVidsAll.length>=2;
+  const prevScores6=hasPrev?cats6.map(cat=>{
+    let t=0,c=0;
+    Object.entries(u.scores||{}).forEach(([k,v])=>{
+      if(cat.keys.some(key=>k.includes(key))){t+=v/(u.maxes[k]||1)*80;c++;}
+    });
+    return c>0?Math.max(0,Math.min(100,Math.round(t/c))):0;
+  }):[];
   if(hasPrev){
     const prevPts=prevScores6.map((s,i)=>toXY(angles[i],maxR*s/100).join(',')).join(' ');
     svg+=`<polygon points="${prevPts}" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
@@ -6685,24 +6692,27 @@ function renderRadarChart(userId){
 }
 
 function filterLectStats(userId){
-  // 카테고리 필터 변경 시 통계 업데이트
   const catVal=document.getElementById('lect-cat-filter')?.value||'';
+  const prodVal=document.getElementById('lect-prod-filter')?.value||'';
   const u=D.users.find(x=>x.id===userId);
   if(!u) return;
-  let vids=(D.videos||[]).filter(v=>v.userId===userId);
-  let voices=(D.voiceEvals||[]).filter(v=>v.user_id===userId);
-  if(catVal){
-    vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
-  }
-  const vidScores=vids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
-  const voiceScores=voices.map(v=>v.score||0);
-  const all=[...vidScores,...voiceScores].filter(s=>s>0);
-  const avg=all.length?(all.reduce((a,b)=>a+b,0)/all.length):0;
-  const cardsEl=document.getElementById('lect-stat-cards');
-  if(!cardsEl) return;
-  const lvData=getLevelInfo(avg,all.length);
-  cardsEl.children[0].querySelector('div').innerHTML=`${avg.toFixed(1)}<span style="font-size:11px;color:var(--t3)">/100</span>`;
-  cardsEl.children[1].querySelector('div').innerHTML=`${all.length}<span style="font-size:11px;color:var(--t3)">회</span>`;
+  // 분석완료 영상만
+  let vids=(D.videos||[]).filter(v=>v.userId===userId&&v.status==='분석완료');
+  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
+  if(prodVal) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodVal));
+  // 분석완료 영상만 점수 계산 (timestamps 있는 것만)
+  const vidScores=vids.filter(v=>(v.timestamps||[]).length>0).map(v=>{
+    const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
+    return Math.min(100,g*10+(v.timestamps||[]).length*3);
+  });
+  const avg=vidScores.length?(vidScores.reduce((a,b)=>a+b,0)/vidScores.length):0;
+  const cnt=vidScores.length;
+  const lvData=getLevelInfo(avg,cnt);
+  // 통계 카드 업데이트
+  const cards=document.querySelectorAll('#lect-stat-cards > div');
+  if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
+  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 강의횟수</div>`;
+  if(cards[3]) cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${lvData.color}">${cnt?lvData.grade:'—'}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
 }
 
 function filterCoachingList(userId){
@@ -6799,11 +6809,11 @@ function openLecturer(id, fromPage){
 
   const isOwner=CU && (CU.id===u.id || CU.isAdmin);
 
-  // Lv 계산 (영상 AI 점수만)
-  const allUserVidScores=userVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
-  const allUserScores=allUserVidScores.filter(s=>s>0);
-  const userAvgScore=allUserScores.length?(allUserScores.reduce((a,b)=>a+b,0)/allUserScores.length):0;
-  const evalCount=allUserScores.length;
+  // Lv 계산 (분석완료 + timestamps 있는 영상만)
+  const analyzedVids=userVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
+  const allUserVidScores=analyzedVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
+  const userAvgScore=allUserVidScores.length?(allUserVidScores.reduce((a,b)=>a+b,0)/allUserVidScores.length):0;
+  const evalCount=allUserVidScores.length;
   const lvData=getLevelInfo(userAvgScore,evalCount);
 
   // AI 한줄평가 + 키워드
