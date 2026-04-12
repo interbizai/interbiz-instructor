@@ -6557,15 +6557,23 @@ function renderGrid(users){
 /* ════════════════════════════════
    MY 역량 — Lv / 키워드 / 레이더
 ════════════════════════════════ */
-function getLevelInfo(avgScore,evalCount){
-  // Lv1 입문(0~29 or 평가0), Lv2 초급(30~49), Lv3 중급(50~69), Lv4 고급(70~84), Lv5 마스터(85~94), Lv6 수석(95+)
-  if(!evalCount) return {level:1,name:'입문',grade:'F',color:'#9ca3af'};
-  if(avgScore>=95) return {level:6,name:'수석',grade:'S+',color:'#7c3aed'};
-  if(avgScore>=85) return {level:5,name:'마스터',grade:'S',color:'#2563eb'};
-  if(avgScore>=70) return {level:4,name:'고급',grade:'A',color:'#10b981'};
-  if(avgScore>=50) return {level:3,name:'중급',grade:'B',color:'#f59e0b'};
-  if(avgScore>=30) return {level:2,name:'초급',grade:'C',color:'#f97316'};
-  return {level:1,name:'입문',grade:'D',color:'#9ca3af'};
+function getLevelInfo(avgScore,evalCount,totalVids){
+  // 점수 기준 레벨
+  const scoreLevels=[
+    {lv:6,name:'수석',grade:'S+',color:'#7c3aed',minScore:95,minVids:51},
+    {lv:5,name:'마스터',grade:'S',color:'#2563eb',minScore:85,minVids:31},
+    {lv:4,name:'고급',grade:'A',color:'#10b981',minScore:70,minVids:21},
+    {lv:3,name:'중급',grade:'B',color:'#f59e0b',minScore:50,minVids:11},
+    {lv:2,name:'초급',grade:'C',color:'#f97316',minScore:30,minVids:4},
+    {lv:1,name:'입문',grade:'D',color:'#9ca3af',minScore:0,minVids:0}
+  ];
+  const vidCount=totalVids||evalCount||0;
+  if(!evalCount) return {...scoreLevels[5],level:1};
+  // 점수와 영상 수 둘 다 충족하는 최고 레벨
+  for(const l of scoreLevels){
+    if(avgScore>=l.minScore&&vidCount>=l.minVids) return {...l,level:l.lv};
+  }
+  return {...scoreLevels[5],level:1};
 }
 
 function getAIKeywords(u,vids){
@@ -6716,7 +6724,8 @@ function filterLectStats(userId){
   });
   const avg=vidScores.length?(vidScores.reduce((a,b)=>a+b,0)/vidScores.length):0;
   const cnt=vidScores.length;
-  const lvData=getLevelInfo(avg,cnt);
+  const allUserVids=(D.videos||[]).filter(v=>v.userId===userId);
+  const lvData=getLevelInfo(avg,cnt,allUserVids.length);
   // 통계 카드 업데이트
   const cards=document.querySelectorAll('#lect-stat-cards > div');
   if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
@@ -6724,34 +6733,47 @@ function filterLectStats(userId){
   if(cards[3]) cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${lvData.color}">${cnt?lvData.grade:'—'}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
 }
 
-function openLevelDetail(avgScore,evalCount){
-  const cur=getLevelInfo(avgScore,evalCount);
+function openLevelDetail(avgScore,evalCount,totalVids){
+  const vids=totalVids||evalCount||0;
+  const cur=getLevelInfo(avgScore,evalCount,vids);
   const levels=[
-    {lv:1,name:'입문',min:0,max:29,color:'#9ca3af'},
-    {lv:2,name:'초급',min:30,max:49,color:'#f97316'},
-    {lv:3,name:'중급',min:50,max:69,color:'#f59e0b'},
-    {lv:4,name:'고급',min:70,max:84,color:'#10b981'},
-    {lv:5,name:'마스터',min:85,max:94,color:'#2563eb'},
-    {lv:6,name:'수석',min:95,max:100,color:'#7c3aed'}
+    {lv:1,name:'입문',min:0,max:29,minV:0,maxV:3,color:'#9ca3af'},
+    {lv:2,name:'초급',min:30,max:49,minV:4,maxV:10,color:'#f97316'},
+    {lv:3,name:'중급',min:50,max:69,minV:11,maxV:20,color:'#f59e0b'},
+    {lv:4,name:'고급',min:70,max:84,minV:21,maxV:30,color:'#10b981'},
+    {lv:5,name:'마스터',min:85,max:94,minV:31,maxV:50,color:'#2563eb'},
+    {lv:6,name:'수석',min:95,max:100,minV:51,maxV:100,color:'#7c3aed'}
   ];
   const next=levels.find(l=>l.lv===cur.level+1);
-  const gap=next?Math.max(0,(next.min-avgScore).toFixed(1)):0;
+  const scoreGap=next?Math.max(0,(next.min-avgScore).toFixed(1)):0;
+  const vidGap=next?Math.max(0,next.minV-vids):0;
 
   let html=`
     <div style="text-align:center;margin-bottom:20px">
       <div style="display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:24px;background:${cur.color};color:#fff;font-size:14px;font-weight:800">👑 Lv.${cur.level} ${cur.name}</div>
-      <div style="font-size:13px;color:var(--t2);margin-top:10px">현재 평균 점수: <strong style="color:var(--t1)">${avgScore.toFixed(1)}점</strong> · 평가 ${evalCount}회</div>
+      <div style="font-size:13px;color:var(--t2);margin-top:10px">평균 점수: <strong style="color:var(--t1)">${avgScore.toFixed(1)}점</strong> · 등록 영상: <strong style="color:var(--t1)">${vids}건</strong></div>
     </div>`;
 
   if(next){
-    const progress=Math.min(100,Math.round((avgScore-levels[cur.level-1].min)/(next.min-levels[cur.level-1].min)*100));
+    const scoreProg=Math.min(100,Math.round(Math.max(0,(avgScore-levels[cur.level-1].min))/(next.min-levels[cur.level-1].min)*100));
+    const vidProg=Math.min(100,Math.round(vids/next.minV*100));
     html+=`
     <div style="padding:16px;border-radius:12px;background:rgba(0,120,200,.05);margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">다음 단계: Lv.${next.lv} ${next.name} (${next.min}점 이상)</div>
-      <div style="height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;margin-bottom:8px">
-        <div style="height:100%;width:${progress}%;background:${next.color};border-radius:5px;transition:width .5s"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:12px">다음 단계: Lv.${next.lv} ${next.name}</div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:4px"><span>점수 (${next.min}점 이상)</span><span>${avgScore.toFixed(1)}/${next.min}</span></div>
+        <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${scoreProg}%;background:${next.color};border-radius:4px"></div>
+        </div>
+        ${scoreGap>0?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${scoreGap}점 더 필요</div>`:'<div style="font-size:10px;color:var(--green);margin-top:2px">충족</div>'}
       </div>
-      <div style="font-size:12px;color:var(--t2)">달성까지 <strong style="color:${next.color}">${gap}점</strong> 더 필요합니다</div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:4px"><span>영상 수 (${next.minV}건 이상)</span><span>${vids}/${next.minV}</span></div>
+        <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${vidProg}%;background:${next.color};border-radius:4px"></div>
+        </div>
+        ${vidGap>0?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${vidGap}건 더 필요</div>`:'<div style="font-size:10px;color:var(--green);margin-top:2px">충족</div>'}
+      </div>
     </div>`;
   } else {
     html+=`<div style="padding:16px;border-radius:12px;background:rgba(124,58,237,.06);margin-bottom:16px">
@@ -6761,10 +6783,11 @@ function openLevelDetail(avgScore,evalCount){
 
   html+=`<div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">전체 레벨 기준</div>`;
   html+=levels.map(l=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;${l.lv===cur.level?'background:rgba(0,0,0,.03);border-radius:8px;padding:8px 10px':''}">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;${l.lv===cur.level?'background:rgba(0,0,0,.03);border-radius:8px;padding:8px 10px':''}">
       <div style="width:10px;height:10px;border-radius:50%;background:${l.color};flex-shrink:0"></div>
       <div style="font-size:12px;font-weight:${l.lv===cur.level?'800':'500'};color:${l.lv===cur.level?'var(--t1)':'var(--t2)'};flex:1">Lv.${l.lv} ${l.name}</div>
-      <div style="font-size:11px;color:var(--t3)">${l.min}~${l.max}점</div>
+      <div style="font-size:10px;color:var(--t3)">${l.min}~${l.max}점</div>
+      <div style="font-size:10px;color:var(--t3)">${l.minV}건+</div>
       ${l.lv===cur.level?'<span style="font-size:10px;font-weight:700;color:var(--blue)">현재</span>':''}
     </div>`).join('');
 
@@ -6871,7 +6894,8 @@ function openLecturer(id, fromPage){
   const allUserVidScores=analyzedVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
   const userAvgScore=allUserVidScores.length?(allUserVidScores.reduce((a,b)=>a+b,0)/allUserVidScores.length):0;
   const evalCount=allUserVidScores.length;
-  const lvData=getLevelInfo(userAvgScore,evalCount);
+  const totalVids=userVids.length; // 삭제 포함 총 등록 영상 수
+  const lvData=getLevelInfo(userAvgScore,evalCount,totalVids);
 
   // AI 한줄평가 + 키워드
   const aiKeywords=getAIKeywords(u,userVids);
@@ -6899,7 +6923,7 @@ function openLecturer(id, fromPage){
         <div style="font-size:11px;color:var(--t2);margin-top:2px">${u.channel} · ${u.team}
           <span style="cursor:pointer;color:var(--blue);margin-left:4px;font-size:10px" onclick="document.getElementById('prof-info-toggle').style.display=document.getElementById('prof-info-toggle').style.display==='none'?'block':'none'">ⓘ 정보</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;background:${lvData.color};color:#fff;font-size:11px;font-weight:800;margin-top:8px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount})">
+        <div style="display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;background:${lvData.color};color:#fff;font-size:11px;font-weight:800;margin-top:8px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
           👑 Lv.${lvData.level} ${lvData.name}
         </div>
         ${isOwner?`<div style="margin-top:8px"><button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="openEditProfile(${u.id})">정보 수정</button></div>`:''}
