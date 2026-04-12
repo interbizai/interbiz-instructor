@@ -1986,7 +1986,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <!-- 필터 2종 (pill 스타일, 작게) -->
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="pick-filter-row">
           <select id="pick-cat-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-            <option value="">전체 카테고리</option>
+            <option value="">전체 교육자료</option>
           </select>
           <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 제품</option>
@@ -2077,11 +2077,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="tab-bar">
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
-    <button class="tab-btn" onclick="switchTab('평가기준',this)">평가 기준</button>
-    <button class="tab-btn" onclick="switchTab('기준영상',this)">기준 영상</button>
-    <button class="tab-btn" onclick="switchTab('인터PICK',this);renderPickAdmin()">인터PICK 영상</button>
-    <button class="tab-btn" onclick="switchTab('통계',this)">통계</button>
-    <button class="tab-btn" onclick="switchTab('PDF',this)">PDF 내보내기</button>
+    <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
   </div>
 
   <!-- 평가결과 (관리자 내부) -->
@@ -2118,61 +2114,36 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </div>
   </div>
 
-  <!-- 평가 기준 -->
-  <div class="tab-pane" id="tab-평가기준">
-    <div class="acc-wrap neu" style="padding:20px">
-      <div class="sec-lbl">평가 항목 설정</div>
-      <div id="criteria-rows"></div>
-      <button class="btn btn-ghost" style="margin-top:12px" onclick="addCriteriaRow()">+ 항목 추가</button>
-      <button class="btn btn-blue" style="margin-top:12px;margin-left:8px" onclick="saveCriteria()">저장</button>
+  <!-- AI 코칭 목록 (전체 강사) -->
+  <div class="tab-pane" id="tab-AI코칭">
+    <!-- 필터 -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+      <select id="admin-coach-period" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+        <option value="">전체 기간</option><option value="7">최근 7일</option><option value="30">최근 30일</option><option value="90">최근 3개월</option>
+      </select>
+      <select id="admin-coach-channel" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+        <option value="">전체 소속</option>
+      </select>
+      <select id="admin-coach-team" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+        <option value="">전체 팀</option>
+      </select>
+      <input type="text" id="admin-coach-name" placeholder="이름 검색" oninput="renderAdminCoaching()" style="padding:4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;width:100px">
+      <select id="admin-coach-cat" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+        <option value="">전체 교육자료</option>
+      </select>
+      <select id="admin-coach-prod" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+        <option value="">전체 제품</option>
+      </select>
     </div>
-  </div>
-
-  <!-- 기준 영상 -->
-  <div class="tab-pane" id="tab-기준영상">
-    <div class="acc-wrap neu" style="padding:20px">
-      <div class="sec-lbl">채널별 기준 영상 등록</div>
-      <p style="font-size:12px;color:var(--t3);margin-bottom:16px">기준 영상은 관리자 및 로그인한 강사 누구나 등록 가능합니다.</p>
-      <div id="ref-video-list"></div>
-    </div>
-  </div>
-
-  <!-- 인터PICK 영상 관리 -->
-  <div class="tab-pane" id="tab-인터PICK">
-    <div class="acc-wrap neu" style="padding:20px">
-      <div class="sec-lbl">인터PICK 등록 영상 (관리자 우선 노출)</div>
-      <p style="font-size:12px;color:var(--t3);margin-bottom:16px">인터PICK 메인 "과정 제품별 영상"에 우선 노출할 영상을 등록하세요. 위쪽 순서대로 최대 3개 노출됩니다.</p>
-      <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-        <select id="pick-admin-select" style="flex:1;min-width:240px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-          <option value="">영상 선택 —</option>
-        </select>
-        <button class="btn btn-blue" style="font-size:12px;padding:8px 16px" onclick="addPickFeatured()">+ 등록</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)" id="admin-coach-vid-cnt">0건</span></div>
+        <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-vid-list"></div>
       </div>
-      <div id="pick-admin-list"></div>
-    </div>
-  </div>
-
-  <!-- 통계 -->
-  <div class="tab-pane" id="tab-통계">
-    <div class="acc-wrap neu" style="padding:20px">
-      <div class="sec-lbl">채널별 평균 점수</div>
-      <div id="stat-chart"></div>
-    </div>
-  </div>
-
-  <!-- PDF -->
-  <div class="tab-pane" id="tab-PDF">
-    <div class="acc-wrap neu" style="padding:20px;max-width:500px">
-      <div class="sec-lbl">리포트 PDF 내보내기</div>
-      <div class="form-row"><label class="form-label">강사 선택</label>
-        <select id="pdf-user"><option value="">전체 강사</option></select>
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (스피치) <span style="font-size:11px;color:var(--t3)" id="admin-coach-voice-cnt">0건</span></div>
+        <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-voice-list"></div>
       </div>
-      <div class="form-row"><label class="form-label">기간</label>
-        <select id="pdf-range">
-          <option value="">전체</option><option value="this-month">이번 달</option><option value="3month">최근 3개월</option>
-        </select>
-      </div>
-      <button class="btn btn-blue" onclick="window.print()">PDF 생성 및 인쇄</button>
     </div>
   </div>
   </div>
@@ -3840,6 +3811,88 @@ function renderPickDetail(){
 }
 
 /* ── 인터PICK 관리자 영상 관리 ── */
+function renderAdminCoaching(){
+  // 필터 옵션 채우기
+  const chSel=document.getElementById('admin-coach-channel');
+  const tmSel=document.getElementById('admin-coach-team');
+  const catSel=document.getElementById('admin-coach-cat');
+  const prodSel=document.getElementById('admin-coach-prod');
+  if(chSel&&chSel.options.length<=1){
+    [...new Set((D.users||[]).map(u=>u.channel).filter(Boolean))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;chSel.appendChild(o);});
+  }
+  if(tmSel&&tmSel.options.length<=1){
+    [...new Set((D.users||[]).map(u=>u.team).filter(Boolean))].forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tmSel.appendChild(o);});
+  }
+  if(catSel&&catSel.options.length<=1){
+    [...new Set((D.videos||[]).map(v=>v.videoType||v.video_type||'').filter(Boolean))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+  }
+  if(prodSel&&prodSel.options.length<=1){
+    Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
+      const og=document.createElement('optgroup');og.label=g;
+      items.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;og.appendChild(o);});
+      prodSel.appendChild(og);
+    });
+  }
+  // 필터값
+  const period=document.getElementById('admin-coach-period')?.value||'';
+  const channel=chSel?.value||'';
+  const team=tmSel?.value||'';
+  const nameQ=(document.getElementById('admin-coach-name')?.value||'').trim().toLowerCase();
+  const catV=catSel?.value||'';
+  const prodV=prodSel?.value||'';
+
+  // 유저 필터
+  let users=(D.users||[]);
+  if(channel) users=users.filter(u=>u.channel===channel);
+  if(team) users=users.filter(u=>u.team===team);
+  if(nameQ) users=users.filter(u=>(u.name||'').toLowerCase().includes(nameQ));
+  const uids=new Set(users.map(u=>u.id));
+
+  // 영상 필터
+  let vids=(D.videos||[]).filter(v=>uids.has(v.userId));
+  if(catV) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catV);
+  if(prodV) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodV));
+  if(period){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-parseInt(period));vids=vids.filter(v=>new Date(v.date||v.created_at)>=cutoff);}
+  vids.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  // 음성 필터
+  let voices=(D.voiceEvals||[]).filter(v=>uids.has(v.user_id));
+  if(period){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-parseInt(period));voices=voices.filter(v=>new Date(v.eval_date||v.created_at)>=cutoff);}
+  voices.sort((a,b)=>(b.eval_date||b.created_at||'').localeCompare(a.eval_date||a.created_at||''));
+
+  // 영상 목록 렌더
+  const vidListEl=document.getElementById('admin-coach-vid-list');
+  const vidCntEl=document.getElementById('admin-coach-vid-cnt');
+  if(vidCntEl) vidCntEl.textContent=vids.length+'건';
+  if(vidListEl) vidListEl.innerHTML=vids.length?vids.map(vid=>{
+    const u=D.users?.find(x=>x.id===vid.userId);
+    const vCat=vid.videoType||vid.video_type||'';
+    const vProd=vid.productName||vid.product_name||'';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'—'} · ${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+
+  // 음성 목록 렌더
+  const voiceListEl=document.getElementById('admin-coach-voice-list');
+  const voiceCntEl=document.getElementById('admin-coach-voice-cnt');
+  if(voiceCntEl) voiceCntEl.textContent=voices.length+'건';
+  if(voiceListEl) voiceListEl.innerHTML=voices.length?voices.map(v=>{
+    const u=D.users?.find(x=>x.id===v.user_id);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVoiceResult(${v.id})">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||v.user_name||'—'} · ${v.eval_date||v.created_at?.slice(0,10)||'—'}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 스피치 평가가 없습니다</div>';
+}
+
 function renderPickAdmin(){
   const sel=el('pick-admin-select');
   const listEl=el('pick-admin-list');
@@ -6950,7 +7003,7 @@ function openLecturer(id, fromPage){
         <!-- 카테고리 + 가전 필터 (pill, 가로 나란히) -->
         <div style="display:flex;gap:6px;margin-bottom:14px">
           <select id="lect-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-            <option value="">전체 카테고리</option>
+            <option value="">전체 교육자료</option>
             ${catOptions}
           </select>
           <select id="lect-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
@@ -6996,7 +7049,7 @@ function openLecturer(id, fromPage){
           <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
           <div style="display:flex;gap:6px">
             <select id="radar-cat-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-              <option value="">전체 카테고리</option>
+              <option value="">전체 교육자료</option>
               ${catOptions}
             </select>
             <select id="radar-prod-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
@@ -7051,7 +7104,7 @@ function openLecturer(id, fromPage){
       <!-- 필터 -->
       <div style="display:flex;gap:6px;margin-bottom:14px">
         <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-          <option value="">전체 카테고리</option>
+          <option value="">전체 교육자료</option>
           ${catOptions}
         </select>
         <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
