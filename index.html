@@ -3482,7 +3482,6 @@ function renderPick(){
       const d=new Date(e.start_date);
       const dayName=dayNames[d.getDay()];
       return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="showPage('page-calendar')">
-        <div style="width:4px;height:24px;border-radius:2px;background:${e.color||'var(--blue)'};flex-shrink:0"></div>
         <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.title}</div><div style="font-size:10px;color:var(--t3)">${e.start_date} (${dayName})</div></div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
@@ -4949,11 +4948,18 @@ function openCalendar(){
 }
 
 async function loadCalEvents(){
-  let query=sb.from('calendar_events').select('*').order('start_time');
-  // 일반 사용자: 본인 일정만, 관리자: 전체
-  if(CU&&!CU.isAdmin&&CU.id) query=query.eq('user_id',CU.id);
-  const {data}=await query;
-  calEvents=(data||[]).map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
+  if(CU?.isAdmin){
+    // 관리자: 전체
+    const {data}=await sb.from('calendar_events').select('*').order('start_time');
+    calEvents=(data||[]).map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
+  } else {
+    // 일반: 본인 일정 + pick_visible 일정
+    const {data:mine}=await sb.from('calendar_events').select('*').eq('user_id',CU?.id||0).order('start_time');
+    const {data:picked}=await sb.from('calendar_events').select('*').eq('pick_visible',true).order('start_time');
+    const all=[...(mine||[]),...(picked||[])];
+    const unique=[...new Map(all.map(e=>[e.id,e])).values()];
+    calEvents=unique.map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
+  }
   renderCalendar();
 }
 
