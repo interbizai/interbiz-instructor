@@ -722,11 +722,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .lect-name{font-size:12px}
   /* 교육콘텐츠 반반 → 세로 */
   #edu-grid{grid-template-columns:1fr!important}
-  /* 인터PICK 교육자료+교육링크 → 세로 */
-  #pick-edu-checklist+div,
-  #pick-edu-checklist{width:100%}
-  #page-pick [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
-  #pick-edu-links [style*="grid-template-columns:repeat(3"]{grid-template-columns:repeat(2,1fr)!important}
   #pick-layout{grid-template-columns:1fr!important;gap:16px!important}
   #pick-layout>div:last-child{border-left:none!important;padding-left:0!important;padding-top:16px;border-top:1px solid var(--bdr)}
   #pick-stats{grid-template-columns:repeat(2,1fr)!important}
@@ -1985,50 +1980,39 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">추천 학습 콘텐츠</div>
         <div id="pick-links"></div>
       </div>
-
-      <!-- 교육자료 + 교육링크 (2컬럼) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px">
-        <!-- 교육자료 -->
-        <div style="background:#f5f5f5;border-radius:14px;padding:24px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-            <div style="width:4px;height:20px;border-radius:2px;background:var(--blue)"></div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">교육자료</div>
-          </div>
-          <div id="pick-edu-checklist"></div>
-        </div>
-        <!-- 교육링크 -->
-        <div style="background:#f5f5f5;border-radius:14px;padding:24px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-            <div style="width:4px;height:20px;border-radius:2px;background:var(--blue)"></div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">교육링크</div>
-          </div>
-          <div id="pick-edu-links"></div>
-        </div>
-      </div>
     </div>
 
     <!-- 오른쪽 1/3 -->
     <div style="padding-left:20px;border-left:1px solid var(--bdr)">
       <!-- 이번 주 일정 -->
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:16px">
-        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">이번 주 일정</div>
+      <div style="background:#f5f5f5;border-radius:14px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:4px;height:18px;border-radius:2px;background:var(--blue)"></div>
+          <div style="font-size:14px;font-weight:800;color:var(--t1)">이번 주 일정</div>
+        </div>
         <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
       </div>
 
       <!-- 빠른 실행 -->
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:16px">
-        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">빠른 실행</div>
+      <div style="background:#f5f5f5;border-radius:14px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:4px;height:18px;border-radius:2px;background:var(--green)"></div>
+          <div style="font-size:14px;font-weight:800;color:var(--t1)">빠른 실행</div>
+        </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>영상 분석</button>
-          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openVoiceAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>스피치 분석</button>
-          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="openStreaming()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>스트리밍</button>
-          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px" onclick="showPage('page-edu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>교육콘텐츠</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px;background:#fff" onclick="openAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>영상 분석</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px;background:#fff" onclick="openVoiceAnalysis()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>스피치 분석</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px;background:#fff" onclick="openStreaming()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>스트리밍</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;gap:8px;padding:10px 14px;background:#fff" onclick="showPage('page-edu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>교육콘텐츠</button>
         </div>
       </div>
 
       <!-- 공지 및 알림 -->
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:16px">
-        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">공지 및 알림</div>
+      <div style="background:#f5f5f5;border-radius:14px;padding:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:4px;height:18px;border-radius:2px;background:var(--orange)"></div>
+          <div style="font-size:14px;font-weight:800;color:var(--t1)">공지 및 알림</div>
+        </div>
         <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
       </div>
     </div>
@@ -2044,12 +2028,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><h2>교육콘텐츠</h2></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="edu-grid">
-    <div>
-      <div class="sec-lbl-sm" style="margin-bottom:12px">교육자료</div>
+    <div style="background:#f5f5f5;border-radius:14px;padding:24px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <div style="width:4px;height:20px;border-radius:2px;background:var(--blue)"></div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">교육자료</div>
+      </div>
       <div id="edu-checklist-area"></div>
     </div>
-    <div>
-      <div class="sec-lbl-sm" style="margin-bottom:12px">교육링크</div>
+    <div style="background:#f5f5f5;border-radius:14px;padding:24px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <div style="width:4px;height:20px;border-radius:2px;background:var(--blue)"></div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">교육링크</div>
+      </div>
       <div id="edu-links-area"></div>
     </div>
   </div>
@@ -3259,44 +3249,12 @@ async function deleteEduCategory(name){
 async function deleteChecklist(id){
   if(!confirm('삭제하시겠습니까?'))return;
   await sb.from('checklist_files').delete().eq('id',id);
-  await loadFromDB();renderEduPage();renderPick();
+  await loadFromDB();renderEduPage();
 }
 async function deleteLink(id){
   if(!confirm('삭제하시겠습니까?'))return;
   await sb.from('learning_links').delete().eq('id',id);
-  await loadFromDB();renderEduPage();renderPick();
-}
-
-/* ── 인터PICK 교육자료/링크 등록 (PICK 페이지 전용) ── */
-async function uploadPickChecklist(){
-  const name=document.getElementById('pick-cl-name')?.value?.trim();
-  const file=document.getElementById('pick-cl-file')?.files?.[0];
-  if(!name||!file){alert('자료명과 파일을 입력하세요');return;}
-  const ext=file.name.split('.').pop()||'file';
-  const path=`checklists/${Date.now()}.${ext}`;
-  const{error:ue}=await sb.storage.from('files').upload(path,file);
-  if(ue){alert('업로드 실패: '+ue.message);return;}
-  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  const cat=document.getElementById('pick-cl-cat')?.value||'체크리스트';
-  const{error:dbErr}=await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
-  if(dbErr){alert('DB 저장 실패: '+dbErr.message);return;}
-  await loadFromDB();renderPick();renderEduPage();alert('등록 완료');
-}
-async function addPickEduLink(){
-  const name=document.getElementById('pick-lk-name')?.value?.trim();
-  const url=document.getElementById('pick-lk-url')?.value?.trim();
-  if(!name||!url){alert('링크명과 URL을 입력하세요');return;}
-  const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습'});
-  if(lkErr){alert('등록 실패: '+lkErr.message);return;}
-  await loadFromDB();renderPick();renderEduPage();alert('등록 완료');
-}
-async function addPickEduCategory(){
-  const name=document.getElementById('pick-new-cat')?.value?.trim();
-  if(!name){alert('카테고리명을 입력하세요');return;}
-  const order=(D.eduCategories||[]).length+1;
-  const{error}=await sb.from('edu_categories').insert({name,sort_order:order});
-  if(error){alert('추가 실패: '+error.message);return;}
-  await loadFromDB();renderPick();renderEduPage();
+  await loadFromDB();renderEduPage();
 }
 
 /* ── 인터PICK 대시보드 ── */
@@ -3458,96 +3416,6 @@ function renderPick(){
     noticesEl.innerHTML=notices||'<div style="padding:8px 0;color:var(--t3)">알림이 없습니다</div>';
   }
 
-  // 교육자료 (인터PICK 내부)
-  const pickClArea=el('pick-edu-checklist');
-  if(pickClArea){
-    const isAdmin=CU?.isAdmin;
-    const defaultCats=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-    const dbCats=(D.eduCategories||[]).map(c=>c.name);
-    const cats=[...new Set([...defaultCats,...dbCats])];
-    let pClHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input type="text" id="pick-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-        <input type="date" id="pick-cl-date" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <select id="pick-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
-          ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
-        </select>
-        <input type="file" id="pick-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="document.getElementById('pick-cl-fname').textContent=this.files[0]?.name||''">
-        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('pick-cl-file').click()">파일 선택</button>
-        <span id="pick-cl-fname" style="font-size:10px;color:var(--t3)"></span>
-      </div>
-      <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadPickChecklist()">등록</button>
-    </div>`:'';
-    const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
-    const colorPool=['#0078C8','#10b981','#f59e0b','#8b5cf6','#E21E26','#ec4899','#06b6d4'];
-    const catColors={};cats.forEach((c,i)=>catColors[c]=colorPool[i%colorPool.length]);
-    cats.forEach(cat=>{
-      const items=sorted.filter(c=>(c.category||'체크리스트')===cat);
-      if(!items.length) return;
-      pClHtml+=`<div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span style="font-size:12px;font-weight:800;color:${catColors[cat]||'var(--t1)'}">${cat}</span>
-          <span style="font-size:10px;color:var(--t3)">(${items.length})</span>
-        </div>`;
-      pClHtml+=items.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px;background:#fff">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${c.name}</div>
-          <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
-        </div>
-        <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px">다운로드</a>
-        ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
-      </div>`).join('');
-      pClHtml+='</div>';
-    });
-    if(!sorted.length) pClHtml+='<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
-    // 카테고리 관리
-    if(isAdmin){
-      pClHtml+=`<div style="margin-top:14px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fff">
-        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">카테고리 관리</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cats.map(c=>{const isDef=defaultCats.includes(c);return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c}${isDef?'':`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c}')">×</button>`}</span>`;}).join('')}</div>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="pick-new-cat" placeholder="새 카테고리명" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
-          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addPickEduCategory()">추가</button>
-        </div>
-      </div>`;
-    }
-    pickClArea.innerHTML=pClHtml;
-  }
-
-  // 교육링크 (인터PICK 내부)
-  const pickLkArea=el('pick-edu-links');
-  if(pickLkArea){
-    const isAdmin=CU?.isAdmin;
-    const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
-    let pLkHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <input type="text" id="pick-lk-name" placeholder="링크명" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-        <input type="text" id="pick-lk-url" placeholder="URL" style="flex:2;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-      </div>
-      <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="addPickEduLink()">등록</button>
-    </div>`:'';
-    pLkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-    pLkHtml+=(D.learningLinks||[]).map((lk,i)=>{
-      const bg=linkColors[i%linkColors.length];
-      let domain='';try{domain=new URL(lk.url).hostname;}catch(e){}
-      const faviconUrl=domain?`https://www.google.com/s2/favicons?domain=${domain}&sz=128`:'';
-      return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-        ${isAdmin?`<button style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})">×</button>`:''}
-        <div style="height:100px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-          ${faviconUrl?`<img src="${faviconUrl}" style="width:36px;height:36px;border-radius:8px;background:#fff;padding:4px">`:''}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </div>
-        <div style="padding:10px 12px;background:#fff">
-          <div style="font-size:12px;font-weight:700;color:var(--t1)">${lk.name}</div>
-          <div style="font-size:9px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${lk.url}</div>
-        </div>
-      </div>`;
-    }).join('')||'<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육링크가 없습니다</div>';
-    pLkHtml+='</div>';
-    pickLkArea.innerHTML=pLkHtml;
-  }
 }
 
 const PRODUCT_TREE={
