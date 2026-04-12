@@ -1530,6 +1530,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </select>
       </div>
     </div>
+    <!-- 인터PICK 일정 등록 (관리자/부관리자만) -->
+    <div id="cal-ev-pick-wrap" style="display:none;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t1)">
+        <input type="checkbox" id="cal-ev-pick" style="width:16px;height:16px;cursor:pointer">
+        인터PICK 이번주 일정에 등록
+      </label>
+    </div>
     <div class="auth-err" id="cal-ev-err" style="margin-top:8px"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="auth-btn auth-btn-primary" style="flex:1" onclick="saveCalEvent()">저장</button>
@@ -3470,7 +3477,7 @@ function renderPick(){
     const weekStart=new Date(today.getFullYear(),today.getMonth(),today.getDate()+diffToMon,0,0,0);
     const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
     const dayNames=['일','월','화','수','목','금','토'];
-    const events=(D.calendarEvents||[]).filter(e=>{const d=new Date(e.start_date);return d>=weekStart&&d<=weekEnd;}).sort((a,b)=>a.start_date.localeCompare(b.start_date));
+    const events=(D.calendarEvents||[]).filter(e=>{if(!e.pick_visible) return false;const d=new Date(e.start_date);return d>=weekStart&&d<=weekEnd;}).sort((a,b)=>a.start_date.localeCompare(b.start_date));
     eventsEl.innerHTML=events.length?events.map(e=>{
       const d=new Date(e.start_date);
       const dayName=dayNames[d.getDay()];
@@ -5029,6 +5036,11 @@ function openCalEventModal(dateStr){
   el('cal-ev-start-time').value='09:00';
   el('cal-ev-end-date').value=dateVal;
   el('cal-ev-end-time').value='10:00';
+  // 인터PICK 체크박스 (관리자/부관리자만)
+  const pickWrap=el('cal-ev-pick-wrap');
+  if(pickWrap) pickWrap.style.display=(CU?.isAdmin)?'block':'none';
+  const pickCb=document.getElementById('cal-ev-pick');
+  if(pickCb) pickCb.checked=false;
   el('cal-event-overlay').classList.add('show');
 }
 
@@ -5054,6 +5066,11 @@ function editCalEvent(id){
   const canEdit=CU&&(CU.isAdmin||(ev.user_id&&CU.id===ev.user_id));
   el('cal-ev-del-btn').style.display=canEdit?'':'none';
   el('cal-ev-err').textContent='';
+  // 인터PICK 체크박스
+  const pickWrap=el('cal-ev-pick-wrap');
+  if(pickWrap) pickWrap.style.display=(CU?.isAdmin)?'block':'none';
+  const pickCb=document.getElementById('cal-ev-pick');
+  if(pickCb) pickCb.checked=!!ev.pick_visible;
   el('cal-event-overlay').classList.add('show');
 }
 
@@ -5064,6 +5081,7 @@ async function saveCalEvent(){
   const endDate=v('cal-ev-end-date'), endTime=v('cal-ev-end-time');
   if(!startDate||!endDate){el('cal-ev-err').textContent='날짜를 입력하세요.';return;}
 
+  const pickCb=document.getElementById('cal-ev-pick');
   const data={
     title,
     description:v('cal-ev-desc'),
@@ -5071,7 +5089,8 @@ async function saveCalEvent(){
     end_time:new Date(`${endDate}T${endTime||'10:00'}`).toISOString(),
     color:v('cal-ev-color'),
     category:v('cal-ev-cat'),
-    user_id:CU?.id||null
+    user_id:CU?.id||null,
+    pick_visible:pickCb?.checked||false
   };
 
   if(calEditId){
