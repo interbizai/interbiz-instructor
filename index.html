@@ -2116,24 +2116,41 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
   <!-- AI 코칭 목록 (전체 강사) -->
   <div class="tab-pane" id="tab-AI코칭">
-    <!-- 필터 -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-      <select id="admin-coach-period" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-        <option value="">전체 기간</option><option value="7">최근 7일</option><option value="30">최근 30일</option><option value="90">최근 3개월</option>
-      </select>
-      <select id="admin-coach-channel" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-        <option value="">전체 소속</option>
-      </select>
-      <select id="admin-coach-team" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-        <option value="">전체 팀</option>
-      </select>
-      <input type="text" id="admin-coach-name" placeholder="이름 검색" oninput="renderAdminCoaching()" style="padding:4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;width:100px">
-      <select id="admin-coach-cat" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-        <option value="">전체 교육자료</option>
-      </select>
-      <select id="admin-coach-prod" onchange="renderAdminCoaching()" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-        <option value="">전체 제품</option>
-      </select>
+    <!-- 필터 (가로 한 줄) -->
+    <div class="filter-bar" style="margin-bottom:16px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end">
+      <div class="f-item"><label class="f-lbl">기간</label>
+        <select id="admin-coach-period" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="">전체 기간</option><option value="7">최근 7일</option><option value="30">최근 30일</option><option value="90">최근 3개월</option>
+        </select>
+      </div>
+      <div class="f-item"><label class="f-lbl">소속</label>
+        <select id="admin-coach-channel" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="f-item"><label class="f-lbl">팀</label>
+        <select id="admin-coach-team" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="f-item"><label class="f-lbl">교육자료</label>
+        <select id="admin-coach-cat" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="f-item"><label class="f-lbl">제품</label>
+        <select id="admin-coach-prod" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="">전체 제품</option>
+        </select>
+      </div>
+      <div class="f-item"><label class="f-lbl">이름</label>
+        <input type="text" id="admin-coach-name" placeholder="이름 검색" oninput="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+      </div>
+      <div class="f-item" style="display:flex;align-items:flex-end">
+        <button class="btn btn-ghost" style="width:100%;padding:8px;font-size:11px;justify-content:center;gap:4px" onclick="resetAdminCoachFilters()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>초기화
+        </button>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
@@ -3811,6 +3828,12 @@ function renderPickDetail(){
 }
 
 /* ── 인터PICK 관리자 영상 관리 ── */
+function resetAdminCoachFilters(){
+  ['admin-coach-period','admin-coach-channel','admin-coach-team','admin-coach-cat','admin-coach-prod'].forEach(id=>{const s=document.getElementById(id);if(s)s.value='';});
+  const nameEl=document.getElementById('admin-coach-name');if(nameEl)nameEl.value='';
+  renderAdminCoaching();
+}
+
 function renderAdminCoaching(){
   // 필터 옵션 채우기
   const chSel=document.getElementById('admin-coach-channel');
@@ -3824,7 +3847,7 @@ function renderAdminCoaching(){
     [...new Set((D.users||[]).map(u=>u.team).filter(Boolean))].forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tmSel.appendChild(o);});
   }
   if(catSel&&catSel.options.length<=1){
-    [...new Set((D.videos||[]).map(v=>v.videoType||v.video_type||'').filter(Boolean))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+    getEduCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
   }
   if(prodSel&&prodSel.options.length<=1){
     Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
@@ -7000,16 +7023,20 @@ function openLecturer(id, fromPage){
           ${aiKeywords.map(k=>`<span style="padding:3px 10px;border-radius:16px;font-size:10px;font-weight:600;border:1px solid rgba(0,0,0,.1);color:var(--t1);background:#fff">${k}</span>`).join('')||'<span style="font-size:11px;color:var(--t3)">AI 분석 후 키워드 생성</span>'}
         </div>
 
-        <!-- 카테고리 + 가전 필터 (pill, 가로 나란히) -->
-        <div style="display:flex;gap:6px;margin-bottom:14px">
-          <select id="lect-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-            <option value="">전체 교육자료</option>
-            ${catOptions}
-          </select>
-          <select id="lect-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-            <option value="">전체 제품</option>
-            ${prodOptions}
-          </select>
+        <!-- 교육자료 + 제품 필터 -->
+        <div style="display:flex;gap:10px;margin-bottom:14px;align-items:end">
+          <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">교육자료</div>
+            <select id="lect-cat-filter" onchange="filterLectStats(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:120px">
+              <option value="">전체</option>
+              ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>
+          <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">제품</div>
+            <select id="lect-prod-filter" onchange="filterLectStats(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:120px">
+              <option value="">전체 제품</option>
+              ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+            </select>
+          </div>
         </div>
 
         <!-- 통계 카드 4개 -->
@@ -7047,14 +7074,16 @@ function openLecturer(id, fromPage){
       <div style="margin-bottom:28px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
-          <div style="display:flex;gap:6px">
-            <select id="radar-cat-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
-              <option value="">전체 교육자료</option>
-              ${catOptions}
-            </select>
-            <select id="radar-prod-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
+          <div style="display:flex;gap:8px;align-items:end">
+            <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">교육자료</div>
+            <select id="radar-cat-filter" onchange="renderRadarChart(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:110px">
+              <option value="">전체</option>
+              ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select></div>
+            <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">제품</div>
+            <select id="radar-prod-filter" onchange="renderRadarChart(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:110px">
               <option value="">전체 제품</option>
-              ${prodOptions}
+              ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
             </select>
           </div>
         </div>
@@ -7093,7 +7122,7 @@ function openLecturer(id, fromPage){
           </div>
           <div style="margin-top:14px;padding:14px;border-radius:10px;background:rgba(0,120,200,.06)">
             <div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:6px">성장 예측</div>
-            <div style="font-size:12px;color:var(--t2);line-height:1.6">${evalCount>=3?`현재 추세 유지 시 Lv.${Math.min(6,lvData.level+1)} ${getLevelInfo(Math.min(100,userAvgScore+5),evalCount).name} 달성 가능`:'평가 3회 이상 시 성장 예측이 가능합니다'}</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.6">${evalCount>=3?`현재 추세 유지 시 Lv.${Math.min(6,lvData.level+1)} ${getLevelInfo(Math.min(100,userAvgScore+5),evalCount,totalVids).name} 달성 가능`:'평가 3회 이상 시 성장 예측이 가능합니다'}</div>
           </div>
         </div>
       </div>
@@ -7102,15 +7131,19 @@ function openLecturer(id, fromPage){
     <!-- TAB: AI 코칭 목록 -->
     <div class="lect-tab-pane" id="lect-tab-코칭" style="display:none">
       <!-- 필터 -->
-      <div style="display:flex;gap:6px;margin-bottom:14px">
-        <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-          <option value="">전체 교육자료</option>
-          ${catOptions}
-        </select>
-        <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-          <option value="">전체 제품</option>
-          ${prodOptions}
-        </select>
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:end">
+        <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">교육자료</div>
+          <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:120px">
+            <option value="">전체</option>
+            ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+        <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">제품</div>
+          <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;min-width:120px">
+            <option value="">전체 제품</option>
+            ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+          </select>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <!-- 영상 평가 목록 -->
