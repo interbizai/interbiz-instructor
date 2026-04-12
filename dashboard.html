@@ -6659,10 +6659,11 @@ function renderRadarChart(userId){
     });
   });
   // 범례
-  svg+=`<circle cx="100" cy="380" r="6" fill="#dc2626"/><text x="114" y="384" fill="var(--t1)" font-size="13" font-weight="600">현재 역량</text>`;
-  if(hasPrev) svg+=`<circle cx="230" cy="380" r="6" fill="rgba(0,0,0,.25)"/><text x="244" y="384" fill="var(--t2)" font-size="13" font-weight="600">전기 역량</text>`;
-
   svgEl.innerHTML=svg;
+
+  // 전기 역량 범례 표시/숨김
+  const prevLegend=document.getElementById('radar-legend-prev-'+userId);
+  if(prevLegend) prevLegend.style.display=hasPrev?'flex':'none';
 
   // 달성도 바
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
@@ -6890,8 +6891,14 @@ function openLecturer(id, fromPage){
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="lect-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:350px">
-            <svg id="radar-chart-${u.id}" viewBox="0 0 400 400" style="width:100%;max-width:380px;height:auto"></svg>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:350px">
+            <div style="display:flex;align-items:center;justify-content:center">
+              <svg id="radar-chart-${u.id}" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
+            </div>
+            <div style="display:flex;gap:20px;justify-content:center;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);margin-top:8px">
+              <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dc2626"></div><span style="font-size:12px;font-weight:600;color:var(--t1)">현재 역량</span></div>
+              <div style="display:flex;align-items:center;gap:6px" id="radar-legend-prev-${u.id}"><div style="width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.25)"></div><span style="font-size:12px;font-weight:600;color:var(--t2)">전기 역량</span></div>
+            </div>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="lect-skills-bars-${u.id}"></div>
         </div>
