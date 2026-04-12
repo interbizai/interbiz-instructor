@@ -1274,27 +1274,25 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Step 1: 영상 입력 -->
   <div id="an-step1">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
-      <!-- YouTube 링크 -->
-      <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 8 16 12 10 16" fill="var(--red)" stroke="none"/></svg>
-          <span style="font-size:14px;font-weight:800">YouTube 링크</span>
-        </div>
-        <div class="form-group" style="margin:0">
-          <input type="text" class="form-input" id="an-youtube" placeholder="https://youtube.com/watch?v=...">
+      <!-- 영상 파일 업로드 (왼쪽) -->
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 파일 업로드</div>
+        <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
+          <div class="upload-zone" onclick="document.getElementById('an-file').click()" style="padding:18px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p id="an-file-name">클릭하여 파일 선택 (mp4, mov, webm)</p>
+          </div>
+          <input type="file" id="an-file" accept="video/*" style="display:none" onchange="el('an-file-name').textContent=this.files[0]?.name||'파일 선택'">
         </div>
       </div>
-      <!-- 파일 업로드 -->
-      <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span style="font-size:14px;font-weight:800">영상 파일 업로드</span>
+      <!-- YouTube 링크 (오른쪽) -->
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:8px">YouTube 링크</div>
+        <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
+          <div class="form-group" style="margin:0">
+            <input type="text" class="form-input" id="an-youtube" placeholder="https://youtube.com/watch?v=...">
+          </div>
         </div>
-        <div class="upload-zone" onclick="document.getElementById('an-file').click()" style="padding:18px">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p id="an-file-name">클릭하여 파일 선택 (mp4, mov, webm)</p>
-        </div>
-        <input type="file" id="an-file" accept="video/*" style="display:none" onchange="el('an-file-name').textContent=this.files[0]?.name||'파일 선택'">
       </div>
     </div>
     <!-- 영상 정보 -->
@@ -1330,7 +1328,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 선택 (PDF/Excel)</button>
-          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">📥 샘플 다운로드</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">샘플 다운로드</button>
           <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
           <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
         </div>
@@ -1572,14 +1570,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 </header>
 <main>
-  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div><h2>음성 분석 & AI 진단</h2></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div><h2>스피치 분석 & AI 진단</h2></div>
   <div class="content-card">
   <!-- Step 1: 설정 -->
   <div id="va-step1">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
       <!-- 왼쪽: 녹음/업로드 -->
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:8px">스피치 연습</div>
       <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-        <div style="font-size:14px;font-weight:800;margin-bottom:14px">🎤 음성 입력</div>
         <!-- 실시간 녹음 -->
         <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r1);padding:14px;margin-bottom:12px;background:#f8f9fa">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -1611,10 +1610,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <input type="file" id="va-file" accept="audio/*,video/*" style="display:none" onchange="el('va-file-name').textContent=this.files[0]?.name||'파일 선택'">
       </div>
+      </div>
 
       <!-- 오른쪽: 설정 -->
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:8px">설정</div>
       <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-        <div style="font-size:14px;font-weight:800;margin-bottom:14px">⚙️ 분석 설정</div>
         <div class="form-group">
           <label class="form-lbl">강의 제목</label>
           <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
@@ -1654,20 +1655,21 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <!-- 평가안/체크리스트 업로드 -->
         <div style="padding:12px;background:#f8f9fa;border-radius:8px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:700">📋 평가안/체크리스트 (선택)</span>
+            <span style="font-size:12px;font-weight:700">평가안/체크리스트 (선택)</span>
             <a href="assets/평가안_샘플양식.html" target="_blank" style="font-size:10px;color:var(--blue)">샘플 보기</a>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
-            <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--green)" onclick="downloadVoiceChecklistSample()">📥 샘플 다운</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--green)" onclick="downloadVoiceChecklistSample()">샘플 다운</button>
             <span style="font-size:11px;color:var(--t3)" id="va-cl-name">없음</span>
             <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('va-cl-name').textContent=this.files[0]?.name||'없음'">
           </div>
           <div style="font-size:10px;color:var(--t3);margin-top:4px">없으면 AI 독자 분석만 적용</div>
         </div>
       </div>
+      </div>
     </div>
-    <button class="auth-btn auth-btn-primary" style="max-width:300px;margin-top:18px" onclick="runVoiceAnalysis()">AI 음성 분석 시작 →</button>
+    <button class="auth-btn auth-btn-primary" style="max-width:300px;margin-top:18px" onclick="runVoiceAnalysis()">스피치 분석 시작 →</button>
   </div>
 
   <!-- Step 2: 분석 결과 -->
@@ -1766,14 +1768,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <!-- 오른쪽 정보 -->
       <div class="stream-info">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">진행 단계</div>
         <div class="stream-info-card">
-          <div style="font-size:13px;font-weight:700;margin-bottom:12px">진행 단계</div>
           <div class="stream-step"><div class="step-num">1</div><div class="step-text">영상 정보 입력</div></div>
           <div class="stream-step"><div class="step-num">2</div><div class="step-text">녹화 진행</div></div>
           <div class="stream-step"><div class="step-num">3</div><div class="step-text">AI 평가 분석</div></div>
         </div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;margin-top:14px">안내</div>
         <div class="stream-info-card">
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px">안내</div>
           <div style="font-size:12px;color:var(--t2);line-height:1.8">
             1. <strong>녹화 시작</strong> 버튼을 눌러주세요<br>
             2. 영상 정보를 입력합니다<br>
@@ -1828,8 +1830,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <!-- 오른쪽: 진행 상태 -->
       <div class="stream-info">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">진행 단계</div>
         <div class="stream-info-card">
-          <div style="font-size:13px;font-weight:700;margin-bottom:12px">진행 단계</div>
           <div class="stream-step"><div class="step-num done">1</div><div class="step-text">영상 정보 입력 완료</div></div>
           <div class="stream-step"><div class="step-num active" id="step2-num">2</div><div class="step-text active" id="step2-text">녹화 진행 중...</div></div>
           <div class="stream-step"><div class="step-num" id="step3-num">3</div><div class="step-text" id="step3-text">AI 평가 분석</div></div>
