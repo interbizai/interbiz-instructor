@@ -6820,8 +6820,11 @@ function openLecturer(id, fromPage){
   const aiKeywords=getAIKeywords(u,userVids);
   const oneLineEval=getOneLineEval(u,aiKeywords,userAvgScore);
 
-  // 카테고리 필터용 데이터
+  // 카테고리/제품 필터용 — 해당 강사의 실제 데이터에서 추출
   const userCats=[...new Set(userVids.map(v=>v.videoType||v.video_type||'').filter(Boolean))];
+  const userProds=[...new Set(userVids.map(v=>v.productName||v.product_name||'').filter(Boolean))];
+  const catOptions=userCats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const prodOptions=userProds.map(p=>`<option value="${p}">${p}</option>`).join('');
 
   el('lecturer-main').innerHTML=`
     <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h2>MY 역량</h2></div>
@@ -6867,11 +6870,11 @@ function openLecturer(id, fromPage){
         <div style="display:flex;gap:6px;margin-bottom:14px">
           <select id="lect-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 카테고리</option>
-            ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+            ${catOptions}
           </select>
           <select id="lect-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 제품</option>
-            ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+            ${prodOptions}
           </select>
         </div>
 
@@ -6913,11 +6916,11 @@ function openLecturer(id, fromPage){
           <div style="display:flex;gap:6px">
             <select id="radar-cat-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
               <option value="">전체 카테고리</option>
-              ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+              ${catOptions}
             </select>
             <select id="radar-prod-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 20px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer">
               <option value="">전체 제품</option>
-              ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+              ${prodOptions}
             </select>
           </div>
         </div>
@@ -6968,11 +6971,11 @@ function openLecturer(id, fromPage){
       <div style="display:flex;gap:6px;margin-bottom:14px">
         <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
           <option value="">전체 카테고리</option>
-          ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+          ${catOptions}
         </select>
         <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
           <option value="">전체 제품</option>
-          ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+          ${prodOptions}
         </select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
