@@ -6658,8 +6658,8 @@ function getAIKeywords(u,vids){
   const badTs=vids.flatMap(v=>(v.timestamps||[]).filter(t=>t.type==='bad'));
   if(goodTs.length>badTs.length*2) kw.push('우수한 강의력');
   if(vids.length>=5) kw.push('꾸준한 참여');
-  if(u.decibel>=60&&u.decibel<=80) kw.push('안정적 발성');
-  if(u.tempo>=130&&u.tempo<=160) kw.push('적절한 템포');
+  if(u.decibel&&u.decibel>=60&&u.decibel<=80) kw.push('안정적 발성');
+  if(u.tempo&&u.tempo>=130&&u.tempo<=160) kw.push('적절한 템포');
   const cats=[...new Set(vids.map(v=>v.videoType||v.video_type||'').filter(Boolean))];
   if(cats.length>=3) kw.push('다양한 교육과정');
   if(goodTs.length>=10) kw.push('높은 전문성');
@@ -6696,9 +6696,9 @@ function renderRadarChart(userId){
   // 각 역량별 점수 계산
   const scores6=cats6.map(cat=>{
     let total=0,cnt=0;
-    // 기존 점수 체계에서 매칭
-    Object.entries(u.scores||{}).forEach(([k,v])=>{
-      if(cat.keys.some(key=>k.includes(key))){total+=v/(u.maxes[k]||1)*100;cnt++;}
+    // 기존 점수 체계에서 매칭 (scores가 있을 때만)
+    if(u.scores) Object.entries(u.scores).forEach(([k,v])=>{
+      if(cat.keys.some(key=>k.includes(key))){total+=v/((u.maxes||{})[k]||1)*100;cnt++;}
     });
     // 영상 평가에서 good/bad 비율로 보정
     const catVids=userVids.filter(v=>{const vt=v.videoType||v.video_type||'';return cat.keys.some(k=>vt.includes(k));});
@@ -6734,8 +6734,8 @@ function renderRadarChart(userId){
   const hasPrev=prevVidsAll.length>=2;
   const prevScores6=hasPrev?cats6.map(cat=>{
     let t=0,c=0;
-    Object.entries(u.scores||{}).forEach(([k,v])=>{
-      if(cat.keys.some(key=>k.includes(key))){t+=v/(u.maxes[k]||1)*80;c++;}
+    if(u.scores) Object.entries(u.scores).forEach(([k,v])=>{
+      if(cat.keys.some(key=>k.includes(key))){t+=v/((u.maxes||{})[k]||1)*80;c++;}
     });
     return c>0?Math.max(0,Math.min(100,Math.round(t/c))):0;
   }):[];
@@ -6914,54 +6914,7 @@ function openLecturer(id, fromPage){
   const userVids=D.videos.filter(v=>v.userId===id);
   const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][(id-1)%6];
 
-  // Score bars
-  const scoreRows=Object.entries(u.scores).map(([k,v])=>{
-    const pct=Math.round(v/u.maxes[k]*100);
-    return `<div class="mini-bar-row"><div class="mini-bar-hdr"><span>${k}</span><span>${v}/${u.maxes[k]}점</span></div>
-      <div class="bar-track"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
-  }).join('');
-
-  // Habit badges
-  const habitHtml = u.habits.length
-    ? u.habits.map((h,i)=>{
-        const cnt=u.habitCounts[i]||0;
-        const cls=cnt>10?'hb-high':cnt>5?'hb-mid':'hb-low';
-        return `<span class="habit-badge ${cls}">${h}<span class="habit-cnt">${cnt}회</span></span>`;
-      }).join('')
-    : '<span style="font-size:12px;color:var(--t3)">감지된 반복 습관어 없음</span>';
-
-  // Engagement timeline
-  const engHtml=buildEngagementTimeline(u.engagementGaps);
-
-  // Decibel
-  const recMin=60, recMax=80;
-  const dbPct=Math.min(100,(u.decibel/90)*100);
-  const zoneLeft=Math.round(recMin/90*100), zoneWidth=Math.round((recMax-recMin)/90*100);
-  const dbColor=u.decibel>=recMin&&u.decibel<=recMax?'var(--green)':u.decibel<recMin?'var(--orange)':'var(--red)';
-
-  // Video list
-  const vidListHtml=userVids.map(vid=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:700">${vid.title}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date} · ${vid.duration} · 교육생 ${vid.studentCount}명</div>
-      </div>
-      <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.1);color:#059669">${vid.status}</span>
-      <button class="btn btn-blue" style="padding:5px 10px;font-size:11px" onclick="openVideo(${vid.id})">분석 보기</button>
-    </div>`).join('');
-
-  // Reference video comparison
-  const refVid=D.refVideos[u.channel];
-  const refHtml=refVid
-    ? `<div style="font-size:12px;color:var(--t2)">기준 영상 대비 비교 분석 (채널: ${u.channel})</div>`
-    : `<div style="padding:12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--orange)">⚠️ ${u.channel} 채널의 기준 영상이 등록되지 않았습니다. <span style="text-decoration:underline;cursor:pointer" onclick="openAdmin()">관리자 패널</span>에서 등록하세요.</div>`;
-
-  // Solution
-  const solHtml=userVids.map(v=>`
-    <div class="solution-card">
-      <div class="sol-title">📹 ${v.title}</div>
-      <div class="sol-text">${v.solution||'AI 분석 대기 중입니다.'}</div>
-    </div>`).join('');
+  // (기존 아코디언용 변수들은 탭 구조 변경으로 제거됨)
 
   const isOwner=CU && (CU.id===u.id || CU.isAdmin);
 
