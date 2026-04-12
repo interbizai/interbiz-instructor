@@ -6705,6 +6705,27 @@ function filterLectStats(userId){
   cardsEl.children[1].querySelector('div').innerHTML=`${all.length}<span style="font-size:11px;color:var(--t3)">회</span>`;
 }
 
+function filterCoachingList(userId){
+  const catVal=document.getElementById('coaching-cat-filter')?.value||'';
+  const prodVal=document.getElementById('coaching-prod-filter')?.value||'';
+  let vids=(D.videos||[]).filter(v=>v.userId===userId);
+  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
+  if(prodVal) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodVal));
+  const listEl=document.getElementById('coaching-vid-list-'+userId);
+  if(!listEl) return;
+  listEl.innerHTML=vids.length?vids.map(vid=>{
+    const vCat=vid.videoType||vid.video_type||'';
+    const vProd=vid.productName||vid.product_name||'';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+}
+
 function switchLectTab(name,btn){
   document.querySelectorAll('.lect-tab-pane').forEach(p=>p.style.display='none');
   const pane=document.getElementById('lect-tab-'+name);
@@ -6933,20 +6954,33 @@ function openLecturer(id, fromPage){
 
     <!-- TAB: AI 코칭 목록 -->
     <div class="lect-tab-pane" id="lect-tab-코칭" style="display:none">
+      <!-- 필터 -->
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
+          <option value="">전체 카테고리</option>
+          ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
+          <option value="">전체 제품</option>
+          ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+        </select>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <!-- 영상 평가 목록 -->
         <div>
           <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)">${userVids.length}건</span></div>
-          <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
-            ${userVids.length?userVids.map(vid=>`<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
+          <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden" id="coaching-vid-list-${u.id}">
+            ${userVids.length?userVids.map(vid=>{
+              const vCat=vid.videoType||vid.video_type||'';
+              const vProd=vid.productName||vid.product_name||'';
+              return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
               <div style="flex:1;min-width:0">
                 <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
-                <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date} · ${vid.videoType||vid.video_type||'—'}</div>
+                <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">등록된 영상이 없습니다</div>'}
+            </div>`;}).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">등록된 영상이 없습니다</div>'}
           </div>
-          ${isOwner?`<button class="btn btn-blue" style="margin-top:12px;padding:8px 14px;font-size:11px" onclick="openRegisterVideo(${u.id})">+ 영상 등록</button>`:''}
         </div>
         <!-- 음성 평가 목록 -->
         <div>
