@@ -2612,8 +2612,8 @@ async function loadFromDB(){
   const {data:pn}=await sb.from('pick_notices').select('*').order('created_at',{ascending:false});
   D.pickNotices=pn||[];
   // 달력 이벤트
-  const {data:ce}=await sb.from('calendar_events').select('*').order('start_date',{ascending:true});
-  if(ce) D.calendarEvents=ce;
+  const {data:ce}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
+  D.calendarEvents=(ce||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
 }
 
 /* ════════════════════════════════
@@ -5081,6 +5081,9 @@ async function saveCalEvent(){
   }
   closeOverlay('cal-event-overlay');
   await loadCalEvents();
+  // 인터PICK 이번주 일정도 갱신
+  const {data:ce2}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
+  D.calendarEvents=(ce2||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
 }
 
 async function deleteCalEvent(){
@@ -5088,6 +5091,8 @@ async function deleteCalEvent(){
   await sb.from('calendar_events').delete().eq('id',calEditId);
   closeOverlay('cal-event-overlay');
   await loadCalEvents();
+  const {data:ce3}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
+  D.calendarEvents=(ce3||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
 }
 
 /* ════════════════════════════════
