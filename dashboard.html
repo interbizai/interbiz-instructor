@@ -1299,7 +1299,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div style="max-width:900px;margin-top:18px">
       <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 정보</div>
     <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">
         <div class="form-group" style="margin:0">
           <label class="form-lbl">영상 제목</label>
           <input type="text" class="form-input" id="an-title" placeholder="강의 제목">
@@ -1313,14 +1313,28 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육자료</label>
-          <select class="form-input" id="an-product"></select>
+          <select class="form-input" id="an-product" onchange="loadEduFilesForCategory()"></select>
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육생 인원수</label>
           <input type="number" class="form-input" id="an-count" placeholder="20">
         </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-lbl">제품</label>
+          <select class="form-input" id="an-prod-select">
+            <option value="">선택</option>
+          </select>
+        </div>
       </div>
-      <!-- 평가안 업로드 (이원화) -->
+      <!-- 교육자료 연동 파일 목록 -->
+      <div id="an-edu-files" style="display:none;margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700">등록된 교육자료</span>
+          <span style="font-size:10px;color:var(--t3)">클릭하면 평가안으로 적용</span>
+        </div>
+        <div id="an-edu-file-list"></div>
+      </div>
+      <!-- 직접 파일 업로드 -->
       <div style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:12px;font-weight:700">평가안 업로드 (선택)</span>
@@ -3647,7 +3661,7 @@ const PRODUCT_TREE={
   '키친':['냉장고','김치냉장고','전기레인지','식기세척기','정수기'],
   '리빙':['워시타워','워시콤보','스타일러','청소기'],
   'MS':['TV'],
-  '에어솔루션':['에어컨','공기청정기','하이드로타워','환기/버스에어']
+  '에어솔루션':['에어컨','공기청정기','하이드로타워','환기/에어바스']
 };
 
 function pickVidScore(vid){
@@ -4269,6 +4283,8 @@ function openAnalysis(){
   if(anProd){const cats=getEduCategories();anProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
+  initAnProdSelect();
+  const eduWrap=document.getElementById('an-edu-files');if(eduWrap)eduWrap.style.display='none';
   showPage('page-analysis');
 }
 
@@ -4278,6 +4294,45 @@ function switchAnalysisTab(paneId,btn){
   ['an-tab-criteria','an-tab-ai'].forEach(id=>{
     el(id).classList.toggle('active',id===paneId);
     el(id).style.display=id===paneId?'block':'none';
+  });
+}
+
+// 교육자료 선택 시 등록된 파일 로드
+function loadEduFilesForCategory(){
+  const cat=document.getElementById('an-product')?.value||'';
+  const wrap=document.getElementById('an-edu-files');
+  const list=document.getElementById('an-edu-file-list');
+  if(!wrap||!list) return;
+  if(!cat){wrap.style.display='none';return;}
+  const files=(D.checklists||[]).filter(c=>(c.category||'')=== cat);
+  if(!files.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=files.map(f=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="applyEduFile('${f.file_url}','${(f.name||'').replace(/'/g,"\\'")}')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:600">${f.name}</div>
+      <div style="font-size:10px;color:var(--t3)">${f.file_name||''} · ${f.created_at?.slice(0,10)||''}</div>
+    </div>
+    <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
+  </div>`).join('');
+}
+function applyEduFile(url,name){
+  document.getElementById('an-checklist-name').textContent=name+' (교육자료 적용)';
+  // 파일 URL을 hidden에 저장
+  if(!document.getElementById('an-checklist-url')){
+    const h=document.createElement('input');h.type='hidden';h.id='an-checklist-url';document.body.appendChild(h);
+  }
+  document.getElementById('an-checklist-url').value=url;
+  document.getElementById('an-edu-files').style.display='none';
+}
+// 가전 제품 셀렉트 초기화
+function initAnProdSelect(){
+  const sel=document.getElementById('an-prod-select');
+  if(!sel||sel.options.length>1) return;
+  Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
+    const og=document.createElement('optgroup');og.label=g;
+    items.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;og.appendChild(o);});
+    sel.appendChild(og);
   });
 }
 
