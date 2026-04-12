@@ -7545,15 +7545,6 @@ function renderAdmin(){
       </td>
     </tr>`;
   }).join('');
-  // PDF select
-  const pdfSel=el('pdf-user'); pdfSel.innerHTML='<option value="">전체 강사</option>';
-  D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; pdfSel.appendChild(o); });
-  // Criteria
-  renderCriteria();
-  // Ref videos
-  renderRefVideos();
-  // Stats chart
-  renderStatChart();
 }
 async function toggleSubAdmin(id,grant){
   if(CU?.isSubAdmin){alert('부관리자 등록/취소는 관리자만 가능합니다.');return;}
