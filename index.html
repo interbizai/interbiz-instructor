@@ -1832,12 +1832,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
             녹화 시작
           </button>
-          <button class="btn btn-ghost" onclick="document.getElementById('stream-checklist').click()" style="padding:10px 16px;font-size:12px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            평가안 등록
-          </button>
           <input type="file" id="stream-checklist" accept=".pdf,.xlsx,.xls,.pptx,.ppt" style="display:none" onchange="onStreamChecklist(this)">
-          <span id="stream-cl-badge" style="display:none;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(16,185,129,.1);color:#10b981">✓ 평가안 등록됨</span>
           <button class="btn btn-ghost" onclick="finishStreamRecord()" id="stream-finish-btn" style="display:none">녹화 완료 → AI 평가</button>
           <span class="stream-status ss-ready" id="stream-status">대기 중</span>
         </div>
@@ -2330,12 +2325,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="auth-sub" style="margin-bottom:24px">영상 정보를 입력해 주세요</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group" style="margin:0">
-        <label class="form-lbl">영상 제목</label>
+        <label class="form-lbl">제목</label>
         <input type="text" class="form-input" id="st-title" placeholder="예: 에어컨 교육 3회차">
       </div>
       <div class="form-group" style="margin:0">
         <label class="form-lbl">교육자료</label>
-        <select class="form-input" id="st-type"></select>
+        <select class="form-input" id="st-type" onchange="loadStreamEduFiles()"></select>
       </div>
       <div class="form-group" style="margin:0">
         <label class="form-lbl">소속</label>
@@ -2349,11 +2344,23 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <label class="form-lbl">교육생 인원수</label>
         <input type="number" class="form-input" id="st-count" placeholder="20" min="1">
       </div>
-      <div class="form-group" style="grid-column:1/-1;margin:0">
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">제품</label>
+        <select class="form-input" id="st-prod-select">
+          <option value="">선택</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
         <label class="form-lbl">날짜</label>
         <input type="date" class="form-input" id="st-date">
       </div>
     </div>
+    <!-- 교육자료 연동 파일 -->
+    <div id="st-edu-files" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
+      <div id="st-edu-file-list"></div>
+    </div>
+    <div id="st-cl-applied" style="display:none;margin-top:8px;font-size:11px;color:var(--green);font-weight:600"></div>
     <div class="auth-err" id="st-err" style="margin-top:10px"></div>
     <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="goStreamStep2()">녹화 시작 →</button>
     <div class="auth-footer" style="margin-top:12px"><a onclick="closeOverlay('stream-info-overlay')">취소</a></div>
@@ -5979,7 +5986,42 @@ function openStreamModal(){
   const stType=el('st-type');if(stType){const cats=getEduCategories();stType.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('st-date').value=new Date().toISOString().split('T')[0];
   el('st-err').textContent='';
+  // 제품 셀렉트 초기화
+  const stProd=document.getElementById('st-prod-select');
+  if(stProd&&stProd.options.length<=1){
+    Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
+      const og=document.createElement('optgroup');og.label=g;
+      items.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;og.appendChild(o);});
+      stProd.appendChild(og);
+    });
+  }
+  const stEdu=document.getElementById('st-edu-files');if(stEdu)stEdu.style.display='none';
+  const stApplied=document.getElementById('st-cl-applied');if(stApplied){stApplied.style.display='none';stApplied.textContent='';}
   el('stream-info-overlay').classList.add('show');
+}
+function loadStreamEduFiles(){
+  const cat=document.getElementById('st-type')?.value||'';
+  const wrap=document.getElementById('st-edu-files');
+  const list=document.getElementById('st-edu-file-list');
+  if(!wrap||!list) return;
+  if(!cat){wrap.style.display='none';return;}
+  const files=(D.checklists||[]).filter(c=>(c.category||'')===cat);
+  if(!files.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=files.map(f=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="applyStreamEduFile('${f.file_url}','${(f.name||'').replace(/'/g,"\\'")}')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <div style="flex:1;font-size:11px;font-weight:600">${f.name}</div>
+    <span style="font-size:10px;color:var(--blue)">적용</span>
+  </div>`).join('');
+}
+function applyStreamEduFile(url,name){
+  if(!document.getElementById('st-checklist-url')){
+    const h=document.createElement('input');h.type='hidden';h.id='st-checklist-url';document.body.appendChild(h);
+  }
+  document.getElementById('st-checklist-url').value=url;
+  document.getElementById('st-edu-files').style.display='none';
+  const badge=document.getElementById('st-cl-applied');
+  if(badge){badge.style.display='block';badge.textContent='평가안 적용: '+name;}
 }
 
 let audioCtx=null, analyser=null, animFrameId=null;
