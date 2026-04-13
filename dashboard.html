@@ -7663,11 +7663,8 @@ function switchOpTab(prefix,tab,btn){
   btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t3)';});
   btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
 }
-function switchOpTab(prefix,tab,btn){
-  ['good','bad','upgrade'].forEach(t=>{
-    const pane=document.getElementById(prefix+'-'+t);
-    if(pane) pane.style.display=t===tab?'block':'none';
-  });
+function _switchOpTab_old(prefix,tab,btn){
+  // 이전 버전 — 미사용
   const colors={'good':'#0078C8','bad':'#f59e0b','upgrade':'#8b5cf6'};
   btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t3)';});
   btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
