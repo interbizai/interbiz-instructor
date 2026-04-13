@@ -2209,6 +2209,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
+    <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
   </div>
 
   <!-- 평가결과 (관리자 내부) -->
@@ -2292,6 +2293,22 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (스피치) <span style="font-size:11px;color:var(--t3)" id="admin-coach-voice-cnt">0건</span></div>
         <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-voice-list"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- 뱃지 기준 -->
+  <div class="tab-pane" id="tab-뱃지기준">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:800;color:var(--t1)">뱃지 기준 (50개)</div>
+      <button class="btn btn-blue" style="padding:8px 16px;font-size:12px" onclick="downloadBadgeCriteria()">엑셀 다운로드</button>
+    </div>
+    <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
+      <table class="tbl" style="width:100%">
+        <thead><tr>
+          <th style="width:40px">#</th><th>뱃지명</th><th>분류</th><th>달성 기준</th>
+        </tr></thead>
+        <tbody id="badge-criteria-tbody"></tbody>
+      </table>
     </div>
   </div>
   </div>
@@ -3978,6 +3995,94 @@ function renderPickDetail(){
 }
 
 /* ── 인터PICK 관리자 영상 관리 ── */
+// ── 뱃지 기준 50개 ──
+const BADGE_CRITERIA=[
+  {id:1,name:'첫 평가 완료',cat:'평가안',desc:'첫 번째 영상 분석 완료'},
+  {id:2,name:'만점 항목 달성',cat:'평가안',desc:'하나의 평가 항목 100% 달성'},
+  {id:3,name:'전 항목 통과',cat:'평가안',desc:'모든 평가 항목 70% 이상'},
+  {id:4,name:'A등급 달성',cat:'평가안',desc:'총점 90% 이상'},
+  {id:5,name:'B등급 달성',cat:'평가안',desc:'총점 80% 이상'},
+  {id:6,name:'무결점 강의',cat:'평가안',desc:'bad 타임스탬프 0개'},
+  {id:7,name:'개선왕',cat:'평가안',desc:'이전 평가 대비 10점 이상 상승'},
+  {id:8,name:'발성 마스터',cat:'평가안',desc:'발성 항목 90% 이상'},
+  {id:9,name:'전문성 확인',cat:'평가안',desc:'전문성 항목 85% 이상'},
+  {id:10,name:'상호작용 달인',cat:'평가안',desc:'상호작용 항목 80% 이상'},
+  {id:11,name:'시간관리 철저',cat:'평가안',desc:'시간관리 항목 90% 이상'},
+  {id:12,name:'자료 활용왕',cat:'평가안',desc:'판서/자료 항목 85% 이상'},
+  {id:13,name:'마무리 장인',cat:'평가안',desc:'마무리 항목 90% 이상'},
+  {id:14,name:'균형잡힌 평가',cat:'평가안',desc:'모든 항목 편차 10% 이내'},
+  {id:15,name:'올 A 항목',cat:'평가안',desc:'전 항목 85% 이상'},
+  {id:16,name:'안정적 발성',cat:'AI독자',desc:'데시벨 60~80dB'},
+  {id:17,name:'파워 보이스',cat:'AI독자',desc:'데시벨 80dB 이상'},
+  {id:18,name:'적절한 템포',cat:'AI독자',desc:'130~160 WPM'},
+  {id:19,name:'빠른 전달력',cat:'AI독자',desc:'160 WPM 이상'},
+  {id:20,name:'깨끗한 화법',cat:'AI독자',desc:'반복어 총 5회 이하'},
+  {id:21,name:'반복어 개선',cat:'AI독자',desc:'이전 대비 반복어 50% 감소'},
+  {id:22,name:'꾸준한 환기',cat:'AI독자',desc:'환기 간격 전부 10분 이내'},
+  {id:23,name:'환기 마스터',cat:'AI독자',desc:'환기 간격 전부 8분 이내'},
+  {id:24,name:'높은 집중도',cat:'AI독자',desc:'집중도 80점 이상'},
+  {id:25,name:'완벽한 집중',cat:'AI독자',desc:'집중도 95점 이상'},
+  {id:26,name:'우수한 구성력',cat:'AI독자',desc:'구성력 85점 이상'},
+  {id:27,name:'탁월한 구성력',cat:'AI독자',desc:'구성력 95점 이상'},
+  {id:28,name:'강점 다수',cat:'AI독자',desc:'good 타임스탬프 8개 이상'},
+  {id:29,name:'약점 최소',cat:'AI독자',desc:'bad 타임스탬프 1개 이하'},
+  {id:30,name:'소통 전문가',cat:'AI독자',desc:'소통 역량 90% 이상'},
+  {id:31,name:'코칭 능력자',cat:'AI독자',desc:'코칭 역량 85% 이상'},
+  {id:32,name:'프레젠 달인',cat:'AI독자',desc:'프리젠테이션 역량 90% 이상'},
+  {id:33,name:'스피치 전문',cat:'AI독자',desc:'스피치 역량 90% 이상'},
+  {id:34,name:'균형 역량',cat:'AI독자',desc:'6대 역량 전부 60% 이상'},
+  {id:35,name:'6대 역량 마스터',cat:'AI독자',desc:'6대 역량 전부 80% 이상'},
+  {id:36,name:'꾸준한 참여',cat:'누적',desc:'누적 5회 이상 평가'},
+  {id:37,name:'열정 강사',cat:'누적',desc:'누적 10회 이상 평가'},
+  {id:38,name:'베테랑 강사',cat:'누적',desc:'누적 20회 이상 평가'},
+  {id:39,name:'마스터 강사',cat:'누적',desc:'누적 50회 이상 평가'},
+  {id:40,name:'연속 3회 우수',cat:'누적',desc:'3회 연속 80점 이상'},
+  {id:41,name:'연속 5회 우수',cat:'누적',desc:'5회 연속 80점 이상'},
+  {id:42,name:'연속 10회 우수',cat:'누적',desc:'10회 연속 80점 이상'},
+  {id:43,name:'성장 중',cat:'누적',desc:'최근 3회 평균 > 전체 평균'},
+  {id:44,name:'급성장',cat:'누적',desc:'최근 평가 이전 대비 20점 이상 상승'},
+  {id:45,name:'다양한 교육',cat:'누적',desc:'3개 이상 카테고리 평가'},
+  {id:46,name:'올라운더',cat:'누적',desc:'5개 이상 카테고리 평가'},
+  {id:47,name:'멀티 제품',cat:'누적',desc:'3개 이상 제품 평가'},
+  {id:48,name:'제품 전문가',cat:'누적',desc:'한 제품 5회 이상 평가'},
+  {id:49,name:'월간 MVP',cat:'누적',desc:'해당 월 최다 평가 횟수'},
+  {id:50,name:'스피치 도전',cat:'누적',desc:'스피치 분석 3회 이상 완료'}
+];
+
+// 뱃지 기준 테이블 렌더 (탭 전환 시 자동)
+function renderBadgeCriteria(){
+  const tbody=el('badge-criteria-tbody');
+  if(!tbody) return;
+  const catColors={'평가안':'var(--blue)','AI독자':'var(--green)','누적':'var(--purple)'};
+  tbody.innerHTML=BADGE_CRITERIA.map(b=>`<tr>
+    <td style="text-align:center;font-weight:700;color:var(--t3)">${b.id}</td>
+    <td style="font-weight:700">${b.name}</td>
+    <td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${catColors[b.cat]||'var(--t3)'}15;color:${catColors[b.cat]||'var(--t3)'}">${b.cat}</span></td>
+    <td style="font-size:12px;color:var(--t2)">${b.desc}</td>
+  </tr>`).join('');
+}
+
+// 엑셀 다운로드
+function downloadBadgeCriteria(){
+  let csv='\uFEFF번호,뱃지명,분류,달성 기준\n';
+  BADGE_CRITERIA.forEach(b=>{csv+=`${b.id},"${b.name}","${b.cat}","${b.desc}"\n`;});
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='뱃지_기준안_50개.csv';a.click();
+  URL.revokeObjectURL(url);
+}
+
+// 탭 전환 시 뱃지 테이블 렌더
+const _origSwitchTab=window.switchTab;
+if(_origSwitchTab){
+  const _wrapped=_origSwitchTab;
+  // switchTab 호출 후 뱃지 렌더 체크는 아래에서 처리
+}
+// 뱃지기준 탭이 active될 때 자동 렌더
+document.addEventListener('click',e=>{
+  if(e.target.textContent?.includes('뱃지 기준')) setTimeout(renderBadgeCriteria,100);
+});
+
 function resetAdminCoachFilters(){
   ['admin-coach-period','admin-coach-channel','admin-coach-team','admin-coach-cat','admin-coach-prod'].forEach(id=>{const s=document.getElementById(id);if(s)s.value='';});
   const nameEl=document.getElementById('admin-coach-name');if(nameEl)nameEl.value='';
