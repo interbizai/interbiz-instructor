@@ -1437,7 +1437,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
       </div>
       <!-- 추천 시나리오 / 레벨UP / 화법 -->
-      <div style="margin-bottom:28px">
+      <div style="margin-bottom:28px;background:rgba(159,18,57,.02);border-radius:14px;padding:20px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px" id="an-tips-wrap">
           <div>
             <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>추천 시나리오</div>
@@ -4698,7 +4698,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     </div>`;
 
   // ④ 추천 시나리오 / 레벨UP / 교육화법
-  const tipCard=(title,text)=>`<div style="padding:14px;border:1px solid var(--bdr);border-radius:10px;background:#fff"><div style="font-size:12px;font-weight:700;margin-bottom:6px">${title}</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${text}</div></div>`;
+  const tipCard=(title,text)=>`<div style="padding:14px;border:1px solid rgba(159,18,57,.08);border-radius:10px;background:rgba(159,18,57,.03)"><div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:6px">${title}</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${text}</div></div>`;
   el('an-tip-scenario').innerHTML=(r.scenarios||[r.scenario||'']).filter(Boolean).map((s,i)=>tipCard(`시나리오 ${i+1}`,s)).join('')||tipCard('추천 시나리오',r.scenario||'AI 평가 후 자동 생성 예정');
   el('an-tip-levelup').innerHTML=(r.levelUpTips||[]).map(t=>tipCard(t.title||'TIP',t.text||t)).join('')||tipCard('레벨UP TIP','도입 3분이 강의 전체를 결정합니다')+tipCard('실습 강화','실습 피드백은 즉각적·구체적으로');
   el('an-tip-speech').innerHTML=(r.speechTips||[]).map(t=>tipCard(t.title||'화법',t.text||t)).join('')||tipCard('도입 화법','"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."')+tipCard('피드백 화법','"한 가지만 바꿔 보면 더 잘 될 것 같아서요."');
