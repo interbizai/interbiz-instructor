@@ -1355,10 +1355,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Step 2: 분석 결과 -->
   <div id="an-step2" style="display:none">
 
-    <!-- ① 총점 배너: 평가안 (위, 주황) + AI 독자 (아래, 다크) -->
-    <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+    <!-- ① 총점 배너: 평가안 (위, 주황) + 영상보기 (중간) + AI 독자 (아래, 로즈) -->
+    <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);position:relative">
       <!-- 평가안 기준 -->
-      <div style="background:linear-gradient(135deg,#e8590c,#d9480f);padding:22px 28px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;color:#fff">
+      <div style="background:linear-gradient(135deg,#e8590c,#d9480f);padding:22px 28px 28px;display:flex;align-items:center;gap:22px;color:#fff">
         <div style="position:relative;width:72px;height:72px;flex-shrink:0">
           <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
             <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="8"/>
@@ -1366,7 +1366,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0">
+        <div style="display:flex;gap:18px;flex-shrink:0;min-width:120px">
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점</div></div>
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가항목</div></div>
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">종목</div></div>
@@ -1375,27 +1375,28 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">평가안 기준 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary">분석 중...</div>
         </div>
-        <div style="flex-shrink:0;cursor:pointer;padding:8px 16px;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'block':'none'">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
-        </div>
       </div>
-      <!-- AI 독자 분석 -->
-      <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:22px 28px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;color:#fff">
+      <!-- AI 독자 분석 (연한 로즈) -->
+      <div style="background:linear-gradient(135deg,#9f1239,#881337);padding:28px 28px 22px;display:flex;align-items:center;gap:22px;color:#fff">
         <div style="position:relative;width:72px;height:72px;flex-shrink:0">
           <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="8"/>
-            <circle id="an-score-ring-ai" cx="50" cy="50" r="42" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>
+            <circle id="an-score-ring-ai" cx="50" cy="50" r="42" fill="none" stroke="#fda4af" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct-ai">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0">
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.45)">AI점수</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900">6</div><div style="font-size:9px;color:rgba(255,255,255,.45)">역량항목</div></div>
+        <div style="display:flex;gap:18px;flex-shrink:0;min-width:120px">
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">AI점수</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900">6</div><div style="font-size:9px;color:rgba(255,255,255,.5)">역량항목</div></div>
         </div>
         <div style="flex:1;min-width:180px">
-          <div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:3px">AI 독자 분석 요약</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 독자 분석 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary2">AI 분석 중...</div>
         </div>
+      </div>
+      <!-- 영상보기 버튼 (두 배너 사이 겹침) -->
+      <div style="position:absolute;right:28px;top:50%;transform:translateY(-50%);cursor:pointer;padding:10px 20px;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);z-index:2" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'block':'none'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--t1)"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
       </div>
     </div>
 
