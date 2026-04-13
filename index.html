@@ -1300,7 +1300,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div style="max-width:900px;margin-top:18px">
       <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 정보</div>
     <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
         <div class="form-group" style="margin:0">
           <label class="form-lbl">영상 제목</label>
           <input type="text" class="form-input" id="an-title" placeholder="강의 제목">
@@ -1317,16 +1317,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <select class="form-input" id="an-product" onchange="loadEduFilesForCategory()"></select>
         </div>
         <div class="form-group" style="margin:0">
-          <label class="form-lbl">교육생 인원수</label>
-          <input type="number" class="form-input" id="an-count" placeholder="20">
-        </div>
-        <div class="form-group" style="margin:0">
           <label class="form-lbl">제품</label>
           <select class="form-input" id="an-prod-select">
             <option value="">선택</option>
           </select>
         </div>
       </div>
+      <input type="hidden" id="an-count" value="20">
       <!-- 교육자료 연동 파일 목록 -->
       <div id="an-edu-files" style="display:none;margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1397,9 +1394,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div id="an-banner-keywords2" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
       </div>
-      <!-- 영상보기 버튼 (두 배너 사이 겹침) -->
-      <div style="position:absolute;right:28px;top:50%;transform:translateY(-50%);cursor:pointer;padding:10px 20px;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);z-index:2" onclick="document.getElementById('an-video-overlay').classList.add('show')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--t1)"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
+      <!-- 영상보기 + 강의분위기 (두 배너 사이 겹침) -->
+      <div style="position:absolute;right:28px;top:50%;transform:translateY(-50%);display:flex;gap:8px;align-items:center;z-index:2">
+        <div id="an-mood-badge" style="display:none;padding:8px 16px;background:#fff;border-radius:10px;font-size:11px;font-weight:700;color:var(--t2);box-shadow:0 2px 12px rgba(0,0,0,.15)"></div>
+        <div style="cursor:pointer;padding:10px 20px;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.15)" onclick="document.getElementById('an-video-overlay').classList.add('show')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--t1)"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
+        </div>
       </div>
     </div>
 
@@ -1752,21 +1752,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <option value="">선택</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-lbl">교육생 인원수</label>
-          <input type="number" class="form-input" id="va-count" placeholder="20">
-        </div>
-        <div class="form-group">
-          <label class="form-lbl">강의 분위기</label>
-          <select class="form-input" id="va-tone">
-            <option value="전문적이고 진지한">전문적이고 진지한</option>
-            <option value="밝고 경쾌한" selected>밝고 경쾌한</option>
-            <option value="친근하고 편안한">친근하고 편안한</option>
-            <option value="재미있고 유머러스한">재미있고 유머러스한</option>
-            <option value="열정적이고 에너지 넘치는">열정적이고 에너지 넘치는</option>
-            <option value="차분하고 신뢰감 있는">차분하고 신뢰감 있는</option>
-          </select>
-        </div>
+        <input type="hidden" id="va-count" value="20">
+        <input type="hidden" id="va-tone" value="">
         <div class="form-group">
           <label class="form-lbl">직군</label>
           <select class="form-input" id="va-role">
@@ -2512,10 +2499,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <option value="하이케어솔루션">하이케어솔루션</option>
         </select>
       </div>
-      <div class="form-group" style="margin:0">
-        <label class="form-lbl">교육생 인원수</label>
-        <input type="number" class="form-input" id="st-count" placeholder="20" min="1">
-      </div>
+      <input type="hidden" id="st-count" value="20">
       <div class="form-group" style="margin:0">
         <label class="form-lbl">제품</label>
         <select class="form-input" id="st-prod-select">
@@ -5120,6 +5104,12 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       </div>`;}).join('');
   }
 
+  // 강의 분위기 AI 판정
+  const moodScore=r.overallScore||0;
+  const aiMood=moodScore>=90?'열정적이고 에너지 넘치는':moodScore>=80?'밝고 경쾌한':moodScore>=70?'전문적이고 진지한':moodScore>=60?'친근하고 편안한':'차분하고 신뢰감 있는';
+  const moodBadge=el('an-mood-badge');
+  if(moodBadge){moodBadge.style.display='block';moodBadge.textContent='🎭 '+aiMood;}
+
   // ⑥ 음성 & 습관 분석
   const totalHabitCount=(r.habits||[]).reduce((a,h)=>a+h.count,0);
   let habitSolution='';
@@ -5131,10 +5121,17 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
   }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>')
   +(habitSolution?`<div style="margin-top:10px;font-size:11px;color:var(--t2);line-height:1.5;padding:8px 10px;background:#f8f9fa;border-radius:8px">${habitSolution}</div>`:'');
+  // 데시벨 → 적정 인원 계산
+  const db=r.decibel||0;
+  const fitPersons=db>=80?'20명+':db>=75?'15~20명':db>=70?'10~15명':db>=65?'5~10명':db>=60?'3~5명':'1~3명';
   el('an-voice-stats').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${r.decibel||0} dB</div><div style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus||''}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${db} dB</div><div style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus||''}</div></div>
       <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">템포</div><div style="font-size:18px;font-weight:900">${r.tempo||0} WPM</div><div style="font-size:10px;color:${r.tempoStatus==='적정'?'var(--green)':'var(--orange)'}">${r.tempoStatus||''}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">적정 인원</div><div style="font-size:14px;font-weight:800;color:var(--t1)">${fitPersons}</div><div style="font-size:10px;color:var(--t3)">${db}dB 기준</div></div>
+      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">강의 분위기</div><div style="font-size:14px;font-weight:800;color:var(--t1)">${aiMood}</div><div style="font-size:10px;color:var(--t3)">AI 판정</div></div>
     </div>`;
   el('an-engagement').innerHTML=`
     <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'||'—'}</strong></div>
