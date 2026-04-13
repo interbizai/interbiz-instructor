@@ -4216,7 +4216,10 @@ function renderBadgePills(badgeIds){
   return badgeIds.map(id=>{
     const b=getBadgeInfo(id);
     const c=catColors[b.cat]||'var(--t3)';
-    return `<span onclick="alert('${b.name}: ${b.desc}')" title="${b.desc}" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20;cursor:pointer">${b.name}</span>`;
+    return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
+      <span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20;cursor:pointer;display:inline-block">${b.name}</span>
+      <span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--t1);color:#fff;padding:6px 12px;border-radius:8px;font-size:10px;font-weight:500;white-space:nowrap;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--t1)"></span></span>
+    </span>`;
   }).join('');
 }
 
@@ -4923,7 +4926,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(kw1El){
     const criteriaBadges=earnedBadges.filter(id=>id<=15);
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4);cursor:pointer';
-    kw1El.innerHTML=criteriaBadges.map(id=>{const b=getBadgeInfo(id);return `<span onclick="alert('${b.name}: ${b.desc}')" title="${b.desc}" style="${kwStyle}">${b.name}</span>`;}).join('');
+    kw1El.innerHTML=criteriaBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
   }
 
   // ② 교육분석 레이더 (엑셀 기반)
@@ -4970,7 +4973,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(kw2El){
     const aiBadges=earnedBadges.filter(id=>id>=16);
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    kw2El.innerHTML=aiBadges.map(id=>{const b=getBadgeInfo(id);return `<span onclick="alert('${b.name}: ${b.desc}')" title="${b.desc}" style="${kwStyle}">${b.name}</span>`;}).join('');
+    kw2El.innerHTML=aiBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
   }
 
   const aiItems=[
