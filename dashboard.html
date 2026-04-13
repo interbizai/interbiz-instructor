@@ -3662,7 +3662,7 @@ function renderPick(){
     eventsEl.innerHTML=events.length?events.map(e=>{
       const d=new Date(e.start_date);
       const dayName=dayNames[d.getDay()];
-      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="showPage('page-calendar')">
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openCalendar()">
         <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.title}</div><div style="font-size:10px;color:var(--t3)">${e.start_date} (${dayName})</div></div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
