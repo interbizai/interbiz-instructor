@@ -5074,8 +5074,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const ts2=r.timestamps||[];
   const goodTs2=ts2.filter(t=>t.type==='good').sort((a,b)=>(b.score||0)-(a.score||0));
   const badTs2=ts2.filter(t=>t.type==='bad').sort((a,b)=>(a.score||0)-(b.score||0));
-  const criGood=goodTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:t.text||''}));
-  const criBad=badTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:t.solution||t.text||''}));
+  const criGood=goodTs2.slice(0,3).map(t=>({title:t.item||t.text?.substring(0,25)||t.category||'강점',desc:t.text||''}));
+  const criBad=badTs2.slice(0,3).map(t=>({title:t.item||t.text?.substring(0,25)||t.category||'개선점',desc:t.solution||t.text||''}));
   const criUpgrade=cs.filter(c=>Math.round(c.score/c.max*100)>=60&&Math.round(c.score/c.max*100)<90).slice(0,3).map(c=>({title:c.name,desc:`현재 ${c.score}/${c.max}점 — 조금만 더 연습하면 우수 등급 달성 가능`}));
   el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop',r.criteriaSummary||'평가안 기준 종합 분석 결과입니다.');
 
@@ -5142,8 +5142,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ⑦ AI 기반 타임스탬프 + 최종의견
   el('an-ts-feed').innerHTML=renderTsTable(r.timestamps||[]);
   // AI 독자 Good/Bad/Upgrade
-  const aiGood=goodTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:t.text||'잘한 점입니다'}));
-  const aiBad=badTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:(t.solution?t.solution+'<br>':'')+'나라면 이렇게: '+(t.text||'')}));
+  const aiGood=goodTs2.slice(0,3).map(t=>({title:t.item||t.text?.substring(0,25)||t.category||'강점',desc:t.text||''}));
+  const aiBad=badTs2.slice(0,3).map(t=>({title:t.item||t.text?.substring(0,25)||t.category||'개선점',desc:t.solution||t.text||''}));
   const aiUpgrade=[];
   if((r.overallScore||0)<90) aiUpgrade.push({title:'구성력 강화',desc:'도입→전개→정리 흐름에 참여 유도 활동을 추가하면 더 효과적입니다'});
   if((r.habits||[]).reduce((a,h)=>a+h.count,0)>10) aiUpgrade.push({title:'반복어 줄이기',desc:'핵심 문장을 미리 준비하고 2초 멈추기를 연습하면 화법이 깔끔해집니다'});
