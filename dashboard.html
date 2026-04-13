@@ -4083,6 +4083,143 @@ document.addEventListener('click',e=>{
   if(e.target.textContent?.includes('뱃지 기준')) setTimeout(renderBadgeCriteria,100);
 });
 
+// ── 뱃지 판별 로직 ──
+function evaluateBadges(r, userId){
+  const badges=[];
+  const cs=r.criteriaScores||[];
+  const ts=r.timestamps||[];
+  const total=cs.reduce((a,b)=>a+b.score,0);
+  const maxTotal=cs.reduce((a,b)=>a+b.max,0)||100;
+  const pct=Math.round(total/maxTotal*100);
+  const goodTs=ts.filter(t=>t.type==='good').length;
+  const badTs=ts.filter(t=>t.type==='bad').length;
+
+  // 평가안 기준 (1~15)
+  if(cs.length) badges.push(1); // 첫 평가 완료
+  if(cs.some(c=>c.score>=c.max)) badges.push(2); // 만점 항목
+  if(cs.length&&cs.every(c=>c.score/c.max>=.7)) badges.push(3); // 전 항목 통과
+  if(pct>=90) badges.push(4); // A등급
+  if(pct>=80) badges.push(5); // B등급
+  if(badTs===0&&ts.length>0) badges.push(6); // 무결점 강의
+  // 7(개선왕): 이전 대비 → 누적에서 처리
+  cs.forEach(c=>{
+    const p=Math.round(c.score/c.max*100);
+    const nm=c.name||'';
+    if(nm.includes('발성')&&p>=90) badges.push(8);
+    if((nm.includes('전문')||nm.includes('내용'))&&p>=85) badges.push(9);
+    if(nm.includes('상호')&&p>=80) badges.push(10);
+    if(nm.includes('시간')&&p>=90) badges.push(11);
+    if((nm.includes('판서')||nm.includes('자료'))&&p>=85) badges.push(12);
+    if(nm.includes('마무리')&&p>=90) badges.push(13);
+  });
+  if(cs.length>=2){
+    const pcts=cs.map(c=>c.score/c.max*100);
+    const avg=pcts.reduce((a,b)=>a+b,0)/pcts.length;
+    if(Math.max(...pcts)-Math.min(...pcts)<=10) badges.push(14); // 균형
+    if(pcts.every(p=>p>=85)) badges.push(15); // 올 A
+  }
+
+  // AI 독자 기준 (16~35)
+  const db=r.decibel||0, tp=r.tempo||0;
+  if(db>=60&&db<=80) badges.push(16);
+  if(db>80) badges.push(17);
+  if(tp>=130&&tp<=160) badges.push(18);
+  if(tp>160) badges.push(19);
+  const habitTotal=(r.habits||[]).reduce((a,h)=>a+h.count,0);
+  if(habitTotal<=5) badges.push(20);
+  // 21(반복어 개선): 누적에서 처리
+  const gaps=r.engagementGaps||[];
+  if(gaps.length&&gaps.every(g=>g<=10)) badges.push(22);
+  if(gaps.length&&gaps.every(g=>g<=8)) badges.push(23);
+  if((r.focusScore||0)>=80) badges.push(24);
+  if((r.focusScore||0)>=95) badges.push(25);
+  if((r.overallScore||0)>=85) badges.push(26);
+  if((r.overallScore||0)>=95) badges.push(27);
+  if(goodTs>=8) badges.push(28);
+  if(badTs<=1) badges.push(29);
+  // 6대 역량 점수 계산
+  const aiScores={
+    소통:gaps.length?Math.max(0,100-Math.round((gaps.reduce((a,b)=>a+b,0)/gaps.length-8)*5)):0,
+    코칭:Math.round(((r.overallScore||0)+(r.focusScore||0))/2.2),
+    프리젠:db?Math.min(100,Math.round(db/75*100)):0,
+    스피치:tp?Math.min(100,Math.round(tp/155*100)):0
+  };
+  if(aiScores.소통>=90) badges.push(30);
+  if(aiScores.코칭>=85) badges.push(31);
+  if(aiScores.프리젠>=90) badges.push(32);
+  if(aiScores.스피치>=90) badges.push(33);
+  const all6=[r.overallScore||0,Math.min(100,Math.round((r.focusScore||0)*1.1)),aiScores.소통,aiScores.코칭,aiScores.프리젠,aiScores.스피치];
+  if(all6.every(s=>s>=60)) badges.push(34);
+  if(all6.every(s=>s>=80)) badges.push(35);
+
+  // 누적/성장 뱃지 (36~50) — 사용자 전체 데이터 기반
+  if(userId){
+    const userVids=(D.videos||[]).filter(v=>v.userId===userId);
+    const analyzed=userVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
+    const vidScores=analyzed.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
+    const totalVids=userVids.length;
+
+    if(totalVids>=5) badges.push(36);
+    if(totalVids>=10) badges.push(37);
+    if(totalVids>=20) badges.push(38);
+    if(totalVids>=50) badges.push(39);
+
+    // 연속 N회 우수
+    let streak=0,maxStreak=0;
+    vidScores.forEach(s=>{if(s>=80){streak++;maxStreak=Math.max(maxStreak,streak);}else streak=0;});
+    if(maxStreak>=3) badges.push(40);
+    if(maxStreak>=5) badges.push(41);
+    if(maxStreak>=10) badges.push(42);
+
+    // 성장
+    if(vidScores.length>=3){
+      const recent3=vidScores.slice(-3);
+      const avgAll=vidScores.reduce((a,b)=>a+b,0)/vidScores.length;
+      const avgRecent=recent3.reduce((a,b)=>a+b,0)/3;
+      if(avgRecent>avgAll) badges.push(43);
+    }
+    if(vidScores.length>=2){
+      const last=vidScores[vidScores.length-1], prev=vidScores[vidScores.length-2];
+      if(last-prev>=20) badges.push(44);
+      if(last-prev>=10) badges.push(7); // 개선왕
+    }
+
+    // 카테고리/제품 다양성
+    const cats=[...new Set(userVids.map(v=>v.videoType||v.video_type||'').filter(Boolean))];
+    const prods=[...new Set(userVids.map(v=>v.productName||v.product_name||'').filter(Boolean))];
+    if(cats.length>=3) badges.push(45);
+    if(cats.length>=5) badges.push(46);
+    if(prods.length>=3) badges.push(47);
+    const prodCounts={};userVids.forEach(v=>{const p=v.productName||v.product_name||'';if(p)prodCounts[p]=(prodCounts[p]||0)+1;});
+    if(Object.values(prodCounts).some(c=>c>=5)) badges.push(48);
+
+    // 월간 MVP (현재 월 기준)
+    const now=new Date();const thisM=now.getMonth(),thisY=now.getFullYear();
+    const myMonthVids=userVids.filter(v=>{const d=new Date(v.date||v.created_at);return d.getMonth()===thisM&&d.getFullYear()===thisY;}).length;
+    const allUsersMonthMax=Math.max(...(D.users||[]).map(u=>(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at);return v.userId===u.id&&d.getMonth()===thisM&&d.getFullYear()===thisY;}).length));
+    if(myMonthVids>0&&myMonthVids>=allUsersMonthMax) badges.push(49);
+
+    // 스피치 도전
+    const voiceCount=(D.voiceEvals||[]).filter(v=>v.user_id===userId).length;
+    if(voiceCount>=3) badges.push(50);
+  }
+
+  return [...new Set(badges)].sort((a,b)=>a-b);
+}
+
+// 뱃지 ID → 이름/분류 조회
+function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?'};}
+
+// 뱃지 HTML 렌더 (pill 형태)
+function renderBadgePills(badgeIds){
+  const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};
+  return badgeIds.map(id=>{
+    const b=getBadgeInfo(id);
+    const c=catColors[b.cat]||'var(--t3)';
+    return `<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20">${b.name}</span>`;
+  }).join('');
+}
+
 function resetAdminCoachFilters(){
   ['admin-coach-period','admin-coach-channel','admin-coach-team','admin-coach-cat','admin-coach-prod'].forEach(id=>{const s=document.getElementById(id);if(s)s.value='';});
   const nameEl=document.getElementById('admin-coach-name');if(nameEl)nameEl.value='';
@@ -4777,22 +4914,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
   const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=[...new Set((r.timestamps||[]).map(t=>t.category))].length;
   const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/${maxTotal}점(${pctScore}%)</strong>으로 ${pctScore>=90?'<span style="color:#10b981">우수한</span>':pctScore>=70?'<span style="color:#f59e0b">양호한</span>':'<span style="color:#E21E26">개선이 필요한</span>'} 성과입니다. ${r.criteriaSummary||''}`;
-  // 평가안 키워드
+  // 뱃지 판별
+  const userId=CU?.id||null;
+  const earnedBadges=evaluateBadges(r,userId);
+  window._lastBadges=earnedBadges;
+  // 평가안 뱃지 (1~15)
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
+    const criteriaBadges=earnedBadges.filter(id=>id<=15);
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    const kws1=[];
-    (r.criteriaScores||[]).forEach(c=>{
-      const p=Math.round(c.score/c.max*100);
-      if(p>=90) kws1.push(c.name+' 우수');
-      else if(p>=70) kws1.push(c.name+' 양호');
-      else kws1.push(c.name+' 보완');
-    });
-    if(pctScore>=90) kws1.push('A등급 달성');
-    if(pctScore>=80) kws1.push('전문성 확인');
-    if((r.timestamps||[]).filter(t=>t.type==='good').length>5) kws1.push('다수 우수 항목');
-    if((r.timestamps||[]).filter(t=>t.type==='bad').length<=2) kws1.push('개선점 소수');
-    kw1El.innerHTML=kws1.map(k=>`<span style="${kwStyle}">${k}</span>`).join('');
+    kw1El.innerHTML=criteriaBadges.map(id=>`<span style="${kwStyle}">${getBadgeInfo(id).name}</span>`).join('');
   }
 
   // ② 교육분석 레이더 (엑셀 기반)
@@ -4834,34 +4965,12 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiPctEl=el('an-score-pct-ai');if(aiPctEl) aiPctEl.textContent=aiAvgScore+'%';
   const aiScEl=el('an-ai-score');if(aiScEl) aiScEl.textContent=aiAvgScore;
   const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.textContent=`${r.overallComment||''}`;
-  // AI 독자 키워드
+  // AI 독자 + 누적 뱃지 (16~50)
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
+    const aiBadges=earnedBadges.filter(id=>id>=16);
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    const aiKws=[];
-    if(r.overallScore>=90) aiKws.push('탁월한 구성력');
-    else if(r.overallScore>=80) aiKws.push('우수한 구성력');
-    else if(r.overallScore>=70) aiKws.push('양호한 구성력');
-    else aiKws.push('구성력 보완');
-    if(r.focusScore>=80) aiKws.push('높은 집중도');
-    else if(r.focusScore>=60) aiKws.push('보통 집중도');
-    if(r.decibel>=60&&r.decibel<=80) aiKws.push('안정적 발성');
-    else if(r.decibel>80) aiKws.push('큰 음량');
-    else if(r.decibel>0) aiKws.push('작은 음량');
-    if(r.tempo>=130&&r.tempo<=160) aiKws.push('적절한 템포');
-    else if(r.tempo>160) aiKws.push('빠른 템포');
-    else if(r.tempo>0) aiKws.push('느린 템포');
-    const habitTotal=(r.habits||[]).reduce((a,h)=>a+h.count,0);
-    if(habitTotal<5) aiKws.push('깨끗한 화법');
-    else if(habitTotal<15) aiKws.push('적은 반복어');
-    else aiKws.push('반복어 주의');
-    const goodTs=(r.timestamps||[]).filter(t=>t.type==='good').length;
-    const badTs=(r.timestamps||[]).filter(t=>t.type==='bad').length;
-    if(goodTs>badTs*2) aiKws.push('강점 다수');
-    if(badTs<=1) aiKws.push('약점 최소');
-    if(r.engagementGaps&&Math.max(...r.engagementGaps)<=10) aiKws.push('꾸준한 환기');
-    if(!aiKws.length) aiKws.push('성장 중');
-    kw2El.innerHTML=aiKws.map(k=>`<span style="${kwStyle}">${k}</span>`).join('');
+    kw2El.innerHTML=aiBadges.map(id=>`<span style="${kwStyle}">${getBadgeInfo(id).name}</span>`).join('');
   }
 
   const aiItems=[
@@ -7480,7 +7589,12 @@ function openLecturer(id, fromPage){
         <div style="font-size:15px;font-weight:700;color:var(--t1);font-style:italic;margin-bottom:12px;line-height:1.5">"${oneLineEval}"</div>
         <!-- 키워드 -->
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px">
-          ${aiKeywords.map(k=>`<span style="padding:3px 10px;border-radius:16px;font-size:10px;font-weight:600;border:1px solid rgba(0,0,0,.1);color:var(--t1);background:#fff">${k}</span>`).join('')||'<span style="font-size:11px;color:var(--t3)">AI 분석 후 키워드 생성</span>'}
+          ${(()=>{
+            // 누적 뱃지 계산
+            const mockR={criteriaScores:[],timestamps:[],overallScore:userAvgScore,focusScore:userAvgScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
+            const myBadges=evaluateBadges(mockR,u.id);
+            return myBadges.length?renderBadgePills(myBadges):'<span style="font-size:11px;color:var(--t3)">AI 분석 후 뱃지 생성</span>';
+          })()}
         </div>
 
         <!-- 교육자료 + 제품 필터 (pill) -->
