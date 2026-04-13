@@ -1374,6 +1374,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">평가안 기준 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary">분석 중...</div>
+          <div id="an-banner-keywords1" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
       </div>
       <!-- AI 독자 분석 -->
@@ -1392,6 +1393,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 독자 분석 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary2">AI 분석 중...</div>
+          <div id="an-banner-keywords2" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
       </div>
       <!-- 영상보기 버튼 (두 배너 사이 겹침) -->
@@ -4670,6 +4672,13 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
   const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=[...new Set((r.timestamps||[]).map(t=>t.category))].length;
   const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/${maxTotal}점(${pctScore}%)</strong>으로 ${pctScore>=90?'<span style="color:#10b981">우수한</span>':pctScore>=70?'<span style="color:#f59e0b">양호한</span>':'<span style="color:#E21E26">개선이 필요한</span>'} 성과입니다. ${r.criteriaSummary||''}`;
+  // 평가안 키워드
+  const kw1El=el('an-banner-keywords1');
+  if(kw1El){
+    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
+    const topItems=(r.criteriaScores||[]).sort((a,b)=>b.score/b.max-a.score/a.max).slice(0,4);
+    kw1El.innerHTML=topItems.map(c=>`<span style="${kwStyle}">${c.name} ${Math.round(c.score/c.max*100)}%</span>`).join('');
+  }
 
   // ② 교육분석 레이더 (엑셀 기반)
   if(hasChecklist&&r.criteriaScores?.length){
@@ -4710,6 +4719,19 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiPctEl=el('an-score-pct-ai');if(aiPctEl) aiPctEl.textContent=aiAvgScore+'%';
   const aiScEl=el('an-ai-score');if(aiScEl) aiScEl.textContent=aiAvgScore;
   const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.textContent=`${r.overallComment||''}`;
+  // AI 독자 키워드
+  const kw2El=el('an-banner-keywords2');
+  if(kw2El){
+    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
+    const aiKws=[];
+    if(r.overallScore>=80) aiKws.push('우수한 구성력');
+    if(r.focusScore>=80) aiKws.push('높은 집중도');
+    if(r.decibel>=60&&r.decibel<=80) aiKws.push('안정적 발성');
+    if(r.tempo>=130&&r.tempo<=160) aiKws.push('적절한 템포');
+    if((r.habits||[]).reduce((a,h)=>a+h.count,0)<10) aiKws.push('적은 반복어');
+    if(!aiKws.length) aiKws.push('성장 중');
+    kw2El.innerHTML=aiKws.map(k=>`<span style="${kwStyle}">${k}</span>`).join('');
+  }
 
   const aiItems=[
     {name:'교수설계\n및 교수법',score:r.overallScore||0,max:100},
