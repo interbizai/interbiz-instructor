@@ -2687,6 +2687,7 @@ async function dbGetUsers(){
     id:r.id, name:r.name, email:r.email, pw:r.pw, channel:r.channel, team:r.team,
     position:'강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
     photo:r.photo, memo:r.memo||'', score:r.score||0, grade:r.grade||'—',
+    lgCareerStart:r.lg_career_start||'', teachCareerStart:r.teach_career_start||'',
     scores:r.scores||{}, maxes:r.maxes||{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
     habits:r.habits||[], habitCounts:r.habit_counts||[], engagementGaps:r.engagement_gaps||[],
     decibel:r.decibel||0, tempo:r.tempo||0, studentCount:r.student_count||0,
@@ -7603,6 +7604,39 @@ function pauseAnVideo(){
 
 function openScenario(){ showPage('page-scenario'); }
 
+// 경력 계산 (년월 기준)
+function calcCareer(startStr){
+  if(!startStr) return '—';
+  const start=new Date(startStr+'-01');
+  const now=new Date();
+  let years=now.getFullYear()-start.getFullYear();
+  let months=now.getMonth()-start.getMonth();
+  if(months<0){years--;months+=12;}
+  if(years<=0&&months<=0) return '1개월 미만';
+  if(years<=0) return months+'개월';
+  if(months===0) return years+'년';
+  return years+'년 '+months+'개월';
+}
+
+// 경력 설정
+async function editCareer(uid){
+  const u=D.users.find(x=>x.id===uid);
+  if(!u) return;
+  const lg=prompt('LG 입사 년월 (예: 2020-03)',u.lgCareerStart||'');
+  if(lg===null) return;
+  const teach=prompt('강의 시작 년월 (예: 2022-06)',u.teachCareerStart||'');
+  if(teach===null) return;
+  const updates={};
+  if(lg) updates.lg_career_start=lg;
+  if(teach) updates.teach_career_start=teach;
+  if(Object.keys(updates).length){
+    await sb.from('users').update(updates).eq('id',uid);
+    if(lg) u.lgCareerStart=lg;
+    if(teach) u.teachCareerStart=teach;
+    openLecturer(uid,lectFromPage);
+  }
+}
+
 function switchAnTab(name,btn){
   document.querySelectorAll('.an-tab-pane').forEach(p=>p.style.display='none');
   const pane=document.getElementById('an-tab-'+name);
@@ -7674,7 +7708,22 @@ function openLecturer(id, fromPage){
         <div style="display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;background:${lvData.color};color:#fff;font-size:11px;font-weight:800;margin-top:8px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
           👑 Lv.${lvData.level} ${lvData.name}
         </div>
-        ${isOwner?`<div style="margin-top:8px"><button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="openEditProfile(${u.id})">정보 수정</button></div>`:''}
+        <!-- LG경력 / 강의경력 -->
+        <div style="display:flex;gap:12px;margin-top:10px;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--t3);font-weight:600">LG경력</div>
+            <div style="font-size:13px;font-weight:800;color:var(--t1)">${u.lgCareerStart?calcCareer(u.lgCareerStart):'—'}</div>
+          </div>
+          <div style="width:1px;background:rgba(0,0,0,.1)"></div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--t3);font-weight:600">강의경력</div>
+            <div style="font-size:13px;font-weight:800;color:var(--t1)">${u.teachCareerStart?calcCareer(u.teachCareerStart):'—'}</div>
+          </div>
+        </div>
+        ${isOwner?`<div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+          <button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="openEditProfile(${u.id})">정보 수정</button>
+          <button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="editCareer(${u.id})">경력 설정</button>
+        </div>`:''}
         <!-- 정보 토글 -->
         <div id="prof-info-toggle" style="display:none;text-align:left;margin-top:10px;padding:10px;border-radius:10px;background:#fff;font-size:11px;box-shadow:var(--sh-sm)">
           <div class="prof-row"><span class="prof-key">소속</span><span class="prof-val">${u.channel||'—'}</span></div>
