@@ -4676,8 +4676,18 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    const topItems=(r.criteriaScores||[]).sort((a,b)=>b.score/b.max-a.score/a.max).slice(0,4);
-    kw1El.innerHTML=topItems.map(c=>`<span style="${kwStyle}">${c.name} ${Math.round(c.score/c.max*100)}%</span>`).join('');
+    const kws1=[];
+    (r.criteriaScores||[]).forEach(c=>{
+      const p=Math.round(c.score/c.max*100);
+      if(p>=90) kws1.push(c.name+' 우수');
+      else if(p>=70) kws1.push(c.name+' 양호');
+      else kws1.push(c.name+' 보완');
+    });
+    if(pctScore>=90) kws1.push('A등급 달성');
+    if(pctScore>=80) kws1.push('전문성 확인');
+    if((r.timestamps||[]).filter(t=>t.type==='good').length>5) kws1.push('다수 우수 항목');
+    if((r.timestamps||[]).filter(t=>t.type==='bad').length<=2) kws1.push('개선점 소수');
+    kw1El.innerHTML=kws1.map(k=>`<span style="${kwStyle}">${k}</span>`).join('');
   }
 
   // ② 교육분석 레이더 (엑셀 기반)
@@ -4724,11 +4734,27 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(kw2El){
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
     const aiKws=[];
-    if(r.overallScore>=80) aiKws.push('우수한 구성력');
+    if(r.overallScore>=90) aiKws.push('탁월한 구성력');
+    else if(r.overallScore>=80) aiKws.push('우수한 구성력');
+    else if(r.overallScore>=70) aiKws.push('양호한 구성력');
+    else aiKws.push('구성력 보완');
     if(r.focusScore>=80) aiKws.push('높은 집중도');
+    else if(r.focusScore>=60) aiKws.push('보통 집중도');
     if(r.decibel>=60&&r.decibel<=80) aiKws.push('안정적 발성');
+    else if(r.decibel>80) aiKws.push('큰 음량');
+    else if(r.decibel>0) aiKws.push('작은 음량');
     if(r.tempo>=130&&r.tempo<=160) aiKws.push('적절한 템포');
-    if((r.habits||[]).reduce((a,h)=>a+h.count,0)<10) aiKws.push('적은 반복어');
+    else if(r.tempo>160) aiKws.push('빠른 템포');
+    else if(r.tempo>0) aiKws.push('느린 템포');
+    const habitTotal=(r.habits||[]).reduce((a,h)=>a+h.count,0);
+    if(habitTotal<5) aiKws.push('깨끗한 화법');
+    else if(habitTotal<15) aiKws.push('적은 반복어');
+    else aiKws.push('반복어 주의');
+    const goodTs=(r.timestamps||[]).filter(t=>t.type==='good').length;
+    const badTs=(r.timestamps||[]).filter(t=>t.type==='bad').length;
+    if(goodTs>badTs*2) aiKws.push('강점 다수');
+    if(badTs<=1) aiKws.push('약점 최소');
+    if(r.engagementGaps&&Math.max(...r.engagementGaps)<=10) aiKws.push('꾸준한 환기');
     if(!aiKws.length) aiKws.push('성장 중');
     kw2El.innerHTML=aiKws.map(k=>`<span style="${kwStyle}">${k}</span>`).join('');
   }
