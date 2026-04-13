@@ -1356,8 +1356,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div id="an-step2" style="display:none">
 
     <!-- ① 총점 + AI 종합요약 (다크 배너) -->
-    <div style="background:#1a1a2e;border-radius:16px;padding:24px;margin-bottom:24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:#fff">
-      <!-- 원형 그래프 -->
+    <div id="an-score-banner" style="background:#1a1a2e;border-radius:16px;padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:#fff">
       <div style="position:relative;width:90px;height:90px;flex-shrink:0">
         <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
           <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
@@ -1365,123 +1364,118 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </svg>
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900" id="an-score-pct">0%</div>
       </div>
-      <!-- 통계 -->
       <div style="display:flex;gap:20px;flex-shrink:0">
         <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">총점</div></div>
         <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">평가항목</div></div>
         <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">종목</div></div>
       </div>
-      <!-- AI 종합 요약 -->
       <div style="flex:1;min-width:200px">
         <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">AI 종합 요약</div>
         <div style="font-size:13px;line-height:1.6" id="an-ai-summary">분석 중...</div>
       </div>
-      <!-- 영상 미니 -->
-      <div style="width:160px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.2)" onclick="document.getElementById('an-player-full').scrollIntoView({behavior:'smooth'})">
+      <div style="width:160px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.2)" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'':'none'">
         <div id="an-player-mini" style="width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.5)">영상</div>
       </div>
     </div>
 
-    <!-- 영상 플레이어 (숨김, 클릭 시 스크롤) -->
-    <div id="an-player-full" style="margin-bottom:24px;display:none">
+    <!-- 영상 플레이어 (토글) -->
+    <div id="an-player-full" style="margin-bottom:20px;display:none">
       <div class="video-player" id="an-player" style="border-radius:var(--r2);border:1px solid rgba(0,0,0,.18)"></div>
     </div>
 
-    <!-- ② 교육분석 (엑셀 기반 레이더 + 달성도) -->
-    <div style="margin-bottom:28px">
-      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">교육 분석 (평가안 기준)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-edu-radar-wrap">
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-          <svg id="an-edu-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
-        </div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
-      </div>
+    <!-- ▶ 탭: 평가안 기준 | AI 독자 분석 -->
+    <div class="tab-bar" style="margin-bottom:20px">
+      <button class="tab-btn active" onclick="switchAnTab('criteria',this)">평가안 기준</button>
+      <button class="tab-btn" onclick="switchAnTab('ai',this)">AI 독자 분석</button>
     </div>
 
-    <!-- ③ 타임스탬프 피드 (엑셀 기반) + 최종의견 -->
-    <div style="margin-bottom:28px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백 (평가안 기준)</div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-criteria-result"></div>
-        </div>
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견 (평가안 기준)</div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-criteria-opinion"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ④ 추천 시나리오 / 레벨UP TIP / 교육 화법 (엑셀 기반) -->
-    <div style="margin-bottom:28px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px" id="an-tips-wrap">
-        <div>
-          <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>추천 시나리오</div>
-          <div id="an-tip-scenario" style="display:flex;flex-direction:column;gap:10px"></div>
-        </div>
-        <div>
-          <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>강의 레벨 UP TIP</div>
-          <div id="an-tip-levelup" style="display:flex;flex-direction:column;gap:10px"></div>
-        </div>
-        <div>
-          <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>강사 교육 화법</div>
-          <div id="an-tip-speech" style="display:flex;flex-direction:column;gap:10px"></div>
+    <!-- TAB: 평가안 기준 -->
+    <div class="an-tab-pane" id="an-tab-criteria">
+      <!-- 교육분석 레이더 + 달성도 -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">교육 분석</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-edu-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
+            <svg id="an-edu-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
+          </div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
         </div>
       </div>
-    </div>
-
-    <!-- ⑤ AI 독자 분석 (6대 역량 레이더 + 달성도) -->
-    <div style="margin-bottom:28px">
-      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">AI 독자 분석 (6대 역량)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-ai-radar-wrap">
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-          <svg id="an-ai-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
-        </div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
-      </div>
-    </div>
-
-    <!-- ⑥ 반복어 습관 / 음성 분석 / 환기 타이밍 -->
-    <div style="margin-bottom:28px">
-      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 & 습관 분석</div>
-      <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px" id="an-voice-analysis">
+      <!-- 타임스탬프 + 최종의견 -->
+      <div style="margin-bottom:28px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
           <div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:10px">반복어 습관</div>
-            <div id="an-habits" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
+            <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-criteria-result"></div>
           </div>
           <div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:10px">음성 분석</div>
-            <div id="an-voice-stats"></div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+            <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-criteria-opinion"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 추천 시나리오 / 레벨UP / 화법 -->
+      <div style="margin-bottom:28px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px" id="an-tips-wrap">
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>추천 시나리오</div>
+            <div id="an-tip-scenario" style="display:flex;flex-direction:column;gap:10px"></div>
           </div>
           <div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:10px">환기 타이밍</div>
-            <div id="an-engagement"></div>
+            <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>강의 레벨 UP TIP</div>
+            <div id="an-tip-levelup" style="display:flex;flex-direction:column;gap:10px"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>강사 교육 화법</div>
+            <div id="an-tip-speech" style="display:flex;flex-direction:column;gap:10px"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ⑦ AI 기반 타임스탬프 + 최종의견 -->
-    <div style="margin-bottom:28px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백 (AI 기반)</div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-ts-feed"></div>
+    <!-- TAB: AI 독자 분석 -->
+    <div class="an-tab-pane" id="an-tab-ai" style="display:none">
+      <!-- AI 6대역량 레이더 + 달성도 -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">AI 역량 분석 (6대 역량)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-ai-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
+            <svg id="an-ai-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
+          </div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
         </div>
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견 (AI 기반)</div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-result"></div>
+      </div>
+      <!-- 음성 & 습관 분석 -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 & 습관 분석</div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+            <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">반복어 습관</div><div id="an-habits" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>
+            <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">음성 분석</div><div id="an-voice-stats"></div></div>
+            <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">환기 타이밍</div><div id="an-engagement"></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- AI 타임스탬프 + 최종의견 -->
+      <div style="margin-bottom:28px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
+            <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-ts-feed"></div>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+            <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-result"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 종합 리포트 (히든, PDF용) -->
     <div style="display:none" id="an-report"></div>
 
-    <!-- 저장 + 삭제 -->
+    <!-- 저장 + 다시입력 -->
     <div style="display:flex;gap:10px" id="an-action-btns">
-      <button class="btn btn-blue" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
+      <button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
       <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none';var pb=el('an-pdf-btn');if(pb)pb.style.display='none'">← 다시 입력</button>
       <span id="an-delete-area"></span>
     </div>
@@ -4638,8 +4632,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const total=r.criteriaScores?.reduce((a,b)=>a+b.score,0)||0;
   const maxTotal=r.criteriaScores?.reduce((a,b)=>a+b.max,0)||100;
   const pctScore=Math.round(total/maxTotal*100);
+  // Lv 기준 색상
+  const anLv=getLevelInfo(pctScore,1,1);
   const ring=document.getElementById('an-score-ring');
-  if(ring) ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);
+  if(ring){ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);ring.setAttribute('stroke',anLv.color);}
   const pctEl=el('an-score-pct');if(pctEl) pctEl.textContent=pctScore+'%';
   const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
@@ -4652,11 +4648,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores);
     const eduBars=el('an-edu-bars');
     if(eduBars){
-      const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6','#6366f1'];
       eduBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-        r.criteriaScores.map((c,i)=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700">${c.name}</span><span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span></div>
-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div></div>
+        r.criteriaScores.map(c=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
+          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
         </div>`;}).join('');
     }
   }
@@ -4692,11 +4687,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems);
   const aiBars=el('an-ai-bars');
   if(aiBars){
-    const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4'];
     aiBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>'+
-      aiItems.map((c,i)=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700">${c.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span></div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div></div>
+      aiItems.map(c=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
       </div>`;}).join('');
   }
 
@@ -7174,6 +7168,14 @@ function filterCoachingList(userId){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+}
+
+function switchAnTab(name,btn){
+  document.querySelectorAll('.an-tab-pane').forEach(p=>p.style.display='none');
+  const pane=document.getElementById('an-tab-'+name);
+  if(pane) pane.style.display='block';
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
 }
 
 function switchLectTab(name,btn){
