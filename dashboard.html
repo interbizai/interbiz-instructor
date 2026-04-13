@@ -1707,6 +1707,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
               실시간 녹음
             </button>
+            <button class="btn btn-ghost" id="va-pause-btn" onclick="toggleVoicePause()" style="padding:8px 14px;font-size:12px;display:none">⏸ 일시정지</button>
             <span class="stream-status ss-ready" id="va-status">대기 중</span>
             <span style="font-size:12px;font-weight:700;color:var(--t1)" id="va-timer">00:00</span>
           </div>
@@ -5914,6 +5915,7 @@ function applyVoiceEduFile(url,name){
 
 function toggleVoiceRec(){
   const btn=el('va-rec-btn');
+  const pauseBtn=el('va-pause-btn');
   if(!vaRecorder||vaRecorder.state==='inactive'){
     navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
       vaStream=stream;
@@ -5921,7 +5923,8 @@ function toggleVoiceRec(){
       vaRecorder=new MediaRecorder(stream);
       vaRecorder.ondataavailable=e=>{if(e.data.size>0)vaChunks.push(e.data);};
       vaRecorder.start();
-      btn.innerHTML='⏹ 녹음 중지'; btn.style.background='var(--t1)'; btn.style.color='#fff';
+      btn.innerHTML='⏹ 녹음 완료'; btn.style.background='var(--t1)'; btn.style.color='#fff';
+      if(pauseBtn){pauseBtn.style.display='inline-flex';}
       el('va-status').textContent='녹음 중'; el('va-status').className='stream-status ss-recording';
       vaSec=0;
       vaTimerID=setInterval(()=>{
@@ -5973,11 +5976,32 @@ function toggleVoiceRec(){
     if(vaRecognition){try{vaRecognition.stop();}catch(e){}vaRecognition=null;}
     btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg> 다시 녹음';
     btn.style.background='';btn.style.color='';
+    const pauseBtn2=el('va-pause-btn');if(pauseBtn2)pauseBtn2.style.display='none';
     el('va-status').textContent='녹음 완료'; el('va-status').className='stream-status ss-done';
     clearInterval(vaTimerID);
     if(vaAnimId){cancelAnimationFrame(vaAnimId);vaAnimId=null;}
     if(vaAudioCtx){vaAudioCtx.close();vaAudioCtx=null;vaAnalyser=null;}
     if(vaSTTText) el('va-stt-text').textContent=vaSTTText;
+  }
+}
+function toggleVoicePause(){
+  if(!vaRecorder) return;
+  const btn=el('va-pause-btn');
+  if(vaRecorder.state==='recording'){
+    vaRecorder.pause();
+    clearInterval(vaTimerID);
+    if(vaRecognition) try{vaRecognition.stop();}catch(e){}
+    if(btn) btn.innerHTML='▶ 재개';
+    el('va-status').textContent='일시정지'; el('va-status').className='stream-status ss-ready';
+  } else if(vaRecorder.state==='paused'){
+    vaRecorder.resume();
+    vaTimerID=setInterval(()=>{
+      vaSec++;
+      el('va-timer').textContent=String(Math.floor(vaSec/60)).padStart(2,'0')+':'+String(vaSec%60).padStart(2,'0');
+    },1000);
+    if(vaRecognition) try{vaRecognition.start();}catch(e){}
+    if(btn) btn.innerHTML='⏸ 일시정지';
+    el('va-status').textContent='녹음 중'; el('va-status').className='stream-status ss-recording';
   }
 }
 
