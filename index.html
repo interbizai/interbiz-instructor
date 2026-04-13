@@ -870,6 +870,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="tn-dd-item" onclick="openAnalysis()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>영상</div>
         <div class="tn-dd-item" onclick="openStreaming()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>스트리밍</div>
         <div class="tn-dd-item" onclick="openVoiceAnalysis()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div>스피치</div>
+        <div class="tn-dd-item" onclick="openScenario()"><div class="tn-dd-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>시나리오</div>
       </div>
     </div>
     <div class="tn-item" data-page="page-edu" onclick="showPage('page-edu')">
@@ -1013,7 +1014,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <label class="form-lbl">소속</label>
       <select class="form-input" id="rg-channel">
         <option value="" disabled selected>소속 선택</option>
-        <option value="가전AM">가전AM</option>
+        <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
         <option value="하이케어솔루션">하이케어솔루션</option>
       </select>
     </div>
@@ -1307,7 +1308,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="form-group" style="margin:0">
           <label class="form-lbl">소속</label>
           <select class="form-input" id="an-channel">
-            <option value="가전AM">가전AM</option>
+            <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
             <option value="하이케어솔루션">하이케어솔루션</option>
           </select>
         </div>
@@ -1835,6 +1836,30 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </div>
 
 <!-- ════════════════════════════════════
+     PAGE: SCENARIO (시나리오)
+════════════════════════════════════ -->
+<div id="page-scenario" class="page">
+<header class="hdr">
+  <div class="hdr-logo">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-home')" style="padding:7px 12px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>홈
+    </button>
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+  </div>
+</header>
+<main>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><h2>시나리오</h2></div>
+  <div class="content-card">
+    <div style="text-align:center;padding:60px 20px">
+      <div style="font-size:48px;margin-bottom:16px">🚧</div>
+      <div style="font-size:18px;font-weight:800;color:var(--t1);margin-bottom:8px">준비 중입니다</div>
+      <div style="font-size:13px;color:var(--t3);line-height:1.6">시나리오 기능은 현재 개발 중입니다.<br>곧 업데이트될 예정입니다.</div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════
      PAGE: STREAMING (녹화 + AI 평가)
 ════════════════════════════════════ -->
 <div id="page-streaming" class="page">
@@ -2346,6 +2371,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="mob-ai-item" onclick="event.stopPropagation();openAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 영상</div>
         <div class="mob-ai-item" onclick="event.stopPropagation();openStreaming();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 스트리밍</div>
         <div class="mob-ai-item" onclick="event.stopPropagation();openVoiceAnalysis();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg> 스피치</div>
+        <div class="mob-ai-item" onclick="event.stopPropagation();openScenario();closeMobAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 시나리오</div>
       </div>
     </div>
     <div class="mobile-nav-item" onclick="showPage('page-edu')">
@@ -2481,7 +2507,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <label class="form-lbl">소속</label>
         <select class="form-input" id="st-channel">
           <option value="" disabled selected>소속 선택</option>
-          <option value="가전AM">가전AM</option>
+          <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
           <option value="하이케어솔루션">하이케어솔루션</option>
         </select>
       </div>
@@ -2531,7 +2557,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <label class="form-lbl">소속</label>
         <select class="form-input" id="cmp-ch">
           <option value="">전체</option>
-          <option value="가전AM">가전AM</option>
+          <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
           <option value="하이케어솔루션">하이케어솔루션</option>
         </select>
       </div>
@@ -2608,7 +2634,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="form-group" style="margin:0">
         <label class="form-lbl">소속</label>
         <select class="form-input" id="ep-channel">
-          <option value="가전AM">가전AM</option>
+          <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
           <option value="하이케어솔루션">하이케어솔루션</option>
         </select>
       </div>
@@ -3554,7 +3580,9 @@ function renderPick(){
     const growthTxt=u.growth>0?`+${u.growth}%`:u.growth<0?`${u.growth}%`:'—';
     const growthColor=u.growth>0?'#10b981':u.growth<0?'#E21E26':'var(--t3)';
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
-    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner">
+    const medalBgs=['rgba(255,215,0,.08)','rgba(192,192,192,.08)','rgba(205,127,50,.08)'];
+    const medalBorder=['rgba(255,215,0,.25)','rgba(192,192,192,.25)','rgba(205,127,50,.25)'];
+    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner" style="background:${medalBgs[i]||'#fff'};border:1px solid ${medalBorder[i]||'var(--bdr)'}">
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;min-width:0">
         <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
@@ -4579,10 +4607,10 @@ function animateLogo(){
 function initHome(){
   // Carousel: DB 영상 + 기본 유튜브 5개
   const defaultVids=[
-    {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'가전AM',score:94},
-    {title:'백화점 VS 매장 비교 강의',yt:'rcRCF3gPSAo',name:'이수연',team:'수도권2팀',channel:'가전AM',score:91},
+    {title:'에어컨 신제품 실전 교육',yt:'gp7U-Kobtt0',name:'김민준',team:'수도권1팀',channel:'현장코칭강사',score:94},
+    {title:'백화점 VS 매장 비교 강의',yt:'rcRCF3gPSAo',name:'이수연',team:'수도권2팀',channel:'현장코칭강사',score:91},
     {title:'로보락 S 시리즈 출시 교육',yt:'OxALSj3q-QE',name:'박도윤',team:'중부팀',channel:'하이케어솔루션',score:88},
-    {title:'현장 트러블 대응 시나리오',yt:'ZOw_yYqgULk',name:'최지아',team:'수도권1팀',channel:'가전AM',score:85},
+    {title:'현장 트러블 대응 시나리오',yt:'ZOw_yYqgULk',name:'최지아',team:'수도권1팀',channel:'현장코칭강사',score:85},
     {title:'고객 클레임 실전 롤플레잉',yt:'Z0Sw-G-S14g',name:'정현서',team:'남부팀',channel:'하이케어솔루션',score:82},
   ];
   const dbVids=D.videos.filter(v=>v.status==='분석완료').map(vid=>{
@@ -7573,6 +7601,8 @@ function pauseAnVideo(){
   if(modal) modal.innerHTML='';
 }
 
+function openScenario(){ showPage('page-scenario'); }
+
 function switchAnTab(name,btn){
   document.querySelectorAll('.an-tab-pane').forEach(p=>p.style.display='none');
   const pane=document.getElementById('an-tab-'+name);
@@ -7950,7 +7980,7 @@ function openEditProfile(uid){
   if(!u) return;
   el('ep-name').value=u.name||'';
   el('ep-year').value=u.birthYear||'';
-  el('ep-channel').value=u.channel||'가전AM';
+  el('ep-channel').value=u.channel||'현장코칭강사';
   el('ep-team').value=u.team||'';
   el('ep-hire').value=u.hireDate||'';
   el('ep-phone').value=u.phone||'';
