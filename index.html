@@ -4516,7 +4516,10 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     {"category":"구분명","item":"평가 항목명","score":5,"maxScore":5,"t":"mm:ss~mm:ss","type":"good","text":"분석 피드백","solution":"못한 경우 개선 솔루션 (잘한 경우 빈 문자열)","tags":["태그"]}
   ],
   "solution": "종합 개선 솔루션 4가지 (줄바꿈은 <br>로)",
-  "scenario": "다음 강의 추천 시나리오 (줄바꿈은 <br>로)"
+  "scenario": "다음 강의 추천 시나리오 (줄바꿈은 <br>로)",
+  "scenarios": ["영상에서 이렇게 말했지만 이렇게 바꾸면 좋겠다는 대안 시나리오 3개"],
+  "levelUpTips": [{"title":"TIP 제목","text":"구체적 설명"}],
+  "speechTips": [{"title":"화법 제목","text":"추천 화법 설명"}]
 }
 
 타임스탬프는 최소 8~12개를 생성하되, good/bad/tip을 골고루 배분하세요.
@@ -4579,7 +4582,10 @@ function generateMockResult(studentCount){
       {category:'사용경험비교',item:'케어서비스 언급',score:5,maxScore:5,t:'01:41 ~ 01:50',type:'good',text:'공기청정기는 관리가 핵심임을 강조하며 케어서비스의 필요성을 역설',solution:'',tags:['사용경험','케어']},
     ],
     solution:'1. 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>2. 12분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획',
-    scenario:'<strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br><strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br><strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br><strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고'
+    scenario:'<strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br><strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br><strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br><strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고',
+    scenarios:['영상에서 "이 제품은 좋습니다"라고 했는데, "이 제품이 고객님 생활을 어떻게 바꿔줄 수 있는지 말씀드리겠습니다"로 시작하면 더 몰입감을 줄 수 있습니다','시연 전 "직접 만져보시겠어요?"라는 참여 유도 멘트를 추가하면 집중도가 높아집니다','마무리에서 "오늘 배운 3가지를 정리하면..."으로 구조화하면 기억 정착률이 올라갑니다'],
+    levelUpTips:[{title:'도입 3분이 강의 전체를 결정합니다',text:'오프닝 질문 기법: 실제 사례 적용법'},{title:'실습 피드백은 즉각적·구체적으로',text:'행동 변화를 유도하는 코칭 언어 패턴'},{title:'AI 평가 후 자동 생성 예정',text:'제미나이 분석 결과 연동'}],
+    speechTips:[{title:'도입 화법',text:'"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."'},{title:'피드백 화법',text:'"한 가지만 바꿔 보면 더 잘 될 것 같아서요."'},{title:'마무리 화법',text:'"오늘 배운 것 중 하나만 내일 꼭 써보세요."'}]
   };
 }
 
@@ -4628,128 +4634,139 @@ function drawRadarChart(items, color, size, items2, color2, label1, label2){
 }
 
 function renderAnalysisResult(r,hasChecklist,studentCount){
-  // ─── 평가안 기준 (왼쪽) ───
-  if(hasChecklist && r.criteriaScores?.length){
-    el('an-criteria-result').parentElement.parentElement.style.display='';
-    const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
-    const maxTotal=r.criteriaScores.reduce((a,b)=>a+b.max,0);
-    const avgCri=r.criteriaScores.map(c=>{
-      const all=D.users.filter(u=>u.scores).map(u=>{const k=Object.keys(u.scores).find(k=>c.name.includes(k));return k?u.scores[k]:0;});
-      return {name:c.name,score:all.length?Math.round(all.reduce((a,b)=>a+b,0)/all.length):0,max:c.max};
-    });
-    el('an-criteria-result').innerHTML=`
-      <div style="padding:10px;background:rgba(0,120,200,.04);border-radius:8px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--blue)">✅ 평가안 기준 적용</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">내 점수</div>${drawRadarChart(r.criteriaScores,'#0078C8',340)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgCri,'#f59e0b',340)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">비교</div>${drawRadarChart(r.criteriaScores,'#0078C8',340,avgCri,'#f59e0b','나','평균')}</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        ${r.criteriaScores.map(c=>{
-          const pct=Math.round(c.score/c.max*100);
-          return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
-        }).join('')}
-      </div>
-      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7">
-        <strong style="color:var(--green)">종합: ${total}/${maxTotal}점</strong> — ${r.criteriaSummary||''}
-      </div>`;
-  } else {
-    el('an-criteria-result').parentElement.parentElement.style.display='none';
+  // ① 총점 배너
+  const total=r.criteriaScores?.reduce((a,b)=>a+b.score,0)||0;
+  const maxTotal=r.criteriaScores?.reduce((a,b)=>a+b.max,0)||100;
+  const pctScore=Math.round(total/maxTotal*100);
+  const ring=document.getElementById('an-score-ring');
+  if(ring) ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);
+  const pctEl=el('an-score-pct');if(pctEl) pctEl.textContent=pctScore+'%';
+  const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
+  const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
+  const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=[...new Set((r.timestamps||[]).map(t=>t.category))].length;
+  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/${maxTotal}점(${pctScore}%)</strong>으로 ${pctScore>=90?'<span style="color:#10b981">우수한</span>':pctScore>=70?'<span style="color:#f59e0b">양호한</span>':'<span style="color:#E21E26">개선이 필요한</span>'} 성과입니다. ${r.criteriaSummary||''}`;
+
+  // ② 교육분석 레이더 (엑셀 기반)
+  if(hasChecklist&&r.criteriaScores?.length){
+    const eduRadar=el('an-edu-radar');
+    if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores);
+    const eduBars=el('an-edu-bars');
+    if(eduBars){
+      const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6','#6366f1'];
+      eduBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
+        r.criteriaScores.map((c,i)=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700">${c.name}</span><span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span></div>
+          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div></div>
+        </div>`;}).join('');
+    }
   }
 
-  // ─── AI 독자 분석 (오른쪽 또는 전체) ───
-  const habitHtml=r.habits?.length?r.habits.map(h=>{
+  // ③ 타임스탬프 피드 (엑셀 기반) + 최종의견
+  window._anTimestamps=r.timestamps||[];
+  el('an-criteria-result').innerHTML=renderTsTable(r.timestamps||[]);
+  el('an-criteria-opinion').innerHTML=`
+    <div style="font-size:13px;font-style:italic;color:var(--t2);line-height:1.8;margin-bottom:14px">"${r.criteriaSummary||'평가안 기준 종합 분석 결과입니다.'}"</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${(r.criteriaScores||[]).filter(c=>Math.round(c.score/c.max*100)<80).map(c=>`<div style="padding:10px;border-radius:8px;background:rgba(245,158,11,.06)">
+        <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:4px">${c.name} (${c.score}/${c.max})</div>
+        <div style="font-size:11px;color:var(--t2)">해당 항목의 추가 연습이 필요합니다</div>
+      </div>`).join('')||'<div style="font-size:12px;color:var(--green)">모든 항목에서 우수한 성적을 거두었습니다</div>'}
+    </div>`;
+
+  // ④ 추천 시나리오 / 레벨UP / 교육화법
+  const tipCard=(title,text)=>`<div style="padding:14px;border:1px solid var(--bdr);border-radius:10px;background:#fff"><div style="font-size:12px;font-weight:700;margin-bottom:6px">${title}</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${text}</div></div>`;
+  el('an-tip-scenario').innerHTML=(r.scenarios||[r.scenario||'']).filter(Boolean).map((s,i)=>tipCard(`시나리오 ${i+1}`,s)).join('')||tipCard('추천 시나리오',r.scenario||'AI 평가 후 자동 생성 예정');
+  el('an-tip-levelup').innerHTML=(r.levelUpTips||[]).map(t=>tipCard(t.title||'TIP',t.text||t)).join('')||tipCard('레벨UP TIP','도입 3분이 강의 전체를 결정합니다')+tipCard('실습 강화','실습 피드백은 즉각적·구체적으로');
+  el('an-tip-speech').innerHTML=(r.speechTips||[]).map(t=>tipCard(t.title||'화법',t.text||t)).join('')||tipCard('도입 화법','"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."')+tipCard('피드백 화법','"한 가지만 바꿔 보면 더 잘 될 것 같아서요."');
+
+  // ⑤ AI 독자 분석 (6대 역량)
+  const aiItems=[
+    {name:'교수설계\n및 교수법',score:r.overallScore||0,max:100},
+    {name:'내용\n전문성',score:Math.min(100,Math.round((r.focusScore||0)*1.1)),max:100},
+    {name:'소통',score:r.engagementGaps?Math.max(0,100-Math.round((r.engagementGaps.reduce((a,b)=>a+b,0)/r.engagementGaps.length-8)*5)):65,max:100},
+    {name:'코칭',score:Math.round(((r.overallScore||0)+(r.focusScore||0))/2.2),max:100},
+    {name:'프리젠\n테이션',score:r.decibel?Math.min(100,Math.round(r.decibel/75*100)):70,max:100},
+    {name:'스피치',score:r.tempo?Math.min(100,Math.round(r.tempo/155*100)):70,max:100}
+  ];
+  const aiRadar=el('an-ai-radar');
+  if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems);
+  const aiBars=el('an-ai-bars');
+  if(aiBars){
+    const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4'];
+    aiBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>'+
+      aiItems.map((c,i)=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700">${c.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div></div>
+      </div>`;}).join('');
+  }
+
+  // ⑥ 음성 & 습관 분석
+  el('an-habits').innerHTML=r.habits?.length?r.habits.map(h=>{
     const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
     return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
   }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>';
-
-  // AI 역량 레이더 차트 데이터
-  const aiRadarItems=[
-    {name:'구성력',score:r.overallScore||0,max:100},
-    {name:'집중도',score:r.focusScore||0,max:100},
-    {name:'발성',score:r.decibel?Math.min(100,Math.round(r.decibel/80*100)):70,max:100},
-    {name:'템포',score:r.tempo?Math.min(100,Math.round(r.tempo/160*100)):70,max:100},
-    {name:'상호작용',score:r.engagementGaps?Math.max(0,100-Math.round((r.engagementGaps.reduce((a,b)=>a+b,0)/r.engagementGaps.length-10)*5)):65,max:100},
-  ];
-  window._lastAiRadar=aiRadarItems;
-
-  el('an-ai-result').innerHTML=`
-    <div style="padding:10px;background:rgba(139,92,246,.05);border-radius:8px;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--purple)">🤖 AI 독자 분석 결과</div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:6px">
-      <span style="font-size:10px;color:var(--t3)">평균 비교 기간:</span>
-      <select style="padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-size:10px;background:#fff;color:var(--t1);box-shadow:none;width:auto" onchange="updateAiRadar(this.value)">
-        <option value="all">전체</option><option value="1">1개월</option><option value="3">3개월</option><option value="6">6개월</option><option value="12">12개월</option>
-      </select>
-    </div>
-    <div id="ai-radar-container">
-    ${(()=>{
-      const avgAi=aiRadarItems.map(d=>({name:d.name,score:Math.max(30,d.score-5+Math.floor(Math.random()*10)),max:d.max}));
-      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px">내 점수</div>${drawRadarChart(aiRadarItems,'#8b5cf6',340)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#E21E26;margin-bottom:4px">전체 평균</div>${drawRadarChart(avgAi,'#E21E26',340)}</div>
-        <div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">비교</div>${drawRadarChart(aiRadarItems,'#8b5cf6',340,avgAi,'#E21E26','나','평균')}</div>
-      </div>`;
-    })()}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;margin-top:14px">
-      <div style="padding:12px;background:#f8f9fa;border-radius:8px">
-        <div style="font-size:10px;color:var(--t3)">강의 구성력</div>
-        <div style="font-size:22px;font-weight:900;color:var(--blue)">${r.overallScore}<span style="font-size:11px;color:var(--t3)">/100</span></div>
-        <div style="font-size:10px;color:var(--t2);margin-top:2px">${r.overallComment||''}</div>
-      </div>
-      <div style="padding:12px;background:#f8f9fa;border-radius:8px">
-        <div style="font-size:10px;color:var(--t3)">집중도 예측</div>
-        <div style="font-size:22px;font-weight:900;color:var(--green)">${r.focusScore}<span style="font-size:11px;color:var(--t3)">/100</span></div>
-        <div style="font-size:10px;color:var(--t2);margin-top:2px">${r.focusComment||''}</div>
-      </div>
-    </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🗣️ 반복어 습관</div><div style="display:flex;flex-wrap:wrap;gap:5px">${habitHtml}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">🎤 음성 분석 (${studentCount}명 기준)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="padding:8px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">데시벨</span><br><strong>${r.decibel} dB</strong> <span style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus}</span></div>
-        <div style="padding:8px;background:#f8f9fa;border-radius:8px"><span style="font-size:10px;color:var(--t3)">템포</span><br><strong>${r.tempo} WPM</strong> <span style="font-size:10px;color:${r.tempoStatus==='적정'?'var(--green)':'var(--orange)'}">${r.tempoStatus}</span></div>
-      </div>
-    </div>
-    <div><div style="font-size:12px;font-weight:700;margin-bottom:6px">🔄 환기 타이밍</div>
-      <div style="font-size:11px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'}</strong><br>${r.engagementWarning||''}</div>
+  el('an-voice-stats').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${r.decibel||0} dB</div><div style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus||''}</div></div>
+      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">템포</div><div style="font-size:18px;font-weight:900">${r.tempo||0} WPM</div><div style="font-size:10px;color:${r.tempoStatus==='적정'?'var(--green)':'var(--orange)'}">${r.tempoStatus||''}</div></div>
     </div>`;
+  el('an-engagement').innerHTML=`
+    <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'||'—'}</strong></div>
+    <div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning||''}</div>`;
 
-  // ─── 타임스탬프 (테이블 형태) ───
-  window._anTimestamps=r.timestamps||[];
-  const _vidUserId=curVidId?D.videos.find(v=>v.id===curVidId)?.userId:null;
-  el('an-ts-feed').innerHTML=`
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
-        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:80px">구분</th>
-        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">평가 항목</th>
-        <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:60px">점수</th>
-        <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:110px">시점</th>
-        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">분석 피드백</th>
-        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:180px">솔루션</th>
-      </tr></thead>
-      <tbody>${(r.timestamps||[]).map((ts,idx)=>{
-        const scoreColor=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
-        const scoreBg=ts.type==='good'?'rgba(16,185,129,.12)':ts.type==='bad'?'rgba(226,30,38,.12)':'rgba(245,158,11,.12)';
-        const s=ts.score||5, ms=ts.maxScore||5;
-        return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
-          <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${ts.category||'—'}</td>
-          <td style="padding:10px 12px;font-weight:600">${ts.item||ts.text?.substring(0,20)||'—'}</td>
-          <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:800;background:${scoreBg};color:${scoreColor}">${s} / ${ms}</span></td>
-          <td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--blue);font-weight:700;white-space:nowrap">${ts.t||'—'}</td>
-          <td style="padding:10px 12px;font-size:12px;color:var(--t2);line-height:1.5">${ts.text||''}</td>
-          <td style="padding:10px 12px;font-size:11px;color:${ts.solution?'var(--red)':'var(--t3)'};line-height:1.5">${ts.solution||'—'}</td>
-        </tr>`;}).join('')}
-      </tbody>
-    </table>`;
+  // ⑦ AI 기반 타임스탬프 + 최종의견
+  el('an-ts-feed').innerHTML=renderTsTable(r.timestamps||[]);
+  el('an-ai-result').innerHTML=`
+    <div style="font-size:13px;font-style:italic;color:var(--t2);line-height:1.8;margin-bottom:14px">"${r.overallComment||'AI가 분석한 종합 의견입니다.'}"</div>
+    <div style="padding:14px;border-radius:10px;background:rgba(16,185,129,.06);margin-bottom:10px">
+      <div style="font-size:12px;font-weight:800;color:#10b981;margin-bottom:4px">솔루션</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6">${r.solution||''}</div>
+    </div>
+    <div style="padding:14px;border-radius:10px;background:rgba(0,120,200,.06)">
+      <div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:4px">다음 강의 시나리오</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6">${r.scenario||''}</div>
+    </div>
+    <div style="text-align:right;margin-top:10px;font-size:10px;color:var(--t3)">AI VERIFIED · ${new Date().toISOString().slice(0,10)}</div>`;
+}
 
-  // ─── 종합 리포트 ───
-  el('an-report').innerHTML=`
-    <div class="solution-card"><div class="sol-title">💡 솔루션</div><div class="sol-text">${r.solution||''}</div></div>
-    <div class="solution-card" style="background:rgba(0,120,200,.04);border-color:rgba(0,120,200,.12)"><div class="sol-title" style="color:var(--blue)">🎯 다음 강의 시나리오</div><div class="sol-text">${r.scenario||''}</div></div>`;
+// 타임스탬프 테이블 공통 렌더
+function renderTsTable(timestamps){
+  return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
+      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700;width:70px">구분</th>
+      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700">평가 항목</th>
+      <th style="padding:10px 12px;text-align:center;font-size:11px;color:var(--t3);font-weight:700;width:55px">점수</th>
+      <th style="padding:10px 12px;text-align:center;font-size:11px;color:var(--t3);font-weight:700;width:100px">시간대</th>
+      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700">분석</th>
+      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700;width:160px">솔루션</th>
+    </tr></thead>
+    <tbody>${timestamps.map((ts,idx)=>{
+      const sc=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
+      const bg=ts.type==='good'?'rgba(16,185,129,.1)':ts.type==='bad'?'rgba(226,30,38,.1)':'rgba(245,158,11,.1)';
+      return `<tr style="border-bottom:1px solid rgba(0,0,0,.06);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
+        <td style="padding:8px 12px;font-size:11px;color:var(--t3)">${ts.category||'—'}</td>
+        <td style="padding:8px 12px;font-size:12px;font-weight:600">${ts.item||ts.text?.substring(0,20)||'—'}</td>
+        <td style="padding:8px 12px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:800;background:${bg};color:${sc}">${ts.score||0}/${ts.maxScore||5}</span></td>
+        <td style="padding:8px 12px;text-align:center;font-size:11px;color:var(--blue);font-weight:700">${ts.t||'—'}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
+        <td style="padding:8px 12px;font-size:10px;color:${ts.solution?'var(--red)':'var(--t3)'};line-height:1.4">${ts.solution||'—'}</td>
+      </tr>`;}).join('')}
+    </tbody></table>`;
+}
+
+// 레이더 차트 SVG 공통
+function drawRadarSVG(items){
+  const n=items.length,cx=200,cy=185,maxR=140;
+  const angles=Array.from({length:n},(_,i)=>-Math.PI/2+(2*Math.PI*i/n));
+  const toXY=(a,r)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+  let svg='';
+  [20,40,60,80,100].forEach(pct=>{const r=maxR*pct/100;const pts=angles.map(a=>toXY(a,r).join(',')).join(' ');svg+=`<polygon points="${pts}" fill="none" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;if(pct%40===0) svg+=`<text x="${cx+4}" y="${cy-r+4}" fill="var(--t3)" font-size="10">${pct}</text>`;});
+  angles.forEach(a=>{const [x,y]=toXY(a,maxR);svg+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;});
+  const pts=items.map((d,i)=>{const p=d.max?d.score/d.max:d.score/100;return toXY(angles[i],maxR*p).join(',');}).join(' ');
+  svg+=`<polygon points="${pts}" fill="rgba(220,38,38,.12)" stroke="#dc2626" stroke-width="2.5"/>`;
+  items.forEach((d,i)=>{const p=d.max?d.score/d.max:d.score/100;const [x,y]=toXY(angles[i],maxR*p);svg+=`<circle cx="${x}" cy="${y}" r="5" fill="#dc2626" stroke="#fff" stroke-width="2"/>`;});
+  items.forEach((d,i)=>{const [x,y]=toXY(angles[i],maxR+28);const lines=(d.name||'').split('\n');lines.forEach((l,li)=>{svg+=`<text x="${x}" y="${y+li*14-((lines.length-1)*7)}" text-anchor="middle" fill="var(--t1)" font-size="11" font-weight="700">${l}</text>`;});});
+  return svg;
 }
 
 // 타임스탬프 클릭 → 영상 해당 시간으로 이동
