@@ -1631,12 +1631,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="font-size:14px;font-weight:800;margin-bottom:8px">설정</div>
       <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
         <div class="form-group">
-          <label class="form-lbl">강의 제목</label>
+          <label class="form-lbl">제목</label>
           <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
         </div>
         <div class="form-group">
           <label class="form-lbl">교육자료</label>
-          <select class="form-input" id="va-product"></select>
+          <select class="form-input" id="va-product" onchange="loadVoiceEduFiles()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">제품</label>
+          <select class="form-input" id="va-prod-select">
+            <option value="">선택</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-lbl">교육생 인원수</label>
@@ -1662,9 +1668,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <option value="CS 상담사">CS 상담사</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-lbl">세부 업무</label>
-          <input type="text" class="form-input" id="va-task" placeholder="예: RP, 인터뷰, B2B 영업, 제품 시연">
+        <!-- 교육자료 연동 파일 -->
+        <div id="va-edu-files" style="display:none;padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
+          <div id="va-edu-file-list"></div>
         </div>
         <!-- 평가안/체크리스트 업로드 -->
         <div style="padding:12px;background:#f8f9fa;border-radius:8px">
@@ -5335,7 +5342,41 @@ function openVoiceAnalysis(){
   const vaProd=el('va-product');if(vaProd){const cats=getEduCategories();vaProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   el('va-file-name').textContent='음성/영상 파일 업로드 (mp3, wav, mp4)';
   el('va-cl-name').textContent='없음';
+  // 제품 셀렉트 초기화
+  const vaProdSel=document.getElementById('va-prod-select');
+  if(vaProdSel&&vaProdSel.options.length<=1){
+    Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
+      const og=document.createElement('optgroup');og.label=g;
+      items.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;og.appendChild(o);});
+      vaProdSel.appendChild(og);
+    });
+  }
+  const vaEdu=document.getElementById('va-edu-files');if(vaEdu)vaEdu.style.display='none';
   showPage('page-voice');
+}
+
+function loadVoiceEduFiles(){
+  const cat=document.getElementById('va-product')?.value||'';
+  const wrap=document.getElementById('va-edu-files');
+  const list=document.getElementById('va-edu-file-list');
+  if(!wrap||!list) return;
+  if(!cat){wrap.style.display='none';return;}
+  const files=(D.checklists||[]).filter(c=>(c.category||'')===cat);
+  if(!files.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=files.map(f=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="applyVoiceEduFile('${f.file_url}','${(f.name||'').replace(/'/g,"\\'")}')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <div style="flex:1;font-size:11px;font-weight:600">${f.name}</div>
+    <span style="font-size:10px;color:var(--blue)">적용</span>
+  </div>`).join('');
+}
+function applyVoiceEduFile(url,name){
+  document.getElementById('va-cl-name').textContent=name+' (교육자료 적용)';
+  if(!document.getElementById('va-checklist-url')){
+    const h=document.createElement('input');h.type='hidden';h.id='va-checklist-url';document.body.appendChild(h);
+  }
+  document.getElementById('va-checklist-url').value=url;
+  document.getElementById('va-edu-files').style.display='none';
 }
 
 function toggleVoiceRec(){
