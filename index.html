@@ -4387,7 +4387,7 @@ function renderAdminCoaching(){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'—'} · ${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'(삭제된 강사)'} · ${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
@@ -4402,7 +4402,7 @@ function renderAdminCoaching(){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVoiceResult(${v.id})">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title||'—'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||v.user_name||'—'} · ${v.eval_date||v.created_at?.slice(0,10)||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||v.user_name||'(삭제된 강사)'} · ${v.eval_date||v.created_at?.slice(0,10)||'—'}</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
