@@ -1395,16 +1395,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
       </div>
       <!-- 영상보기 버튼 (두 배너 사이 겹침) -->
-      <div style="position:absolute;right:28px;top:50%;transform:translateY(-50%);cursor:pointer;padding:10px 20px;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);z-index:2" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'block':'none'">
+      <div style="position:absolute;right:28px;top:50%;transform:translateY(-50%);cursor:pointer;padding:10px 20px;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);z-index:2" onclick="document.getElementById('an-video-overlay').classList.add('show')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--t1)"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
       </div>
     </div>
 
-    <!-- 영상 플레이어 (토글, 별도 카드) -->
-    <div id="an-player-full" style="margin-bottom:20px;display:none">
-      <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#000">
-        <div class="video-player" id="an-player" style="border-radius:0"></div>
-      </div>
+    <!-- 영상 플레이어 (숨김, 모달에서 사용) -->
+    <div id="an-player-full" style="display:none">
+      <div class="video-player" id="an-player"></div>
     </div>
 
     <!-- ▶ 탭: 평가안 기준 | AI 독자 분석 -->
@@ -2530,6 +2528,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </div>
 
 <!-- ── Edit Profile Modal ── -->
+<!-- 영상 보기 모달 -->
+<div class="overlay" id="an-video-overlay" onclick="if(event.target===this){this.classList.remove('show');pauseAnVideo()}">
+  <div style="background:#000;border-radius:16px;width:90vw;max-width:900px;overflow:hidden;animation:scaleIn .25s cubic-bezier(.22,1,.36,1);position:relative">
+    <button style="position:absolute;top:12px;right:12px;z-index:5;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:32px;height:32px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="document.getElementById('an-video-overlay').classList.remove('show');pauseAnVideo()">✕</button>
+    <div id="an-video-modal-player" style="width:100%;aspect-ratio:16/9"></div>
+  </div>
+</div>
+
 <!-- Lv 상세 모달 -->
 <div class="overlay" id="lv-detail-overlay" onclick="if(event.target===this)this.classList.remove('show')">
   <div style="background:#fff;border-radius:16px;padding:28px;max-width:460px;width:90vw;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
@@ -7202,6 +7208,34 @@ function filterCoachingList(userId){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+}
+
+// 영상 모달 열기
+document.getElementById('an-video-overlay')?.addEventListener('transitionend',function(){
+  if(this.classList.contains('show')){
+    const modal=document.getElementById('an-video-modal-player');
+    if(modal&&window._anYtId) modal.innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
+    else if(modal){
+      const vid=document.getElementById('an-video-el');
+      if(vid) modal.innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${vid.querySelector('source')?.src||vid.src}"></video>`;
+      else modal.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)">영상이 등록되지 않았습니다</div>';
+    }
+  }
+});
+// show 클래스 추가 시 바로 실행 (transitionend 없을 때 대비)
+const _origOverlayShow=document.getElementById('an-video-overlay');
+if(_origOverlayShow){
+  const obs=new MutationObserver(()=>{
+    if(_origOverlayShow.classList.contains('show')){
+      const modal=document.getElementById('an-video-modal-player');
+      if(modal&&window._anYtId) modal.innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
+    }
+  });
+  obs.observe(_origOverlayShow,{attributes:true,attributeFilter:['class']});
+}
+function pauseAnVideo(){
+  const modal=document.getElementById('an-video-modal-player');
+  if(modal) modal.innerHTML='';
 }
 
 function switchAnTab(name,btn){
