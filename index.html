@@ -5025,16 +5025,17 @@ function openCalendar(){
 }
 
 async function loadCalEvents(){
-  // 전체 일정 로드 (pick_visible 일정은 모든 사용자에게 표시)
-  const {data}=await sb.from('calendar_events').select('*').order('start_time');
+  // 전체 일정 로드
+  const {data,error}=await sb.from('calendar_events').select('*').order('start_time');
+  if(error) console.error('loadCalEvents error:',error);
   const all=data||[];
-  // 일반 사용자: 본인 일정 + pick_visible 일정만 표시
-  if(CU?.isAdmin){
-    calEvents=all.map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
-  } else {
-    calEvents=all.filter(e=>e.pick_visible||(e.user_id&&e.user_id===(CU?.id||0)))
-      .map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
-  }
+  // 관리자: 전체 / 일반: pick_visible + 본인
+  calEvents=all.filter(e=>{
+    if(CU?.isAdmin) return true;
+    if(e.pick_visible) return true;
+    if(e.user_id && CU?.id && e.user_id==CU.id) return true;
+    return false;
+  }).map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
   renderCalendar();
 }
 
