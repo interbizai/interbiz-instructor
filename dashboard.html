@@ -7705,24 +7705,12 @@ function openLecturer(id, fromPage){
         <div style="font-size:11px;color:var(--t2);margin-top:2px">${u.channel} · ${u.team}
           <span style="cursor:pointer;color:var(--blue);margin-left:4px;font-size:10px" onclick="document.getElementById('prof-info-toggle').style.display=document.getElementById('prof-info-toggle').style.display==='none'?'block':'none'">ⓘ 정보</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;background:${lvData.color};color:#fff;font-size:11px;font-weight:800;margin-top:8px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
+        <div style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:16px;background:${lvData.color};color:#fff;font-size:10px;font-weight:800;margin-top:6px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
           👑 Lv.${lvData.level} ${lvData.name}
         </div>
-        <!-- LG경력 / 강의경력 -->
-        <div style="display:flex;gap:12px;margin-top:10px;justify-content:center">
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--t3);font-weight:600">LG경력</div>
-            <div style="font-size:13px;font-weight:800;color:var(--t1)">${u.lgCareerStart?calcCareer(u.lgCareerStart):'—'}</div>
-          </div>
-          <div style="width:1px;background:rgba(0,0,0,.1)"></div>
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--t3);font-weight:600">강의경력</div>
-            <div style="font-size:13px;font-weight:800;color:var(--t1)">${u.teachCareerStart?calcCareer(u.teachCareerStart):'—'}</div>
-          </div>
-        </div>
-        ${isOwner?`<div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
-          <button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="openEditProfile(${u.id})">정보 수정</button>
-          <button class="btn btn-ghost" style="padding:4px 12px;font-size:10px" onclick="editCareer(${u.id})">경력 설정</button>
+        ${isOwner?`<div style="margin-top:6px;display:flex;gap:4px;justify-content:center">
+          <button class="btn btn-ghost" style="padding:3px 10px;font-size:9px" onclick="openEditProfile(${u.id})">정보 수정</button>
+          <button class="btn btn-ghost" style="padding:3px 10px;font-size:9px" onclick="editCareer(${u.id})">경력 설정</button>
         </div>`:''}
         <!-- 정보 토글 -->
         <div id="prof-info-toggle" style="display:none;text-align:left;margin-top:10px;padding:10px;border-radius:10px;background:#fff;font-size:11px;box-shadow:var(--sh-sm)">
@@ -7737,6 +7725,11 @@ function openLecturer(id, fromPage){
 
       <!-- 한줄평 + 키워드 + 통계 -->
       <div style="flex:1;min-width:280px">
+        <!-- 경력 -->
+        <div style="display:flex;gap:14px;margin-bottom:10px;font-size:11px;color:var(--t2)">
+          ${u.lgCareerStart?`<span>LG경력 <strong style="color:var(--t1)">${calcCareer(u.lgCareerStart)}</strong></span>`:''}
+          ${u.teachCareerStart?`<span>강의경력 <strong style="color:var(--t1)">${calcCareer(u.teachCareerStart)}</strong></span>`:''}
+        </div>
         <!-- 한줄 평가 -->
         <div style="font-size:15px;font-weight:700;color:var(--t1);font-style:italic;margin-bottom:12px;line-height:1.5">"${oneLineEval}"</div>
         <!-- 키워드 -->
