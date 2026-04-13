@@ -4216,7 +4216,7 @@ function renderBadgePills(badgeIds){
   return badgeIds.map(id=>{
     const b=getBadgeInfo(id);
     const c=catColors[b.cat]||'var(--t3)';
-    return `<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20">${b.name}</span>`;
+    return `<span title="${b.desc}" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20;cursor:help">${b.name}</span>`;
   }).join('');
 }
 
@@ -4922,8 +4922,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
     const criteriaBadges=earnedBadges.filter(id=>id<=15);
-    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    kw1El.innerHTML=criteriaBadges.map(id=>`<span style="${kwStyle}">${getBadgeInfo(id).name}</span>`).join('');
+    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4);cursor:help';
+    kw1El.innerHTML=criteriaBadges.map(id=>{const b=getBadgeInfo(id);return `<span title="${b.desc}" style="${kwStyle}">${b.name}</span>`;}).join('');
   }
 
   // ② 교육분석 레이더 (엑셀 기반)
@@ -4970,7 +4970,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(kw2El){
     const aiBadges=earnedBadges.filter(id=>id>=16);
     const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    kw2El.innerHTML=aiBadges.map(id=>`<span style="${kwStyle}">${getBadgeInfo(id).name}</span>`).join('');
+    kw2El.innerHTML=aiBadges.map(id=>{const b=getBadgeInfo(id);return `<span title="${b.desc}" style="${kwStyle}">${b.name}</span>`;}).join('');
   }
 
   const aiItems=[
