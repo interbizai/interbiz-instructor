@@ -7631,20 +7631,23 @@ function renderCareerList(userId){
     }).join('');
 }
 
-async function addCareerItem(userId){
-  const start=prompt('시작 년월 (예: 2020.03)');
-  if(!start) return;
-  const end=prompt('종료 년월 (현재 재직 중이면 "현재")',  '현재');
-  if(end===null) return;
-  const title=prompt('내용 (예: HE사업부 제품교육팀)');
-  if(!title) return;
-  const position=prompt('직책/설명 (예: TV/사운드바 전문 강사)','');
+async function submitCareerItem(userId){
+  const start=document.getElementById('cr-start-'+userId)?.value?.trim();
+  const end=document.getElementById('cr-end-'+userId)?.value?.trim()||'현재';
+  const title=document.getElementById('cr-title-'+userId)?.value?.trim();
+  const position=document.getElementById('cr-pos-'+userId)?.value?.trim()||'';
+  if(!start||!title){alert('시작 년월과 내용을 입력하세요');return;}
   const order=(D.careerHistory||[]).filter(c=>c.user_id===userId).length;
-  const{error}=await sb.from('career_history').insert({user_id:userId,start_date:start,end_date:end||'현재',title,position:position||'',sort_order:order});
+  const{error}=await sb.from('career_history').insert({user_id:userId,start_date:start,end_date:end,title,position,sort_order:order});
   if(error){alert('등록 실패');return;}
   const{data}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
   D.careerHistory=data||[];
   renderCareerList(userId);
+  document.getElementById('cr-start-'+userId).value='';
+  document.getElementById('cr-end-'+userId).value='현재';
+  document.getElementById('cr-title-'+userId).value='';
+  document.getElementById('cr-pos-'+userId).value='';
+  document.getElementById('career-add-form-'+userId).style.display='none';
 }
 
 async function deleteCareerItem(id,userId){
@@ -7954,49 +7957,47 @@ function openLecturer(id, fromPage){
       </div>
     </div>
 
-      <!-- 강사 경력 이력 -->
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,120,200,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">강사 경력 이력</div>
-            <div style="font-size:11px;color:var(--t3)">${u.lgCareerStart?'총 '+calcCareer(u.lgCareerStart)+' 교육 전문가':'경력을 등록해주세요'}</div>
-          </div>
-        </div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
-          <div id="career-list-${u.id}" style="position:relative;padding-left:20px"></div>
-          ${isOwner?`<button class="btn btn-ghost" style="margin-top:12px;padding:6px 14px;font-size:11px" onclick="addCareerItem(${u.id})">+ 경력 추가</button>`:''}
-        </div>
-      </div>
-
-      <!-- 포트폴리오 -->
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">포트폴리오 업데이트</div>
-            <div style="font-size:11px;color:var(--t3)">최근 활동 기록</div>
-          </div>
-        </div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
-          <div id="portfolio-list-${u.id}"></div>
-          ${isOwner?`<div style="margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-              <input type="text" id="pf-title-${u.id}" placeholder="제목" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
-              <input type="text" id="pf-subtitle-${u.id}" placeholder="부제목 (선택)" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+      <!-- 경력 + 포트폴리오 (가로 2컬럼) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
+        <!-- 강사 경력 이력 -->
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">강사 경력 이력</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+            <div id="career-list-${u.id}" style="position:relative;padding-left:20px"></div>
+            ${isOwner?`<div id="career-add-form-${u.id}" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <input type="text" id="cr-start-${u.id}" placeholder="시작 (예: 2020.03)" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+                <input type="text" id="cr-end-${u.id}" placeholder="종료 (현재)" value="현재" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+              </div>
+              <input type="text" id="cr-title-${u.id}" placeholder="내용 (예: HE사업부 제품교육팀)" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;margin-bottom:8px">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" id="cr-pos-${u.id}" placeholder="직책 (선택)" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+                <button class="btn btn-blue" style="padding:4px 12px;font-size:10px" onclick="submitCareerItem(${u.id})">등록</button>
+                <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('career-add-form-${u.id}').style.display='none'">취소</button>
+              </div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="file" id="pf-file-${u.id}" style="display:none" onchange="document.getElementById('pf-fname-${u.id}').textContent=this.files[0]?.name||''">
-              <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('pf-file-${u.id}').click()">파일 선택</button>
-              <span id="pf-fname-${u.id}" style="font-size:9px;color:var(--t3)"></span>
-              <input type="text" id="pf-url-${u.id}" placeholder="또는 URL" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
-              <button class="btn btn-blue" style="padding:4px 12px;font-size:10px" onclick="addPortfolioItem(${u.id})">등록</button>
-            </div>
-          </div>`:''}
+            <button class="btn btn-ghost" style="margin-top:12px;padding:6px 14px;font-size:11px" onclick="document.getElementById('career-add-form-${u.id}').style.display='block'">+ 경력 추가</button>`:''}
+          </div>
+        </div>
+        <!-- 포트폴리오 -->
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">포트폴리오 업데이트</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+            <div id="portfolio-list-${u.id}"></div>
+            ${isOwner?`<div style="margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <input type="text" id="pf-title-${u.id}" placeholder="제목" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+                <input type="text" id="pf-subtitle-${u.id}" placeholder="부제목 (선택)" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="file" id="pf-file-${u.id}" style="display:none" onchange="document.getElementById('pf-fname-${u.id}').textContent=this.files[0]?.name||''">
+                <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('pf-file-${u.id}').click()">파일</button>
+                <span id="pf-fname-${u.id}" style="font-size:9px;color:var(--t3)"></span>
+                <input type="text" id="pf-url-${u.id}" placeholder="또는 URL" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+                <button class="btn btn-blue" style="padding:4px 12px;font-size:10px" onclick="addPortfolioItem(${u.id})">등록</button>
+              </div>
+            </div>`:''}
+          </div>
         </div>
       </div>
 
