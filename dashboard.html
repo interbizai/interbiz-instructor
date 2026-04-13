@@ -2815,6 +2815,11 @@ async function loadFromDB(){
   // 인터PICK 관리자 등록 영상
   const {data:pfv}=await sb.from('pick_featured_videos').select('*').order('order_index',{ascending:true});
   D.pickFeaturedVideos=pfv||[];
+  // 경력/포트폴리오
+  const {data:ch}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
+  D.careerHistory=ch||[];
+  const {data:pf2}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
+  D.portfolio=pf2||[];
   // 뱃지 기준
   const {data:bc}=await sb.from('badge_criteria').select('*').order('sort_order',{ascending:true});
   D.badgeCriteria=bc||[];
@@ -7604,6 +7609,114 @@ function pauseAnVideo(){
 
 function openScenario(){ showPage('page-scenario'); }
 
+// ── 경력 이력 CRUD ──
+function renderCareerList(userId){
+  const listEl=document.getElementById('career-list-'+userId);
+  if(!listEl) return;
+  const items=(D.careerHistory||[]).filter(c=>c.user_id===userId).sort((a,b)=>(b.sort_order||0)-(a.sort_order||0));
+  const isOwner=CU&&(CU.id===userId||CU.isAdmin);
+  if(!items.length){listEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px 0">등록된 경력이 없습니다</div>';return;}
+  // 타임라인
+  listEl.innerHTML=`<div style="position:absolute;left:6px;top:0;bottom:0;width:2px;background:linear-gradient(var(--red),rgba(0,0,0,.06))"></div>`+
+    items.map((c,i)=>{
+      const isCurrent=c.end_date==='현재';
+      const dotColor=isCurrent?'var(--red)':'rgba(0,0,0,.15)';
+      return `<div style="position:relative;padding-bottom:20px;padding-left:20px">
+        <div style="position:absolute;left:0;top:4px;width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid #fff;box-shadow:0 0 0 1px ${dotColor}"></div>
+        <div style="font-size:12px;font-weight:700;color:${isCurrent?'var(--red)':'var(--t3)'}">${c.start_date} ~ ${c.end_date}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--t1);margin-top:2px">${c.title}</div>
+        ${c.position?`<div style="font-size:11px;color:var(--t3);margin-top:1px">${c.position}</div>`:''}
+        ${isOwner?`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:10px;padding:2px 0;margin-top:2px" onclick="deleteCareerItem(${c.id},${userId})">삭제</button>`:''}
+      </div>`;
+    }).join('');
+}
+
+async function addCareerItem(userId){
+  const start=prompt('시작 년월 (예: 2020.03)');
+  if(!start) return;
+  const end=prompt('종료 년월 (현재 재직 중이면 "현재")',  '현재');
+  if(end===null) return;
+  const title=prompt('내용 (예: HE사업부 제품교육팀)');
+  if(!title) return;
+  const position=prompt('직책/설명 (예: TV/사운드바 전문 강사)','');
+  const order=(D.careerHistory||[]).filter(c=>c.user_id===userId).length;
+  const{error}=await sb.from('career_history').insert({user_id:userId,start_date:start,end_date:end||'현재',title,position:position||'',sort_order:order});
+  if(error){alert('등록 실패');return;}
+  const{data}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
+  D.careerHistory=data||[];
+  renderCareerList(userId);
+}
+
+async function deleteCareerItem(id,userId){
+  if(!confirm('삭제하시겠습니까?'))return;
+  await sb.from('career_history').delete().eq('id',id);
+  const{data}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
+  D.careerHistory=data||[];
+  renderCareerList(userId);
+}
+
+// ── 포트폴리오 CRUD ──
+function renderPortfolioList(userId){
+  const listEl=document.getElementById('portfolio-list-'+userId);
+  if(!listEl) return;
+  const items=(D.portfolio||[]).filter(p=>p.user_id===userId);
+  const isOwner=CU&&(CU.id===userId||CU.isAdmin);
+  if(!items.length){listEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px 0">등록된 포트폴리오가 없습니다</div>';return;}
+  const typeIcons={'pdf':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'xlsx':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'link':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'};
+  listEl.innerHTML=items.map(p=>{
+    const ext=(p.file_name||'').split('.').pop()?.toLowerCase()||'';
+    const icon=typeIcons[ext]||typeIcons['link'];
+    const url=p.file_url||'';
+    const isNew=p.created_at&&(Date.now()-new Date(p.created_at).getTime()<7*24*60*60*1000);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.04)${url?';cursor:pointer':''}" ${url?`onclick="window.open('${url}','_blank')"`:''}>
+      <div style="flex-shrink:0">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${p.title}${p.subtitle?' — <span style="font-weight:400;color:var(--t2)">'+p.subtitle+'</span>':''}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${p.upload_date||p.created_at?.slice(0,10)||''}${p.file_name?' · '+p.file_name:''}</div>
+      </div>
+      ${isNew?'<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(16,185,129,.1);color:#10b981">NEW</span>':''}
+      ${isOwner?`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:4px" onclick="event.stopPropagation();deletePortfolioItem(${p.id},${userId})">×</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function addPortfolioItem(userId){
+  const title=document.getElementById('pf-title-'+userId)?.value?.trim();
+  if(!title){alert('제목을 입력하세요');return;}
+  const subtitle=document.getElementById('pf-subtitle-'+userId)?.value?.trim()||'';
+  const urlInput=document.getElementById('pf-url-'+userId)?.value?.trim()||'';
+  const file=document.getElementById('pf-file-'+userId)?.files?.[0];
+  let fileUrl='',fileName='';
+  if(file){
+    const ext=file.name.split('.').pop()||'file';
+    const path=`portfolio/${Date.now()}.${ext}`;
+    const{error:ue}=await sb.storage.from('files').upload(path,file);
+    if(ue){alert('파일 업로드 실패');return;}
+    const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+    fileUrl=publicUrl;fileName=file.name;
+  } else if(urlInput){
+    fileUrl=urlInput;
+  }
+  const{error}=await sb.from('portfolio').insert({user_id:userId,title,subtitle,file_url:fileUrl||null,file_name:fileName||null,upload_date:new Date().toISOString().slice(0,10)});
+  if(error){alert('등록 실패');return;}
+  const{data}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
+  D.portfolio=data||[];
+  renderPortfolioList(userId);
+  document.getElementById('pf-title-'+userId).value='';
+  document.getElementById('pf-subtitle-'+userId).value='';
+  document.getElementById('pf-url-'+userId).value='';
+}
+
+async function deletePortfolioItem(id,userId){
+  if(!confirm('삭제하시겠습니까?'))return;
+  await sb.from('portfolio').delete().eq('id',id);
+  const{data}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
+  D.portfolio=data||[];
+  renderPortfolioList(userId);
+}
+
 // 경력 계산 (년월 기준)
 function calcCareer(startStr){
   if(!startStr) return '—';
@@ -7841,6 +7954,52 @@ function openLecturer(id, fromPage){
       </div>
     </div>
 
+      <!-- 강사 경력 이력 -->
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,120,200,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">강사 경력 이력</div>
+            <div style="font-size:11px;color:var(--t3)">${u.lgCareerStart?'총 '+calcCareer(u.lgCareerStart)+' 교육 전문가':'경력을 등록해주세요'}</div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+          <div id="career-list-${u.id}" style="position:relative;padding-left:20px"></div>
+          ${isOwner?`<button class="btn btn-ghost" style="margin-top:12px;padding:6px 14px;font-size:11px" onclick="addCareerItem(${u.id})">+ 경력 추가</button>`:''}
+        </div>
+      </div>
+
+      <!-- 포트폴리오 -->
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">포트폴리오 업데이트</div>
+            <div style="font-size:11px;color:var(--t3)">최근 활동 기록</div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+          <div id="portfolio-list-${u.id}"></div>
+          ${isOwner?`<div style="margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <input type="text" id="pf-title-${u.id}" placeholder="제목" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+              <input type="text" id="pf-subtitle-${u.id}" placeholder="부제목 (선택)" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="file" id="pf-file-${u.id}" style="display:none" onchange="document.getElementById('pf-fname-${u.id}').textContent=this.files[0]?.name||''">
+              <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('pf-file-${u.id}').click()">파일 선택</button>
+              <span id="pf-fname-${u.id}" style="font-size:9px;color:var(--t3)"></span>
+              <input type="text" id="pf-url-${u.id}" placeholder="또는 URL" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+              <button class="btn btn-blue" style="padding:4px 12px;font-size:10px" onclick="addPortfolioItem(${u.id})">등록</button>
+            </div>
+          </div>`:''}
+        </div>
+      </div>
+
     <!-- TAB: AI 코칭 목록 -->
     <div class="lect-tab-pane" id="lect-tab-코칭" style="display:none">
       <div style="display:flex;gap:6px;margin-bottom:14px">
@@ -7895,6 +8054,8 @@ function openLecturer(id, fromPage){
   requestAnimationFrame(()=>{
     document.querySelectorAll('#lecturer-main .bar-fill').forEach(e=>{ e.style.width=e.dataset.pct+'%'; });
     renderRadarChart(id);
+    renderCareerList(id);
+    renderPortfolioList(id);
   });
   // 음성 목록 렌더링
   renderUserVoiceList(id);
