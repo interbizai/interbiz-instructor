@@ -1355,26 +1355,50 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Step 2: 분석 결과 -->
   <div id="an-step2" style="display:none">
 
-    <!-- ① 총점 + AI 종합요약 (다크 배너) -->
-    <div id="an-score-banner" style="background:#1a1a2e;border-radius:16px;padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:#fff">
-      <div style="position:relative;width:90px;height:90px;flex-shrink:0">
-        <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
-          <circle id="an-score-ring" cx="50" cy="50" r="42" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
-        </svg>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900" id="an-score-pct">0%</div>
+    <!-- ① 총점 배너: 평가안 기준 (위) + AI 독자 (아래) + 영상 (오른쪽) -->
+    <div style="display:grid;grid-template-columns:1fr auto;gap:0;margin-bottom:20px">
+      <div>
+        <!-- 평가안 기준 배너 -->
+        <div id="an-score-banner-criteria" style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:16px 16px 0 0;padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;color:#fff">
+          <div style="position:relative;width:70px;height:70px;flex-shrink:0">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="8"/>
+              <circle id="an-score-ring" cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct">0%</div>
+          </div>
+          <div style="display:flex;gap:16px;flex-shrink:0">
+            <div style="text-align:center"><div style="font-size:20px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점</div></div>
+            <div style="text-align:center"><div style="font-size:20px;font-weight:900" id="an-eval-items">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가항목</div></div>
+            <div style="text-align:center"><div style="font-size:20px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">종목</div></div>
+          </div>
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">평가안 기준 요약</div>
+            <div style="font-size:12px;line-height:1.5" id="an-ai-summary">분석 중...</div>
+          </div>
+        </div>
+        <!-- AI 독자 분석 배너 -->
+        <div id="an-score-banner-ai" style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:0 0 16px 16px;padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;color:#fff">
+          <div style="position:relative;width:70px;height:70px;flex-shrink:0">
+            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>
+              <circle id="an-score-ring-ai" cx="50" cy="50" r="42" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct-ai">0%</div>
+          </div>
+          <div style="display:flex;gap:16px;flex-shrink:0">
+            <div style="text-align:center"><div style="font-size:20px;font-weight:900" id="an-ai-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">AI점수</div></div>
+            <div style="text-align:center"><div style="font-size:20px;font-weight:900">6</div><div style="font-size:9px;color:rgba(255,255,255,.5)">역량항목</div></div>
+          </div>
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 독자 분석 요약</div>
+            <div style="font-size:12px;line-height:1.5" id="an-ai-summary2">AI 분석 중...</div>
+          </div>
+        </div>
       </div>
-      <div style="display:flex;gap:20px;flex-shrink:0">
-        <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">총점</div></div>
-        <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">평가항목</div></div>
-        <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:10px;color:rgba(255,255,255,.5)">종목</div></div>
-      </div>
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">AI 종합 요약</div>
-        <div style="font-size:13px;line-height:1.6" id="an-ai-summary">분석 중...</div>
-      </div>
-      <div style="width:160px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.2)" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'':'none'">
-        <div id="an-player-mini" style="width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.5)">영상</div>
+      <!-- 영상 미니 (오른쪽) -->
+      <div style="width:180px;border-radius:0 16px 16px 0;overflow:hidden;cursor:pointer;background:#000" onclick="var pf=document.getElementById('an-player-full');pf.style.display=pf.style.display==='none'?'':'none'">
+        <div id="an-player-mini" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.5)">영상</div>
       </div>
     </div>
 
@@ -4632,10 +4656,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const total=r.criteriaScores?.reduce((a,b)=>a+b.score,0)||0;
   const maxTotal=r.criteriaScores?.reduce((a,b)=>a+b.max,0)||100;
   const pctScore=Math.round(total/maxTotal*100);
-  // Lv 기준 색상
-  const anLv=getLevelInfo(pctScore,1,1);
+  // 평가안 기준 배너 색상
   const ring=document.getElementById('an-score-ring');
-  if(ring){ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);ring.setAttribute('stroke',anLv.color);}
+  if(ring) ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);
   const pctEl=el('an-score-pct');if(pctEl) pctEl.textContent=pctScore+'%';
   const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
@@ -4674,7 +4697,14 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   el('an-tip-levelup').innerHTML=(r.levelUpTips||[]).map(t=>tipCard(t.title||'TIP',t.text||t)).join('')||tipCard('레벨UP TIP','도입 3분이 강의 전체를 결정합니다')+tipCard('실습 강화','실습 피드백은 즉각적·구체적으로');
   el('an-tip-speech').innerHTML=(r.speechTips||[]).map(t=>tipCard(t.title||'화법',t.text||t)).join('')||tipCard('도입 화법','"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."')+tipCard('피드백 화법','"한 가지만 바꿔 보면 더 잘 될 것 같아서요."');
 
-  // ⑤ AI 독자 분석 (6대 역량)
+  // ⑤ AI 독자 분석 배너 + 레이더
+  const aiAvgScore=Math.round(((r.overallScore||0)+(r.focusScore||0))/2);
+  const aiRing=document.getElementById('an-score-ring-ai');
+  if(aiRing) aiRing.setAttribute('stroke-dashoffset',264-264*aiAvgScore/100);
+  const aiPctEl=el('an-score-pct-ai');if(aiPctEl) aiPctEl.textContent=aiAvgScore+'%';
+  const aiScEl=el('an-ai-score');if(aiScEl) aiScEl.textContent=aiAvgScore;
+  const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.textContent=`${r.overallComment||''}`;
+
   const aiItems=[
     {name:'교수설계\n및 교수법',score:r.overallScore||0,max:100},
     {name:'내용\n전문성',score:Math.min(100,Math.round((r.focusScore||0)*1.1)),max:100},
@@ -4695,10 +4725,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   }
 
   // ⑥ 음성 & 습관 분석
-  el('an-habits').innerHTML=r.habits?.length?r.habits.map(h=>{
+  const totalHabitCount=(r.habits||[]).reduce((a,h)=>a+h.count,0);
+  let habitSolution='';
+  if(totalHabitCount>30) habitSolution='반복어가 매우 많습니다. 강의 중 2초 멈추기 연습과 핵심 문장 사전 준비를 권장합니다.';
+  else if(totalHabitCount>15) habitSolution='반복어 줄이기 위해 핵심 키워드를 메모하고, 의식적으로 끊어 말하기를 연습하세요.';
+  else if(totalHabitCount>5) habitSolution='소량의 반복어가 감지되었습니다. 자연스러운 수준이나 의식하면 더 좋아집니다.';
+  el('an-habits').innerHTML=(r.habits?.length?r.habits.map(h=>{
     const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
     return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
-  }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>';
+  }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>')
+  +(habitSolution?`<div style="margin-top:10px;font-size:11px;color:var(--t2);line-height:1.5;padding:8px 10px;background:#f8f9fa;border-radius:8px">${habitSolution}</div>`:'');
   el('an-voice-stats').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${r.decibel||0} dB</div><div style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus||''}</div></div>
@@ -4735,15 +4771,13 @@ function renderTsTable(timestamps){
       <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700;width:160px">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
-      const sc=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
-      const bg=ts.type==='good'?'rgba(16,185,129,.1)':ts.type==='bad'?'rgba(226,30,38,.1)':'rgba(245,158,11,.1)';
       return `<tr style="border-bottom:1px solid rgba(0,0,0,.06);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
-        <td style="padding:8px 12px;font-size:11px;color:var(--t3)">${ts.category||'—'}</td>
-        <td style="padding:8px 12px;font-size:12px;font-weight:600">${ts.item||ts.text?.substring(0,20)||'—'}</td>
-        <td style="padding:8px 12px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:800;background:${bg};color:${sc}">${ts.score||0}/${ts.maxScore||5}</span></td>
-        <td style="padding:8px 12px;text-align:center;font-size:11px;color:var(--blue);font-weight:700">${ts.t||'—'}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--t2)">${ts.category||'—'}</td>
+        <td style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--t1)">${ts.item||ts.text?.substring(0,20)||'—'}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.score||0}/${ts.maxScore||5}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:11px;color:var(--t2);font-weight:600">${ts.t||'—'}</td>
         <td style="padding:8px 12px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
-        <td style="padding:8px 12px;font-size:10px;color:${ts.solution?'var(--red)':'var(--t3)'};line-height:1.4">${ts.solution||'—'}</td>
+        <td style="padding:8px 12px;font-size:10px;color:var(--t2);line-height:1.4">${ts.solution||'—'}</td>
       </tr>`;}).join('')}
     </tbody></table>`;
 }
