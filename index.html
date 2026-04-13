@@ -3609,9 +3609,12 @@ function renderPick(){
       </div>
       <!-- 건수 / LV / 경력 -->
       ${(()=>{
-        const uLv=getLevelInfo(u.pickScore,u.evalCount,u.evalCount);
+        const uAllVids=(D.videos||[]).filter(v=>v.userId===u.id);
+        const uAnalyzed=uAllVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
+        const uAvg=uAnalyzed.length?(uAnalyzed.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);}).reduce((a,b)=>a+b,0)/uAnalyzed.length):0;
+        const uLv=getLevelInfo(uAvg,uAnalyzed.length,uAllVids.length);
         return `<div style="display:flex;gap:16px;margin-bottom:12px">
-          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${u.evalCount}</div><div style="font-size:10px;color:var(--t3)">건수</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${uAllVids.length}</div><div style="font-size:10px;color:var(--t3)">건수</div></div>
           <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:${uLv.color}">Lv.${uLv.level}</div><div style="font-size:10px;color:var(--t3)">${uLv.name}</div></div>
           <div style="text-align:center"><div style="font-size:12px;font-weight:700;color:var(--t1)">${u.lgCareerStart?calcCareer(u.lgCareerStart):'—'}</div><div style="font-size:10px;color:var(--t3)">LG경력</div></div>
           <div style="text-align:center"><div style="font-size:12px;font-weight:700;color:var(--t1)">${u.teachCareerStart?calcCareer(u.teachCareerStart):'—'}</div><div style="font-size:10px;color:var(--t3)">강의경력</div></div>
