@@ -2532,7 +2532,7 @@ async function dbGetVideos(){
     id:r.id, userId:r.user_id, title:r.title, youtube:r.youtube||'', filePath:r.file_path||'',
     date:r.video_date, duration:r.duration||'', studentCount:r.student_count||0,
     status:r.status||'등록완료', videoType:r.video_type||'', channel:r.channel||'',
-    checklist:r.checklist, solution:r.solution||'',
+    checklist:r.checklist, solution:r.solution||'', eduFileUrl:r.edu_file_url||'', productName:r.product_name||'',
     timestamps: allTs.filter(t=>t.video_id===r.id).map(t=>({
       id:t.id, t:t.time_mark, type:t.type, text:t.text, tags:t.tags||[]
     }))
@@ -2575,7 +2575,7 @@ async function dbCreateVideo(v){
     user_id:v.userId, title:v.title, youtube:v.youtube||'', file_path:v.filePath||'',
     video_date:v.date||null, duration:v.duration||'', student_count:v.studentCount||0,
     status:v.status||'등록완료', video_type:v.videoType||'', channel:v.channel||'',
-    solution:v.solution||''
+    solution:v.solution||'', edu_file_url:v.eduFileUrl||'', product_name:v.productName||''
   }).select().single();
   if(error){ console.error('dbCreateVideo:',error); return null; }
   return data;
@@ -4369,8 +4369,12 @@ function runAnalysis(){
     el('an-player').innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${URL.createObjectURL(file)}"></video>`;
   }
 
-  const hasChecklist=el('an-checklist').files?.length>0;
+  const hasChecklist=el('an-checklist').files?.length>0||document.getElementById('an-checklist-url')?.value;
   const count=parseInt(v('an-count'))||20;
+  // 교육자료 파일 정보 저장
+  window._anEduCategory=v('an-product')||'';
+  window._anEduFileUrl=document.getElementById('an-checklist-url')?.value||'';
+  window._anProduct=document.getElementById('an-prod-select')?.value||'';
 
   // 평가안 없으면 AI가 전체 화면 사용
   if(!hasChecklist){
@@ -4882,7 +4886,8 @@ async function autoSaveAnalysis(resultJson){
       userId:userId, title:v('an-title'), youtube:yt,
       date:new Date().toISOString().split('T')[0], duration:'—',
       studentCount:parseInt(v('an-count'))||0, status:'분석완료',
-      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료'
+      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+      eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
     });
     if(result && resultJson.timestamps?.length){
       for(const ts of resultJson.timestamps){ await dbAddTimestamp(result.id,ts); }
@@ -4899,7 +4904,8 @@ async function saveAnalysisVideo(){
     userId:userId, title:v('an-title'), youtube:yt,
     date:new Date().toISOString().split('T')[0], duration:'—',
     studentCount:parseInt(v('an-count'))||0, status:'분석완료',
-    channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료'
+    channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+    eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
   });
   if(result && window._anTimestamps?.length){
     for(const ts of window._anTimestamps){ await dbAddTimestamp(result.id,ts); }
@@ -5019,17 +5025,15 @@ function openCalendar(){
 }
 
 async function loadCalEvents(){
+  // 전체 일정 로드 (pick_visible 일정은 모든 사용자에게 표시)
+  const {data}=await sb.from('calendar_events').select('*').order('start_time');
+  const all=data||[];
+  // 일반 사용자: 본인 일정 + pick_visible 일정만 표시
   if(CU?.isAdmin){
-    // 관리자: 전체
-    const {data}=await sb.from('calendar_events').select('*').order('start_time');
-    calEvents=(data||[]).map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
+    calEvents=all.map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
   } else {
-    // 일반: 본인 일정 + pick_visible 일정
-    const {data:mine}=await sb.from('calendar_events').select('*').eq('user_id',CU?.id||0).order('start_time');
-    const {data:picked}=await sb.from('calendar_events').select('*').eq('pick_visible',true).order('start_time');
-    const all=[...(mine||[]),...(picked||[])];
-    const unique=[...new Map(all.map(e=>[e.id,e])).values()];
-    calEvents=unique.map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
+    calEvents=all.filter(e=>e.pick_visible||(e.user_id&&e.user_id===(CU?.id||0)))
+      .map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
   }
   renderCalendar();
 }
@@ -6277,7 +6281,9 @@ async function saveStreamVideo(){
     userId:CU.id, title:v('st-title'), duration:dur,
     studentCount:parseInt(v('st-count'))||0, status:'분석완료',
     videoType:v('st-type'), channel:v('st-channel'),
-    date:v('st-date'), solution:'AI 연동 후 솔루션이 자동 생성됩니다.'
+    date:v('st-date'), solution:'AI 연동 후 솔루션이 자동 생성됩니다.',
+    eduFileUrl:document.getElementById('st-checklist-url')?.value||'',
+    productName:document.getElementById('st-prod-select')?.value||''
   });
   if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:''}); }
   alert('영상이 저장되었습니다!');
