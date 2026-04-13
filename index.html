@@ -5077,7 +5077,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const criGood=goodTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:t.text||''}));
   const criBad=badTs2.slice(0,3).map(t=>({title:t.item||t.category||'—',score:(t.score||0)+'/'+(t.maxScore||5)+'점',desc:t.solution||t.text||''}));
   const criUpgrade=cs.filter(c=>Math.round(c.score/c.max*100)>=60&&Math.round(c.score/c.max*100)<90).slice(0,3).map(c=>({title:c.name,desc:`현재 ${c.score}/${c.max}점 — 조금만 더 연습하면 우수 등급 달성 가능`}));
-  el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop');
+  el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop',r.criteriaSummary||'평가안 기준 종합 분석 결과입니다.');
 
   // ④ 추천 시나리오 / 레벨UP / 교육화법
   const tipCard=(title,text)=>`<div style="padding:14px;border:1px solid rgba(159,18,57,.08);border-radius:10px;background:rgba(159,18,57,.03)"><div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:6px">${title}</div><div style="font-size:11px;color:var(--t2);line-height:1.6">${text}</div></div>`;
@@ -5149,7 +5149,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if((r.habits||[]).reduce((a,h)=>a+h.count,0)>10) aiUpgrade.push({title:'반복어 줄이기',desc:'핵심 문장을 미리 준비하고 2초 멈추기를 연습하면 화법이 깔끔해집니다'});
   if(r.engagementGaps&&Math.max(...r.engagementGaps)>10) aiUpgrade.push({title:'환기 추가',desc:'10분마다 질문이나 미니 활동을 넣으면 집중도가 유지됩니다'});
   if(!aiUpgrade.length) aiUpgrade.push({title:'현재 수준 유지',desc:'전반적으로 우수합니다. 심화 코칭 기법을 적용해보세요'});
-  el('an-ai-result').innerHTML=renderOpinionTabs('an-ai-result',aiGood,aiBad,aiUpgrade,'aop');
+  el('an-ai-result').innerHTML=renderOpinionTabs('an-ai-result',aiGood,aiBad,aiUpgrade,'aop',r.overallComment||'AI가 분석한 종합 의견입니다.');
 }
 
 // 타임스탬프 테이블 공통 렌더
@@ -7628,27 +7628,40 @@ function pauseAnVideo(){
 function openScenario(){ showPage('page-scenario'); }
 
 // Good/Bad/Upgrade 탭 최종 의견
-function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix){
+function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix,summary){
   const p=prefix||'op';
   const tabStyle=(active,color)=>`padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border:none;background:none;border-bottom:2px solid ${active?color:'transparent'};color:${active?color:'var(--t3)'};flex:1;text-align:center`;
-  const cardStyle=(color)=>`border-left:3px solid ${color};padding:12px 16px;margin-bottom:8px;border-radius:0 8px 8px 0;background:${color}08`;
-  return `
-    <div>
-      <div style="display:flex;border-bottom:1px solid var(--bdr)">
-        <button style="${tabStyle(true,'#0078C8')}" onclick="switchOpTab('${p}','good',this)">TOP 강점 <span style="font-size:11px;color:var(--blue)">${goodItems.length}</span></button>
-        <button style="${tabStyle(false,'#f59e0b')}" onclick="switchOpTab('${p}','bad',this)">TOP 개선점 <span style="font-size:11px;color:var(--orange)">${badItems.length}</span></button>
-        <button style="${tabStyle(false,'#8b5cf6')}" onclick="switchOpTab('${p}','upgrade',this)">Upgrade <span style="font-size:11px;color:var(--purple)">${upgradeItems.length}</span></button>
-      </div>
-      <div id="${p}-good" style="padding:16px">
-        ${goodItems.map((g,i)=>`<div style="${cardStyle('#0078C8')}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(0,120,200,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--blue);flex-shrink:0">${i+1}</span><span style="font-size:13px;font-weight:700;color:var(--t1)">${g.title}</span>${g.score?`<span style="font-size:11px;font-weight:700;color:var(--blue)">${g.score}</span>`:''}</div><div style="font-size:12px;color:var(--t2);line-height:1.5;margin-left:32px">${g.desc}</div></div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:10px">분석 중...</div>'}
-      </div>
-      <div id="${p}-bad" style="padding:16px;display:none">
-        ${badItems.map((b,i)=>`<div style="${cardStyle('#f59e0b')}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--orange);flex-shrink:0">${i+1}</span><span style="font-size:13px;font-weight:700;color:var(--t1)">${b.title}</span>${b.score?`<span style="font-size:11px;font-weight:700;color:var(--orange)">${b.score}</span>`:''}</div><div style="font-size:12px;color:var(--t2);line-height:1.5;margin-left:32px">${b.desc}</div></div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:10px">개선점이 없습니다</div>'}
-      </div>
-      <div id="${p}-upgrade" style="padding:16px;display:none">
-        ${upgradeItems.map((u2,i)=>`<div style="${cardStyle('#8b5cf6')}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:24px;height:24px;border-radius:50%;background:rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--purple);flex-shrink:0">${i+1}</span><span style="font-size:13px;font-weight:700;color:var(--t1)">${u2.title}</span></div><div style="font-size:12px;color:var(--t2);line-height:1.5;margin-left:32px">${u2.desc}</div></div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:10px">제안 사항이 없습니다</div>'}
-      </div>
-    </div>`;
+  const card=(items,color)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;background:${color}06;border:1px solid ${color}15">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="font-size:13px;font-weight:800;color:${color}">${i+1}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--t1)">${g.title}</span>
+      ${g.score?`<span style="font-size:11px;font-weight:700;color:${color}">${g.score}</span>`:''}
+    </div>
+    <div style="font-size:12px;color:var(--t2);line-height:1.6;padding-left:22px">${g.desc}</div>
+  </div>`).join('')||`<div style="font-size:12px;color:var(--t3);padding:16px">데이터 없음</div>`;
+  return `<div>
+    <div style="display:flex;border-bottom:1px solid var(--bdr)">
+      <button style="${tabStyle(true,'#10b981')}" onclick="switchOpTab('${p}','good',this)">Good</button>
+      <button style="${tabStyle(false,'#E21E26')}" onclick="switchOpTab('${p}','bad',this)">Bad</button>
+      <button style="${tabStyle(false,'#f59e0b')}" onclick="switchOpTab('${p}','upgrade',this)">Upgrade</button>
+    </div>
+    <div id="${p}-good" style="padding:16px">${card(goodItems,'#10b981')}</div>
+    <div id="${p}-bad" style="padding:16px;display:none">${card(badItems,'#E21E26')}</div>
+    <div id="${p}-upgrade" style="padding:16px;display:none">${card(upgradeItems,'#f59e0b')}</div>
+    ${summary?`<div style="padding:16px;border-top:1px solid var(--bdr)">
+      <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:6px">종합 의견</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6">${summary}</div>
+    </div>`:''}
+  </div>`;
+}
+function switchOpTab(prefix,tab,btn){
+  ['good','bad','upgrade'].forEach(t=>{
+    const pane=document.getElementById(prefix+'-'+t);
+    if(pane) pane.style.display=t===tab?'block':'none';
+  });
+  const colors={'good':'#10b981','bad':'#E21E26','upgrade':'#f59e0b'};
+  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t3)';});
+  btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
 }
 function switchOpTab(prefix,tab,btn){
   ['good','bad','upgrade'].forEach(t=>{
