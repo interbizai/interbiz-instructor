@@ -7630,14 +7630,13 @@ function openScenario(){ showPage('page-scenario'); }
 // Good/Bad/Upgrade 탭 최종 의견
 function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix,summary){
   const p=prefix||'op';
-  const tabStyle=(active,color)=>`padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border:none;background:none;border-bottom:2px solid ${active?color:'transparent'};color:${active?color:'var(--t3)'};flex:1;text-align:center`;
-  const card=(items,color)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;background:${color}06;border:1px solid ${color}15">
+  const tabStyle=(active,color)=>`padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border:none;background:none;border-bottom:2px solid ${active?color:'transparent'};color:${active?color:'var(--t1)'};flex:1;text-align:center`;
+  const card=(items,color)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(0,0,0,.06)">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span style="font-size:13px;font-weight:800;color:${color}">${i+1}</span>
+      <span style="font-size:13px;font-weight:800;color:var(--t3)">${i+1}</span>
       <span style="font-size:13px;font-weight:700;color:var(--t1)">${g.title}</span>
-      ${g.score?`<span style="font-size:11px;font-weight:700;color:${color}">${g.score}</span>`:''}
     </div>
-    <div style="font-size:12px;color:var(--t2);line-height:1.6;padding-left:22px">${g.desc}</div>
+    <div style="font-size:12px;color:var(--t3);line-height:1.6;padding-left:22px">${g.desc}</div>
   </div>`).join('')||`<div style="font-size:12px;color:var(--t3);padding:16px">데이터 없음</div>`;
   return `<div>
     <div style="display:flex;border-bottom:1px solid var(--bdr)">
@@ -7660,13 +7659,13 @@ function switchOpTab(prefix,tab,btn){
     if(pane) pane.style.display=t===tab?'block':'none';
   });
   const colors={'good':'#10b981','bad':'#E21E26','upgrade':'#f59e0b'};
-  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t3)';});
+  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t1)';});
   btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
 }
 function _switchOpTab_old(prefix,tab,btn){
   // 이전 버전 — 미사용
   const colors={'good':'#0078C8','bad':'#f59e0b','upgrade':'#8b5cf6'};
-  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t3)';});
+  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t1)';});
   btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
 }
 
