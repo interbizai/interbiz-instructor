@@ -3607,15 +3607,23 @@ function renderPick(){
           <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .8s ease"></div>
         </div>
       </div>
-      <!-- 건수 / LV / 성장률 -->
-      <div style="display:flex;gap:16px;margin-bottom:12px">
-        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${u.evalCount}</div><div style="font-size:10px;color:var(--t3)">건수</div></div>
-        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t3)">—</div><div style="font-size:10px;color:var(--t3)">LV</div></div>
-        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:${growthColor}">${growthTxt}</div><div style="font-size:10px;color:var(--t3)">성장</div></div>
-      </div>
-      <!-- 키워드 -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${keywords.length?keywords.map(k=>`<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(248,113,113,.1);color:#dc2626">${k}</span>`).join(''):'<span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 키워드 생성</span>'}
+      <!-- 건수 / LV / 경력 -->
+      ${(()=>{
+        const uLv=getLevelInfo(u.pickScore,u.evalCount,u.evalCount);
+        return `<div style="display:flex;gap:16px;margin-bottom:12px">
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${u.evalCount}</div><div style="font-size:10px;color:var(--t3)">건수</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:${uLv.color}">Lv.${uLv.level}</div><div style="font-size:10px;color:var(--t3)">${uLv.name}</div></div>
+          <div style="text-align:center"><div style="font-size:12px;font-weight:700;color:var(--t1)">${u.lgCareerStart?calcCareer(u.lgCareerStart):'—'}</div><div style="font-size:10px;color:var(--t3)">LG경력</div></div>
+          <div style="text-align:center"><div style="font-size:12px;font-weight:700;color:var(--t1)">${u.teachCareerStart?calcCareer(u.teachCareerStart):'—'}</div><div style="font-size:10px;color:var(--t3)">강의경력</div></div>
+        </div>`;
+      })()}
+      <!-- 뱃지 -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${(()=>{
+          const mockR={criteriaScores:[],timestamps:[],overallScore:u.pickScore,focusScore:u.pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
+          const badges=evaluateBadges(mockR,u.id).slice(0,5);
+          return badges.length?badges.map(id=>{const b=getBadgeInfo(id);const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};const c=catColors[b.cat]||'var(--t3)';return `<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:${c}10;color:${c}">${b.name}</span>`;}).join(''):'<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 뱃지 생성</span>';
+        })()}
       </div>
     </div></div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
