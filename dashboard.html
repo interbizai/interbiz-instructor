@@ -1429,7 +1429,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <!-- 타임스탬프 + 최종의견 -->
       <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px">
           <div>
             <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
             <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-criteria-result"></div>
@@ -1484,7 +1484,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       </div>
       <!-- AI 타임스탬프 + 최종의견 -->
       <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px">
           <div>
             <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
             <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-ts-feed"></div>
@@ -5228,20 +5228,20 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps){
   return `<table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead><tr style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.12)">
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:80px">대항목</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:100px">세부항목</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700">평가 기준</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:40px">배점</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:40px">점수</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:90px">시점</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700">분석</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:140px">솔루션</th>
+    <thead><tr style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.12);position:sticky;top:0;z-index:1">
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:80px">대항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:100px">세부항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">평가 기준</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:40px">배점</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:40px">점수</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:90px">시점</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">분석</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:140px">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
       const scoreColor=ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
       return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
-        <td style="padding:8px;font-size:11px;font-weight:700;color:var(--blue)">${ts.category||'—'}</td>
+        <td style="padding:8px;font-size:11px;font-weight:700;color:var(--t1)">${ts.category||'—'}</td>
         <td style="padding:8px;font-size:11px;font-weight:600;color:var(--t1)">${ts.item||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2)">${ts.criteria||ts.text?.substring(0,30)||'—'}</td>
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.maxScore||5}</td>
