@@ -534,7 +534,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Streaming Page ── */
 .stream-layout{display:grid;grid-template-columns:1fr 380px;gap:22px}
-@media(max-width:900px){.stream-layout{grid-template-columns:1fr}}
+@media(max-width:900px){.stream-layout{grid-template-columns:1fr}
+  #login-chars{display:none!important}
+  #page-login>div{grid-template-columns:1fr!important}
+}
 .stream-info{display:flex;flex-direction:column;gap:14px}
 .stream-info-card{border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:18px;background:#fff}
 .stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
@@ -932,32 +935,70 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
      PAGE: LOGIN
 ════════════════════════════════════ -->
 <div id="page-login" class="page active">
-<div class="auth-page">
-<div class="auth-card">
-  <div class="auth-logo"><img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:72px"></div>
-
-  <div class="form-group">
-    <label class="form-lbl">아이디</label>
-    <input type="email" class="form-input" id="li-email" placeholder="이메일을 입력하세요">
-  </div>
-
-  <div class="form-group">
-    <label class="form-lbl">비밀번호</label>
-    <div class="pw-wrap">
-      <input type="password" class="form-input" id="li-pw" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="pw-toggle" type="button" onclick="togglePwVis('li-pw',this)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
+<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr">
+  <!-- 왼쪽: 캐릭터 영역 -->
+  <div id="login-chars" style="background:#1a1a2e;display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden">
+    <!-- 보라 캐릭터 (키 큰 직사각형) -->
+    <div id="char-purple" style="position:absolute;bottom:0;left:15%;width:140px;height:320px;background:#6C3FF5;border-radius:10px 10px 0 0;z-index:1;transition:transform .7s ease;transform-origin:bottom center">
+      <div id="eyes-purple" style="position:absolute;display:flex;gap:28px;left:35px;top:40px;transition:all .3s ease">
+        <div style="width:16px;height:16px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:7px;height:7px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
+        <div style="width:16px;height:16px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:7px;height:7px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
+      </div>
+    </div>
+    <!-- 검정 캐릭터 (중간) -->
+    <div id="char-black" style="position:absolute;bottom:0;left:42%;width:100px;height:240px;background:#2D2D2D;border-radius:8px 8px 0 0;z-index:2;transition:transform .7s ease;transform-origin:bottom center">
+      <div id="eyes-black" style="position:absolute;display:flex;gap:22px;left:22px;top:32px;transition:all .3s ease">
+        <div style="width:14px;height:14px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:6px;height:6px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:6px;height:6px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
+      </div>
+    </div>
+    <!-- 주황 캐릭터 (반원) -->
+    <div id="char-orange" style="position:absolute;bottom:0;left:5%;width:200px;height:160px;background:#FF9B6B;border-radius:100px 100px 0 0;z-index:3;transition:transform .7s ease;transform-origin:bottom center">
+      <div id="eyes-orange" style="position:absolute;display:flex;gap:30px;left:65px;top:70px;transition:all .2s ease">
+        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
+        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
+      </div>
+    </div>
+    <!-- 노랑 캐릭터 (둥근 직사각형) -->
+    <div id="char-yellow" style="position:absolute;bottom:0;right:10%;width:110px;height:190px;background:#E8D754;border-radius:55px 55px 0 0;z-index:4;transition:transform .7s ease;transform-origin:bottom center">
+      <div id="eyes-yellow" style="position:absolute;display:flex;gap:22px;left:32px;top:40px;transition:all .2s ease">
+        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
+        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
+      </div>
+      <div id="mouth-yellow" style="position:absolute;width:40px;height:3px;background:#2D2D2D;border-radius:2px;left:35px;top:80px;transition:all .2s ease"></div>
     </div>
   </div>
 
-  <div class="form-row-flex">
-    <label class="form-check"><input type="checkbox"> 30일간 기억하기</label>
-  </div>
+  <!-- 오른쪽: 로그인 폼 -->
+  <div style="display:flex;align-items:center;justify-content:center;padding:40px;background:#fff">
+    <div style="width:100%;max-width:360px">
+      <div style="text-align:center;margin-bottom:40px">
+        <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:60px;margin:0 auto">
+      </div>
 
-  <div class="auth-err" id="li-err"></div>
-  <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
-</div>
+      <div class="form-group">
+        <label class="form-lbl">아이디</label>
+        <input type="email" class="form-input" id="li-email" placeholder="이메일을 입력하세요" onfocus="loginCharsFocus('email')" onblur="loginCharsBlur()">
+      </div>
+
+      <div class="form-group">
+        <label class="form-lbl">비밀번호</label>
+        <div class="pw-wrap">
+          <input type="password" class="form-input" id="li-pw" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()" onfocus="loginCharsFocus('pw')" onblur="loginCharsBlur()">
+          <button class="pw-toggle" type="button" onclick="togglePwVis('li-pw',this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row-flex">
+        <label class="form-check"><input type="checkbox"> 30일간 기억하기</label>
+      </div>
+
+      <div class="auth-err" id="li-err"></div>
+      <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -3239,6 +3280,65 @@ function updateHeaderUI(){
 /* ════════════════════════════════
    AUTH
 ════════════════════════════════ */
+// ── 로그인 캐릭터 애니메이션 ──
+let _loginMouseX=0,_loginMouseY=0,_loginFocusState='none';
+document.addEventListener('mousemove',e=>{_loginMouseX=e.clientX;_loginMouseY=e.clientY;updateLoginPupils();});
+
+function updateLoginPupils(){
+  if(_loginFocusState==='pw') return; // 비밀번호 입력 중엔 딴 곳 보기
+  document.querySelectorAll('.login-pupil').forEach(p=>{
+    const rect=p.getBoundingClientRect();
+    const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+    const dx=_loginMouseX-cx, dy=_loginMouseY-cy;
+    const dist=Math.min(Math.sqrt(dx*dx+dy*dy),4);
+    const angle=Math.atan2(dy,dx);
+    p.style.transform=`translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px)`;
+  });
+}
+
+function loginCharsFocus(field){
+  _loginFocusState=field;
+  if(field==='pw'){
+    // 비밀번호: 캐릭터들이 위를 보거나 딴 곳 봄
+    document.querySelectorAll('.login-pupil').forEach(p=>{p.style.transform='translate(-3px,-3px)';});
+    const purple=document.getElementById('char-purple');
+    if(purple) purple.style.transform='skewX(-8deg) translateX(20px)';
+  } else if(field==='email'){
+    // 이메일: 오른쪽(로그인 폼) 쪽을 봄
+    document.querySelectorAll('.login-pupil').forEach(p=>{p.style.transform='translate(3px,2px)';});
+  }
+}
+
+function loginCharsBlur(){
+  _loginFocusState='none';
+  const purple=document.getElementById('char-purple');
+  if(purple) purple.style.transform='skewX(0deg)';
+  updateLoginPupils();
+}
+
+// 깜빡임
+(function loginBlink(){
+  function blink(eyesId){
+    const container=document.getElementById(eyesId);
+    if(!container) return;
+    const eyes=container.querySelectorAll('div[style*="border-radius:50%"][style*="background:#fff"]');
+    eyes.forEach(e=>{e.style.height='2px';e.style.overflow='hidden';});
+    setTimeout(()=>{eyes.forEach(e=>{e.style.height='';e.style.overflow='';});},150);
+  }
+  setInterval(()=>blink('eyes-purple'),3000+Math.random()*4000);
+  setInterval(()=>blink('eyes-black'),3500+Math.random()*3500);
+})();
+
+// 모바일: 캐릭터 영역 숨김
+const loginCharsEl=document.getElementById('login-chars');
+if(loginCharsEl&&window.innerWidth<900) loginCharsEl.style.display='none';
+window.addEventListener('resize',()=>{
+  const lc=document.getElementById('login-chars');
+  if(lc) lc.style.display=window.innerWidth<900?'none':'flex';
+  const loginGrid=lc?.parentElement;
+  if(loginGrid) loginGrid.style.gridTemplateColumns=window.innerWidth<900?'1fr':'1fr 1fr';
+});
+
 async function doLogin(){
   const em=v('li-email').trim(), pw=v('li-pw').trim();
   if(em==='admin' && pw==='7152'){ CU={id:0,name:'관리자',email:'admin',grade:'A',channel:'',isAdmin:true}; localStorage.setItem('ib_user',JSON.stringify(CU)); await loadFromDB(); initHome(); showPage('page-pick'); return; }
