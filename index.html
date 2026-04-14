@@ -5096,19 +5096,19 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       </div>`;}).join('');
   }
 
-  // 강의 분위기 AI 판정 (영상 데이터 기반 종합 분석)
-  const moodScore=r.overallScore||0;
-  const habitTotal2=(r.habits||[]).reduce((a,h)=>a+h.count,0);
-  const goodRatio=(r.timestamps||[]).filter(t=>t.type==='good').length/Math.max(1,(r.timestamps||[]).length);
+  // 강의 분위기 AI 판정 (음성 데이터 기반: 데시벨+템포+반복어)
+  const moodDb=r.decibel||0, moodTempo=r.tempo||0;
+  const moodHabits=(r.habits||[]).reduce((a,h)=>a+h.count,0);
   let aiMood='밝고 경쾌한';
-  if(moodScore>=90&&goodRatio>=0.8) aiMood='열정적이고 에너지 넘치는';
-  else if(moodScore>=80&&habitTotal2<10) aiMood='밝고 경쾌한';
-  else if(moodScore>=75&&goodRatio>=0.6) aiMood='친근하고 편안한';
-  else if(moodScore>=70) aiMood='전문적이고 진지한';
-  else if(habitTotal2>20) aiMood='차분하고 신뢰감 있는';
-  else aiMood='재미있고 유머러스한';
+  if(moodDb>=78&&moodTempo>=155) aiMood='열정적이고 에너지 넘치는';
+  else if(moodDb>=70&&moodTempo>=140&&moodHabits<10) aiMood='밝고 경쾌한';
+  else if(moodDb>=65&&moodTempo>=130&&moodTempo<=150) aiMood='친근하고 편안한';
+  else if(moodDb>=70&&moodTempo<=135) aiMood='전문적이고 진지한';
+  else if(moodDb<=65&&moodTempo<=130) aiMood='차분하고 신뢰감 있는';
+  else if(moodTempo>=150&&moodHabits>15) aiMood='재미있고 유머러스한';
+  const moodColors={'열정적이고 에너지 넘치는':'#E21E26','밝고 경쾌한':'#f59e0b','친근하고 편안한':'#10b981','전문적이고 진지한':'#0078C8','차분하고 신뢰감 있는':'#8b5cf6','재미있고 유머러스한':'#ec4899'};
   const moodBadge=el('an-mood-badge');
-  if(moodBadge){moodBadge.style.display='block';moodBadge.textContent='🎭 '+aiMood;}
+  if(moodBadge){moodBadge.style.display='block';moodBadge.textContent=aiMood;moodBadge.style.background=moodColors[aiMood]||'#fff';moodBadge.style.color='#fff';}
 
   // ⑥ 음성 & 습관 분석
   const totalHabitCount=(r.habits||[]).reduce((a,h)=>a+h.count,0);
@@ -5131,7 +5131,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">적정 인원</div><div style="font-size:14px;font-weight:800;color:var(--t1)">${fitPersons}</div><div style="font-size:10px;color:var(--t3)">${db}dB 기준</div></div>
-      <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">강의 분위기</div><div style="font-size:14px;font-weight:800;color:var(--t1)">${aiMood}</div><div style="font-size:10px;color:var(--t3)">AI 판정</div></div>
+      <div style="padding:10px;background:${moodColors[aiMood]||'#f8f9fa'};border-radius:8px;color:#fff"><div style="font-size:10px;color:rgba(255,255,255,.7)">강의 분위기</div><div style="font-size:13px;font-weight:800">${aiMood}</div><div style="font-size:10px;color:rgba(255,255,255,.6)">AI 판정</div></div>
     </div>`;
   el('an-engagement').innerHTML=`
     <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'||'—'}</strong></div>
