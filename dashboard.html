@@ -5227,23 +5227,28 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps){
-  return `<table style="width:100%;border-collapse:collapse;font-size:13px">
-    <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
-      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700;width:70px">구분</th>
-      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700">평가 항목</th>
-      <th style="padding:10px 12px;text-align:center;font-size:11px;color:var(--t3);font-weight:700;width:55px">점수</th>
-      <th style="padding:10px 12px;text-align:center;font-size:11px;color:var(--t3);font-weight:700;width:100px">시간대</th>
-      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700">분석</th>
-      <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--t3);font-weight:700;width:160px">솔루션</th>
+  return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.12)">
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:80px">대항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:100px">세부항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700">평가 기준</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:40px">배점</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:40px">점수</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--blue);font-weight:700;width:90px">시점</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700">분석</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--blue);font-weight:700;width:140px">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
-      return `<tr style="border-bottom:1px solid rgba(0,0,0,.06);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
-        <td style="padding:8px 12px;font-size:11px;color:var(--t2)">${ts.category||'—'}</td>
-        <td style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--t1)">${ts.item||ts.text?.substring(0,20)||'—'}</td>
-        <td style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.score||0}/${ts.maxScore||5}</td>
-        <td style="padding:8px 12px;text-align:center;font-size:11px;color:var(--t2);font-weight:600">${ts.t||'—'}</td>
-        <td style="padding:8px 12px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
-        <td style="padding:8px 12px;font-size:10px;color:var(--t2);line-height:1.4">${ts.solution||'—'}</td>
+      const scoreColor=ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
+      return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
+        <td style="padding:8px;font-size:11px;font-weight:700;color:var(--blue)">${ts.category||'—'}</td>
+        <td style="padding:8px;font-size:11px;font-weight:600;color:var(--t1)">${ts.item||'—'}</td>
+        <td style="padding:8px;font-size:11px;color:var(--t2)">${ts.criteria||ts.text?.substring(0,30)||'—'}</td>
+        <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.maxScore||5}</td>
+        <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${ts.score||0}</td>
+        <td style="padding:8px;text-align:center;font-size:10px;color:var(--t2)">${ts.t||'—'}</td>
+        <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
+        <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4">${ts.solution||'—'}</td>
       </tr>`;}).join('')}
     </tbody></table>`;
 }
