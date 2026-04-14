@@ -5096,9 +5096,17 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       </div>`;}).join('');
   }
 
-  // 강의 분위기 AI 판정
+  // 강의 분위기 AI 판정 (영상 데이터 기반 종합 분석)
   const moodScore=r.overallScore||0;
-  const aiMood=moodScore>=90?'열정적이고 에너지 넘치는':moodScore>=80?'밝고 경쾌한':moodScore>=70?'전문적이고 진지한':moodScore>=60?'친근하고 편안한':'차분하고 신뢰감 있는';
+  const habitTotal2=(r.habits||[]).reduce((a,h)=>a+h.count,0);
+  const goodRatio=(r.timestamps||[]).filter(t=>t.type==='good').length/Math.max(1,(r.timestamps||[]).length);
+  let aiMood='밝고 경쾌한';
+  if(moodScore>=90&&goodRatio>=0.8) aiMood='열정적이고 에너지 넘치는';
+  else if(moodScore>=80&&habitTotal2<10) aiMood='밝고 경쾌한';
+  else if(moodScore>=75&&goodRatio>=0.6) aiMood='친근하고 편안한';
+  else if(moodScore>=70) aiMood='전문적이고 진지한';
+  else if(habitTotal2>20) aiMood='차분하고 신뢰감 있는';
+  else aiMood='재미있고 유머러스한';
   const moodBadge=el('an-mood-badge');
   if(moodBadge){moodBadge.style.display='block';moodBadge.textContent='🎭 '+aiMood;}
 
