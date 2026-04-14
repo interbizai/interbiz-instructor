@@ -29,8 +29,7 @@
 body{background:#faf9f6;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#faf9f6}
 #page-home main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
-#page-login{background:#f8f7f4;padding:0!important;margin:0!important}
-#page-login .g-main,#page-login main{padding:0!important;margin:0!important;max-width:none!important}
+#page-login{background:#f8f7f4}
 #page-home main{max-width:900px;margin:0 auto}
 #page-login,#page-register{background:#f8f7f4}
 .page{display:none;min-height:100vh}
@@ -936,8 +935,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <!-- ════════════════════════════════════
      PAGE: LOGIN
 ════════════════════════════════════ -->
-<div id="page-login" class="page active" style="background:#f8f7f4">
-<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0">
+<div id="page-login" class="page active">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8f7f4">
+<div style="display:grid;grid-template-columns:1fr 1fr;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12);max-width:800px;width:90vw;max-height:520px">
   <!-- 왼쪽: 캐릭터 영역 -->
   <div id="login-chars" style="background:#1a1a2e;display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden">
     <!-- 보라 캐릭터 (키 큰 직사각형) -->
@@ -972,10 +972,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   </div>
 
   <!-- 오른쪽: 로그인 폼 -->
-  <div style="display:flex;align-items:center;justify-content:center;padding:40px;background:#fff">
-    <div style="width:100%;max-width:360px">
-      <div style="text-align:center;margin-bottom:40px">
-        <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:60px;margin:0 auto">
+  <div style="display:flex;align-items:center;justify-content:center;padding:30px;background:#fff">
+    <div style="width:100%;max-width:320px">
+      <div style="text-align:center;margin-bottom:30px">
+        <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:50px;margin:0 auto">
       </div>
 
       <div class="form-group">
@@ -1001,6 +1001,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
     </div>
   </div>
+</div>
 </div>
 </div>
 
