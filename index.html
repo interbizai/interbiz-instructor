@@ -6315,14 +6315,9 @@ function renderVoiceResult(r,hasCL,count,tone){
     </div>`:'';
 
   el('va-report').innerHTML=`
-    <div style="display:grid;grid-template-columns:7fr 3fr;gap:18px;align-items:start">
-      <!-- 왼쪽: 타임스탬프 테이블 -->
-      <div>
-        ${vaTsHtml}
-      </div>
-      <!-- 오른쪽: 스피치 분석 (4칸 카드) -->
-      <div>
-        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">스피치 분석</div>
+    <!-- 스피치 분석 (4칸 카드) — 상단 -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">스피치 분석</div>
         ${(()=>{
           const vDbRaw=r.decibel;
           const vDb=typeof vDbRaw==='object'?(vDbRaw?.current||0):(vDbRaw||0);
@@ -6349,7 +6344,9 @@ function renderVoiceResult(r,hasCL,count,tone){
         })()}
       </div>
     </div>
-    <!-- 스피치 종합 리포트 (전체 폭) -->
+    <!-- 타임스탬프 피드 -->
+    ${vaTsHtml}
+    <!-- 스피치 종합 리포트 -->
     <div style="margin-top:20px">
       <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">스피치 종합 리포트</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
