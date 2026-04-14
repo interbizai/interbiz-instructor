@@ -6322,13 +6322,26 @@ function renderVoiceResult(r,hasCL,count,tone){
       </div>
       <!-- 오른쪽: 음성 분석 + 종합 리포트 -->
       <div>
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 분석</div>
         <!-- 데시벨/템포/적정인원/분위기 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-          <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${r.decibel||0} dB</div><div style="font-size:10px;color:${r.decibelStatus==='적정'?'var(--green)':'var(--orange)'}">${r.decibelStatus||''}</div></div>
-          <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">템포</div><div style="font-size:18px;font-weight:900">${r.tempo||0} WPM</div><div style="font-size:10px;color:${r.tempoStatus==='적정'?'var(--green)':'var(--orange)'}">${r.tempoStatus||''}</div></div>
-        </div>
         ${(()=>{
-          const vDb=r.decibel||0,vTp=r.tempo||0,vHb=(r.habits||[]).reduce((a,h)=>a+h.count,0);
+          const vDbRaw=r.decibel;
+          const vDb=typeof vDbRaw==='object'?(vDbRaw?.current||0):(vDbRaw||0);
+          const vDbStatus=typeof vDbRaw==='object'?(vDbRaw?.status||''):(r.decibelStatus||'');
+          const vTpRaw=r.tempo;
+          const vTp=typeof vTpRaw==='object'?(vTpRaw?.wpm||0):(vTpRaw||0);
+          const vTpStatus=typeof vTpRaw==='object'?(vTpRaw?.status||''):(r.tempoStatus||'');
+          return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:18px;font-weight:900">${vDb} dB</div><div style="font-size:10px;color:${vDbStatus==='적정'?'var(--green)':'var(--orange)'}">${vDbStatus}</div></div>
+          <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">템포</div><div style="font-size:18px;font-weight:900">${vTp} WPM</div><div style="font-size:10px;color:${vTpStatus==='적정'?'var(--green)':'var(--orange)'}">${vTpStatus}</div></div>
+        </div>`;})()}
+        ${(()=>{
+          const vDbRaw2=r.decibel;
+          const vDb=typeof vDbRaw2==='object'?(vDbRaw2?.current||0):(vDbRaw2||0);
+          const vTpRaw2=r.tempo;
+          const vTp=typeof vTpRaw2==='object'?(vTpRaw2?.wpm||0):(vTpRaw2||0);
+          const vHb=(r.habits||[]).reduce((a,h)=>a+h.count,0);
           const vFit=vDb>=80?'20명+':vDb>=75?'15~20명':vDb>=70?'10~15명':vDb>=65?'5~10명':vDb>=60?'3~5명':'1~3명';
           let vMood='밝고 경쾌한';
           if(vDb>=78&&vTp>=155) vMood='열정적이고 에너지 넘치는';
