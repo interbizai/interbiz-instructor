@@ -28,7 +28,9 @@
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
 body{background:#faf9f6;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#faf9f6}
-#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
+#page-home main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
+#page-login{background:#f8f7f4;padding:0!important;margin:0!important}
+#page-login .g-main,#page-login main{padding:0!important;margin:0!important;max-width:none!important}
 #page-home main{max-width:900px;margin:0 auto}
 #page-login,#page-register{background:#f8f7f4}
 .page{display:none;min-height:100vh}
@@ -934,8 +936,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <!-- ════════════════════════════════════
      PAGE: LOGIN
 ════════════════════════════════════ -->
-<div id="page-login" class="page active">
-<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr">
+<div id="page-login" class="page active" style="background:#f8f7f4">
+<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0">
   <!-- 왼쪽: 캐릭터 영역 -->
   <div id="login-chars" style="background:#1a1a2e;display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden">
     <!-- 보라 캐릭터 (키 큰 직사각형) -->
@@ -3285,14 +3287,31 @@ let _loginMouseX=0,_loginMouseY=0,_loginFocusState='none';
 document.addEventListener('mousemove',e=>{_loginMouseX=e.clientX;_loginMouseY=e.clientY;updateLoginPupils();});
 
 function updateLoginPupils(){
-  if(_loginFocusState==='pw') return; // 비밀번호 입력 중엔 딴 곳 보기
+  if(_loginFocusState==='pw') return;
+  // 눈동자 — 더 민감하게
   document.querySelectorAll('.login-pupil').forEach(p=>{
     const rect=p.getBoundingClientRect();
     const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
     const dx=_loginMouseX-cx, dy=_loginMouseY-cy;
-    const dist=Math.min(Math.sqrt(dx*dx+dy*dy),4);
+    const dist=Math.min(Math.sqrt(dx*dx+dy*dy),6);
     const angle=Math.atan2(dy,dx);
     p.style.transform=`translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px)`;
+  });
+  // 몸통 기울기 — 더 민감하게
+  const chars=[
+    {id:'char-purple',baseLeft:0.15},
+    {id:'char-black',baseLeft:0.42},
+    {id:'char-orange',baseLeft:0.05},
+    {id:'char-yellow',baseLeft:0.7}
+  ];
+  chars.forEach(c=>{
+    const el2=document.getElementById(c.id);
+    if(!el2) return;
+    const rect=el2.getBoundingClientRect();
+    const cx=rect.left+rect.width/2;
+    const dx=_loginMouseX-cx;
+    const skew=Math.max(-8,Math.min(8,-dx/80));
+    el2.style.transform=`skewX(${skew}deg)`;
   });
 }
 
