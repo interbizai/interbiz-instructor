@@ -3760,9 +3760,7 @@ function renderPick(){
   const eventsEl=el('pick-events');
   if(eventsEl){
     const today=new Date();
-    const dow=today.getDay();
-    const diffToMon=dow===0?-6:1-dow;
-    const weekStart=new Date(today.getFullYear(),today.getMonth(),today.getDate()+diffToMon,0,0,0);
+    const weekStart=new Date(today.getFullYear(),today.getMonth(),today.getDate(),0,0,0);
     const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
     const dayNames=['일','월','화','수','목','금','토'];
     const events=(D.calendarEvents||[]).filter(e=>{if(!e.pick_visible) return false;const d=new Date(e.start_date);return d>=weekStart&&d<=weekEnd;}).sort((a,b)=>a.start_date.localeCompare(b.start_date));
