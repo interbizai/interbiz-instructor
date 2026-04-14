@@ -6362,30 +6362,9 @@ function renderVoiceResult(r,hasCL,count,tone){
   window._vaTimestamps=r.voice_timestamps||[];
   const vaTsHtml=(r.voice_timestamps||[]).length?`
     <div style="margin-bottom:18px">
-      <div class="sec-lbl-sm">스피치 타임스탬프 피드</div>
-      <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);overflow:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead><tr style="background:#f8f9fa;border-bottom:2px solid rgba(0,0,0,.18)">
-            <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:70px">구분</th>
-            <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">평가 항목</th>
-            <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:60px">점수</th>
-            <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--t3);font-weight:700;width:100px">시점</th>
-            <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700">분석 피드백</th>
-            <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--t3);font-weight:700;width:180px">코칭 솔루션</th>
-          </tr></thead>
-          <tbody>${(r.voice_timestamps||[]).map((ts,idx)=>{
-            const sc=ts.type==='good'?'#10b981':ts.type==='bad'?'#E21E26':'#f59e0b';
-            const sb=ts.type==='good'?'rgba(16,185,129,.12)':ts.type==='bad'?'rgba(226,30,38,.12)':'rgba(245,158,11,.12)';
-            return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openVoiceTimestamp(${idx})">
-              <td style="padding:10px 12px;font-size:12px;color:var(--t3)">${ts.category||'—'}</td>
-              <td style="padding:10px 12px;font-weight:600">${ts.item||'—'}</td>
-              <td style="padding:10px 12px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:800;background:${sb};color:${sc}">${ts.score||0} / ${ts.maxScore||5}</span></td>
-              <td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--blue);font-weight:700;white-space:nowrap">${ts.t||'—'}</td>
-              <td style="padding:10px 12px;font-size:12px;color:var(--t2);line-height:1.5">${ts.text||''}</td>
-              <td style="padding:10px 12px;font-size:11px;color:${ts.solution?'var(--red)':'var(--t3)'};line-height:1.5">${ts.solution||'—'}</td>
-            </tr>`;}).join('')}
-          </tbody>
-        </table>
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">스피치 타임스탬프 피드</div>
+      <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden">
+        ${renderTsTable(r.voice_timestamps||[])}
       </div>
     </div>`:'';
 
