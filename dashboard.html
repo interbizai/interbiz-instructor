@@ -28,8 +28,8 @@
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
 body{background:#faf9f6;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
 #page-home{background:#faf9f6}
-#page-home main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
-#page-login{background:#f8f7f4}
+#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
+#page-login,#page-register{background:#f8f7f4}
 #page-home main{max-width:900px;margin:0 auto}
 #page-login,#page-register{background:#f8f7f4}
 .page{display:none;min-height:100vh}
@@ -535,10 +535,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 /* ── Streaming Page ── */
 .stream-layout{display:grid;grid-template-columns:1fr 380px;gap:22px}
-@media(max-width:900px){.stream-layout{grid-template-columns:1fr}
-  #login-chars{display:none!important}
-  #page-login>div{grid-template-columns:1fr!important}
-}
+@media(max-width:900px){.stream-layout{grid-template-columns:1fr}}
 .stream-info{display:flex;flex-direction:column;gap:14px}
 .stream-info-card{border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:18px;background:#fff}
 .stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
@@ -936,71 +933,31 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
      PAGE: LOGIN
 ════════════════════════════════════ -->
 <div id="page-login" class="page active">
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8f7f4">
-<div style="display:grid;grid-template-columns:1fr 1fr;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12);max-width:800px;width:90vw;max-height:520px">
-  <!-- 왼쪽: 캐릭터 영역 -->
-  <div id="login-chars" style="background:#1a1a2e;display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden">
-    <!-- 보라 캐릭터 (키 큰 직사각형) -->
-    <div id="char-purple" style="position:absolute;bottom:0;left:15%;width:140px;height:320px;background:#6C3FF5;border-radius:10px 10px 0 0;z-index:1;transition:transform .7s ease;transform-origin:bottom center">
-      <div id="eyes-purple" style="position:absolute;display:flex;gap:28px;left:35px;top:40px;transition:all .3s ease">
-        <div style="width:16px;height:16px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:7px;height:7px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
-        <div style="width:16px;height:16px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:7px;height:7px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
-      </div>
-    </div>
-    <!-- 검정 캐릭터 (중간) -->
-    <div id="char-black" style="position:absolute;bottom:0;left:42%;width:100px;height:240px;background:#2D2D2D;border-radius:8px 8px 0 0;z-index:2;transition:transform .7s ease;transform-origin:bottom center">
-      <div id="eyes-black" style="position:absolute;display:flex;gap:22px;left:22px;top:32px;transition:all .3s ease">
-        <div style="width:14px;height:14px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:6px;height:6px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
-        <div style="width:14px;height:14px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center"><div class="login-pupil" style="width:6px;height:6px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div></div>
-      </div>
-    </div>
-    <!-- 주황 캐릭터 (반원) -->
-    <div id="char-orange" style="position:absolute;bottom:0;left:5%;width:200px;height:160px;background:#FF9B6B;border-radius:100px 100px 0 0;z-index:3;transition:transform .7s ease;transform-origin:bottom center">
-      <div id="eyes-orange" style="position:absolute;display:flex;gap:30px;left:65px;top:70px;transition:all .2s ease">
-        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
-        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
-      </div>
-    </div>
-    <!-- 노랑 캐릭터 (둥근 직사각형) -->
-    <div id="char-yellow" style="position:absolute;bottom:0;right:10%;width:110px;height:190px;background:#E8D754;border-radius:55px 55px 0 0;z-index:4;transition:transform .7s ease;transform-origin:bottom center">
-      <div id="eyes-yellow" style="position:absolute;display:flex;gap:22px;left:32px;top:40px;transition:all .2s ease">
-        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
-        <div class="login-pupil" style="width:10px;height:10px;border-radius:50%;background:#2D2D2D;transition:transform .1s"></div>
-      </div>
-      <div id="mouth-yellow" style="position:absolute;width:40px;height:3px;background:#2D2D2D;border-radius:2px;left:35px;top:80px;transition:all .2s ease"></div>
+<div class="auth-page">
+<div class="auth-card">
+  <div class="auth-logo"><img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:72px"></div>
+
+  <div class="form-group">
+    <label class="form-lbl">아이디</label>
+    <input type="email" class="form-input" id="li-email" placeholder="이메일을 입력하세요">
+  </div>
+
+  <div class="form-group">
+    <label class="form-lbl">비밀번호</label>
+    <div class="pw-wrap">
+      <input type="password" class="form-input" id="li-pw" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="pw-toggle" type="button" onclick="togglePwVis('li-pw',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
     </div>
   </div>
 
-  <!-- 오른쪽: 로그인 폼 -->
-  <div style="display:flex;align-items:center;justify-content:center;padding:30px;background:#fff">
-    <div style="width:100%;max-width:320px">
-      <div style="text-align:center;margin-bottom:30px">
-        <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:50px;margin:0 auto">
-      </div>
-
-      <div class="form-group">
-        <label class="form-lbl">아이디</label>
-        <input type="email" class="form-input" id="li-email" placeholder="이메일을 입력하세요" onfocus="loginCharsFocus('email')" onblur="loginCharsBlur()">
-      </div>
-
-      <div class="form-group">
-        <label class="form-lbl">비밀번호</label>
-        <div class="pw-wrap">
-          <input type="password" class="form-input" id="li-pw" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()" onfocus="loginCharsFocus('pw')" onblur="loginCharsBlur()">
-          <button class="pw-toggle" type="button" onclick="togglePwVis('li-pw',this)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="form-row-flex">
-        <label class="form-check"><input type="checkbox"> 30일간 기억하기</label>
-      </div>
-
-      <div class="auth-err" id="li-err"></div>
-      <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
-    </div>
+  <div class="form-row-flex">
+    <label class="form-check"><input type="checkbox"> 30일간 기억하기</label>
   </div>
+
+  <div class="auth-err" id="li-err"></div>
+  <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
 </div>
 </div>
 </div>
