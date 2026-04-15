@@ -190,7 +190,7 @@ export default async function handler(req, res) {
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.3,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 16384,
       },
     });
 
@@ -230,10 +230,30 @@ export default async function handler(req, res) {
       contents: [{ role: 'user', parts }],
     });
 
-    const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cand = result.response?.candidates?.[0];
+    const text = cand?.content?.parts?.[0]?.text || '';
+    const finishReason = cand?.finishReason || '';
+
+    // 마크다운 코드펜스 제거
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+    // 첫 {부터 마지막 }까지 추출
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    }
+
     let parsed = null;
-    try { parsed = JSON.parse(text); } catch (e) {
-      return res.status(502).json({ ok: false, error: 'AI 응답 JSON 파싱 실패', raw: text.slice(0, 2000) });
+    try { parsed = JSON.parse(cleaned); } catch (e) {
+      return res.status(502).json({
+        ok: false,
+        error: `AI 응답 JSON 파싱 실패 (finishReason=${finishReason})`,
+        raw_head: text.slice(0, 500),
+        raw_tail: text.slice(-500),
+        raw_length: text.length,
+        parse_error: e.message,
+      });
     }
 
     return res.status(200).json({ ok: true, eval_type, model, result: parsed });
