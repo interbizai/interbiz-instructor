@@ -5429,14 +5429,27 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       video_url:videoUrl, checklist_items:checklistItems, eval_type:'AI독자'
     }));
     const [critResult,aiResult]=await Promise.all(tasks);
-    // 4) evaluations 테이블 저장 (video_id는 여기서 아직 없으므로 null — 저장 후 연결은 후속)
-    saveEvaluation({videoId:null,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult});
-    saveEvaluation({videoId:null,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult});
-    // 5) 기존 렌더러 포맷으로 매핑 후 렌더
+    // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
+    const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
+    const vidRow=await dbCreateVideo({
+      userId, title, youtube:'', filePath:videoUrl,
+      date:new Date().toISOString().split('T')[0], duration:'—',
+      studentCount, status:'분석완료',
+      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+      eduFileUrl:eduFileUrl||'', productName:window._anProduct||''
+    });
+    const videoId=vidRow?.id||null;
+    // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장
+    await Promise.all([
+      saveEvaluation({videoId,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult}),
+      saveEvaluation({videoId,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult})
+    ]);
+    await loadFromDB();
+    // 6) 전역에 보관 + 렌더
+    window._lastVertexResult={crit:critResult,ai:aiResult};
+    window._anVideoId=videoId;
     const mapped=mapVertexToLegacy(critResult,aiResult);
     renderAnalysisResult(mapped,true,studentCount);
-    autoSaveAnalysis(mapped);
-    window._lastVertexResult={crit:critResult,ai:aiResult};
   }catch(e){
     console.error('Vertex AI 분석 실패:',e);
     alert('AI 분석 실패: '+e.message+'\n\n임시로 목업 데이터를 표시합니다.');
@@ -5551,7 +5564,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
   if(hasChecklist&&r.criteriaScores?.length){
     const eduRadar=el('an-edu-radar');
-    if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores);
+    if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores,{clickable:true,which:'crit'});
     const eduBars=el('an-edu-bars');
     if(eduBars){
       eduBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -5605,7 +5618,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     ? aiRawCats.map(c=>({name:c.name,score:c.score||0,max:c.max||1}))
     : (r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
   const aiRadar=el('an-ai-radar');
-  if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems);
+  if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems,{clickable:true,which:'ai'});
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -5701,7 +5714,9 @@ function renderTsTable(timestamps){
 }
 
 // 레이더 차트 SVG 공통
-function drawRadarSVG(items){
+function drawRadarSVG(items,opts){
+  const clickable=opts?.clickable||false;
+  const which=opts?.which||'crit';
   const n=items.length,cx=200,cy=185,maxR=140;
   const angles=Array.from({length:n},(_,i)=>-Math.PI/2+(2*Math.PI*i/n));
   const toXY=(a,r)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
@@ -5711,8 +5726,84 @@ function drawRadarSVG(items){
   const pts=items.map((d,i)=>{const p=d.max?d.score/d.max:d.score/100;return toXY(angles[i],maxR*p).join(',');}).join(' ');
   svg+=`<polygon points="${pts}" fill="rgba(220,38,38,.12)" stroke="#dc2626" stroke-width="2.5"/>`;
   items.forEach((d,i)=>{const p=d.max?d.score/d.max:d.score/100;const [x,y]=toXY(angles[i],maxR*p);svg+=`<circle cx="${x}" cy="${y}" r="5" fill="#dc2626" stroke="#fff" stroke-width="2"/>`;});
-  items.forEach((d,i)=>{const [x,y]=toXY(angles[i],maxR+28);const lines=(d.name||'').split('\n');lines.forEach((l,li)=>{svg+=`<text x="${x}" y="${y+li*14-((lines.length-1)*7)}" text-anchor="middle" fill="var(--t1)" font-size="11" font-weight="700">${l}</text>`;});});
+  items.forEach((d,i)=>{
+    const [x,y]=toXY(angles[i],maxR+28);
+    const lines=(d.name||'').split('\n');
+    const safeCat=(d.name||'').replace(/'/g,'&#39;').replace(/\n/g,' ');
+    const clickAttr=clickable?` style="cursor:pointer" onclick="openCategoryRadar('${which}','${safeCat}')"`:'';
+    const underline=clickable?` text-decoration="underline"`:'';
+    lines.forEach((l,li)=>{
+      svg+=`<text x="${x}" y="${y+li*14-((lines.length-1)*7)}" text-anchor="middle" fill="var(--t1)" font-size="11" font-weight="700"${underline}${clickAttr}>${l}</text>`;
+    });
+  });
   return svg;
+}
+
+// 대항목 클릭 → 세부항목 달성도 미니 레이더 팝업
+function openCategoryRadar(which,categoryName){
+  const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
+  if(!raw||!raw.sub_scores?.length){alert('평가 데이터가 없습니다.');return;}
+  const items=raw.sub_scores.filter(s=>(s.category||'').trim()===categoryName.trim());
+  if(!items.length){alert('"'+categoryName+'" 세부항목이 없습니다.');return;}
+  const radarItems=items.map(s=>({name:s.sub_item||'', score:s.score||0, max:s.max||1}));
+  const totalScore=items.reduce((a,s)=>a+(s.score||0),0);
+  const totalMax=items.reduce((a,s)=>a+(s.max||0),0);
+  const pct=totalMax>0?Math.round(totalScore/totalMax*100):0;
+  const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
+  const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='cat-radar-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:22px;max-width:860px;width:92vw;max-height:88vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'평가안 기준'} · 대항목 세부 보기</div>
+        <div style="font-size:17px;font-weight:900;margin-top:2px">${categoryName}</div>
+      </div>
+      <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:14px">총점: <strong style="color:#10b981">${totalScore}/${totalMax}점 (${pct}%)</strong> · 세부항목 ${items.length}개</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;margin-bottom:14px">
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems)}</svg>
+      </div>
+      <div>
+        ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:700">${c.name}</span><span style="font-size:12px;font-weight:800;color:#10b981">${p}%</span></div>
+          <div style="height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+        </div>`;}).join('')}
+      </div>
+    </div>
+    <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead style="background:#f8f9fa">
+          <tr>
+            <th style="padding:8px;text-align:left;width:140px">세부항목</th>
+            <th style="padding:8px;text-align:left">평가기준</th>
+            <th style="padding:8px;text-align:center;width:70px">점수</th>
+            <th style="padding:8px;text-align:center;width:60px">판정</th>
+            <th style="padding:8px;text-align:center;width:100px">시점</th>
+            <th style="padding:8px;text-align:left">분석/솔루션</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
+            <td style="padding:8px;font-weight:600">${s.sub_item||'-'}</td>
+            <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
+            <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
+            <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
+            <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
+            <td style="padding:8px;color:var(--t2);line-height:1.5">
+              ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
+              ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
 }
 
 // 타임스탬프 클릭 → 영상 해당 시간으로 이동
@@ -8932,8 +9023,32 @@ function openVideo(id){
     else delArea.innerHTML='';
   }
 
-  // Gemini AI로 전체 분석 호출
-  generateFullAnalysis(title, count, vid.timestamps||[], vid.youtube||'');
+  // 저장된 평가 결과 로드 (AI 재호출 금지 — 원본 데이터 보존)
+  (async()=>{
+    const{data:evals}=await sb.from('evaluations').select('*').eq('video_id',id).order('created_at',{ascending:false});
+    const pickLatest=(t)=>(evals||[]).find(e=>e.eval_type===t);
+    const critRow=pickLatest('평가안기준');
+    const aiRow=pickLatest('AI독자');
+    if(!critRow&&!aiRow){
+      // 저장된 평가 없음 — 구 버전 영상 → 목업/레거시 모드
+      el('an-ai-summary').textContent='저장된 평가 데이터가 없습니다.';
+      generateFullAnalysis(title, count, vid.timestamps||[], vid.youtube||'');
+      return;
+    }
+    const toVertex=(row)=>row?{
+      overall_score:row.overall_score, categories:row.categories||[], sub_scores:row.sub_scores||[],
+      good:row.good||[], bad:row.bad||[], upgrade:row.upgrade||[],
+      scenarios:row.scenarios||[], level_tips:row.level_tips||[], teaching_patterns:row.teaching_patterns||[],
+      habits:row.habits||[], engagement_gaps_minutes:row.engagement_gaps||[],
+      mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo
+    }:null;
+    const critResult=toVertex(critRow);
+    const aiResult=toVertex(aiRow);
+    window._lastVertexResult={crit:critResult,ai:aiResult};
+    window._anVideoId=id;
+    const mapped=mapVertexToLegacy(critResult,aiResult);
+    renderAnalysisResult(mapped,true,count);
+  })();
   return;
 
   // ─── 이하 기존 page-video 코드 (미사용) ───
