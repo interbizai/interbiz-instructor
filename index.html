@@ -1336,11 +1336,17 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <!-- 직접 파일 업로드 -->
       <div style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:12px;font-weight:700">평가안 업로드 (선택)</span>
+          <span style="font-size:12px;font-weight:700">평가안 / 체크리스트 (선택)</span>
           <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
         </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--t2);min-width:72px">체크리스트</label>
+          <select id="an-cl-select" onchange="applyChecklistFromSelect('an')" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
+            <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
+          </select>
+        </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 선택 (PDF/Excel)</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 직접 선택 (PDF/Excel)</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">샘플 다운로드</button>
           <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
           <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
@@ -1773,6 +1779,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:12px;font-weight:700">평가안/체크리스트 (선택)</span>
             <a href="assets/평가안_샘플양식.html" target="_blank" style="font-size:10px;color:var(--blue)">샘플 보기</a>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <label style="font-size:11px;font-weight:600;color:var(--t2);min-width:62px">체크리스트</label>
+            <select id="va-cl-select" onchange="applyChecklistFromSelect('va')" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
+              <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
+            </select>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
@@ -2511,6 +2523,16 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <input type="date" class="form-input" id="st-date">
       </div>
     </div>
+    <!-- 체크리스트 선택 (교육콘텐츠 등록 항목) -->
+    <div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700">체크리스트 (선택)</span>
+        <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
+      </div>
+      <select id="st-cl-select" onchange="applyChecklistFromSelect('st')" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
+        <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
+      </select>
+    </div>
     <!-- 교육자료 연동 파일 -->
     <div id="st-edu-files" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px">
       <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
@@ -2819,6 +2841,8 @@ async function loadFromDB(){
   // 달력 이벤트
   const {data:ce}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
   D.calendarEvents=(ce||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
+  // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
+  if(typeof populateChecklistSelects==='function') populateChecklistSelects();
 }
 
 /* ════════════════════════════════
@@ -4870,6 +4894,44 @@ function loadEduFilesForCategory(){
     </div>
     <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
   </div>`).join('');
+}
+// 교육콘텐츠 > 교육자료 체크리스트 셀렉트 채우기 (3곳 공용: an/va/st)
+function populateChecklistSelects(){
+  const items=[...(D.checklists||[])].sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.name||'').localeCompare(b.name||''));
+  const grouped={};
+  items.forEach(c=>{const cat=c.category||'기타';(grouped[cat]=grouped[cat]||[]).push(c);});
+  let html='<option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>';
+  Object.entries(grouped).forEach(([cat,arr])=>{
+    html+=`<optgroup label="${cat} (${arr.length})">`;
+    arr.forEach(c=>{
+      const esc=(c.name||'').replace(/"/g,'&quot;');
+      html+=`<option value="${c.id}" data-url="${c.file_url||''}" data-name="${esc}">${esc}</option>`;
+    });
+    html+='</optgroup>';
+  });
+  ['an-cl-select','va-cl-select','st-cl-select'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
+  });
+}
+function applyChecklistFromSelect(prefix){
+  const sel=document.getElementById(prefix+'-cl-select');
+  if(!sel) return;
+  const opt=sel.options[sel.selectedIndex];
+  const url=opt?.dataset?.url||'';
+  const name=opt?.dataset?.name||'';
+  // hidden url input 보장
+  const hidId=prefix+'-checklist-url';
+  let h=document.getElementById(hidId);
+  if(!h){h=document.createElement('input');h.type='hidden';h.id=hidId;document.body.appendChild(h);}
+  h.value=url;
+  // 표시 라벨
+  const nameMap={'an':'an-checklist-name','va':'va-cl-name','st':'st-cl-applied'};
+  const lbl=document.getElementById(nameMap[prefix]);
+  if(lbl){
+    if(url){lbl.textContent=name+' (체크리스트 적용)';if(prefix==='st'){lbl.style.display='block';}}
+    else{lbl.textContent=prefix==='va'?'없음':'선택된 파일 없음';if(prefix==='st'){lbl.style.display='none';}}
+  }
 }
 function applyEduFile(url,name){
   document.getElementById('an-checklist-name').textContent=name+' (교육자료 적용)';
