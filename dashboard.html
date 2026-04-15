@@ -3490,14 +3490,18 @@ function renderEduPage(){
         <span style="font-size:12px;font-weight:800;color:${catColors[cat]||'var(--t1)'}">${cat}</span>
         <span style="font-size:10px;color:var(--t3)">(${items.length})</span>
       </div>`;
-    clHtml+=items.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px">
+    clHtml+=items.map(c=>{
+      const isCl=(c.category||'')==='체크리스트';
+      const typeLbl=c.type==='standard'?'표준':c.type==='speech'?'스피치':'';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px">
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">${c.name}</div>
+        <div style="font-size:13px;font-weight:700">${c.name}${typeLbl?` <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(0,0,0,.06);color:var(--t2);font-weight:600;margin-left:4px">${typeLbl}</span>`:''}</div>
         <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
       </div>
       <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px">다운로드</a>
+      ${isAdmin&&isCl?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;color:var(--blue)" onclick="openChecklistReupload(${c.id})">파일 교체</button>`:''}
       ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
-    </div>`).join('');
+    </div>`;}).join('');
     clHtml+='</div>';
   });
   if(!sorted.length) clHtml+='<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
@@ -3639,6 +3643,118 @@ function renderChecklistPreview(items){
         </tbody>
       </table>
     </div>`;
+}
+
+// ── 체크리스트 파일 교체 (항목 재파싱) ─────────
+window._reuploadCLId=null;
+window._reuploadParsedItems=null;
+function openChecklistReupload(id){
+  window._reuploadCLId=id;
+  window._reuploadParsedItems=null;
+  const existing=(D.checklists||[]).find(c=>c.id===id);
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='cl-reupload-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:720px;width:92vw;max-height:85vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:900">체크리스트 파일 교체 — ${existing?.name||''}</div>
+      <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="document.getElementById('cl-reupload-overlay').remove()">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:12px">기존 항목이 삭제되고 새 엑셀로 교체됩니다. 배점 합계 100점 필수.</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <input type="file" id="cl-reupload-file" accept=".xlsx,.xls" style="display:none" onchange="onChecklistReuploadFileSelected(this)">
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="document.getElementById('cl-reupload-file').click()">엑셀 파일 선택</button>
+      <span id="cl-reupload-fname" style="font-size:11px;color:var(--t3)"></span>
+    </div>
+    <div id="cl-reupload-preview" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="document.getElementById('cl-reupload-overlay').remove()">취소</button>
+      <button class="btn btn-blue" id="cl-reupload-save-btn" onclick="confirmChecklistReupload()" disabled style="opacity:.5">교체 저장</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function onChecklistReuploadFileSelected(input){
+  const file=input.files?.[0];
+  const nameEl=document.getElementById('cl-reupload-fname');
+  const prev=document.getElementById('cl-reupload-preview');
+  const saveBtn=document.getElementById('cl-reupload-save-btn');
+  if(nameEl) nameEl.textContent=file?.name||'';
+  window._reuploadParsedItems=null;
+  if(saveBtn){saveBtn.disabled=true;saveBtn.style.opacity='.5';}
+  if(!file||!prev) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const items=parseChecklistRows(rows);
+      const sum=items.reduce((a,x)=>a+x.max_score,0);
+      window._reuploadParsedItems=items;
+      prev.innerHTML=`
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700">파싱 미리보기 — ${items.length}개 항목</div>
+          <div style="font-size:12px;font-weight:800;color:${sum===100?'var(--green)':'var(--red)'}">배점 합계: ${sum}점 ${sum===100?'✓':'(100점 필요)'}</div>
+        </div>
+        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--bdr);border-radius:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead style="background:#f8f9fa;position:sticky;top:0">
+              <tr>
+                <th style="padding:6px;text-align:left">대항목</th>
+                <th style="padding:6px;text-align:left">세부항목</th>
+                <th style="padding:6px;text-align:left">평가기준</th>
+                <th style="padding:6px;text-align:center;width:40px">배점</th>
+                <th style="padding:6px;text-align:left">상세</th>
+              </tr>
+            </thead>
+            <tbody>${items.map(x=>`<tr>
+              <td style="padding:5px 6px;font-weight:600">${x.category}</td>
+              <td style="padding:5px 6px">${x.sub_item}</td>
+              <td style="padding:5px 6px;color:var(--t2)">${x.criterion}</td>
+              <td style="padding:5px 6px;text-align:center;font-weight:700">${x.max_score}</td>
+              <td style="padding:5px 6px;color:var(--t3);font-size:10px">${x.detail||''}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      if(saveBtn&&sum===100&&items.length){saveBtn.disabled=false;saveBtn.style.opacity='1';}
+    }catch(err){
+      prev.innerHTML=`<div style="font-size:11px;color:var(--red)">엑셀 파싱 실패: ${err.message}</div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+async function confirmChecklistReupload(){
+  const id=window._reuploadCLId;
+  const items=window._reuploadParsedItems;
+  const file=document.getElementById('cl-reupload-file')?.files?.[0];
+  if(!id||!items?.length||!file){alert('파일을 선택하고 파싱을 완료하세요.');return;}
+  const sum=items.reduce((a,x)=>a+x.max_score,0);
+  if(sum!==100){alert('배점 합계가 100점이어야 합니다.');return;}
+  // 파일 Storage 업로드
+  const ext=file.name.split('.').pop()||'xlsx';
+  const path=`checklists/${Date.now()}.${ext}`;
+  const{error:ue}=await sb.storage.from('files').upload(path,file);
+  if(ue){alert('파일 업로드 실패: '+ue.message);return;}
+  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+  // checklist_files 갱신 (file_url + file_name)
+  const{error:upErr}=await sb.from('checklist_files').update({file_url:publicUrl,file_name:file.name}).eq('id',id);
+  if(upErr){alert('파일 URL 갱신 실패: '+upErr.message);return;}
+  // 기존 항목 전체 삭제
+  const{error:delErr}=await sb.from('checklist_items').delete().eq('checklist_id',id);
+  if(delErr){alert('기존 항목 삭제 실패: '+delErr.message);return;}
+  // 신규 항목 일괄 INSERT
+  const payload=items.map(x=>({
+    checklist_id:id, category:x.category, sub_item:x.sub_item,
+    criterion:x.criterion, max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order
+  }));
+  const{error:insErr}=await sb.from('checklist_items').insert(payload);
+  if(insErr){alert('항목 저장 실패: '+insErr.message);return;}
+  document.getElementById('cl-reupload-overlay')?.remove();
+  window._reuploadCLId=null;window._reuploadParsedItems=null;
+  await loadFromDB();renderEduPage();
+  alert('교체 완료');
 }
 
 async function uploadEduChecklist(){
