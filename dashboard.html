@@ -1292,7 +1292,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div style="max-width:900px;margin-top:18px">
       <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 정보</div>
     <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
         <div class="form-group" style="margin:0">
           <label class="form-lbl">영상 제목</label>
           <input type="text" class="form-input" id="an-title" placeholder="강의 제목">
@@ -1307,6 +1307,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육자료</label>
           <select class="form-input" id="an-product" onchange="loadEduFilesForCategory()"></select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-lbl">체크리스트</label>
+          <select class="form-input" id="an-cl-select" onchange="applyChecklistFromSelect('an')">
+            <option value="">선택</option>
+          </select>
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">제품</label>
@@ -1329,12 +1335,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:12px;font-weight:700">평가안 / 체크리스트 (선택)</span>
           <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
-        </div>
-        <div class="form-group" style="margin:0 0 10px 0">
-          <label class="form-lbl">체크리스트</label>
-          <select class="form-input" id="an-cl-select" onchange="applyChecklistFromSelect('an')">
-            <option value="">선택</option>
-          </select>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 직접 선택 (PDF/Excel)</button>
@@ -1752,6 +1752,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <select class="form-input" id="va-product" onchange="loadVoiceEduFiles()"></select>
         </div>
         <div class="form-group">
+          <label class="form-lbl">체크리스트</label>
+          <select class="form-input" id="va-cl-select" onchange="applyChecklistFromSelect('va')">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-lbl">제품</label>
           <select class="form-input" id="va-prod-select">
             <option value="">선택</option>
@@ -1770,12 +1776,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:12px;font-weight:700">평가안/체크리스트 (선택)</span>
             <a href="assets/평가안_샘플양식.html" target="_blank" style="font-size:10px;color:var(--blue)">샘플 보기</a>
-          </div>
-          <div class="form-group" style="margin:0 0 8px 0">
-            <label class="form-lbl">체크리스트</label>
-            <select class="form-input" id="va-cl-select" onchange="applyChecklistFromSelect('va')">
-              <option value="">선택</option>
-            </select>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
@@ -2513,8 +2513,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <label class="form-lbl">날짜</label>
         <input type="date" class="form-input" id="st-date">
       </div>
-      <div class="form-group" style="margin:0;grid-column:span 2">
-        <label class="form-lbl">체크리스트 <span style="font-size:10px;color:var(--t3);font-weight:500">(선택 · 없으면 AI 독자 분석)</span></label>
+      <div class="form-group" style="margin:0">
+        <label class="form-lbl">체크리스트</label>
         <select class="form-input" id="st-cl-select" onchange="applyChecklistFromSelect('st')">
           <option value="">선택</option>
         </select>
@@ -4897,24 +4897,20 @@ function populateChecklistSelects(){
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
 }
+// 체크리스트 드롭다운 전용 URL (교육자료 선택과 독립 저장 — 두 파일 공존 가능)
 function applyChecklistFromSelect(prefix){
   const sel=document.getElementById(prefix+'-cl-select');
   if(!sel) return;
   const opt=sel.options[sel.selectedIndex];
   const url=opt?.dataset?.url||'';
   const name=opt?.dataset?.name||'';
-  // hidden url input 보장
-  const hidId=prefix+'-checklist-url';
+  const hidId=prefix+'-cl-url';
   let h=document.getElementById(hidId);
   if(!h){h=document.createElement('input');h.type='hidden';h.id=hidId;document.body.appendChild(h);}
   h.value=url;
-  // 표시 라벨
-  const nameMap={'an':'an-checklist-name','va':'va-cl-name','st':'st-cl-applied'};
-  const lbl=document.getElementById(nameMap[prefix]);
-  if(lbl){
-    if(url){lbl.textContent=name+' (체크리스트 적용)';if(prefix==='st'){lbl.style.display='block';}}
-    else{lbl.textContent=prefix==='va'?'없음':'선택된 파일 없음';if(prefix==='st'){lbl.style.display='none';}}
-  }
+  let nh=document.getElementById(hidId+'-name');
+  if(!nh){nh=document.createElement('input');nh.type='hidden';nh.id=hidId+'-name';document.body.appendChild(nh);}
+  nh.value=name;
 }
 function applyEduFile(url,name){
   document.getElementById('an-checklist-name').textContent=name+' (교육자료 적용)';
@@ -4955,10 +4951,11 @@ function runAnalysis(){
     el('an-player').innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${URL.createObjectURL(file)}"></video>`;
   }
 
-  const hasChecklist=el('an-checklist').files?.length>0||document.getElementById('an-checklist-url')?.value;
+  const hasChecklist=el('an-checklist').files?.length>0||document.getElementById('an-checklist-url')?.value||document.getElementById('an-cl-url')?.value;
   const count=parseInt(v('an-count'))||20;
   window._anEduCategory=v('an-product')||'';
   window._anEduFileUrl=document.getElementById('an-checklist-url')?.value||'';
+  window._anChecklistUrl=document.getElementById('an-cl-url')?.value||'';
   window._anProduct=document.getElementById('an-prod-select')?.value||'';
 
   // 영상 미니 썸네일
@@ -6176,7 +6173,7 @@ async function runVoiceAnalysis(){
 
   const count=parseInt(v('va-count'))||20;
   const tone=v('va-tone');
-  const hasCL=el('va-checklist').files?.length>0;
+  const hasCL=el('va-checklist').files?.length>0||document.getElementById('va-checklist-url')?.value||document.getElementById('va-cl-url')?.value;
 
   el('va-step1').style.display='none';
   el('va-step2').style.display='';
@@ -6973,6 +6970,7 @@ async function saveStreamVideo(){
     videoType:v('st-type'), channel:v('st-channel'),
     date:v('st-date'), solution:'AI 연동 후 솔루션이 자동 생성됩니다.',
     eduFileUrl:document.getElementById('st-checklist-url')?.value||'',
+    checklistUrl:document.getElementById('st-cl-url')?.value||'',
     productName:document.getElementById('st-prod-select')?.value||''
   });
   if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:''}); }
