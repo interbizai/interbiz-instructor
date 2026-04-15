@@ -199,9 +199,9 @@ export default async function handler(req, res) {
     // 우선순위: gs:// URI(GCS) → fileData 직접 전달 (크기 제한 없음)
     // 폴백: HTTPS URL → inlineData(base64) (~18MB 이내만)
     const parts = [];
-    // fps 기본 0.5 (초당 0.5프레임 = 2초마다 1장) → 약 17분 영상까지 Flash 한도 내 처리 가능
-    // 요청으로 override 가능 (예: 긴 영상은 fps=0.2)
-    const fps = typeof req.body.fps === 'number' ? req.body.fps : 0.5;
+    // fps 기본 0.2 (5초당 1프레임) → 약 40분 영상까지 Flash 131K 토큰 한도 내 처리
+    // 요청으로 override 가능 (짧은 영상은 fps=1, 1시간은 fps=0.1)
+    const fps = typeof req.body.fps === 'number' ? req.body.fps : 0.2;
     if (video_gcs_uri) {
       parts.push({
         fileData: { mimeType: video_mime, fileUri: video_gcs_uri },
