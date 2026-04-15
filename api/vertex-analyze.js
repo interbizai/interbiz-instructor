@@ -199,8 +199,14 @@ export default async function handler(req, res) {
     // 우선순위: gs:// URI(GCS) → fileData 직접 전달 (크기 제한 없음)
     // 폴백: HTTPS URL → inlineData(base64) (~18MB 이내만)
     const parts = [];
+    // fps 기본 0.5 (초당 0.5프레임 = 2초마다 1장) → 약 17분 영상까지 Flash 한도 내 처리 가능
+    // 요청으로 override 가능 (예: 긴 영상은 fps=0.2)
+    const fps = typeof req.body.fps === 'number' ? req.body.fps : 0.5;
     if (video_gcs_uri) {
-      parts.push({ fileData: { mimeType: video_mime, fileUri: video_gcs_uri } });
+      parts.push({
+        fileData: { mimeType: video_mime, fileUri: video_gcs_uri },
+        videoMetadata: { fps },
+      });
     } else {
       const vresp = await fetch(video_url);
       if (!vresp.ok) return res.status(502).json({ ok: false, error: `영상 다운로드 실패(${vresp.status}): ${video_url}` });

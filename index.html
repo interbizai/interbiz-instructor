@@ -5244,63 +5244,82 @@ function populateChecklistSelects(){
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
 }
-// 체크리스트 전체보기 모달 — 세부항목/평가기준/점수/시점/분석/솔루션 표시
+// 체크리스트 전체보기 모달 — 대항목별 세부 다각 그래프 + 달성도 + 상세 테이블
 function openChecklistDetail(which){
   const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
   if(!raw||!raw.sub_scores?.length){alert('평가 데이터가 없습니다.');return;}
   const items=raw.sub_scores;
-  // 대항목별 그룹
-  const byCat={};
-  items.forEach(s=>{(byCat[s.category]=byCat[s.category]||[]).push(s);});
+  // 대항목별 그룹 (체크리스트 기준 순서 유지)
+  const byCat=new Map();
+  items.forEach(s=>{const k=s.category||'기타';if(!byCat.has(k))byCat.set(k,[]);byCat.get(k).push(s);});
+  const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
+  const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
+
+  const catBlocks=Array.from(byCat.entries()).map(([cat,arr])=>{
+    const sum=arr.reduce((a,x)=>a+(x.score||0),0);
+    const max=arr.reduce((a,x)=>a+(x.max||0),0);
+    const pct=max>0?Math.round(sum/max*100):0;
+    const radarItems=arr.map(s=>({name:s.sub_item||'', score:s.score||0, max:s.max||1}));
+    const radarSvg=drawRadarSVG(radarItems);
+    const bars=radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:600">${c.name}</span><span style="font-size:11px;font-weight:800;color:#10b981">${p}%</span></div>
+      <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+    </div>`;}).join('');
+    return `<div style="margin-bottom:22px;border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff">
+      <div style="padding:12px 16px;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:14px;font-weight:900;color:var(--t1)">${cat}</div>
+        <div style="font-size:12px;font-weight:800;color:#10b981">${sum}/${max}점 · ${pct}%</div>
+      </div>
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;padding:16px">
+        <div style="border:1px solid var(--bdr);border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;background:#fafafa">
+          <svg viewBox="0 0 400 370" style="width:100%;max-width:320px;height:auto">${radarSvg}</svg>
+        </div>
+        <div>${bars}</div>
+      </div>
+      <div style="border-top:1px solid var(--bdr);overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:700px">
+          <thead style="background:#fafafa">
+            <tr>
+              <th style="padding:8px;text-align:left;width:120px">세부항목</th>
+              <th style="padding:8px;text-align:left">평가기준</th>
+              <th style="padding:8px;text-align:center;width:65px">점수</th>
+              <th style="padding:8px;text-align:center;width:55px">판정</th>
+              <th style="padding:8px;text-align:center;width:95px">시점</th>
+              <th style="padding:8px;text-align:left">분석 / 솔루션</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${arr.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
+              <td style="padding:8px;font-weight:600">${s.sub_item||'-'}</td>
+              <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
+              <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
+              <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
+              <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
+              <td style="padding:8px;color:var(--t2);line-height:1.5">
+                ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
+                ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
   const overlay=document.createElement('div');
   overlay.className='overlay show';
   overlay.id='cl-detail-overlay';
   overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
-  const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
-  const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
-  const rowsHtml=Object.entries(byCat).map(([cat,arr])=>{
-    const sum=arr.reduce((a,x)=>a+(x.score||0),0);
-    const max=arr.reduce((a,x)=>a+(x.max||0),0);
-    const pct=max>0?Math.round(sum/max*100):0;
-    return `<div style="margin-bottom:18px;border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
-      <div style="padding:10px 14px;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:13px;font-weight:800;color:var(--t1)">${cat}</div>
-        <div style="font-size:12px;font-weight:700;color:#10b981">${sum}/${max}점 (${pct}%)</div>
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:1200px;width:96vw;max-height:92vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'평가안 기준'}</div>
+        <div style="font-size:18px;font-weight:900;margin-top:2px">체크리스트 대항목 상세 · 총 ${items.length}개 세부항목</div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead style="background:#fafafa">
-          <tr>
-            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr);width:120px">세부항목</th>
-            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준</th>
-            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:70px">점수</th>
-            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:60px">판정</th>
-            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:100px">시점</th>
-            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr)">분석 / 솔루션</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${arr.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
-            <td style="padding:7px;font-weight:600;color:var(--t1)">${s.sub_item||'-'}</td>
-            <td style="padding:7px;color:var(--t2)">${s.criterion||'-'}</td>
-            <td style="padding:7px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
-            <td style="padding:7px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
-            <td style="padding:7px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
-            <td style="padding:7px;color:var(--t2);line-height:1.5">
-              ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
-              ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
-            </td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-  }).join('');
-  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:1100px;width:95vw;max-height:90vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div style="font-size:17px;font-weight:900">${which==='ai'?'AI 독자 분석':'평가안 기준'} — 체크리스트 상세</div>
       <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:14px">총점: <strong style="color:var(--t1)">${raw.overall_score||0}점</strong> · 항목 ${items.length}개</div>
-    ${rowsHtml}
+    <div style="font-size:12px;color:var(--t2);margin-bottom:16px">총점 <strong style="color:#10b981;font-size:14px">${raw.overall_score||0}점</strong> · 대항목별로 세부 다각 그래프와 달성도를 함께 표시합니다</div>
+    ${catBlocks}
   </div>`;
   document.body.appendChild(overlay);
 }
