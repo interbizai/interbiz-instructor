@@ -5231,6 +5231,67 @@ function populateChecklistSelects(){
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
 }
+// 체크리스트 전체보기 모달 — 세부항목/평가기준/점수/시점/분석/솔루션 표시
+function openChecklistDetail(which){
+  const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
+  if(!raw||!raw.sub_scores?.length){alert('평가 데이터가 없습니다.');return;}
+  const items=raw.sub_scores;
+  // 대항목별 그룹
+  const byCat={};
+  items.forEach(s=>{(byCat[s.category]=byCat[s.category]||[]).push(s);});
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='cl-detail-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
+  const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
+  const rowsHtml=Object.entries(byCat).map(([cat,arr])=>{
+    const sum=arr.reduce((a,x)=>a+(x.score||0),0);
+    const max=arr.reduce((a,x)=>a+(x.max||0),0);
+    const pct=max>0?Math.round(sum/max*100):0;
+    return `<div style="margin-bottom:18px;border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:800;color:var(--t1)">${cat}</div>
+        <div style="font-size:12px;font-weight:700;color:#10b981">${sum}/${max}점 (${pct}%)</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead style="background:#fafafa">
+          <tr>
+            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr);width:120px">세부항목</th>
+            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준</th>
+            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:70px">점수</th>
+            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:60px">판정</th>
+            <th style="padding:7px;text-align:center;border-bottom:1px solid var(--bdr);width:100px">시점</th>
+            <th style="padding:7px;text-align:left;border-bottom:1px solid var(--bdr)">분석 / 솔루션</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${arr.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
+            <td style="padding:7px;font-weight:600;color:var(--t1)">${s.sub_item||'-'}</td>
+            <td style="padding:7px;color:var(--t2)">${s.criterion||'-'}</td>
+            <td style="padding:7px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
+            <td style="padding:7px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
+            <td style="padding:7px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
+            <td style="padding:7px;color:var(--t2);line-height:1.5">
+              ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
+              ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:1100px;width:95vw;max-height:90vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:900">${which==='ai'?'AI 독자 분석':'평가안 기준'} — 체크리스트 상세</div>
+      <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:14px">총점: <strong style="color:var(--t1)">${raw.overall_score||0}점</strong> · 항목 ${items.length}개</div>
+    ${rowsHtml}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
 // 체크리스트 드롭다운 전용 URL (교육자료 선택과 독립 저장 — 두 파일 공존 가능)
 function applyChecklistFromSelect(prefix){
   const sel=document.getElementById(prefix+'-cl-select');
@@ -5349,6 +5410,12 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     // 2) 영상 Supabase Storage 업로드
     el('an-ai-summary').textContent='영상 업로드 중... (파일 크기에 따라 30초~2분)';
     const videoUrl=await uploadAnalysisVideo(file);
+    window._anUploadedVideoUrl=videoUrl;
+    // 분석 결과 모달/재생용 비디오 엘리먼트 재설정 (Supabase URL 기반)
+    const anPlayer=el('an-player');
+    if(anPlayer){
+      anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${file.type||'video/mp4'}"></video>`;
+    }
     // 3) Vertex AI 호출 (평가안기준 + AI독자 병렬)
     el('an-ai-summary').textContent='AI 영상 분석 중... (30초~2분)';
     const tasks=[];
@@ -5481,14 +5548,17 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     kw1El.innerHTML=criteriaBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
   }
 
-  // ② 교육분석 레이더 (엑셀 기반)
+  // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
   if(hasChecklist&&r.criteriaScores?.length){
     const eduRadar=el('an-edu-radar');
     if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores);
     const eduBars=el('an-edu-bars');
     if(eduBars){
-      eduBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-        r.criteriaScores.map(c=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
+      eduBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:800">역량별 달성도</div>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--blue)" onclick="openChecklistDetail('crit')">전체 보기</button>
+      </div>`+
+        r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
           <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
         </div>`;}).join('');
@@ -5529,21 +5599,21 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     kw2El.innerHTML=aiBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
   }
 
-  const aiItems=[
-    {name:'교수설계\n및 교수법',score:r.overallScore||0,max:100},
-    {name:'내용\n전문성',score:Math.min(100,Math.round((r.focusScore||0)*1.1)),max:100},
-    {name:'소통',score:r.engagementGaps?Math.max(0,100-Math.round((r.engagementGaps.reduce((a,b)=>a+b,0)/r.engagementGaps.length-8)*5)):65,max:100},
-    {name:'코칭',score:Math.round(((r.overallScore||0)+(r.focusScore||0))/2.2),max:100},
-    {name:'프리젠\n테이션',score:r.decibel?Math.min(100,Math.round(r.decibel/75*100)):70,max:100},
-    {name:'스피치',score:r.tempo?Math.min(100,Math.round(r.tempo/155*100)):70,max:100}
-  ];
+  // AI 독자 레이더: Vertex 결과의 categories를 직접 사용 (체크리스트 대항목과 동일)
+  const aiRawCats=window._lastVertexResult?.ai?.categories||[];
+  const aiItems=aiRawCats.length
+    ? aiRawCats.map(c=>({name:c.name,score:c.score||0,max:c.max||1}))
+    : (r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
   const aiRadar=el('an-ai-radar');
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems);
   const aiBars=el('an-ai-bars');
   if(aiBars){
-    aiBars.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>'+
-      aiItems.map(c=>{const p=Math.round(c.score/c.max*100);return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
+    aiBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:800">AI 역량별 달성도</div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--blue)" onclick="openChecklistDetail('ai')">전체 보기</button>
+    </div>`+
+      aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
         <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
       </div>`;}).join('');
   }
@@ -8085,26 +8155,30 @@ function filterCoachingList(userId){
 }
 
 // 영상 모달 열기
-document.getElementById('an-video-overlay')?.addEventListener('transitionend',function(){
-  if(this.classList.contains('show')){
-    const modal=document.getElementById('an-video-modal-player');
-    if(modal&&window._anYtId) modal.innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
-    else if(modal){
-      const vid=document.getElementById('an-video-el');
-      if(vid) modal.innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${vid.querySelector('source')?.src||vid.src}"></video>`;
-      else modal.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)">영상이 등록되지 않았습니다</div>';
-    }
+function _loadAnVideoModal(){
+  const modal=document.getElementById('an-video-modal-player');
+  if(!modal) return;
+  if(window._anYtId){
+    modal.innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
+    return;
   }
+  // 우선순위: 업로드한 Supabase URL → an-video-el 내부 source
+  const uploaded=window._anUploadedVideoUrl;
+  if(uploaded){
+    modal.innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${uploaded}"></video>`;
+    return;
+  }
+  const vid=document.getElementById('an-video-el');
+  const src=vid?.querySelector('source')?.src||vid?.src||'';
+  if(src) modal.innerHTML=`<video controls autoplay style="width:100%;height:100%"><source src="${src}"></video>`;
+  else modal.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.4)">영상이 등록되지 않았습니다</div>';
+}
+document.getElementById('an-video-overlay')?.addEventListener('transitionend',function(){
+  if(this.classList.contains('show')) _loadAnVideoModal();
 });
-// show 클래스 추가 시 바로 실행 (transitionend 없을 때 대비)
 const _origOverlayShow=document.getElementById('an-video-overlay');
 if(_origOverlayShow){
-  const obs=new MutationObserver(()=>{
-    if(_origOverlayShow.classList.contains('show')){
-      const modal=document.getElementById('an-video-modal-player');
-      if(modal&&window._anYtId) modal.innerHTML=`<iframe src="https://www.youtube.com/embed/${window._anYtId}?autoplay=1" allowfullscreen allow="autoplay" style="width:100%;height:100%;border:none"></iframe>`;
-    }
-  });
+  const obs=new MutationObserver(()=>{ if(_origOverlayShow.classList.contains('show')) _loadAnVideoModal(); });
   obs.observe(_origOverlayShow,{attributes:true,attributeFilter:['class']});
 }
 function pauseAnVideo(){
