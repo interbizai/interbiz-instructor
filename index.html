@@ -1275,27 +1275,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="content-card">
   <!-- Step 1: 영상 입력 -->
   <div id="an-step1">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:900px">
-      <!-- 영상 파일 업로드 (왼쪽) -->
-      <div>
-        <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 파일 업로드</div>
-        <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-          <div class="upload-zone" onclick="document.getElementById('an-file').click()" style="padding:18px">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p id="an-file-name">클릭하여 파일 선택 (mp4, mov, webm)</p>
-          </div>
-          <input type="file" id="an-file" accept="video/*" style="display:none" onchange="el('an-file-name').textContent=this.files[0]?.name||'파일 선택'">
+    <div style="max-width:900px">
+      <!-- 영상 파일 업로드 (전체 폭) -->
+      <div style="font-size:14px;font-weight:800;margin-bottom:8px">영상 파일 업로드</div>
+      <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
+        <div class="upload-zone" onclick="document.getElementById('an-file').click()" style="padding:18px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p id="an-file-name">클릭하여 파일 선택 (mp4, mov, webm)</p>
         </div>
+        <input type="file" id="an-file" accept="video/*" style="display:none" onchange="el('an-file-name').textContent=this.files[0]?.name||'파일 선택'">
       </div>
-      <!-- YouTube 링크 (오른쪽) -->
-      <div>
-        <div style="font-size:14px;font-weight:800;margin-bottom:8px">YouTube 링크</div>
-        <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:22px;background:#fff">
-          <div class="form-group" style="margin:0">
-            <input type="text" class="form-input" id="an-youtube" placeholder="https://youtube.com/watch?v=...">
-          </div>
-        </div>
-      </div>
+      <!-- YouTube 입력 제거 — hidden 유지로 기존 로직 호환 -->
+      <input type="hidden" id="an-youtube" value="">
     </div>
     <!-- 영상 정보 -->
     <div style="max-width:900px;margin-top:18px">
@@ -1339,10 +1330,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <span style="font-size:12px;font-weight:700">평가안 / 체크리스트 (선택)</span>
           <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <label style="font-size:11px;font-weight:600;color:var(--t2);min-width:72px">체크리스트</label>
-          <select id="an-cl-select" onchange="applyChecklistFromSelect('an')" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
-            <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
+        <div class="form-group" style="margin:0 0 10px 0">
+          <label class="form-lbl">체크리스트</label>
+          <select class="form-input" id="an-cl-select" onchange="applyChecklistFromSelect('an')">
+            <option value="">선택</option>
           </select>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
@@ -1780,10 +1771,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <span style="font-size:12px;font-weight:700">평가안/체크리스트 (선택)</span>
             <a href="assets/평가안_샘플양식.html" target="_blank" style="font-size:10px;color:var(--blue)">샘플 보기</a>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-            <label style="font-size:11px;font-weight:600;color:var(--t2);min-width:62px">체크리스트</label>
-            <select id="va-cl-select" onchange="applyChecklistFromSelect('va')" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
-              <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
+          <div class="form-group" style="margin:0 0 8px 0">
+            <label class="form-lbl">체크리스트</label>
+            <select class="form-input" id="va-cl-select" onchange="applyChecklistFromSelect('va')">
+              <option value="">선택</option>
             </select>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -2522,16 +2513,12 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <label class="form-lbl">날짜</label>
         <input type="date" class="form-input" id="st-date">
       </div>
-    </div>
-    <!-- 체크리스트 선택 (교육콘텐츠 등록 항목) -->
-    <div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:700">체크리스트 (선택)</span>
-        <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
+      <div class="form-group" style="margin:0;grid-column:span 2">
+        <label class="form-lbl">체크리스트 <span style="font-size:10px;color:var(--t3);font-weight:500">(선택 · 없으면 AI 독자 분석)</span></label>
+        <select class="form-input" id="st-cl-select" onchange="applyChecklistFromSelect('st')">
+          <option value="">선택</option>
+        </select>
       </div>
-      <select id="st-cl-select" onchange="applyChecklistFromSelect('st')" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;background:#fff">
-        <option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>
-      </select>
     </div>
     <!-- 교육자료 연동 파일 -->
     <div id="st-edu-files" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px">
@@ -4954,7 +4941,7 @@ function runAnalysis(){
   const file=el('an-file').files?.[0];
   const title=v('an-title').trim();
   if(!title){ alert('영상 제목을 입력하세요.'); return; }
-  if(!yt&&!file){ alert('YouTube 링크 또는 영상 파일을 등록하세요.'); return; }
+  if(!file){ alert('영상 파일을 등록하세요.'); return; }
 
   // 영상 플레이어 세팅
   window._anYtId=null;
