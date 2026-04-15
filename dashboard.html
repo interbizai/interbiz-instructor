@@ -5027,8 +5027,12 @@ async function callVertexAnalyze({video_url,checklist_items,eval_type,edu_file_u
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({video_url,checklist_items,eval_type,edu_file_url,edu_file_mime})
   });
-  const data=await resp.json();
-  if(!resp.ok||!data.ok) throw new Error(data.error||'분석 호출 실패');
+  const raw=await resp.text();
+  let data=null;
+  try{data=JSON.parse(raw);}catch(e){
+    throw new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`);
+  }
+  if(!resp.ok||!data.ok) throw new Error(data.error||('HTTP '+resp.status));
   return data.result;
 }
 // evaluations 테이블 저장
