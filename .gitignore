@@ -1,3 +1,15 @@
 .env
+.env.local
+.env.*.local
 node_modules/
 .DS_Store
+
+# Google Cloud 서비스 계정 키 (절대 커밋 금지)
+gcp-*.json
+service-account*.json
+credentials*.json
+*-key.json
+key*.json
+
+# Vercel
+.vercel/
