@@ -1336,12 +1336,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           <span style="font-size:12px;font-weight:700">평가안 / 체크리스트 (선택)</span>
           <span style="font-size:10px;color:var(--t3)">없으면 AI 독자 분석만 적용</span>
         </div>
-        <div style="display:flex;gap:10px;align-items:center">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 직접 선택 (PDF/Excel)</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">샘플 다운로드</button>
           <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
           <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
         </div>
+        <div id="an-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700">✓ 체크리스트 적용: <span id="an-cl-applied-name"></span></div>
       </div>
     </div>
     </div>
@@ -1783,6 +1784,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
             <span style="font-size:11px;color:var(--t3)" id="va-cl-name">없음</span>
             <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('va-cl-name').textContent=this.files[0]?.name||'없음'">
           </div>
+          <div id="va-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700">✓ 체크리스트 적용: <span id="va-cl-applied-name"></span></div>
           <div style="font-size:10px;color:var(--t3);margin-top:4px">없으면 AI 독자 분석만 적용</div>
         </div>
       </div>
@@ -2525,7 +2527,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
       <div id="st-edu-file-list"></div>
     </div>
-    <div id="st-cl-applied" style="display:none;margin-top:8px;font-size:11px;color:var(--green);font-weight:600"></div>
+    <div id="st-edu-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700"></div>
+    <div id="st-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700"></div>
     <div class="auth-err" id="st-err" style="margin-top:10px"></div>
     <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="goStreamStep2()">녹화 시작 →</button>
     <div class="auth-footer" style="margin-top:12px"><a onclick="closeOverlay('stream-info-overlay')">취소</a></div>
@@ -4911,6 +4914,20 @@ function applyChecklistFromSelect(prefix){
   let nh=document.getElementById(hidId+'-name');
   if(!nh){nh=document.createElement('input');nh.type='hidden';nh.id=hidId+'-name';document.body.appendChild(nh);}
   nh.value=name;
+  // 적용 배지 표시
+  const appEl=document.getElementById(prefix+'-cl-applied');
+  const appName=document.getElementById(prefix+'-cl-applied-name');
+  if(appEl){
+    if(url){
+      appEl.style.display='block';
+      if(appName) appName.textContent=name;
+      else appEl.textContent='✓ 체크리스트 적용: '+name;
+    } else {
+      appEl.style.display='none';
+      if(appName) appName.textContent='';
+      else appEl.textContent='';
+    }
+  }
 }
 function applyEduFile(url,name){
   document.getElementById('an-checklist-name').textContent=name+' (교육자료 적용)';
@@ -6728,6 +6745,7 @@ function openStreamModal(){
   }
   const stEdu=document.getElementById('st-edu-files');if(stEdu)stEdu.style.display='none';
   const stApplied=document.getElementById('st-cl-applied');if(stApplied){stApplied.style.display='none';stApplied.textContent='';}
+  const stEduApplied=document.getElementById('st-edu-applied');if(stEduApplied){stEduApplied.style.display='none';stEduApplied.textContent='';}
   el('stream-info-overlay').classList.add('show');
 }
 function loadStreamEduFiles(){
@@ -6751,8 +6769,8 @@ function applyStreamEduFile(url,name){
   }
   document.getElementById('st-checklist-url').value=url;
   document.getElementById('st-edu-files').style.display='none';
-  const badge=document.getElementById('st-cl-applied');
-  if(badge){badge.style.display='block';badge.textContent='평가안 적용: '+name;}
+  const badge=document.getElementById('st-edu-applied');
+  if(badge){badge.style.display='block';badge.textContent='✓ 교육자료 적용: '+name;}
 }
 
 let audioCtx=null, analyser=null, animFrameId=null;
