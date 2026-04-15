@@ -194,8 +194,19 @@ export default async function handler(req, res) {
       },
     });
 
+    // 영상을 inlineData(base64)로 전달
+    // Vertex AI는 video fileUri를 gs:// 만 받음 — Supabase HTTPS URL 미지원
+    // 임시: 서버에서 영상을 fetch → base64 → inlineData (~15MB 이내 영상만 가능)
+    const vresp = await fetch(video_url);
+    if (!vresp.ok) return res.status(502).json({ ok: false, error: `영상 다운로드 실패(${vresp.status}): ${video_url}` });
+    const vbuf = Buffer.from(await vresp.arrayBuffer());
+    const vMaxMB = 18;
+    if (vbuf.byteLength > vMaxMB * 1024 * 1024) {
+      return res.status(413).json({ ok: false, error: `영상 크기 ${Math.round(vbuf.byteLength/1024/1024)}MB 초과 (${vMaxMB}MB 이하 필요). 더 작은 영상 사용 또는 GCS 전환 필요.` });
+    }
+    const videoMime = vresp.headers.get('content-type') || 'video/mp4';
     const parts = [
-      { fileData: { mimeType: 'video/mp4', fileUri: video_url } },
+      { inlineData: { mimeType: videoMime, data: vbuf.toString('base64') } },
     ];
     let eduInlineText = '';
     if (eval_type === '평가안기준' && edu_file_url) {
