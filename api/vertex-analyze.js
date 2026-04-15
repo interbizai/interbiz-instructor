@@ -133,8 +133,10 @@ ${JSON.stringify(checklistSpec, null, 2)}
 }
 
 # good/bad/upgrade 개수 규칙
-- good 최소 3개, bad 최소 3개, upgrade 최소 3개 (각각 최대 5개)
-- scenarios/level_tips/teaching_patterns: 각 3~5개
+- good/bad/upgrade: 각 3개 (정확히)
+- scenarios/level_tips/teaching_patterns: 각 3개 (정확히)
+- 각 문자열 필드는 간결하게 (분석/솔루션은 1~2문장, 40~80자 내외 권장)
+- sub_scores는 체크리스트의 모든 세부항목을 빠짐없이 포함하되 analysis/solution을 간결하게 작성
 
 ${
   evalType === 'AI독자'
@@ -192,7 +194,7 @@ export default async function handler(req, res) {
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.3,
-        maxOutputTokens: 16384,
+        maxOutputTokens: 32768,
       },
     });
 
@@ -256,14 +258,27 @@ export default async function handler(req, res) {
 
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch (e) {
-      return res.status(502).json({
-        ok: false,
-        error: `AI 응답 JSON 파싱 실패 (finishReason=${finishReason})`,
-        raw_head: text.slice(0, 500),
-        raw_tail: text.slice(-500),
-        raw_length: text.length,
-        parse_error: e.message,
-      });
+      // MAX_TOKENS로 잘린 경우: 불완전 JSON 복구 시도 (열린 괄호 닫기)
+      if (finishReason === 'MAX_TOKENS') {
+        let fix = cleaned.replace(/,\s*$/, '');
+        const openObj = (fix.match(/\{/g) || []).length - (fix.match(/\}/g) || []).length;
+        const openArr = (fix.match(/\[/g) || []).length - (fix.match(/\]/g) || []).length;
+        const openStr = (fix.match(/"/g) || []).length % 2;
+        if (openStr) fix += '"';
+        for (let i = 0; i < openArr; i++) fix += ']';
+        for (let i = 0; i < openObj; i++) fix += '}';
+        try { parsed = JSON.parse(fix); } catch (e2) {}
+      }
+      if (!parsed) {
+        return res.status(502).json({
+          ok: false,
+          error: `AI 응답 JSON 파싱 실패 (finishReason=${finishReason})`,
+          raw_head: text.slice(0, 500),
+          raw_tail: text.slice(-500),
+          raw_length: text.length,
+          parse_error: e.message,
+        });
+      }
     }
 
     return res.status(200).json({ ok: true, eval_type, model, result: parsed });
