@@ -1354,6 +1354,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <!-- Step 2: 분석 결과 -->
   <div id="an-step2" style="display:none">
 
+    <!-- ⓪ 평가 제목 (영상 보기 위) -->
+    <div id="an-result-title-wrap" style="margin-bottom:14px;padding:14px 18px;background:#fff;border:1px solid var(--bdr);border-radius:12px;display:flex;align-items:center;gap:10px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span style="font-size:11px;font-weight:700;color:var(--t3)">평가 제목</span>
+      <span id="an-result-title" style="font-size:15px;font-weight:800;color:var(--t1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+    </div>
+
     <!-- ① 총점 배너: 평가안 (위, 주황) + 영상보기 (중간) + AI 독자 (아래, 로즈) -->
     <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);position:relative">
       <!-- 평가안 기준 -->
@@ -4919,6 +4926,7 @@ function runAnalysis(){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb=el('an-pdf-btn');if(apb)apb.style.display='';
+  var artEl=el('an-result-title');if(artEl) artEl.textContent=title||'—';
 
   // 로딩 표시
   el('an-ai-summary').textContent='AI 분석 중... 잠시만 기다려주세요';
@@ -6872,6 +6880,7 @@ function finishStreamRecord(){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb2=el('an-pdf-btn');if(apb2)apb2.style.display='';
+  var artEl2=el('an-result-title');if(artEl2) artEl2.textContent=(v('an-title')||'').trim()||'—';
 
   // 영상 플레이어
   if(streamBlob){
@@ -8434,6 +8443,7 @@ function openVideo(id){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb3=el('an-pdf-btn');if(apb3)apb3.style.display='';
+  var artEl3=el('an-result-title');if(artEl3) artEl3.textContent=vid.title||'—';
 
   // 영상 플레이어
   window._anYtId=null;
