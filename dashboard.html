@@ -5004,8 +5004,81 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
 /* ════════════════════════════════
    ANALYSIS PAGE (영상등록 분석)
 ════════════════════════════════ */
-// Gemini API Key (코드에 직접 설정)
-const GEMINI_KEY='AIzaSyCaE_-2YbUPd0Fa_6GsigMnj9KtpM7omg8';
+// ── Vertex AI 서버 프록시 헬퍼 ──────────────────────────
+// 영상 Supabase Storage 업로드 → public URL 반환 (한글 금지, 타임스탬프 파일명)
+async function uploadAnalysisVideo(file){
+  const ext=(file.name.split('.').pop()||'mp4').toLowerCase();
+  const path=`videos/analysis/${Date.now()}.${ext}`;
+  const{error:ue}=await sb.storage.from('files').upload(path,file,{contentType:file.type||'video/mp4'});
+  if(ue) throw new Error('영상 업로드 실패: '+ue.message);
+  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+  return publicUrl;
+}
+// 체크리스트 세부 항목 로드
+async function loadChecklistItemsForEval(checklistId){
+  if(!checklistId) return [];
+  const{data,error}=await sb.from('checklist_items').select('*').eq('checklist_id',checklistId).order('sort_order');
+  if(error) throw new Error('체크리스트 항목 로드 실패: '+error.message);
+  return data||[];
+}
+// /api/vertex-analyze 호출
+async function callVertexAnalyze({video_url,checklist_items,eval_type,edu_file_url,edu_file_mime}){
+  const resp=await fetch('/api/vertex-analyze',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({video_url,checklist_items,eval_type,edu_file_url,edu_file_mime})
+  });
+  const data=await resp.json();
+  if(!resp.ok||!data.ok) throw new Error(data.error||'분석 호출 실패');
+  return data.result;
+}
+// evaluations 테이블 저장
+async function saveEvaluation({videoId,checklistId,eduFileUrl,evalType,result}){
+  const payload={
+    video_id:videoId||null, checklist_id:checklistId||null,
+    edu_file_url:eduFileUrl||null, eval_type:evalType,
+    overall_score:result.overall_score||0,
+    categories:result.categories||[], sub_scores:result.sub_scores||[],
+    good:result.good||[], bad:result.bad||[], upgrade:result.upgrade||[],
+    scenarios:result.scenarios||[], level_tips:result.level_tips||[],
+    teaching_patterns:result.teaching_patterns||[],
+    mood:result.mood||null, decibel:result.decibel||null, tempo:result.tempo_wpm||null,
+    habits:result.habits||[], engagement_gaps:result.engagement_gaps_minutes||[]
+  };
+  const{error}=await sb.from('evaluations').insert(payload);
+  if(error) console.error('evaluations 저장 실패',error);
+}
+// 새 응답 포맷 → 기존 렌더러 포맷 매핑 (호환 레이어)
+function mapVertexToLegacy(critRes,aiRes){
+  const pick=r=>r||{};
+  const c=pick(critRes), a=pick(aiRes);
+  const main=c.sub_scores?.length?c:a; // 평가안 있으면 그걸 메인, 아니면 AI독자
+  const criteriaScores=(main.categories||[]).map(x=>({name:x.name,score:x.score||0,max:x.max||0}));
+  const timestamps=(main.sub_scores||[]).map(s=>({
+    category:s.category, item:s.sub_item, score:s.score||0, maxScore:s.max||0,
+    t:s.timestamp||'', type: s.level==='good'?'good':s.level==='bad'?'bad':'tip',
+    text:s.analysis||'', solution:s.solution||'', tags:[]
+  }));
+  return {
+    criteriaScores, timestamps,
+    criteriaSummary:(c.good?.[0]?.title)||'',
+    overallScore:c.overall_score||a.overall_score||0,
+    focusScore:a.overall_score||c.overall_score||0,
+    overallComment:(c.upgrade?.[0]?.detail)||'',
+    focusComment:(a.upgrade?.[0]?.detail)||'',
+    habits:(a.habits||c.habits||[]).map(h=>({word:h.word,count:h.count||0,timestamps:h.timestamps||[],solution:h.solution||''})),
+    decibel:a.decibel||c.decibel||0, decibelStatus:'적정',
+    tempo:a.tempo_wpm||c.tempo_wpm||0, tempoStatus:'적정',
+    engagementGaps:a.engagement_gaps_minutes||c.engagement_gaps_minutes||[],
+    engagementWarning:'',
+    scenarios:(c.scenarios||[]).map(s=>`${s.situation}: "${s.original_line}" → "${s.suggested_line}"`),
+    levelUpTips:(c.level_tips||[]).map(t=>({title:t.title,text:t.detail})),
+    speechTips:(c.teaching_patterns||[]).map(t=>({title:t.type,text:t.original+' → '+t.alternative})),
+    good:main.good||[], bad:main.bad||[], upgrade:main.upgrade||[],
+    solution:(main.bad||[]).map((b,i)=>`${i+1}. ${b.title}: ${b.solution}`).join('<br>'),
+    scenario:(c.scenarios||[]).map(s=>`${s.situation}: ${s.suggested_line}`).join('<br>'),
+    _critRaw:c, _aiRaw:a
+  };
+}
 
 /* ════════════════════════════════
    EXCEL SAMPLE DOWNLOAD
@@ -5254,69 +5327,48 @@ function runAnalysis(){
 }
 
 async function generateAIAnalysis(title,studentCount,hasChecklist){
-  const yt=v('an-youtube').trim();
-  const videoInfo=yt?`YouTube URL: ${yt}`:'업로드된 영상 파일';
-
-  const prompt=`당신은 interbiz 현장강사 역량 평가 AI입니다. 아래 강의 영상 정보를 기반으로 정밀 분석해주세요.
-
-영상 제목: ${title}
-교육생 인원: ${studentCount}명
-영상 정보: ${videoInfo}
-평가안 유무: ${hasChecklist?'있음 (업로드됨)':'없음'}
-
-반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-{
-  "criteriaScores": ${hasChecklist?'[{"name":"발성 및 전달력","score":0,"max":20},{"name":"내용 전문성","score":0,"max":25},{"name":"판서 및 자료","score":0,"max":15},{"name":"수강생 상호작용","score":0,"max":20},{"name":"시간 관리","score":0,"max":10},{"name":"마무리 및 요약","score":0,"max":10}]':'[]'},
-  "criteriaSummary": "${hasChecklist?'평가안 기준 종합 평가 한줄 작성':''}",
-  "overallScore": 0,
-  "focusScore": 0,
-  "overallComment": "강의 구성력에 대한 한줄 코멘트",
-  "focusComment": "수강생 집중도에 대한 한줄 코멘트",
-  "habits": [{"word":"감지된 반복어","count":0}],
-  "decibel": 0,
-  "decibelStatus": "적정 또는 조정 필요",
-  "tempo": 0,
-  "tempoStatus": "적정 또는 조정 필요",
-  "engagementGaps": [0,0,0,0],
-  "engagementWarning": "환기 관련 경고 메시지",
-  "timestamps": [
-    {"category":"구분명","item":"평가 항목명","score":5,"maxScore":5,"t":"mm:ss~mm:ss","type":"good","text":"분석 피드백","solution":"못한 경우 개선 솔루션 (잘한 경우 빈 문자열)","tags":["태그"]}
-  ],
-  "solution": "종합 개선 솔루션 4가지 (줄바꿈은 <br>로)",
-  "scenario": "다음 강의 추천 시나리오 (줄바꿈은 <br>로)",
-  "scenarios": ["영상에서 이렇게 말했지만 이렇게 바꾸면 좋겠다는 대안 시나리오 3개"],
-  "levelUpTips": [{"title":"TIP 제목","text":"구체적 설명"}],
-  "speechTips": [{"title":"화법 제목","text":"추천 화법 설명"}]
-}
-
-타임스탬프는 최소 8~12개를 생성하되, good/bad/tip을 골고루 배분하세요.
-category는 니즈파악/제품상담/맞춤케어/AI공기청정/편리성/사용경험비교 등 구분을 넣으세요.
-score는 항목별 5점 만점, 중요 항목은 10점 만점으로 하세요.
-t는 "mm:ss ~ mm:ss" 시작~종료 시간 범위로 작성하세요.
-type이 bad일 때는 solution에 구체적 개선 방법을 작성하세요.
-점수는 현실적으로 작성하고, 교육생 인원수에 맞는 데시벨/템포를 권장하세요.
-반복어는 한국어 강의에서 흔한 것 위주로 2~5개 감지하세요.`;
-
-  try {
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{temperature:0.7,maxOutputTokens:4000}
-      })
-    });
-    const data=await resp.json();
-    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    // JSON 블록 추출
-    const jsonMatch=txt.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('JSON not found');
-    const json=JSON.parse(jsonMatch[0]);
-    renderAnalysisResult(json,hasChecklist,studentCount);
-    autoSaveAnalysis(json);
-  } catch(e){
-    console.error('Gemini API error:',e);
-    // API 에러 시 → 자체 생성 (Mock)
+  const file=el('an-file').files?.[0];
+  const checklistId=parseInt(document.getElementById('an-cl-select')?.value||'0')||null;
+  const eduFileUrl=document.getElementById('an-checklist-url')?.value||'';
+  if(!file){
+    alert('영상 파일이 없습니다.');
+    return;
+  }
+  try{
+    // 1) 체크리스트 항목 로드 (필수)
+    el('an-ai-summary').textContent='체크리스트 로드 중...';
+    const checklistItems=await loadChecklistItemsForEval(checklistId);
+    if(!checklistItems.length){
+      alert('체크리스트를 선택하세요. 교육콘텐츠에 체크리스트 등록 후 다시 시도해주세요.');
+      return;
+    }
+    // 2) 영상 Supabase Storage 업로드
+    el('an-ai-summary').textContent='영상 업로드 중... (파일 크기에 따라 30초~2분)';
+    const videoUrl=await uploadAnalysisVideo(file);
+    // 3) Vertex AI 호출 (평가안기준 + AI독자 병렬)
+    el('an-ai-summary').textContent='AI 영상 분석 중... (30초~2분)';
+    const tasks=[];
+    const hasEdu=!!eduFileUrl;
+    tasks.push(callVertexAnalyze({
+      video_url:videoUrl, checklist_items:checklistItems, eval_type:'평가안기준',
+      edu_file_url:hasEdu?eduFileUrl:undefined,
+      edu_file_mime:hasEdu?(eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/pdf'):undefined
+    }));
+    tasks.push(callVertexAnalyze({
+      video_url:videoUrl, checklist_items:checklistItems, eval_type:'AI독자'
+    }));
+    const [critResult,aiResult]=await Promise.all(tasks);
+    // 4) evaluations 테이블 저장 (video_id는 여기서 아직 없으므로 null — 저장 후 연결은 후속)
+    saveEvaluation({videoId:null,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult});
+    saveEvaluation({videoId:null,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult});
+    // 5) 기존 렌더러 포맷으로 매핑 후 렌더
+    const mapped=mapVertexToLegacy(critResult,aiResult);
+    renderAnalysisResult(mapped,true,studentCount);
+    autoSaveAnalysis(mapped);
+    window._lastVertexResult={crit:critResult,ai:aiResult};
+  }catch(e){
+    console.error('Vertex AI 분석 실패:',e);
+    alert('AI 분석 실패: '+e.message+'\n\n임시로 목업 데이터를 표시합니다.');
     const mock=generateMockResult(studentCount);
     renderAnalysisResult(mock,hasChecklist,studentCount);
     autoSaveAnalysis(mock);
