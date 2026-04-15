@@ -5,24 +5,40 @@ export const config = { maxDuration: 30 };
 export default async function handler(req, res) {
   const mode = (req.query.mode || '').toString();
 
-  const projectId = process.env.GCP_PROJECT_ID;
-  const clientEmail = process.env.GCP_CLIENT_EMAIL;
-  const rawKey = process.env.GCP_PRIVATE_KEY || '';
-  const privateKey = rawKey.replace(/\\n/g, '\n');
+  let projectId = process.env.GCP_PROJECT_ID;
+  let clientEmail = process.env.GCP_CLIENT_EMAIL;
+  let rawKey = process.env.GCP_PRIVATE_KEY || '';
+  let privateKey = rawKey.replace(/\\n/g, '\n');
+
+  // ── 통합 방식: GCP_CREDENTIALS_JSON 하나에 JSON 전체가 들어온 경우 우선 사용 ──
+  const credJson = process.env.GCP_CREDENTIALS_JSON;
+  let credSource = 'split';
+  if (credJson) {
+    try {
+      const parsed = JSON.parse(credJson);
+      projectId = parsed.project_id || projectId;
+      clientEmail = parsed.client_email || clientEmail;
+      privateKey = (parsed.private_key || '').replace(/\\n/g, '\n');
+      rawKey = privateKey;
+      credSource = 'unified-json';
+    } catch (e) {
+      credSource = 'unified-json-parse-failed:' + e.message;
+    }
+  }
 
   // ── 진단 모드: 환경변수 상태만 리턴 (값은 마스킹) ───────────────
   if (mode === 'diag') {
     return res.status(200).json({
       ok: true,
       mode: 'diag',
+      cred_source: credSource,
+      has_unified_json: !!credJson,
+      unified_json_length: credJson ? credJson.length : 0,
       project_id: projectId || null,
       client_email_masked: clientEmail ? clientEmail.replace(/(.{4}).+(@.+)/, '$1***$2') : null,
-      private_key_raw_length: rawKey.length,
-      private_key_after_replace_length: privateKey.length,
+      private_key_length: privateKey.length,
       private_key_starts_with_begin: privateKey.startsWith('-----BEGIN PRIVATE KEY-----'),
       private_key_ends_with_end: privateKey.trimEnd().endsWith('-----END PRIVATE KEY-----'),
-      private_key_has_literal_backslash_n: rawKey.includes('\\n'),
-      private_key_has_real_newline: rawKey.includes('\n'),
       private_key_line_count: privateKey.split('\n').length,
     });
   }
