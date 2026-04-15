@@ -153,6 +153,8 @@ export default async function handler(req, res) {
   try {
     const {
       video_url,
+      video_gcs_uri,
+      video_mime = 'video/mp4',
       checklist_items,
       eval_type,
       edu_file_url,
@@ -160,7 +162,7 @@ export default async function handler(req, res) {
       model = 'gemini-2.5-flash',
     } = req.body || {};
 
-    if (!video_url) return res.status(400).json({ ok: false, error: 'video_url 필요' });
+    if (!video_url && !video_gcs_uri) return res.status(400).json({ ok: false, error: 'video_url 또는 video_gcs_uri 필요' });
     if (!Array.isArray(checklist_items) || !checklist_items.length)
       return res.status(400).json({ ok: false, error: 'checklist_items 필요' });
     if (!eval_type || !['평가안기준', 'AI독자'].includes(eval_type))
@@ -194,20 +196,22 @@ export default async function handler(req, res) {
       },
     });
 
-    // 영상을 inlineData(base64)로 전달
-    // Vertex AI는 video fileUri를 gs:// 만 받음 — Supabase HTTPS URL 미지원
-    // 임시: 서버에서 영상을 fetch → base64 → inlineData (~15MB 이내 영상만 가능)
-    const vresp = await fetch(video_url);
-    if (!vresp.ok) return res.status(502).json({ ok: false, error: `영상 다운로드 실패(${vresp.status}): ${video_url}` });
-    const vbuf = Buffer.from(await vresp.arrayBuffer());
-    const vMaxMB = 18;
-    if (vbuf.byteLength > vMaxMB * 1024 * 1024) {
-      return res.status(413).json({ ok: false, error: `영상 크기 ${Math.round(vbuf.byteLength/1024/1024)}MB 초과 (${vMaxMB}MB 이하 필요). 더 작은 영상 사용 또는 GCS 전환 필요.` });
+    // 우선순위: gs:// URI(GCS) → fileData 직접 전달 (크기 제한 없음)
+    // 폴백: HTTPS URL → inlineData(base64) (~18MB 이내만)
+    const parts = [];
+    if (video_gcs_uri) {
+      parts.push({ fileData: { mimeType: video_mime, fileUri: video_gcs_uri } });
+    } else {
+      const vresp = await fetch(video_url);
+      if (!vresp.ok) return res.status(502).json({ ok: false, error: `영상 다운로드 실패(${vresp.status}): ${video_url}` });
+      const vbuf = Buffer.from(await vresp.arrayBuffer());
+      const vMaxMB = 18;
+      if (vbuf.byteLength > vMaxMB * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: `영상 크기 ${Math.round(vbuf.byteLength/1024/1024)}MB 초과 (${vMaxMB}MB 이하). GCS(gs://) 경로 사용 권장.` });
+      }
+      const videoMime = vresp.headers.get('content-type') || 'video/mp4';
+      parts.push({ inlineData: { mimeType: videoMime, data: vbuf.toString('base64') } });
     }
-    const videoMime = vresp.headers.get('content-type') || 'video/mp4';
-    const parts = [
-      { inlineData: { mimeType: videoMime, data: vbuf.toString('base64') } },
-    ];
     let eduInlineText = '';
     if (eval_type === '평가안기준' && edu_file_url) {
       const edu = await fetchEduMaterial(edu_file_url, edu_file_mime || '');

@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@google-cloud/vertexai": "^1.10.0",
+    "@google-cloud/storage": "^7.13.0",
     "mammoth": "^1.8.0",
     "xlsx": "^0.18.5"
   }

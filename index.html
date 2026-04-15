@@ -5005,14 +5005,27 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
    ANALYSIS PAGE (영상등록 분석)
 ════════════════════════════════ */
 // ── Vertex AI 서버 프록시 헬퍼 ──────────────────────────
-// 영상 Supabase Storage 업로드 → public URL 반환 (한글 금지, 타임스탬프 파일명)
+// 영상 GCS 직접 업로드 (무제한 크기, Vertex에 gs:// URI로 전달 가능)
+// 반환: { public_url, gcs_uri }
 async function uploadAnalysisVideo(file){
-  const ext=(file.name.split('.').pop()||'mp4').toLowerCase();
-  const path=`videos/analysis/${Date.now()}.${ext}`;
-  const{error:ue}=await sb.storage.from('files').upload(path,file,{contentType:file.type||'video/mp4'});
-  if(ue) throw new Error('영상 업로드 실패: '+ue.message);
-  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  return publicUrl;
+  // 1) 서버에서 V4 Signed URL 발급
+  const sigResp=await fetch('/api/gcs-upload-url',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filename:file.name||'video.mp4', content_type:file.type||'video/mp4', folder:'videos/analysis'})
+  });
+  const sigRaw=await sigResp.text();
+  let sig=null;
+  try{sig=JSON.parse(sigRaw);}catch(e){throw new Error(`업로드 URL 발급 실패(HTTP ${sigResp.status}): ${sigRaw.slice(0,200)}`);}
+  if(!sigResp.ok||!sig.ok) throw new Error(sig.error||'업로드 URL 발급 실패');
+  // 2) 클라이언트가 PUT으로 GCS에 직접 업로드
+  const putResp=await fetch(sig.upload_url,{
+    method:'PUT', headers:{'Content-Type':file.type||'video/mp4'}, body:file
+  });
+  if(!putResp.ok){
+    const err=await putResp.text().catch(()=>'');
+    throw new Error(`GCS 업로드 실패(HTTP ${putResp.status}): ${err.slice(0,200)}`);
+  }
+  return {public_url:sig.public_url, gcs_uri:sig.gcs_uri, mime:file.type||'video/mp4'};
 }
 // 체크리스트 세부 항목 로드
 async function loadChecklistItemsForEval(checklistId){
@@ -5022,10 +5035,10 @@ async function loadChecklistItemsForEval(checklistId){
   return data||[];
 }
 // /api/vertex-analyze 호출
-async function callVertexAnalyze({video_url,checklist_items,eval_type,edu_file_url,edu_file_mime}){
+async function callVertexAnalyze({video_url,video_gcs_uri,video_mime,checklist_items,eval_type,edu_file_url,edu_file_mime}){
   const resp=await fetch('/api/vertex-analyze',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({video_url,checklist_items,eval_type,edu_file_url,edu_file_mime})
+    body:JSON.stringify({video_url,video_gcs_uri,video_mime,checklist_items,eval_type,edu_file_url,edu_file_mime})
   });
   const raw=await resp.text();
   let data=null;
@@ -5407,26 +5420,31 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       alert('체크리스트를 선택하세요. 교육콘텐츠에 체크리스트 등록 후 다시 시도해주세요.');
       return;
     }
-    // 2) 영상 Supabase Storage 업로드
-    el('an-ai-summary').textContent='영상 업로드 중... (파일 크기에 따라 30초~2분)';
-    const videoUrl=await uploadAnalysisVideo(file);
+    // 2) 영상 GCS 업로드 (무제한 크기, gs:// URI 반환)
+    el('an-ai-summary').textContent='영상 업로드 중... (파일 크기에 따라 30초~5분)';
+    const up=await uploadAnalysisVideo(file);
+    const videoUrl=up.public_url;
+    const videoGcsUri=up.gcs_uri;
+    const videoMime=up.mime;
     window._anUploadedVideoUrl=videoUrl;
-    // 분석 결과 모달/재생용 비디오 엘리먼트 재설정 (Supabase URL 기반)
+    window._anUploadedGcsUri=videoGcsUri;
     const anPlayer=el('an-player');
     if(anPlayer){
-      anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${file.type||'video/mp4'}"></video>`;
+      anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${videoMime}"></video>`;
     }
     // 3) Vertex AI 호출 (평가안기준 + AI독자 병렬)
     el('an-ai-summary').textContent='AI 영상 분석 중... (30초~2분)';
     const tasks=[];
     const hasEdu=!!eduFileUrl;
     tasks.push(callVertexAnalyze({
-      video_url:videoUrl, checklist_items:checklistItems, eval_type:'평가안기준',
+      video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime,
+      checklist_items:checklistItems, eval_type:'평가안기준',
       edu_file_url:hasEdu?eduFileUrl:undefined,
       edu_file_mime:hasEdu?(eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/pdf'):undefined
     }));
     tasks.push(callVertexAnalyze({
-      video_url:videoUrl, checklist_items:checklistItems, eval_type:'AI독자'
+      video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime,
+      checklist_items:checklistItems, eval_type:'AI독자'
     }));
     const [critResult,aiResult]=await Promise.all(tasks);
     // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
