@@ -2663,6 +2663,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 <!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
 console.log('=== JS LOADED ===');
@@ -3455,14 +3456,20 @@ function renderEduPage(){
       <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
       <input type="date" id="edu-cl-date" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
       <select id="edu-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
         ${catsForSelect.map(c=>`<option value="${c}">${c}</option>`).join('')}
       </select>
-      <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="document.getElementById('edu-cl-fname').textContent=this.files[0]?.name||''">
+      <select id="edu-cl-type" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
+        <option value="">체크리스트 타입 (해당 시)</option>
+        <option value="standard">표준 (영상/스트리밍용)</option>
+        <option value="speech">스피치 (스피치용)</option>
+      </select>
+      <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="onChecklistFileSelected(this)">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-cl-file').click()">파일 선택</button>
       <span id="edu-cl-fname" style="font-size:10px;color:var(--t3)"></span>
     </div>
+    <div id="edu-cl-preview" style="display:none;margin-bottom:10px;padding:10px;background:#fff;border:1px solid var(--bdr);border-radius:8px"></div>
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
   // 카테고리별 그룹 + 최신순
@@ -3535,19 +3542,140 @@ function renderEduPage(){
   lkHtml+='</div>';
   lkArea.innerHTML=lkHtml;
 }
+// ── 체크리스트 엑셀 파서 ─────────────────────────────
+// 컬럼 매핑: 대항목 / 세부항목 / 평가기준(체크리스트) / 배점 / 평가기준 상세
+window._parsedChecklistItems=null;
+function onChecklistFileSelected(input){
+  const file=input.files?.[0];
+  const nameEl=document.getElementById('edu-cl-fname');
+  if(nameEl) nameEl.textContent=file?.name||'';
+  const prevEl=document.getElementById('edu-cl-preview');
+  window._parsedChecklistItems=null;
+  if(!file){if(prevEl){prevEl.style.display='none';prevEl.innerHTML='';}return;}
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(ext!=='xlsx'&&ext!=='xls'){
+    if(prevEl){prevEl.style.display='block';prevEl.innerHTML='<div style="font-size:11px;color:var(--t3)">엑셀 외 파일은 파싱 없이 원본만 저장됩니다.</div>';}
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const items=parseChecklistRows(rows);
+      window._parsedChecklistItems=items;
+      renderChecklistPreview(items);
+    }catch(err){
+      if(prevEl){prevEl.style.display='block';prevEl.innerHTML=`<div style="font-size:11px;color:var(--red)">엑셀 파싱 실패: ${err.message}</div>`;}
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function parseChecklistRows(rows){
+  // 헤더 행 찾기
+  let headerIdx=-1, colMap={};
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const r=rows[i].map(c=>String(c||'').trim());
+    const find=(kws)=>r.findIndex(c=>kws.some(k=>c.includes(k)));
+    const ci={
+      category: find(['대항목','대분류']),
+      sub_item: find(['세부항목','세부']),
+      criterion: find(['평가기준','체크리스트','질문']),
+      max_score: find(['배점','점수']),
+      detail: find(['평가기준 상세','상세','기준 상세']),
+    };
+    if(ci.category>=0 && ci.sub_item>=0 && ci.criterion>=0 && ci.max_score>=0){
+      headerIdx=i; colMap=ci; break;
+    }
+  }
+  if(headerIdx<0) throw new Error('헤더(대항목/세부항목/평가기준/배점) 컬럼을 찾지 못했습니다.');
+  const items=[];
+  let sort=0;
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    const cat=String(r[colMap.category]||'').trim();
+    const sub=String(r[colMap.sub_item]||'').trim();
+    const cri=String(r[colMap.criterion]||'').trim();
+    const scoreRaw=r[colMap.max_score];
+    const detail=colMap.detail>=0?String(r[colMap.detail]||'').trim():'';
+    if(!cat&&!sub&&!cri) continue;
+    const score=parseInt(scoreRaw)||0;
+    if(!cat||!sub||!cri||score<=0) continue;
+    items.push({category:cat,sub_item:sub,criterion:cri,max_score:score,detail,sort_order:sort++});
+  }
+  return items;
+}
+function renderChecklistPreview(items){
+  const el=document.getElementById('edu-cl-preview');
+  if(!el) return;
+  const sum=items.reduce((a,x)=>a+x.max_score,0);
+  const ok=sum===100;
+  el.style.display='block';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700">파싱 미리보기 — ${items.length}개 항목</div>
+      <div style="font-size:12px;font-weight:800;color:${ok?'var(--green)':'var(--red)'}">배점 합계: ${sum}점 ${ok?'✓':'(100점 필요)'}</div>
+    </div>
+    <div style="max-height:220px;overflow-y:auto;border:1px solid var(--bdr);border-radius:6px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead style="background:#f8f9fa;position:sticky;top:0">
+          <tr>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">대항목</th>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">세부항목</th>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준</th>
+            <th style="padding:6px;text-align:center;border-bottom:1px solid var(--bdr);width:50px">배점</th>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준 상세</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(x=>`<tr>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);font-weight:600">${x.category}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04)">${x.sub_item}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);color:var(--t2)">${x.criterion}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);text-align:center;font-weight:700">${x.max_score}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);color:var(--t3);font-size:10px">${x.detail||''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
 async function uploadEduChecklist(){
   const name=document.getElementById('edu-cl-name')?.value?.trim();
   const file=document.getElementById('edu-cl-file')?.files?.[0];
   if(!name||!file){alert('자료명과 파일을 입력하세요');return;}
+  const cat=document.getElementById('edu-cl-cat')?.value||'체크리스트';
+  const type=document.getElementById('edu-cl-type')?.value||null;
+  const items=window._parsedChecklistItems;
+  // 체크리스트 카테고리면 파싱 결과 + 배점 100 검증 필수
+  if(cat==='체크리스트'){
+    if(!items||!items.length){alert('체크리스트 엑셀을 업로드하고 파싱 결과를 확인하세요.');return;}
+    const sum=items.reduce((a,x)=>a+x.max_score,0);
+    if(sum!==100){alert(`배점 합계가 ${sum}점입니다. 100점이어야 합니다.`);return;}
+    if(!type){alert('체크리스트 타입(표준/스피치)을 선택하세요.');return;}
+  }
   const ext=file.name.split('.').pop()||'file';
   const path=`checklists/${Date.now()}.${ext}`;
   const{error:ue}=await sb.storage.from('files').upload(path,file);
   if(ue){alert('업로드 실패: '+ue.message);return;}
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  const cat=document.getElementById('edu-cl-cat')?.value||'체크리스트';
-  const dt=document.getElementById('edu-cl-date')?.value||new Date().toISOString().split('T')[0];
-  const{error:dbErr}=await sb.from('checklist_files').insert({name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'});
+  const insertPayload={name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'};
+  if(type) insertPayload.type=type;
+  const{data:inserted,error:dbErr}=await sb.from('checklist_files').insert(insertPayload).select().single();
   if(dbErr){alert('DB 저장 실패: '+dbErr.message);return;}
+  // 체크리스트 세부 항목 저장
+  if(cat==='체크리스트' && items?.length && inserted?.id){
+    const itemsPayload=items.map(x=>({
+      checklist_id:inserted.id,
+      category:x.category, sub_item:x.sub_item, criterion:x.criterion,
+      max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order
+    }));
+    const{error:itErr}=await sb.from('checklist_items').insert(itemsPayload);
+    if(itErr){alert('항목 저장 실패: '+itErr.message+'\n파일은 등록됐습니다. 항목만 재시도해주세요.');}
+  }
+  window._parsedChecklistItems=null;
+  const prevEl=document.getElementById('edu-cl-preview');if(prevEl){prevEl.style.display='none';prevEl.innerHTML='';}
   await loadFromDB();renderEduPage();alert('등록 완료');
 }
 async function addEduLink(){
@@ -4885,17 +5013,21 @@ function loadEduFilesForCategory(){
     <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
   </div>`).join('');
 }
-// 교육콘텐츠 > 교육자료 중 '체크리스트' 카테고리 파일만 드롭다운에 채우기 (3곳 공용: an/va/st)
+// 교육콘텐츠 > 체크리스트 중 타입별 필터 (영상/스트리밍=standard, 스피치=speech)
 function populateChecklistSelects(){
-  const items=[...(D.checklists||[])]
-    .filter(c=>(c.category||'')==='체크리스트')
-    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  let html='<option value="">선택</option>';
-  items.forEach(c=>{
-    const esc=(c.name||'').replace(/"/g,'&quot;');
-    html+=`<option value="${c.id}" data-url="${c.file_url||''}" data-name="${esc}">${esc}</option>`;
-  });
-  ['an-cl-select','va-cl-select','st-cl-select'].forEach(id=>{
+  const base=(D.checklists||[]).filter(c=>(c.category||'')==='체크리스트');
+  const build=(arr)=>{
+    arr=[...arr].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    let html='<option value="">선택</option>';
+    arr.forEach(c=>{
+      const esc=(c.name||'').replace(/"/g,'&quot;');
+      html+=`<option value="${c.id}" data-url="${c.file_url||''}" data-name="${esc}">${esc}</option>`;
+    });
+    return html;
+  };
+  const standardHtml=build(base.filter(c=>(c.type||'')==='standard' || !c.type));
+  const speechHtml=build(base.filter(c=>(c.type||'')==='speech' || !c.type));
+  [['an-cl-select',standardHtml],['st-cl-select',standardHtml],['va-cl-select',speechHtml]].forEach(([id,html])=>{
     const sel=document.getElementById(id);
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
