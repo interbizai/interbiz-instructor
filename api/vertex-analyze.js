@@ -2,7 +2,7 @@ import { VertexAI } from '@google-cloud/vertexai';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 300 };
 
 // ── 교육자료 파일 타입별 처리 ──────────────
 // Gemini가 직접 처리 가능: PDF, 이미지, 텍스트 → fileData로 전달
