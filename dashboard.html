@@ -3662,7 +3662,12 @@ function openChecklistReupload(id){
       <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="document.getElementById('cl-reupload-overlay').remove()">✕</button>
     </div>
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px">기존 항목이 삭제되고 새 엑셀로 교체됩니다. 배점 합계 100점 필수.</div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <label style="font-size:11px;font-weight:700;color:var(--t2)">타입</label>
+      <select id="cl-reupload-type" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+        <option value="standard" ${existing?.type==='standard'?'selected':''}>표준 (영상/스트리밍용)</option>
+        <option value="speech" ${existing?.type==='speech'?'selected':''}>스피치 (스피치용)</option>
+      </select>
       <input type="file" id="cl-reupload-file" accept=".xlsx,.xls" style="display:none" onchange="onChecklistReuploadFileSelected(this)">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="document.getElementById('cl-reupload-file').click()">엑셀 파일 선택</button>
       <span id="cl-reupload-fname" style="font-size:11px;color:var(--t3)"></span>
@@ -3738,8 +3743,9 @@ async function confirmChecklistReupload(){
   const{error:ue}=await sb.storage.from('files').upload(path,file);
   if(ue){alert('파일 업로드 실패: '+ue.message);return;}
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  // checklist_files 갱신 (file_url + file_name)
-  const{error:upErr}=await sb.from('checklist_files').update({file_url:publicUrl,file_name:file.name}).eq('id',id);
+  const type=document.getElementById('cl-reupload-type')?.value||'standard';
+  // checklist_files 갱신 (file_url + file_name + type)
+  const{error:upErr}=await sb.from('checklist_files').update({file_url:publicUrl,file_name:file.name,type}).eq('id',id);
   if(upErr){alert('파일 URL 갱신 실패: '+upErr.message);return;}
   // 기존 항목 전체 삭제
   const{error:delErr}=await sb.from('checklist_items').delete().eq('checklist_id',id);
