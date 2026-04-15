@@ -5056,19 +5056,26 @@ async function loadChecklistItemsForEval(checklistId){
   if(error) throw new Error('체크리스트 항목 로드 실패: '+error.message);
   return data||[];
 }
-// /api/vertex-analyze 호출
-async function callVertexAnalyze({video_url,video_gcs_uri,video_mime,checklist_items,eval_type,edu_file_url,edu_file_mime}){
-  const resp=await fetch('/api/vertex-analyze',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({video_url,video_gcs_uri,video_mime,checklist_items,eval_type,edu_file_url,edu_file_mime})
-  });
-  const raw=await resp.text();
-  let data=null;
-  try{data=JSON.parse(raw);}catch(e){
-    throw new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`);
+// /api/vertex-analyze 호출 (429 자동 재시도, 최대 3회)
+async function callVertexAnalyze(payload){
+  const delays=[0,6000,15000,30000];
+  let lastErr=null;
+  for(let i=0;i<delays.length;i++){
+    if(delays[i]>0) await new Promise(r=>setTimeout(r,delays[i]));
+    const resp=await fetch('/api/vertex-analyze',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const raw=await resp.text();
+    let data=null;
+    try{data=JSON.parse(raw);}catch(e){lastErr=new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`); continue;}
+    if(resp.ok&&data.ok) return data.result;
+    const errMsg=data.error||('HTTP '+resp.status);
+    lastErr=new Error(errMsg);
+    // 429/503 → 재시도, 그 외는 즉시 중단
+    if(!/429|RESOURCE_EXHAUSTED|503|Too Many Requests|overloaded/i.test(errMsg)) break;
   }
-  if(!resp.ok||!data.ok) throw new Error(data.error||('HTTP '+resp.status));
-  return data.result;
+  throw lastErr||new Error('분석 호출 실패');
 }
 // evaluations 테이블 저장
 async function saveEvaluation({videoId,checklistId,eduFileUrl,evalType,result}){
@@ -5517,22 +5524,22 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     if(anPlayer){
       anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${videoMime}"></video>`;
     }
-    // 3) Vertex AI 호출 (평가안기준 + AI독자 병렬)
-    el('an-ai-summary').textContent='AI 영상 분석 중... (30초~2분)';
-    const tasks=[];
+    // 3) Vertex AI 호출 (quota 보호 위해 순차 처리)
+    el('an-ai-summary').textContent='AI 영상 분석 중... (1~3분)';
     const hasEdu=!!eduFileUrl;
-    setAiLoadingStep('AI 영상 분석 중 (1~3분 소요)...');
-    tasks.push(callVertexAnalyze({
+    // 병렬 호출 시 Vertex quota(RESOURCE_EXHAUSTED) 빈번 → 순차 처리
+    setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
+    const critResult=await callVertexAnalyze({
       video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
       checklist_items:checklistItems, eval_type:'평가안기준',
       edu_file_url:hasEdu?eduFileUrl:undefined,
       edu_file_mime:hasEdu?(eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/pdf'):undefined
-    }));
-    tasks.push(callVertexAnalyze({
+    });
+    setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
+    const aiResult=await callVertexAnalyze({
       video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
       checklist_items:checklistItems, eval_type:'AI독자'
-    }));
-    const [critResult,aiResult]=await Promise.all(tasks);
+    });
     // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
     const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
     const vidRow=await dbCreateVideo({
