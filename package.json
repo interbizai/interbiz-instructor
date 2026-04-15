@@ -1,0 +1,9 @@
+{
+  "name": "interbiz-instructor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0"
+  }
+}
