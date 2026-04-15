@@ -2068,7 +2068,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-video" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" onclick="history.back ? showPage('page-lecturer') : showPage('page-dashboard')" style="padding:7px 12px">
+    <button class="btn btn-ghost nav-back" onclick="history.back ? showPage('page-lecturer') : showPage('page-pick')" style="padding:7px 12px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       강사 상세
     </button>
@@ -2095,9 +2095,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-myprofile" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" onclick="showPage('page-dashboard')" style="padding:7px 12px">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-pick')" style="padding:7px 12px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      대시보드
+      인터PICK
     </button>
   </div>
   <div class="hdr-right">
@@ -6170,7 +6170,7 @@ async function saveAnalysisVideo(){
     await loadFromDB();
   }
   alert('영상과 분석 결과가 저장되었습니다!');
-  showPage('page-dashboard'); initDashboard();
+  showPage('page-pick');
 }
 
 /* ════════════════════════════════
@@ -6466,7 +6466,7 @@ async function adminDeleteVideo(videoId){
   await sb.from('videos').delete().eq('id',videoId);
   await loadFromDB();
   alert('삭제되었습니다.');
-  showPage('page-dashboard');initDashboard();
+  showPage('page-pick');
 }
 
 // 본인: 삭제 요청 모달
@@ -7117,7 +7117,7 @@ async function adminDeleteVoice(voiceId){
   await sb.from('voice_evals').delete().eq('id',voiceId);
   await loadFromDB();
   alert('삭제되었습니다.');
-  showPage('page-dashboard');initDashboard();
+  showPage('page-pick');
 }
 
 function openVoiceTimestamp(idx){
@@ -7270,7 +7270,7 @@ async function saveVoiceAnalysis(){
   if(error) console.error('voice save error:',error);
   await loadFromDB();
   alert('음성 분석 결과가 저장되었습니다!');
-  showPage('page-dashboard'); initDashboard();
+  showPage('page-pick');
 }
 
 function renderVoiceHighlight(filtered){
@@ -7774,7 +7774,7 @@ function renderEvalRows(){
       :r.score<prevScore?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>'
       :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>';
 
-    return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">
+    return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-pick&quot;)'}">
       <td style="padding:10px 12px">${r.date}</td>
       <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
       <td style="padding:10px 12px">${r.team}</td>
@@ -7784,7 +7784,7 @@ function renderEvalRows(){
       <td style="padding:10px 12px">${getCareer(r.hireDate)}</td>
       <td style="padding:10px 12px;text-align:center;cursor:pointer" onclick="event.stopPropagation();showTrendChart(${r.userId},'${r.name}')">${trendIcon}</td>
       <td style="padding:10px 12px;text-align:center;white-space:nowrap">
-        <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-dashboard&quot;)'}">결과</span>
+        <span style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-right:8px" onclick="event.stopPropagation();${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-pick&quot;)'}">결과</span>
         ${CU?.isAdmin?`<span style="font-size:11px;color:var(--red);font-weight:700;cursor:pointer" onclick="event.stopPropagation();${r.videoId?'adminDeleteVideo('+r.videoId+')':'alert(&quot;영상이 없는 평가입니다&quot;)'}">삭제</span>`
 :''}
       </td>
@@ -8043,7 +8043,7 @@ function renderRanking(filtered){
 
   function buildRankCard(title,subtitle,items,topColor){
     const rows=items.map((item,i)=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.18)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.videoId?'openVideo('+item.videoId+')':item.voiceId?'openVoiceResult('+item.voiceId+')':item.userId?'openLecturer('+item.userId+',&quot;page-dashboard&quot;)':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;transition:background .15s;border-radius:6px;${i<items.length-1?'border-bottom:1px solid rgba(0,0,0,.18)':''}" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="${item.videoId?'openVideo('+item.videoId+')':item.voiceId?'openVoiceResult('+item.voiceId+')':item.userId?'openLecturer('+item.userId+',&quot;page-pick&quot;)':''}">
         <div style="width:24px;height:24px;border-radius:50%;background:${medalBg[i]||'rgba(0,0,0,.04)'};display:flex;align-items:center;justify-content:center;font-size:${i<3?'14px':'11px'};font-weight:800;color:${rankColors[i]||'var(--t1)'};flex-shrink:0">${medals[i]||(i+1)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
@@ -8082,7 +8082,7 @@ function renderAIStrip(filtered){
 function renderGrid(users){
   el('lect-grid').innerHTML=users.map((u,i)=>{
     const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][i%6];
-    return `<div class="lect-card neu" onclick="openLecturer(${u.id},'page-dashboard')" style="animation-delay:${i*.07}s">
+    return `<div class="lect-card neu" onclick="openLecturer(${u.id},'page-pick')" style="animation-delay:${i*.07}s">
       <div class="lect-card-top">
         <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
         <div class="lect-info">
@@ -9570,7 +9570,7 @@ function saveProfile(){
   const pw=v('mp-pw');
   if(pw){ if(pw.length<8){ alert('비밀번호는 8자 이상이어야 합니다.'); return; } u.pw=pw; }
   CU=u; localStorage.setItem('ib_user',JSON.stringify(CU)); save();
-  alert('프로필이 저장되었습니다.'); showPage('page-dashboard');
+  alert('프로필이 저장되었습니다.'); showPage('page-pick');
 }
 
 /* ════════════════════════════════
@@ -9591,7 +9591,7 @@ window.addEventListener('load',async ()=>{
     const lastPage=localStorage.getItem('ib_last_page');
     if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
       try{
-        if(lastPage==='page-dashboard'){showPage('page-dashboard');initDashboard();}
+        if(lastPage==='page-dashboard'){showPage('page-pick');}
         else if(lastPage==='page-admin'){renderAdmin();showPage('page-admin');}
         else showPage(lastPage);
       }catch(e){showPage('page-home');}
