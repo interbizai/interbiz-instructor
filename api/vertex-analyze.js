@@ -194,8 +194,14 @@ export default async function handler(req, res) {
       },
     });
 
+    // 영상 토큰 절감: 기본 0.5 fps (초당 0.5프레임) — 15분 영상 ~118K 토큰
+    // 필요 시 요청에 fps 숫자로 오버라이드 가능
+    const fps = typeof req.body.fps === 'number' ? req.body.fps : 0.5;
     const parts = [
-      { fileData: { mimeType: 'video/mp4', fileUri: video_url } },
+      {
+        fileData: { mimeType: 'video/mp4', fileUri: video_url },
+        videoMetadata: { fps },
+      },
     ];
     let eduInlineText = '';
     if (eval_type === '평가안기준' && edu_file_url) {
