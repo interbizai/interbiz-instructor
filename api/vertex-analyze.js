@@ -1,6 +1,62 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 
 export const config = { maxDuration: 60 };
+
+// ── 교육자료 파일 타입별 처리 ──────────────
+// Gemini가 직접 처리 가능: PDF, 이미지, 텍스트 → fileData로 전달
+// Word/Excel/PowerPoint는 미지원 → 서버에서 텍스트 추출 후 텍스트로 전달
+const GEMINI_DIRECT_MIMES = new Set([
+  'application/pdf',
+  'text/plain',
+  'text/html',
+  'text/csv',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+
+async function extractTextFromDocx(buffer) {
+  const r = await mammoth.extractRawText({ buffer });
+  return r.value || '';
+}
+function extractTextFromXlsx(buffer) {
+  const wb = XLSX.read(buffer, { type: 'buffer' });
+  return wb.SheetNames.map((n) => {
+    const ws = wb.Sheets[n];
+    return `# Sheet: ${n}\n${XLSX.utils.sheet_to_csv(ws)}`;
+  }).join('\n\n');
+}
+async function fetchEduMaterial(url, mime) {
+  if (!url) return { kind: 'none' };
+  // Gemini 직접 처리 가능한 타입은 fileData URL 그대로
+  if (GEMINI_DIRECT_MIMES.has(mime)) return { kind: 'fileData', mime, url };
+  // Word/Excel은 서버에서 텍스트 추출
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`교육자료 다운로드 실패: ${r.status}`);
+  const ab = await r.arrayBuffer();
+  const buf = Buffer.from(ab);
+  if (
+    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    mime === 'application/msword' ||
+    /\.docx?$/i.test(url)
+  ) {
+    const text = await extractTextFromDocx(buf);
+    return { kind: 'text', label: '[교육자료 — Word]', text };
+  }
+  if (
+    mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mime === 'application/vnd.ms-excel' ||
+    /\.xlsx?$/i.test(url)
+  ) {
+    const text = extractTextFromXlsx(buf);
+    return { kind: 'text', label: '[교육자료 — Excel]', text };
+  }
+  // 기타 미지원 → 스킵
+  return { kind: 'unsupported', mime };
+}
 
 function getCredentials() {
   const credJson = process.env.GCP_CREDENTIALS_JSON;
@@ -141,17 +197,22 @@ export default async function handler(req, res) {
     const parts = [
       { fileData: { mimeType: 'video/mp4', fileUri: video_url } },
     ];
+    let eduInlineText = '';
     if (eval_type === '평가안기준' && edu_file_url) {
-      parts.push({
-        fileData: { mimeType: edu_file_mime || 'application/pdf', fileUri: edu_file_url },
-      });
+      const edu = await fetchEduMaterial(edu_file_url, edu_file_mime || '');
+      if (edu.kind === 'fileData') {
+        parts.push({ fileData: { mimeType: edu.mime, fileUri: edu.url } });
+      } else if (edu.kind === 'text') {
+        eduInlineText = `\n\n${edu.label}\n${edu.text.slice(0, 30000)}`;
+      }
     }
     parts.push({
-      text: buildPrompt({
-        checklistItems: checklist_items,
-        evalType: eval_type,
-        hasEduMaterial: eval_type === '평가안기준' && !!edu_file_url,
-      }),
+      text:
+        buildPrompt({
+          checklistItems: checklist_items,
+          evalType: eval_type,
+          hasEduMaterial: eval_type === '평가안기준' && !!edu_file_url,
+        }) + eduInlineText,
     });
 
     const result = await gm.generateContent({
