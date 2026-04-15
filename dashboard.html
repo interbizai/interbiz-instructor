@@ -4895,19 +4895,15 @@ function loadEduFilesForCategory(){
     <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
   </div>`).join('');
 }
-// 교육콘텐츠 > 교육자료 체크리스트 셀렉트 채우기 (3곳 공용: an/va/st)
+// 교육콘텐츠 > 교육자료 중 '체크리스트' 카테고리 파일만 드롭다운에 채우기 (3곳 공용: an/va/st)
 function populateChecklistSelects(){
-  const items=[...(D.checklists||[])].sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.name||'').localeCompare(b.name||''));
-  const grouped={};
-  items.forEach(c=>{const cat=c.category||'기타';(grouped[cat]=grouped[cat]||[]).push(c);});
-  let html='<option value="">— 교육콘텐츠 등록 체크리스트 선택 —</option>';
-  Object.entries(grouped).forEach(([cat,arr])=>{
-    html+=`<optgroup label="${cat} (${arr.length})">`;
-    arr.forEach(c=>{
-      const esc=(c.name||'').replace(/"/g,'&quot;');
-      html+=`<option value="${c.id}" data-url="${c.file_url||''}" data-name="${esc}">${esc}</option>`;
-    });
-    html+='</optgroup>';
+  const items=[...(D.checklists||[])]
+    .filter(c=>(c.category||'')==='체크리스트')
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  let html='<option value="">선택</option>';
+  items.forEach(c=>{
+    const esc=(c.name||'').replace(/"/g,'&quot;');
+    html+=`<option value="${c.id}" data-url="${c.file_url||''}" data-name="${esc}">${esc}</option>`;
   });
   ['an-cl-select','va-cl-select','st-cl-select'].forEach(id=>{
     const sel=document.getElementById(id);
