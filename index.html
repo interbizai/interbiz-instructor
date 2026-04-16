@@ -6415,7 +6415,10 @@ function renderTsTable(timestamps,which){
       <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
-      const isNA=ts.level==='na'||ts.type==='na';
+      // NA 판정: level/type이 na이거나, 시점 비어있고 분석에 '해당없음/평가 불가' 등 키워드 있을 때
+      const noTs=!ts.t||ts.t==='—'||ts.t==='-'||/^\s*$/.test(ts.t);
+      const naText=/(해당 ?없|평가하기 어렵|평가가 어렵|판단하기 어렵|평가 불가|판단 불가|확인 불가|녹화된 강의이므로|해당 항목을 평가할 수 없|평가 대상이 아님)/.test((ts.text||'')+(ts.solution||''));
+      const isNA=ts.level==='na'||ts.type==='na'||(noTs&&naText);
       const scoreColor=isNA?'var(--t3)':ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
       const scoreDisplay=isNA?'<span style="color:var(--t3);font-size:10px;font-weight:600">해당없음</span>':ts.score;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
