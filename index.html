@@ -1481,7 +1481,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-edu-radar-wrap">
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-            <svg id="an-edu-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
+            <svg id="an-edu-radar" viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto"></svg>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
         </div>
@@ -1528,7 +1528,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-ai-radar-wrap">
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-            <svg id="an-ai-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
+            <svg id="an-ai-radar" viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto"></svg>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
         </div>
@@ -5552,7 +5552,7 @@ function openChecklistDetail(which){
       </div>
       <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;padding:16px">
         <div style="border:1px solid var(--bdr);border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;background:#fafafa">
-          <svg viewBox="0 0 400 370" style="width:100%;max-width:320px;height:auto">${radarSvg}</svg>
+          <svg viewBox="0 0 500 440" style="width:100%;max-width:320px;height:auto">${radarSvg}</svg>
         </div>
         <div>${bars}</div>
       </div>
@@ -6122,7 +6122,7 @@ function renderTsTable(timestamps){
 function drawRadarSVG(items,opts){
   const clickable=opts?.clickable||false;
   const which=opts?.which||'crit';
-  const n=items.length,cx=200,cy=185,maxR=140;
+  const n=items.length,cx=250,cy=210,maxR=140;
   const angles=Array.from({length:n},(_,i)=>-Math.PI/2+(2*Math.PI*i/n));
   const toXY=(a,r)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
   let svg='';
@@ -6171,7 +6171,7 @@ function openCategoryRadar(which,categoryName){
     <div style="font-size:12px;color:var(--t2);margin-bottom:14px">총점: <strong style="color:#10b981">${totalScore}/${totalMax}점 (${pct}%)</strong> · 세부항목 ${items.length}개</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;margin-bottom:14px">
       <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems)}</svg>
+        <svg viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems)}</svg>
       </div>
       <div>
         ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:10px">
