@@ -3909,12 +3909,11 @@ function renderPick(){
   const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   const totalEvals=monthVids.length;
 
-  // 당월 말 기준 누적 등록 강사 수
-  const cumUsers=(D.users||[]).filter(u=>{
-    const hd=u.hireDate||u.registered||u.created_at;
-    if(!hd) return true;
-    return new Date(hd)<=monthEnd;
-  }).length;
+  // 당월 영상 평가 받은 고유 강사 수 (evaluations 기반)
+  const monthVidIds=new Set(monthVids.map(v=>v.id));
+  const monthEvaledVidIds=new Set((D.evaluations||[]).filter(e=>e.video_id&&e.overall_score>0&&monthVidIds.has(e.video_id)).map(e=>e.video_id));
+  const evaledUserIdsThisMonth=new Set(monthVids.filter(v=>monthEvaledVidIds.has(v.id)).map(v=>v.userId));
+  const cumUsers=evaledUserIdsThisMonth.size;
 
   // 전체 평균 AI 점수 — 영상 평가만 (evaluations 테이블 overall_score 우선, 없으면 타임스탬프 기반)
   const videoEvalMap={};
