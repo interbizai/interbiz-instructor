@@ -785,6 +785,32 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   /* 버튼 */
   .btn{padding:7px 14px;font-size:12px}
   .auth-btn{font-size:14px;padding:12px}
+  /* ── 신규 컴포넌트 모바일 대응 ── */
+  /* 영상 정보 5칸 그리드 → 2칸 */
+  #page-analysis .content-card>div:first-child>div[style*="repeat(5"]{ grid-template-columns:1fr 1fr!important }
+  /* 총점 배너 wrap */
+  #page-analysis div[style*="linear-gradient(135deg,#9f1239"]>div,
+  #page-analysis div[style*="linear-gradient(135deg,#e8590c"]>div{
+    flex-wrap:wrap!important; gap:12px!important;
+  }
+  #page-analysis div[style*="min-width:280px"]{ min-width:auto!important }
+  #page-analysis div[style*="min-width:180px"]{ min-width:0!important; flex-basis:100%!important }
+  /* 영상 보기 버튼 위치 조정 */
+  #page-analysis div[style*="position:absolute;right:28px;top:50%"]{ position:relative!important; right:auto!important; top:auto!important; transform:none!important; margin:10px 16px; justify-content:flex-end!important }
+  /* 전체보기 모달 — 레이더+바 세로 */
+  #cl-detail-overlay div[style*="grid-template-columns:340px"]{ grid-template-columns:1fr!important }
+  /* 세부항목 영상 모달 — 좌우 → 세로 */
+  #sub-item-video-overlay>div>div{ grid-template-columns:1fr!important }
+  #sub-item-video-overlay>div>div>div:first-child{ border-right:none!important; border-bottom:1px solid var(--bdr) }
+  /* 반복어 영상 모달 — 좌우 → 세로 */
+  #habit-ts-overlay>div>div{ grid-template-columns:1fr!important }
+  #habit-ts-overlay>div>div>div:first-child{ border-right:none!important; border-bottom:1px solid var(--bdr) }
+  /* AI 로딩 */
+  .ai-loading-box{padding:24px 20px!important}
+  .ai-loading-title{font-size:16px}
+  .ai-loading-sub{font-size:10px}
+  /* 스트리밍 모달 그리드 */
+  #stream-info-overlay .auth-card div[style*="grid-template-columns:1fr 1fr"]{ grid-template-columns:1fr!important }
 }
 
 /* 모바일 하단 네비게이션 */
