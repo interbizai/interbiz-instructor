@@ -6083,16 +6083,21 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps){
-  return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+  return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;table-layout:fixed">
+    <colgroup>
+      <col style="width:80px"><col style="width:80px"><col style="width:140px">
+      <col style="width:36px"><col style="width:36px"><col style="width:85px">
+      <col><col>
+    </colgroup>
     <thead><tr style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.12);position:sticky;top:0;z-index:1">
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:80px">대항목</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:100px">세부항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">대항목</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">세부항목</th>
       <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">평가 기준</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:40px">배점</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:40px">점수</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700;width:90px">시점</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700">배점</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700">점수</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--t1);font-weight:700">시점</th>
       <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">분석</th>
-      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700;width:140px">솔루션</th>
+      <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
       const scoreColor=ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
@@ -6113,9 +6118,9 @@ function renderTsTable(timestamps){
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${ts.score||0}</td>
         <td style="padding:8px;text-align:center;font-size:10px;color:var(--t2)">${ts.t||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
-        <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4">${ts.type==='good'?'<span style="color:#10b981;font-weight:600">—</span>':(ts.solution||'—')}</td>
+        <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4;word-break:break-word">${ts.type==='good'?'<span style="color:#10b981;font-weight:600">—</span>':(ts.solution||'—')}</td>
       </tr>`;}).join('')}
-    </tbody></table>`;
+    </tbody></table></div>`;
 }
 
 // 레이더 차트 SVG 공통
