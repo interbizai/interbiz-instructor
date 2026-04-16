@@ -2887,6 +2887,9 @@ async function loadFromDB(){
   // 달력 이벤트
   const {data:ce}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
   D.calendarEvents=(ce||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
+  // evaluations 테이블 (AI 평가 결과)
+  const {data:evs}=await sb.from('evaluations').select('id,video_id,eval_type,overall_score,checklist_id,edu_file_url,created_at,categories,sub_scores,good,bad,upgrade,scenarios,level_tips,teaching_patterns,speech_report,mood,decibel,tempo,habits,engagement_gaps').order('created_at',{ascending:false});
+  D.evaluations=evs||[];
   // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
 }
@@ -3896,12 +3899,11 @@ function renderPick(){
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
   const ymEl=el('pick-title-ym');if(ymEl)ymEl.textContent=monthLabel;
 
-  // 당월 기준 데이터
+  // 당월 기준 데이터 — 영상 평가만
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
   const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
   const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
-  const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
-  const totalEvals=monthVids.length+monthVoice.length;
+  const totalEvals=monthVids.length;
 
   // 당월 말 기준 누적 등록 강사 수
   const cumUsers=(D.users||[]).filter(u=>{
@@ -3910,20 +3912,28 @@ function renderPick(){
     return new Date(hd)<=monthEnd;
   }).length;
 
-  // 전체 평균 AI 점수 (전체 기간, 모든 영상+음성 평가)
-  const allVidScores=(D.videos||[]).map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
-  const allVoiceScores=(D.voiceEvals||[]).map(v=>v.score||0);
-  const allScoresAll=[...allVidScores,...allVoiceScores].filter(s=>s>0);
+  // 전체 평균 AI 점수 — 영상 평가만 (evaluations 테이블 overall_score 우선, 없으면 타임스탬프 기반)
+  const videoEvalMap={};
+  (D.evaluations||[]).forEach(e=>{if(e.video_id&&e.overall_score>0){const k=e.video_id+'_'+e.eval_type;videoEvalMap[k]=e.overall_score;}});
+  const allVidScores=(D.videos||[]).map(v=>{
+    // evaluations 테이블의 AI독자 점수 우선
+    const aiSc=videoEvalMap[v.id+'_AI독자'];
+    if(aiSc) return aiSc;
+    const critSc=videoEvalMap[v.id+'_평가안기준'];
+    if(critSc) return critSc;
+    // 폴백: 타임스탬프 기반 추정
+    const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
+    return Math.min(100,g*10+(v.timestamps||[]).length*3);
+  });
+  const allScoresAll=allVidScores.filter(s=>s>0);
   const avgAll=allScoresAll.length?(allScoresAll.reduce((a,b)=>a+b,0)/allScoresAll.length).toFixed(1):'0.0';
 
-  // 이번 주 신규 콘텐츠 (월~일)
+  // 이번 주 신규 콘텐츠 (월~일) — 영상 평가 받은 것만 기준
   const todayDow=now.getDay();
   const daysSinceMon=todayDow===0?6:todayDow-1;
   const weekStart=new Date(thisYear,thisMonth,now.getDate()-daysSinceMon,0,0,0);
   const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
-  const weekNew=(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}).length
-    +(D.learningLinks||[]).filter(l=>{const d=new Date(l.created_at||0);return d>=weekStart&&d<=weekEnd;}).length
-    +(D.checklists||[]).filter(c=>{const d=new Date(c.created_at||0);return d>=weekStart&&d<=weekEnd;}).length;
+  const weekNew=(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}).length;
 
   // 통계 카드
   const statsEl=el('pick-stats');
