@@ -1872,9 +1872,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div style="margin-bottom:18px" id="va-report"></div>
 
     <div style="display:flex;gap:10px" id="va-action-btns">
-      <button class="btn btn-blue" onclick="saveVoiceAnalysis()">분석 결과 저장</button>
-      <button class="btn btn-ghost" style="color:var(--green);border-color:var(--green)" onclick="downloadVoiceExcel()">엑셀 다운로드</button>
-      <button class="btn btn-ghost" onclick="el('va-step1').style.display='';el('va-step2').style.display='none';var pb=el('va-pdf-btn');if(pb)pb.style.display='none'">← 다시 녹음</button>
       <span id="va-delete-area"></span>
     </div>
   </div>
@@ -7376,6 +7373,157 @@ function generateMockVoice(count,tone){
 }
 
 function renderVoiceResult(r,hasCL,count,tone){
+  // 스피치: 평가안기준 X, AI독자 전용 구조로 렌더
+  const aiRaw=window._lastVertexResult?.ai||null;
+  if(aiRaw){
+    window._lastVertexResult={crit:null,ai:aiRaw};
+    // 기존 상/하 분할 숨기고 va-report만 사용
+    const split=document.getElementById('va-split');
+    if(split) split.style.display='none';
+    const pdfBtn=el('va-pdf-btn');if(pdfBtn) pdfBtn.style.display='';
+    const dbRaw=r.decibel, tpRaw=r.tempo;
+    const vDb=typeof dbRaw==='object'?(dbRaw?.current||0):(dbRaw||0);
+    const vTp=typeof tpRaw==='object'?(tpRaw?.wpm||0):(tpRaw||0);
+    const vDbSt=typeof dbRaw==='object'?(dbRaw?.status||''):(r.decibelStatus||'적정');
+    const vTpSt=typeof tpRaw==='object'?(tpRaw?.status||''):(r.tempoStatus||'적정');
+    const vHb=(r.habits||[]).reduce((a,h)=>a+(h.count||0),0);
+    const vFit=vDb>=80?'20명+':vDb>=75?'15~20명':vDb>=70?'10~15명':vDb>=65?'5~10명':vDb>=60?'3~5명':'1~3명';
+    let vMood='밝고 경쾌한';
+    if(vDb>=78&&vTp>=155) vMood='열정적이고 에너지 넘치는';
+    else if(vDb>=70&&vTp>=140&&vHb<10) vMood='밝고 경쾌한';
+    else if(vDb>=65&&vTp>=130&&vTp<=150) vMood='친근하고 편안한';
+    else if(vDb>=70&&vTp<=135) vMood='전문적이고 진지한';
+    else if(vDb<=65&&vTp<=130) vMood='차분하고 신뢰감 있는';
+    else if(vTp>=150&&vHb>15) vMood='재미있고 유머러스한';
+    const mc={'열정적이고 에너지 넘치는':'#E21E26','밝고 경쾌한':'#f59e0b','친근하고 편안한':'#10b981','전문적이고 진지한':'#0078C8','차분하고 신뢰감 있는':'#8b5cf6','재미있고 유머러스한':'#ec4899'};
+
+    // 체크리스트 대항목 레이더 아이템
+    const categories=aiRaw.categories||[];
+    const radarItems=categories.map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
+    const overall=aiRaw.overall_score||0;
+    const summary=aiRaw.summary_opinion||'';
+
+    // 타임스탬프 (sub_scores)
+    const timestamps=(aiRaw.sub_scores||[]).map(s=>({
+      category:s.category, item:s.sub_item, criteria:s.criterion||'',
+      score:s.score||0, maxScore:s.max||0, t:s.timestamp||'',
+      type:s.level==='good'?'good':s.level==='bad'?'bad':'tip',
+      text:s.analysis||'', solution:s.solution||''
+    }));
+    window._anTimestamps=timestamps;
+    // 반복어
+    window._anHabits=r.habits||[];
+    const habitHtml=(r.habits||[]).map((h,hi)=>{
+      const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
+      const hasTs=(h.timestamps&&h.timestamps.length);
+      const clickable=hasTs?'cursor:pointer;text-decoration:underline dotted':'';
+      return `<span class="habit-badge ${cls}" style="${clickable}" ${hasTs?`onclick="openHabitTimestamps(${hi})"`:''}>${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+    }).join('')||'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>';
+
+    const goodList=(aiRaw.good||[]).slice(0,5);
+    const badList=(aiRaw.bad||[]).slice(0,5);
+    const upgradeList=(aiRaw.upgrade||[]).slice(0,5);
+    const gradeColor=overall>=90?'#10b981':overall>=70?'#f59e0b':'#E21E26';
+    const gradeLabel=overall>=90?'우수':overall>=70?'양호':'개선 필요';
+
+    // 스피치 종합 리포트
+    const rep=r.speech_report||{};
+    const improvements=Array.isArray(rep.improvements)?rep.improvements:(r.solution?[{title:'개선 솔루션',detail:r.solution}]:[]);
+    const trainings=Array.isArray(rep.training)?rep.training:(r.training?[{title:'트레이닝',detail:r.training}]:[]);
+
+    el('va-report').innerHTML=`
+      <!-- 총점 배너 -->
+      <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#e8590c,#d9480f);padding:22px 28px;display:flex;align-items:center;gap:22px;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+        <div style="position:relative;width:72px;height:72px;flex-shrink:0">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#fda4af" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="${264-264*overall/100}" stroke-linecap="round"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900">${overall}%</div>
+        </div>
+        <div style="display:flex;gap:18px;flex-shrink:0">
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900">${overall}</div><div style="font-size:9px;color:rgba(255,255,255,.6)">AI점수</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900">${categories.length}</div><div style="font-size:9px;color:rgba(255,255,255,.6)">대항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900">${(aiRaw.sub_scores||[]).length}</div><div style="font-size:9px;color:rgba(255,255,255,.6)">세부항목</div></div>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 스피치 분석 요약</div>
+          <div style="font-size:12px;line-height:1.6">총점 <strong>${overall}/100점(${overall}%)</strong>으로 <span style="color:${gradeColor}">${gradeLabel}</span> 성과입니다. ${summary?summary.split('.').slice(0,2).join('.')+'.':''}</div>
+        </div>
+      </div>
+
+      <!-- 스피치 분석 (4칸) -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">스피치 분석</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div style="padding:12px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">데시벨</div><div style="font-size:16px;font-weight:900">${vDb} dB</div><div style="font-size:10px;color:${vDbSt==='적정'?'var(--green)':'var(--orange)'}">${vDbSt}</div></div>
+          <div style="padding:12px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">템포</div><div style="font-size:16px;font-weight:900">${vTp} WPM</div><div style="font-size:10px;color:${vTpSt==='적정'?'var(--green)':'var(--orange)'}">${vTpSt}</div></div>
+          <div style="padding:12px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">적정 인원</div><div style="font-size:16px;font-weight:800">${vFit}</div><div style="font-size:10px;color:var(--t3)">${vDb}dB 기준</div></div>
+          <div style="padding:12px;background:${mc[vMood]||'#f8f9fa'};border-radius:8px;color:#fff"><div style="font-size:10px;color:rgba(255,255,255,.7)">강의 분위기</div><div style="font-size:13px;font-weight:800">${vMood}</div><div style="font-size:10px;color:rgba(255,255,255,.6)">AI 판정</div></div>
+        </div>
+      </div>
+
+      <!-- 체크리스트 기반 레이더 + 달성도 -->
+      ${radarItems.length?`<div style="margin-bottom:20px;border:1px solid var(--bdr);border-radius:14px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div style="display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems,{clickable:true,which:'ai'})}</svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>
+            ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
+              <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+            </div>`;}).join('')}
+          </div>
+        </div>
+      </div>`:''}
+
+      <!-- 타임스탬프 피드백 -->
+      ${timestamps.length?`<div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden">${renderTsTable(timestamps)}</div>
+      </div>`:''}
+
+      <!-- 반복어 습관 + 환기 -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 & 습관 분석</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:16px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px">반복어 습관</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">${habitHtml}</div>
+          </div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:16px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px">환기 타이밍</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${(aiRaw.engagement_gaps_minutes||[]).join('분 → ')||'—'}${(aiRaw.engagement_gaps_minutes||[]).length?'분':''}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Good/Bad/Upgrade -->
+      <div style="margin-bottom:20px;border:1px solid var(--bdr);border-radius:14px">
+        ${renderOpinionTabs('va-opinion',goodList,badList,upgradeList,'vop',summary||'스피치 종합 의견입니다.')}
+      </div>
+
+      <!-- 스피치 종합 리포트 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">스피치 개선 솔루션</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.7">${improvements.length?improvements.map((x,i)=>`${i+1}. <strong>${x.title||''}</strong>${x.detail?': '+x.detail:''}`).join('<br>'):(r.solution||'개선 솔루션이 생성되지 않았습니다.')}</div>
+        </div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
+          <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:8px">스피치 트레이닝 추천</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.7">${trainings.length?trainings.map((x,i)=>`${i+1}. <strong>${x.title||''}</strong>${x.detail?': '+x.detail:''}`).join('<br>'):(r.training||'트레이닝 추천이 생성되지 않았습니다.')}</div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  // ─── 레거시 렌더 (Vertex 결과 없을 때 폴백) ───
   const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='';
   // 평가안 기준
   if(hasCL && r.criteriaScores?.length){
@@ -7566,8 +7714,8 @@ function openVoiceResult(vaId){
   // 삭제 버튼
   const delArea=el('va-delete-area');
   if(delArea){
-    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn btn-red" style="padding:8px 16px;font-size:13px" onclick="adminDeleteVoice(${v.id})">삭제</button>`;
-    else if(CU?.id===v.user_id) delArea.innerHTML=`<button class="btn" style="padding:8px 16px;font-size:13px;color:var(--orange);border:1px solid var(--orange)" onclick="alert('음성 평가 삭제 요청은 관리자에게 문의하세요')">삭제 요청</button>`;
+    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px;font-size:13px;border-radius:999px" onclick="adminDeleteVoice(${v.id})">삭제</button>`;
+    else if(CU?.id===v.user_id) delArea.innerHTML=`<button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px;font-size:13px;border-radius:999px" onclick="alert('음성 평가 삭제 요청은 관리자에게 문의하세요')">삭제 요청</button>`;
     else delArea.innerHTML='';
   }
   showPage('page-voice');
