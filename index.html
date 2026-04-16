@@ -7314,28 +7314,34 @@ async function runVoiceAnalysis(){
       return 0.04;
     })();
 
-    // 4) 스피치 AI독자 호출 — 토큰 초과 시 자동으로 fps 낮춰 재시도
+    // 4) 스피치 AI독자 호출 — Flash 먼저, 토큰 초과 시 Pro(1M 컨텍스트)로 전환
     setAiLoadingStep('AI 스피치 분석 중...');
-    let aiResRaw=null, currentFps=fps, tryCount=0;
-    const fpsFallback=[fps, 0.1, 0.06, 0.04, 0.02];
-    while(!aiResRaw && tryCount < fpsFallback.length){
-      currentFps=fpsFallback[tryCount++];
+    let aiResRaw=null;
+    const attempts=[
+      {model:'gemini-2.5-flash', fps:fps, label:'Flash'},
+      {model:'gemini-2.5-flash', fps:0.1, label:'Flash (fps 0.1)'},
+      {model:'gemini-2.5-flash', fps:0.04, label:'Flash (fps 0.04)'},
+      {model:'gemini-2.5-pro', fps:0.5, label:'Pro (1M 컨텍스트)'},
+      {model:'gemini-2.5-pro', fps:0.2, label:'Pro (안전 모드)'},
+    ];
+    let lastErr=null;
+    for(let i=0;i<attempts.length&&!aiResRaw;i++){
+      const a=attempts[i];
+      setAiLoadingStep(`AI 스피치 분석 중 (${a.label})...`);
       try{
         aiResRaw=await callVertexAnalyze({
-          video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps:currentFps,
+          video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps:a.fps,
           checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
           eval_type:'AI독자',
-          edu_file_url:eduFileUrl||undefined
+          edu_file_url:eduFileUrl||undefined,
+          model:a.model
         });
       }catch(e){
-        if(/input token count|INVALID_ARGUMENT/i.test(e.message||'')){
-          setAiLoadingStep(`토큰 초과 — fps 낮춰 재시도 (${tryCount+1}회차)...`);
-          continue;
-        }
-        throw e;
+        lastErr=e;
+        if(!/input token count|INVALID_ARGUMENT|RESOURCE_EXHAUSTED/i.test(e.message||'')) throw e;
       }
     }
-    if(!aiResRaw) throw new Error('여러 fps로 시도했으나 실패. 영상을 더 짧게 잘라서 재시도해주세요.');
+    if(!aiResRaw) throw new Error('모든 모델/fps 조합으로 시도했으나 실패. '+(lastErr?.message||''));
     const aiRes=normalizeVertexResult(aiResRaw);
     window._lastVertexResult={crit:null,ai:aiRes};
     // voice_evals 레코드 생성 → id 확보 후 evaluations 연결
@@ -7435,12 +7441,12 @@ function generateMockVoice(count,tone){
 
 function renderVoiceResult(r,hasCL,count,tone){
   // 스피치: 평가안기준 X, AI독자 전용 구조로 렌더
+  // 무조건 분할 구조 숨김 (구 UI 제거)
+  const split=document.getElementById('va-split');
+  if(split) split.style.display='none';
   const aiRaw=window._lastVertexResult?.ai||null;
   if(aiRaw){
     window._lastVertexResult={crit:null,ai:aiRaw};
-    // 기존 상/하 분할 숨기고 va-report만 사용
-    const split=document.getElementById('va-split');
-    if(split) split.style.display='none';
     const pdfBtn=el('va-pdf-btn');if(pdfBtn) pdfBtn.style.display='';
     const dbRaw=r.decibel, tpRaw=r.tempo;
     const vDb=typeof dbRaw==='object'?(dbRaw?.current||0):(dbRaw||0);
@@ -7584,29 +7590,18 @@ function renderVoiceResult(r,hasCL,count,tone){
     `;
     return;
   }
-  // ─── 레거시 렌더 (Vertex 결과 없을 때 폴백) ───
-  const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='';
-  // 평가안 기준
-  if(hasCL && r.criteriaScores?.length){
-    el('va-criteria-result').parentElement.parentElement.style.display='';
-    const total=r.criteriaScores.reduce((a,b)=>a+b.score,0);
-    const maxT=r.criteriaScores.reduce((a,b)=>a+b.max,0);
-    el('va-criteria-result').innerHTML=`
-      ${drawRadarChart(r.criteriaScores,'#0078C8',340)}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
-        ${r.criteriaScores.map(c=>{
-          const pct=Math.round(c.score/c.max*100);
-          return `<div style="padding:8px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">${c.name}</div><div style="font-size:16px;font-weight:900;color:${pct>=80?'var(--green)':pct>=60?'var(--blue)':'var(--red)'}">${c.score}<span style="font-size:10px;color:var(--t3)">/${c.max}</span></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill bf-blue" style="width:${pct}%"></div></div></div>`;
-        }).join('')}
-      </div>
-      <div style="padding:10px;background:rgba(16,185,129,.05);border-radius:8px;font-size:12px;color:var(--t2)">
-        <strong style="color:var(--green)">종합: ${total}/${maxT}점</strong> — ${r.criteriaSummary||''}
-      </div>`;
-  } else {
-    el('va-criteria-result').parentElement.parentElement.style.display='none';
-  }
+  // ─── 레거시 폴백 (Vertex 결과 없을 때) ───
+  // 구 분할 UI 완전 제거 — va-report에 안내만 표시
+  const pdfBtn=el('va-pdf-btn');if(pdfBtn) pdfBtn.style.display='none';
+  el('va-report').innerHTML=`<div style="padding:40px 24px;text-align:center;border:1px dashed var(--bdr);border-radius:14px;background:#fafafa">
+    <div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:8px">AI 분석 결과가 없습니다</div>
+    <div style="font-size:12px;color:var(--t3);line-height:1.7">이 스피치는 이전 버전에 저장된 데이터이거나 분석이 실패했습니다.<br>새로 분석을 돌려주세요.</div>
+  </div>`;
+  return;
 
+  // 이하 구 레거시 분할 렌더 (dead code — 미사용) ───
   // AI 독자 분석
+  // eslint-disable-next-line no-unreachable
   const db=r.decibel||{};const tp=r.tempo||{};const tm=r.tone_match||{};const rf=r.role_fit||{};
   const cl=r.clarity||{};const en=r.energy||{};const sr=r.silence_ratio||{};const ev=r.engagement_voice||{};
   // 습관어 (코칭형 대체 문구 포함)
