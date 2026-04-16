@@ -5233,10 +5233,15 @@ function normalizeVertexResult(raw){
     let level=s.level;
     const rawScore=Number(s.score||0);
     if(!['good','normal','bad','na'].includes(level)){
-      // level 미지정/DB에서 복원 → score 비율로 추정
       const ratio=max>0?(rawScore/max):0;
       level=ratio>=0.85?'good':ratio>=0.4?'normal':rawScore===0?'bad':'normal';
     }
+    // 자동 NA 보정: 시점 없고 분석에 '평가 불가' 표현 있으면 na로
+    const ts=String(s.timestamp||'').trim();
+    const ana=String(s.analysis||'');
+    const noTs=!ts||ts==='-'||ts==='—'||/^\s*$/.test(ts);
+    const naKeywords=/(평가하기 어렵|평가가 어렵|판단하기 어렵|판단 불가|확인할 수 없|확인 불가|알 수 없|해당(이|되지)|해당 없|영상에 없|정보 부족|관찰되지 않|보이지 않|나오지 않|언급되지 않|없으므로|없기 때문)/;
+    if(noTs && naKeywords.test(ana)) level='na';
     let score;
     if(level==='good') score=max;
     else if(level==='normal') score=Math.round(max*0.6);
