@@ -7278,8 +7278,9 @@ async function runVoiceAnalysis(){
     let checklistItems=[];
     if(checklistId) checklistItems=await loadChecklistItemsForEval(checklistId);
 
-    // 3) 영상 길이 → fps (오디오이므로 fps 불필요, 1.0으로)
-    const fps=1.0;
+    // 3) 길이 → 적응형 fps (오디오/영상 공통)
+    const durSec=await readVideoDuration(audioFile).catch(()=>0);
+    const fps=pickAdaptiveFps(durSec);
 
     // 4) 스피치는 평가안기준 분기 없음 — 항상 AI독자 단일 호출 (교육자료가 있으면 참고 자료로만 주입)
     setAiLoadingStep('AI 스피치 분석 중...');
