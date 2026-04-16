@@ -1,6 +1,7 @@
 import { VertexAI } from '@google-cloud/vertexai';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 
 export const config = { maxDuration: 300 };
 
@@ -29,6 +30,26 @@ function extractTextFromXlsx(buffer) {
     return `# Sheet: ${n}\n${XLSX.utils.sheet_to_csv(ws)}`;
   }).join('\n\n');
 }
+// .pptx — 각 슬라이드 XML에서 텍스트 추출
+async function extractTextFromPptx(buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  const slideFiles = Object.keys(zip.files).filter(f => /^ppt\/slides\/slide\d+\.xml$/.test(f)).sort((a,b)=>{
+    const na=parseInt(a.match(/slide(\d+)/)[1]); const nb=parseInt(b.match(/slide(\d+)/)[1]); return na-nb;
+  });
+  const out = [];
+  for (const f of slideFiles) {
+    const xml = await zip.file(f).async('string');
+    const texts = [];
+    const re = /<a:t[^>]*>([\s\S]*?)<\/a:t>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null) {
+      const t = m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").trim();
+      if (t) texts.push(t);
+    }
+    if (texts.length) out.push(`# Slide ${slideFiles.indexOf(f)+1}\n${texts.join('\n')}`);
+  }
+  return out.join('\n\n');
+}
 async function fetchEduMaterial(url, mime) {
   if (!url) return { kind: 'none' };
   // Gemini 직접 처리 가능한 타입은 fileData URL 그대로
@@ -53,6 +74,14 @@ async function fetchEduMaterial(url, mime) {
   ) {
     const text = extractTextFromXlsx(buf);
     return { kind: 'text', label: '[교육자료 — Excel]', text };
+  }
+  if (
+    mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    mime === 'application/vnd.ms-powerpoint' ||
+    /\.pptx?$/i.test(url)
+  ) {
+    const text = await extractTextFromPptx(buf);
+    return { kind: 'text', label: '[교육자료 — PowerPoint]', text };
   }
   // 기타 미지원 → 스킵
   return { kind: 'unsupported', mime };
@@ -89,8 +118,21 @@ function buildPrompt({ checklistItems, evalType, hasEduMaterial }) {
 
   const evalContext =
     evalType === '평가안기준'
-      ? `당신은 현장강사 평가 전문가입니다. 업로드된 영상과 교육자료(시나리오/평가안)를 모두 세세히 확인하여, 아래 체크리스트 기준으로 평가합니다. 영상이 교육자료에 부합했는지 대조하며 판정해야 합니다.`
-      : `당신은 현장강사 평가 전문가입니다. 업로드된 영상만 독립적으로 확인하여, 아래 체크리스트 기준으로 평가합니다. 교육자료는 참고하지 않습니다.`;
+      ? `당신은 현장강사 평가 전문가입니다. 업로드된 영상과 교육자료(시나리오/평가안 — PDF/Word/Excel/PowerPoint 중 하나, 자유양식)를 모두 세세히 읽고 이해한 뒤 아래 체크리스트 기준으로 평가합니다.
+
+교육자료 활용 필수 규칙:
+1) 교육자료의 핵심 목표/핵심 메시지/핵심 키워드를 먼저 파악
+2) 영상 강사가 그 목표와 키워드를 실제로 전달했는지 대조
+3) 교육자료와 영상의 어긋난 부분(빠진 내용/추가된 내용/왜곡)을 구체적으로 지적
+4) analysis에 "교육자료에서는 ○○을 다루지만 영상에서는 △△으로 전달되었다"처럼 명시적으로 비교
+5) rubric_alignment_score는 아래 기준으로:
+   - 90+: 교육자료가 명확하고 구조화되어 있어 평가에 충분
+   - 70-89: 대부분 활용 가능하나 일부 모호
+   - 50-69: 부분적으로만 활용 가능 (정보 부족)
+   - 30-49: 대부분 모호해 해석에 의존
+   - 0-29: 교육자료가 비어있거나 내용이 평가 대상과 무관
+6) 교육자료가 실제로 전달되지 않았거나 전혀 참조 불가한 경우에만 0`
+      : `당신은 현장강사 평가 전문가입니다. 업로드된 영상만 독립적으로 확인하여, 아래 체크리스트 기준으로 평가합니다. 교육자료는 참고하지 않습니다. rubric_alignment_score는 0으로 두세요.`;
 
   return `${evalContext}
 
@@ -194,11 +236,16 @@ export default async function handler(req, res) {
       },
     });
 
+    // 일관성 극대화: temperature=0, topP 낮게, seed 고정 (같은 영상+프롬프트 → 거의 동일 결과)
+    const seedBase = (video_gcs_uri || video_url || '').split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const seed = Math.abs(seedBase) % 2147483647 || 12345;
     const gm = vertex.getGenerativeModel({
       model,
       generationConfig: {
         responseMimeType: 'application/json',
-        temperature: 0.3,
+        temperature: 0,
+        topP: 0.1,
+        seed,
         maxOutputTokens: 32768,
       },
     });
