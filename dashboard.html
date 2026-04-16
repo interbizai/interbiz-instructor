@@ -4033,11 +4033,7 @@ function renderPick(){
     </div></div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 평가 데이터가 없습니다</div>';
 
-  // 교안 카테고리 필터
-  const catFilter=el('pick-cat-filter');
-  if(catFilter&&catFilter.options.length<=1){
-    getEduCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catFilter.appendChild(o);});
-  }
+  // 교안 카테고리 필터: 다중 선택 버튼으로 변경됨 → 별도 초기화 불필요 (togglePickCatMulti에서 동적 생성)
   // 제품 필터 (optgroup 트리)
   const prodFilter=el('pick-prod-filter');
   if(prodFilter&&prodFilter.options.length<=1){
