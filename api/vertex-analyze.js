@@ -143,8 +143,10 @@ ${JSON.stringify(checklistSpec, null, 2)}
 
 # 채점 규칙
 - 각 세부항목은 3단계 판정만 허용: "good"(잘했다 = 배점 100% = 5점 만점 기준 5점), "normal"(보통 = 배점 60% = 5점 만점 기준 3점), "bad"(못했다 = 0점)
-- 절대 2점/4점 같은 중간값을 내지 않는다. 애매한 경우 무조건 "normal"(3점)로 반올림하지 말고 분명히 잘했으면 good, 그렇지 않으면 normal, 못 했으면 bad로만 판정
-- score 필드 값은 정확히 max 또는 round(max*0.6) 또는 0 중 하나여야 함
+- 절대 1점/2점/4점 같은 중간값 금지. max=5일 때 score는 5, 3, 0만 허용
+- 애매하면 normal(3). 확실히 잘했으면 good(5), 확실히 못했으면 bad(0)
+- score 필드 값: 반드시 max(=good) 또는 round(max*0.6)(=normal) 또는 0(=bad) 중 하나
+- overall_score는 전체 sub_scores의 score합/max합×100으로 정확히 계산. 0점 항목이 3개 이상이면 80점 이상 나올 수 없음
 - 판정 불가(해당없음)인 경우 "na"로 표기 — 점수 합산에서 제외
 - 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기
 - analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 권장)
@@ -190,7 +192,10 @@ ${JSON.stringify(checklistSpec, null, 2)}
 - good/bad/upgrade: 각 3개 (정확히)
 - scenarios/level_tips/teaching_patterns: 각 3개 (정확히)
 - 각 문자열 필드는 간결하게 (분석/솔루션은 1~2문장, 40~80자 내외 권장)
-- sub_scores는 체크리스트의 모든 세부항목을 빠짐없이 포함하되 analysis/solution을 간결하게 작성
+- sub_scores는 체크리스트의 모든 세부항목을 빠짐없이 포함
+- analysis는 반드시 2~3문장(50~100자)으로 영상 속 실제 장면/발언을 구체적으로 인용하여 작성 ("강사가 MM:SS에서 ~라고 말했다" 등)
+- solution은 normal/bad 항목에 반드시 1~2문장(30~60자)으로 구체적 개선안 작성 ("다음에는 ~하면 효과적" 등)
+- 분석이 1문장 이하이거나 "잘했다/못했다"만 적는 것은 금지. 반드시 영상 속 근거를 들어야 함
 
 ${
   evalType === 'AI독자'
