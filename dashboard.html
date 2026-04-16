@@ -2190,8 +2190,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <!-- 필터: 카테고리 다중 선택 + 제품 드롭다운 -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
           <div style="position:relative" id="pick-cat-multi-wrap">
-            <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:220px">전체 교육자료 ▾</button>
-            <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:8px;min-width:200px;z-index:100;max-height:320px;overflow-y:auto"></div>
+            <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:6px 16px;border:1px solid #e5e7eb;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--t1);background:#fff;cursor:pointer;min-width:140px;white-space:nowrap">전체 교육자료 ▾</button>
+            <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
           </div>
           <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
             <option value="">전체 제품</option>
@@ -3951,21 +3951,26 @@ function renderPick(){
     <div style="font-size:11px;color:var(--t3);margin-top:4px">${s.lbl}</div>
   </div>`).join('');
 
-  // TOP 3 강사 (당월 + 전월 대비)
+  // TOP 3 강사 (당월 영상평가만)
   const prevMonth=now.getMonth()===0?11:now.getMonth()-1;
   const prevYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
   const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
-  const prevVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
 
+  const vidScore=(v)=>{
+    // evaluations 테이블에 AI독자 점수 우선, 없으면 평가안기준, 없으면 타임스탬프 폴백
+    const aiSc=videoEvalMap[v.id+'_AI독자'];
+    if(aiSc) return aiSc;
+    const critSc=videoEvalMap[v.id+'_평가안기준'];
+    if(critSc) return critSc;
+    const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
+    return Math.min(100,g*10+(v.timestamps||[]).length*3);
+  };
   const userScores=(D.users||[]).map(u=>{
     const uVids=monthVids.filter(v=>v.userId===u.id);
-    const uVoice=monthVoice.filter(v=>v.user_id===u.id);
-    const scores=[...uVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...uVoice.map(v=>v.score||0)];
+    const scores=uVids.map(vidScore);
     const avg2=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
-    // 전월
     const pVids=prevVids.filter(v=>v.userId===u.id);
-    const pVoice=prevVoice.filter(v=>v.user_id===u.id);
-    const pScores=[...pVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...pVoice.map(v=>v.score||0)];
+    const pScores=pVids.map(vidScore);
     const pAvg=pScores.length?(pScores.reduce((a,b)=>a+b,0)/pScores.length):0;
     const growth=pAvg>0?Math.round((avg2-pAvg)/pAvg*100):0;
     return {...u,pickScore:Math.round(avg2*10)/10,evalCount:scores.length,growth};
@@ -4293,12 +4298,12 @@ function togglePickCatMulti(){
   if(p.style.display==='none'){
     const cats=getEduCategories();
     const sel=window._pickCatSel;
-    p.innerHTML=`<div style="padding:6px 8px;border-bottom:1px solid var(--bdr);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;font-weight:700;color:var(--t2)">교육자료 필터</span>
-      <button style="font-size:10px;color:var(--blue);border:none;background:none;cursor:pointer" onclick="clearPickCatFilter()">전체</button>
-    </div>`+cats.map(c=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;font-size:11.5px;border-radius:6px" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''">
-      <input type="checkbox" value="${c.replace(/"/g,'&quot;')}" ${sel.has(c)?'checked':''} onchange="togglePickCat('${c.replace(/'/g,"\\'")}',this.checked)">
-      <span style="flex:1">${c}</span>
+    p.innerHTML=`<div style="padding:8px 10px;border-bottom:1px solid var(--bdr);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:var(--t1)">교육자료 필터</span>
+      <button style="font-size:11px;color:var(--blue);border:none;background:none;cursor:pointer;font-weight:600" onclick="clearPickCatFilter()">전체 해제</button>
+    </div>`+cats.map(c=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;font-size:12.5px;border-radius:6px;color:var(--t1);white-space:nowrap" onmouseover="this.style.background='rgba(0,120,200,.06)'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${c.replace(/"/g,'&quot;')}" ${sel.has(c)?'checked':''} onchange="togglePickCat('${c.replace(/'/g,"\\'")}',this.checked)" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">
+      <span style="flex:1;color:var(--t1);font-weight:500">${c}</span>
     </label>`).join('');
     p.style.display='block';
     setTimeout(()=>{document.addEventListener('click',pickCatOutsideClose,{once:true});},10);
@@ -4360,12 +4365,28 @@ function renderPickVideos(){
   }
   if(prodVal) pool=pool.filter(vd=>(vd.productName||vd.product_name||vd.videoType||vd.video_type||'').includes(prodVal));
 
+  // 영상별 평가안/AI독자 점수 맵
+  const scoreMap={};
+  (D.evaluations||[]).forEach(e=>{
+    if(!e.video_id) return;
+    if(!scoreMap[e.video_id]) scoreMap[e.video_id]={crit:0,ai:0};
+    if(e.eval_type==='평가안기준') scoreMap[e.video_id].crit=e.overall_score||0;
+    else if(e.eval_type==='AI독자') scoreMap[e.video_id].ai=e.overall_score||0;
+  });
+  const vidSortKey=(vd)=>{
+    const s=scoreMap[vd.id]||{crit:0,ai:0};
+    return [s.crit||pickVidScore(vd),s.ai||pickVidScore(vd)];
+  };
   // 관리자 등록 우선 (pickFeaturedVideos 순서)
   const featuredList=(D.pickFeaturedVideos||[]).slice().sort((a,b)=>(a.order_index||0)-(b.order_index||0));
   const featuredIds=featuredList.map(f=>f.video_id);
   const featured=featuredIds.map(id=>pool.find(vd=>vd.id===id)).filter(Boolean);
-  const others=pool.filter(vd=>!featuredIds.includes(vd.id)).sort((a,b)=>pickVidScore(b)-pickVidScore(a));
-  const vids=[...featured,...others].slice(0,12);
+  // 평가안기준 점수 내림차순 → 동점이면 AI독자 점수 내림차순
+  const others=pool.filter(vd=>!featuredIds.includes(vd.id)).sort((a,b)=>{
+    const ka=vidSortKey(a), kb=vidSortKey(b);
+    return (kb[0]-ka[0])||(kb[1]-ka[1]);
+  });
+  const vids=[...featured,...others].slice(0,3);
 
   // 기본 선택 영상: 현재 선택된 게 풀에 없으면 첫 번째 (X 닫기로 해제한 경우는 유지)
   if(!PICK_USER_CLEARED && !vids.find(x=>x.id===PICK_SELECTED_VID)){
