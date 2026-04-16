@@ -270,9 +270,12 @@ export default async function handler(req, res) {
     const fps = typeof req.body.fps === 'number' ? req.body.fps : 0.2;
     const isAudio = (video_mime || '').startsWith('audio');
     if (video_gcs_uri) {
+      // Vertex AI Gemini: videoMetadata가 snake_case일 수도 있으므로 둘 다 전달
       const part = { fileData: { mimeType: video_mime, fileUri: video_gcs_uri } };
-      // 오디오는 fps 조정이 적용되지 않음 → videoMetadata 생략
-      if (!isAudio) part.videoMetadata = { fps };
+      if (!isAudio) {
+        part.videoMetadata = { fps };
+        part.video_metadata = { fps };
+      }
       parts.push(part);
     } else {
       const vresp = await fetch(video_url);

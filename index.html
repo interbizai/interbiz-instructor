@@ -7314,14 +7314,29 @@ async function runVoiceAnalysis(){
       return 0.04;
     })();
 
-    // 4) 스피치는 평가안기준 분기 없음 — 항상 AI독자 단일 호출 (교육자료가 있으면 참고 자료로만 주입)
+    // 4) 스피치 AI독자 호출 — 토큰 초과 시 자동으로 fps 낮춰 재시도
     setAiLoadingStep('AI 스피치 분석 중...');
-    const aiRes=normalizeVertexResult(await callVertexAnalyze({
-      video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
-      checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
-      eval_type:'AI독자',
-      edu_file_url:eduFileUrl||undefined
-    }));
+    let aiResRaw=null, currentFps=fps, tryCount=0;
+    const fpsFallback=[fps, 0.1, 0.06, 0.04, 0.02];
+    while(!aiResRaw && tryCount < fpsFallback.length){
+      currentFps=fpsFallback[tryCount++];
+      try{
+        aiResRaw=await callVertexAnalyze({
+          video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps:currentFps,
+          checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
+          eval_type:'AI독자',
+          edu_file_url:eduFileUrl||undefined
+        });
+      }catch(e){
+        if(/input token count|INVALID_ARGUMENT/i.test(e.message||'')){
+          setAiLoadingStep(`토큰 초과 — fps 낮춰 재시도 (${tryCount+1}회차)...`);
+          continue;
+        }
+        throw e;
+      }
+    }
+    if(!aiResRaw) throw new Error('여러 fps로 시도했으나 실패. 영상을 더 짧게 잘라서 재시도해주세요.');
+    const aiRes=normalizeVertexResult(aiResRaw);
     window._lastVertexResult={crit:null,ai:aiRes};
     // voice_evals 레코드 생성 → id 확보 후 evaluations 연결
     let voiceEvalId=null;
