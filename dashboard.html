@@ -2190,7 +2190,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <!-- 필터: 카테고리 다중 선택 + 제품 드롭다운 -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
           <div style="position:relative" id="pick-cat-multi-wrap">
-            <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:6px 16px;border:1px solid #e5e7eb;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--t1);background:#fff;cursor:pointer;min-width:140px;white-space:nowrap">전체 교육자료 ▾</button>
+            <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료 ▾</button>
             <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
           </div>
           <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
@@ -4276,6 +4276,12 @@ const PRODUCT_TREE={
 };
 
 function pickVidScore(vid){
+  // evaluations 테이블 overall_score 우선 (평가안기준 → AI독자) → 없으면 타임스탬프 폴백
+  const evals=(D.evaluations||[]).filter(e=>e.video_id===vid.id);
+  const crit=evals.find(e=>e.eval_type==='평가안기준')?.overall_score;
+  const ai=evals.find(e=>e.eval_type==='AI독자')?.overall_score;
+  if(crit) return crit;
+  if(ai) return ai;
   const good=(vid.timestamps||[]).filter(t=>t.type==='good').length;
   return Math.min(100,good*10+(vid.timestamps||[]).length*3);
 }
@@ -4400,6 +4406,7 @@ function renderPickVideos(){
     const u=D.users?.find(x=>x.id===vid.userId);
     const ytId=vid.youtube?.match(/[?&]v=([^&]+)/)?.[1]||'';
     const thumb=ytId?`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`:'';
+    const videoSrc=!ytId&&vid.filePath?vid.filePath:'';
     const score=pickVidScore(vid);
     const isAdmin=featuredIds.includes(vid.id);
     const isSel=vid.id===PICK_SELECTED_VID;
@@ -4408,10 +4415,10 @@ function renderPickVideos(){
     const selBg=isSel?'rgba(239,68,68,.06)':'#fff';
     const selShadow=isSel?'0 8px 22px rgba(239,68,68,.22)':'none';
     return `<div style="position:relative;border:${selBorder};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .25s;background:${selBg};box-shadow:${selShadow}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow='none'}">
-      <div style="height:120px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
-        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:12px;color:var(--t3)">미리보기 없음</span>'}
+      <div style="height:120px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:videoSrc?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${videoSrc}#t=1"></video>`:'<span style="font-size:12px;color:var(--t3)">미리보기 없음</span>'}
         ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
-        <span style="position:absolute;top:8px;right:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3)">AI ${score}점</span>
+        <span style="position:absolute;top:8px;right:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(16,185,129,.92);color:#fff">총점 ${score}점</span>
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div>
       </div>
       <div style="padding:14px 16px">
@@ -4497,9 +4504,9 @@ function renderPickDetail(){
       <!-- 히어로 헤더: 큰 썸네일 + 재생 오버레이 + X 닫기 -->
       <div style="position:relative;display:flex;align-items:stretch;gap:18px;padding:16px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.22);margin-bottom:18px;box-shadow:0 2px 8px rgba(248,113,113,.06)">
         <!-- 큰 썸네일 -->
-        <div class="pick-hero-thumb" style="width:150px;height:94px;border-radius:10px;background:#f1f3f5;flex-shrink:0;overflow:hidden;position:relative;cursor:${ytId?'pointer':'default'}" ${ytId?`onclick="window.open('${vid.youtube}','_blank')"`:''}>
-          ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px">미리보기 없음</div>'}
-          ${ytId?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);transition:background .2s"><div style="width:46px;height:46px;border-radius:50%;background:rgba(220,38,38,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div></div>':''}
+        <div class="pick-hero-thumb" style="width:150px;height:94px;border-radius:10px;background:#000;flex-shrink:0;overflow:hidden;position:relative;cursor:pointer" onclick="openVideo(${vid.id})">
+          ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:vid.filePath?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${vid.filePath}#t=1"></video>`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px">미리보기 없음</div>'}
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);transition:background .2s"><div style="width:46px;height:46px;border-radius:50%;background:rgba(220,38,38,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div></div>
         </div>
         <!-- 텍스트 영역 (축약 배너 스타일) -->
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:5px">
@@ -4511,6 +4518,9 @@ function renderPickDetail(){
           <div class="pick-hero-title" style="font-size:16.5px;font-weight:800;color:var(--t1);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${title}</div>
           <div style="font-size:12.5px;color:var(--t3)">${u?.name||'—'} 강사 · ${product} · ${vid.date||''}</div>
           <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-top:4px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${comment}</div>
+          <div style="margin-top:8px">
+            <button onclick="event.stopPropagation();openVideo(${vid.id})" style="padding:7px 18px;font-size:12px;font-weight:700;background:#dc2626;color:#fff;border:none;border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(220,38,38,.25)" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">평가 보기 →</button>
+          </div>
         </div>
         <!-- X 닫기 -->
         <button onclick="clearPickSelection()" title="선택 해제" style="position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:16px;font-weight:900" onmouseover="this.style.background='rgba(220,38,38,.12)';this.style.color='#dc2626'" onmouseout="this.style.background='rgba(0,0,0,.06)';this.style.color='#6b7280'">✕</button>
