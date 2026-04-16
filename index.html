@@ -7287,11 +7287,19 @@ async function runVoiceAnalysis(){
     let checklistItems=[];
     if(checklistId) checklistItems=await loadChecklistItemsForEval(checklistId);
 
-    // 3) 길이 → 적응형 fps — 오디오는 영상보다 분석 부담 낮음
-    // 모델이 오디오를 '비디오 프레임'처럼 처리하지 않더라도 파일 크기 기반 토큰 방어 필요
+    // 3) 길이 → 적응형 fps
     let durSec=await readVideoDuration(audioFile).catch(()=>0);
     // duration 못 읽으면 파일 크기로 추정 (192kbps 기준 ≈ 초당 24KB)
     if(!durSec&&audioFile.size) durSec=Math.round(audioFile.size/24000);
+    // 오디오/비디오 토큰 한도 사전 체크
+    const isPureAudio=(audioFile.type||'').startsWith('audio');
+    // 오디오는 Gemini가 32 tokens/s 고정 → 약 65분 이상은 한도 초과
+    // 비디오는 fps로 조절 가능 → 거의 무제한
+    if(isPureAudio && durSec > 60*65){
+      showAiLoading(false);
+      alert(`오디오가 너무 깁니다 (${Math.round(durSec/60)}분).\n\n65분 이하로 잘라서 다시 업로드해주세요.\n(Gemini 오디오 한도: 약 65분)`);
+      return;
+    }
     // 안전 마진을 더 보수적으로 (토큰 max 70K)
     const fps=(()=>{
       if(!durSec||durSec<=0) return 0.2;
