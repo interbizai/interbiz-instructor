@@ -1293,11 +1293,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="ai-loading-ring"></div>
     <div class="ai-loading-title">AI 코칭 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
     <div class="ai-loading-step" id="ai-loading-step">준비 중...</div>
-    <!-- 경과 시간 + 예상 남은 시간 -->
-    <div style="display:flex;justify-content:space-around;margin-top:18px;padding:12px;background:#f8f9fa;border-radius:10px">
-      <div style="text-align:center"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">경과 시간</div><div id="ai-loading-elapsed" style="font-size:17px;font-weight:900;color:var(--t1)">00:00</div></div>
-      <div style="width:1px;background:var(--bdr)"></div>
-      <div style="text-align:center"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">예상 남은 시간</div><div id="ai-loading-remaining" style="font-size:17px;font-weight:900;color:var(--blue)">—</div></div>
+    <!-- 경과 시간 (중앙) -->
+    <div style="margin-top:18px;padding:14px;background:#f8f9fa;border-radius:10px;text-align:center">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px">경과 시간</div>
+      <div id="ai-loading-elapsed" style="font-size:22px;font-weight:900;color:var(--t1)">00:00</div>
     </div>
     <!-- 단계 체크리스트 -->
     <div id="ai-loading-steps" style="margin-top:16px;text-align:left">
@@ -5955,13 +5954,6 @@ function _updateAiLoadingTimer(){
   const ss=String(elapsed%60).padStart(2,'0');
   const elEl=document.getElementById('ai-loading-elapsed');
   if(elEl) elEl.textContent=mm+':'+ss;
-  // 예상 시간 넘으면 30초 단위로 자동 연장 (거짓 "거의 다 됐어요" 방지)
-  while(elapsed>=_aiLoadingExpected) _aiLoadingExpected+=30;
-  const rem=Math.max(30,_aiLoadingExpected-elapsed);
-  const rm=String(Math.floor(rem/60)).padStart(2,'0');
-  const rs=String(rem%60).padStart(2,'0');
-  const remEl=document.getElementById('ai-loading-remaining');
-  if(remEl) remEl.textContent=rm+':'+rs;
   const tipEl=document.getElementById('ai-loading-tip');
   if(tipEl){const idx=Math.floor(elapsed/8)%AI_LOADING_TIPS.length;tipEl.textContent=AI_LOADING_TIPS[idx];}
 }
