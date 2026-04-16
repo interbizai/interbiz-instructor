@@ -5739,7 +5739,7 @@ function openChecklistDetail(which){
               <th style="padding:8px;text-align:left;width:120px">세부항목</th>
               <th style="padding:8px;text-align:left">평가기준</th>
               <th style="padding:8px;text-align:center;width:65px">점수</th>
-              <th style="padding:8px;text-align:center;width:55px">판정</th>
+              <th style="padding:8px;text-align:center;width:80px">판정</th>
               <th style="padding:8px;text-align:center;width:95px">시점</th>
               <th style="padding:8px;text-align:left">분석 / 솔루션</th>
             </tr>
@@ -5749,7 +5749,7 @@ function openChecklistDetail(which){
               <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
               <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
               <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
-              <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
+              <td style="padding:8px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff;white-space:nowrap">${levelLabel[s.level]||s.level||'-'}</span></td>
               <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
               <td style="padding:8px;color:var(--t2);line-height:1.5">
                 ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
@@ -5939,7 +5939,7 @@ function setAiLoadingStage(step,state){
 }
 let _aiLoadingTimer=null, _aiLoadingStart=0, _aiLoadingExpected=60;
 const AI_LOADING_TIPS=[
-  'Gemini 2.5 Pro가 영상을 프레임 단위로 살펴보고 있습니다.',
+  'AI가 영상을 프레임 단위로 살펴보고 있습니다.',
   '체크리스트의 20개 항목 하나하나를 영상과 매칭 중입니다.',
   '강사의 목소리·발음·템포를 분석하고 있습니다.',
   '반복어 습관과 발화 시점을 찾는 중입니다.',
@@ -6124,7 +6124,7 @@ function generateMockResult(studentCount){
     solution:'1. 반복어를 줄이기 위해 <strong>2초 멈추기 연습</strong> 권장<br>2. 12분 이상 연속 강의 시 <strong>참여 유도 활동</strong> 삽입<br>3. PPT 전환 시 <strong>판서 병행</strong>으로 핵심 키워드 정리<br>4. 후반부 에너지 유지를 위해 <strong>25분경 환기 활동</strong> 계획',
     scenario:'<strong>오프닝 (3분):</strong> 지난 강의 핵심 복습 → 오늘 목표 제시<br><strong>본론 (20분):</strong> 제품 시연 + 수강생 직접 체험 + 10분마다 질문<br><strong>환기 (2분):</strong> 미니 퀴즈 또는 짝 토론<br><strong>마무리 (5분):</strong> 핵심 3가지 판서 정리 + 다음 강의 예고',
     scenarios:['영상에서 "이 제품은 좋습니다"라고 했는데, "이 제품이 고객님 생활을 어떻게 바꿔줄 수 있는지 말씀드리겠습니다"로 시작하면 더 몰입감을 줄 수 있습니다','시연 전 "직접 만져보시겠어요?"라는 참여 유도 멘트를 추가하면 집중도가 높아집니다','마무리에서 "오늘 배운 3가지를 정리하면..."으로 구조화하면 기억 정착률이 올라갑니다'],
-    levelUpTips:[{title:'도입 3분이 강의 전체를 결정합니다',text:'오프닝 질문 기법: 실제 사례 적용법'},{title:'실습 피드백은 즉각적·구체적으로',text:'행동 변화를 유도하는 코칭 언어 패턴'},{title:'AI 평가 후 자동 생성 예정',text:'제미나이 분석 결과 연동'}],
+    levelUpTips:[{title:'도입 3분이 강의 전체를 결정합니다',text:'오프닝 질문 기법: 실제 사례 적용법'},{title:'실습 피드백은 즉각적·구체적으로',text:'행동 변화를 유도하는 코칭 언어 패턴'},{title:'AI 평가 후 자동 생성 예정',text:'AI 분석 결과 연동'}],
     speechTips:[{title:'도입 화법',text:'"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."'},{title:'피드백 화법',text:'"한 가지만 바꿔 보면 더 잘 될 것 같아서요."'},{title:'마무리 화법',text:'"오늘 배운 것 중 하나만 내일 꼭 써보세요."'}]
   };
 }
@@ -6504,7 +6504,7 @@ function openCategoryRadar(which,categoryName){
             <th style="padding:8px;text-align:left;width:140px">세부항목</th>
             <th style="padding:8px;text-align:left">평가기준</th>
             <th style="padding:8px;text-align:center;width:70px">점수</th>
-            <th style="padding:8px;text-align:center;width:60px">판정</th>
+            <th style="padding:8px;text-align:center;width:80px">판정</th>
             <th style="padding:8px;text-align:center;width:100px">시점</th>
             <th style="padding:8px;text-align:left">분석/솔루션</th>
           </tr>
@@ -6514,7 +6514,7 @@ function openCategoryRadar(which,categoryName){
             <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
             <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
             <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
-            <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
+            <td style="padding:8px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff;white-space:nowrap">${levelLabel[s.level]||s.level||'-'}</span></td>
             <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
             <td style="padding:8px;color:var(--t2);line-height:1.5">
               ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
@@ -7431,11 +7431,11 @@ async function runVoiceAnalysis(){
     if(!durSec&&audioFile.size) durSec=Math.round(audioFile.size/24000);
     // 오디오/비디오 토큰 한도 사전 체크
     const isPureAudio=(audioFile.type||'').startsWith('audio');
-    // 오디오는 Gemini가 32 tokens/s 고정 → 약 65분 이상은 한도 초과
+    // 오디오는 AI 토큰 제약으로 약 65분 이상은 한도 초과
     // 비디오는 fps로 조절 가능 → 거의 무제한
     if(isPureAudio && durSec > 60*65){
       showAiLoading(false);
-      alert(`오디오가 너무 깁니다 (${Math.round(durSec/60)}분).\n\n65분 이하로 잘라서 다시 업로드해주세요.\n(Gemini 오디오 한도: 약 65분)`);
+      alert(`오디오가 너무 깁니다 (${Math.round(durSec/60)}분).\n\n65분 이하로 잘라서 다시 업로드해주세요.\n(AI 오디오 분석 한도: 약 65분)`);
       return;
     }
     // 안전 마진을 더 보수적으로 (토큰 max 70K)
@@ -7977,7 +7977,7 @@ function openVoiceTimestamp(idx){
   el('ts-modal-video').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#1a1a2e;flex-direction:column;gap:12px;padding:20px">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     <div style="color:rgba(255,255,255,.5);font-size:13px;text-align:center">🎤 ${ts.t||''}<br><span style="font-size:11px">해당 구간 음성</span></div>
-    <div style="color:rgba(255,255,255,.3);font-size:11px">Gemini 음성 연동 시 자동 재생</div>
+    <div style="color:rgba(255,255,255,.3);font-size:11px">AI 음성 연동 시 자동 재생</div>
   </div>`;
 
   // 타임라인
