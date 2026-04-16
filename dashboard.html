@@ -5781,26 +5781,38 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     if(anPlayer){
       anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${videoMime}"></video>`;
     }
-    // 3) Vertex AI 호출 (교육자료 있으면 평가안+AI독자, 없으면 AI독자만)
+    // 3) Vertex AI 호출 — 개별 실패해도 한 쪽은 보여주기
     el('an-ai-summary').textContent='AI 영상 분석 중... (1~3분)';
     const hasEdu=!!eduFileUrl;
     let critResult=null, aiResult=null;
+    const errors=[];
     if(hasEdu){
       setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
-      critResult=normalizeVertexResult(await callVertexAnalyze({
-        video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-        checklist_items:checklistItems, eval_type:'평가안기준',
-        edu_file_url:eduFileUrl,
-        edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
-      }));
+      try{
+        critResult=normalizeVertexResult(await callVertexAnalyze({
+          video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
+          checklist_items:checklistItems, eval_type:'평가안기준',
+          edu_file_url:eduFileUrl,
+          edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
+        }));
+      }catch(e){errors.push('평가안 기준: '+e.message); console.error(e);}
       setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
     } else {
       setAiLoadingStep('AI 영상 분석 (AI 독자)...');
     }
-    aiResult=normalizeVertexResult(await callVertexAnalyze({
-      video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-      checklist_items:checklistItems, eval_type:'AI독자'
-    }));
+    try{
+      aiResult=normalizeVertexResult(await callVertexAnalyze({
+        video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
+        checklist_items:checklistItems, eval_type:'AI독자'
+      }));
+    }catch(e){errors.push('AI 독자: '+e.message); console.error(e);}
+    if(!critResult&&!aiResult){
+      throw new Error(errors.join(' / ')||'분석 실패');
+    }
+    if(errors.length){
+      console.warn('부분 실패:',errors);
+      setTimeout(()=>alert('일부 분석 실패:\n'+errors.join('\n')+'\n\n성공한 결과만 표시됩니다.'),100);
+    }
     // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
     const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
     const vidRow=await dbCreateVideo({

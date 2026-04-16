@@ -314,35 +314,42 @@ export default async function handler(req, res) {
     const tryParse = (raw) => {
       if (!raw) return null;
       let cleaned = raw.trim();
-      // 마크다운 펜스 제거 (```json ... ```)
+      // 마크다운 펜스 제거
       cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, '').replace(/```\s*$/i, '');
       const firstBrace = cleaned.indexOf('{');
       const lastBrace = cleaned.lastIndexOf('}');
       if (firstBrace >= 0 && lastBrace > firstBrace) cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-      // 1차 시도
-      try { return JSON.parse(cleaned); } catch (e) {}
-      // 제어문자 제거 후 재시도
-      let c2 = cleaned.replace(/[\u0000-\u001F]+/g, ' ');
-      try { return JSON.parse(c2); } catch (e) {}
-      // 꼬리 쉼표 제거
-      let c3 = c2.replace(/,\s*([}\]])/g, '$1');
-      try { return JSON.parse(c3); } catch (e) {}
-      // 불완전 괄호 복구 (MAX_TOKENS/STOP 공통)
-      let c4 = c3.replace(/,\s*$/, '');
-      const openObj = (c4.match(/\{/g) || []).length - (c4.match(/\}/g) || []).length;
-      const openArr = (c4.match(/\[/g) || []).length - (c4.match(/\]/g) || []).length;
-      const openStr = (c4.match(/"/g) || []).length % 2;
-      if (openStr) c4 += '"';
-      for (let i = 0; i < openArr; i++) c4 += ']';
-      for (let i = 0; i < openObj; i++) c4 += '}';
-      try { return JSON.parse(c4); } catch (e) {}
+
+      const attempts = [
+        (s) => s,
+        (s) => s.replace(/[\u0000-\u001F\u007F]+/g, ' '),
+        (s) => s.replace(/,\s*([}\]])/g, '$1'),
+        (s) => s.replace(/([{,]\s*)([a-zA-Z_][\w$]*)(\s*:)/g, '$1"$2"$3'),
+        (s) => s.replace(/:\s*'([^']*)'/g, ':"$1"'),
+        (s) => s.replace(/\\'/g, "'"),
+        (s) => {
+          let t = s.replace(/,\s*$/, '');
+          const oo = (t.match(/\{/g) || []).length - (t.match(/\}/g) || []).length;
+          const oa = (t.match(/\[/g) || []).length - (t.match(/\]/g) || []).length;
+          const os = (t.match(/"/g) || []).length % 2;
+          if (os) t += '"';
+          for (let i = 0; i < oa; i++) t += ']';
+          for (let i = 0; i < oo; i++) t += '}';
+          return t;
+        },
+      ];
+      let current = cleaned;
+      for (const fix of attempts) {
+        current = fix(current);
+        try { return JSON.parse(current); } catch (e) {}
+      }
       return null;
     };
 
     let parsed = tryParse(text);
 
-    // 1차 파싱 실패 시 한 번 재시도 (seed 살짝 바꿔서)
-    if (!parsed) {
+    // 1차 파싱 실패 시 두 번까지 재시도
+    for (let i = 0; i < 2 && !parsed; i++) {
       try {
         const retry = await gm.generateContent({ contents: [{ role: 'user', parts }] });
         const rText = retry.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
