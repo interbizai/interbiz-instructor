@@ -5955,12 +5955,13 @@ function _updateAiLoadingTimer(){
   const ss=String(elapsed%60).padStart(2,'0');
   const elEl=document.getElementById('ai-loading-elapsed');
   if(elEl) elEl.textContent=mm+':'+ss;
-  const rem=Math.max(0,_aiLoadingExpected-elapsed);
+  // 예상 시간 넘으면 30초 단위로 자동 연장 (거짓 "거의 다 됐어요" 방지)
+  while(elapsed>=_aiLoadingExpected) _aiLoadingExpected+=30;
+  const rem=Math.max(30,_aiLoadingExpected-elapsed);
   const rm=String(Math.floor(rem/60)).padStart(2,'0');
   const rs=String(rem%60).padStart(2,'0');
   const remEl=document.getElementById('ai-loading-remaining');
-  if(remEl) remEl.textContent=rem>0?(rm+':'+rs):'거의 다 됐어요';
-  // 팁 회전 (8초마다)
+  if(remEl) remEl.textContent=rm+':'+rs;
   const tipEl=document.getElementById('ai-loading-tip');
   if(tipEl){const idx=Math.floor(elapsed/8)%AI_LOADING_TIPS.length;tipEl.textContent=AI_LOADING_TIPS[idx];}
 }
@@ -5990,10 +5991,14 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     alert('영상 파일이 없습니다.');
     return;
   }
-  // 영상 길이로 예상 시간 추정 (Pro 기준 길이에 비례)
+  // 영상 길이 기반 Pro 분석 예상 시간 (평가안+AI독자 2회 호출 + 업로드/저장)
   const tmpFile=el('an-file').files?.[0];
   const tmpDur=tmpFile?await readVideoDuration(tmpFile).catch(()=>0):0;
-  const expectedSec=Math.max(60,Math.round(20+tmpDur*0.15)); // 기본 60s + 영상 길이의 15%
+  // 경험값: 업로드 15s + Pro 각 호출당 (30s + 영상길이*10%) × 2 + 저장 10s
+  // 짧은 영상(5분): 15+2*(30+30)+10 = 145s
+  // 20분: 15+2*(30+120)+10 = 325s (5.4분)
+  // 1시간: 15+2*(30+360)+10 = 805s (13.4분)
+  const expectedSec=Math.max(120,Math.round(25+(tmpDur*0.1+30)*2));
   showAiLoading(true,expectedSec);
   try{
     // 0) 영상 길이로 fps 자동 계산
@@ -7380,10 +7385,14 @@ async function runVoiceAnalysis(){
   const eduFileUrl=document.getElementById('va-checklist-url')?.value||'';
   const hasCL=!!checklistId||el('va-checklist').files?.length>0||!!document.getElementById('va-cl-url')?.value;
 
-  // 예상 시간 추정 (파일 길이 반영)
+  // 스피치 예상 시간 (Pro 기준, 단일 호출)
+  // 업로드 10s + Pro 호출 (25s + 길이*10%) + 저장 5s
+  // 5분: 10+25+30+5 = 70s
+  // 20분: 10+25+120+5 = 160s (2.7분)
+  // 1시간: 10+25+360+5 = 400s (6.7분)
   const vaTmpFile=el('va-file').files?.[0];
   const vaTmpDur=vaTmpFile?await readVideoDuration(vaTmpFile).catch(()=>0):0;
-  showAiLoading(true,Math.max(45,Math.round(20+vaTmpDur*0.15)));
+  showAiLoading(true,Math.max(90,Math.round(40+vaTmpDur*0.1)));
   setAiLoadingStep('스피치 분석 준비 중...');
   // 스피치는 평가안 기준 단계 스킵 표시
   setAiLoadingStage('crit','done');
