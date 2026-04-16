@@ -2281,7 +2281,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
-    <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">💳 금액 현황</button>
+    <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">금액 현황</button>
   </div>
 
   <!-- 금액 현황 (크레딧) -->
@@ -5873,18 +5873,19 @@ function readVideoDuration(file){
     tag.src=url;
   });
 }
-// 영상 길이별 적정 fps 자동 계산
-// Gemini 2.5 Pro 입력 한도 2M 토큰(실전 900K 여유 마진), 초당 ~263 토큰/프레임(1fps)
-// Pro는 컨텍스트가 넉넉해 대부분 fps 1.0 가능, 1시간+ 초장편만 0.5~0.25로
+// 영상 길이별 적정 fps 자동 계산 — Pro 기준
+// Pro 입력 2M 토큰, 안전 마진 600K (체크리스트 10K + 교육자료 20K + 출력 32K + 버퍼)
 function pickAdaptiveFps(durationSec){
   if(!durationSec||durationSec<=0) return 1.0;
-  const maxVideoTokens=900000; // Pro 여유 900K (체크리스트/교육자료/출력 고려)
+  const maxVideoTokens=600000;
   const ideal=maxVideoTokens/(durationSec*263);
   if(ideal>=1) return 1.0;
   if(ideal>=0.5) return 0.5;
+  if(ideal>=0.33) return 0.33;
   if(ideal>=0.25) return 0.25;
   if(ideal>=0.15) return 0.15;
-  return 0.1;
+  if(ideal>=0.1) return 0.1;
+  return 0.06;
 }
 function setAiLoadingStep(msg){
   const el=document.getElementById('ai-loading-step');
