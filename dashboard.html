@@ -8176,23 +8176,33 @@ function renderDashboard(){
   try{
   const filtered=getFiltered();
   const filteredVids=getFilteredVideos(filtered);
-  // stats
-  if(el('sv-total')) el('sv-total').textContent=filtered.length;
-  if(el('sv-vids')) el('sv-vids').textContent=filteredVids.length;
-  const allScores=filteredVids.map(vid=>{
-    const goodCount=(vid.timestamps||[]).filter(t=>t.type==='good').length;
-    return goodCount*10+(vid.timestamps||[]).length*3;
+  // evaluations 테이블 기준 실제 평가받은 영상만 카운트
+  const evalScoreMap={};
+  (D.evaluations||[]).forEach(e=>{
+    if(!e.video_id||!e.overall_score) return;
+    if(!evalScoreMap[e.video_id]) evalScoreMap[e.video_id]={};
+    evalScoreMap[e.video_id][e.eval_type]=e.overall_score;
   });
+  const evaledVids=filteredVids.filter(v=>evalScoreMap[v.id]);
+  const evaledUserIds=new Set(evaledVids.map(v=>v.userId));
+  const evaledUsers=filtered.filter(u=>evaledUserIds.has(u.id));
+
+  // stats — 실제 평가 완료 기반
+  if(el('sv-total')) el('sv-total').textContent=evaledUsers.length;
+  if(el('sv-vids')) el('sv-vids').textContent=evaledVids.length;
+  const allScores=evaledVids.map(v=>{
+    const s=evalScoreMap[v.id];
+    return s['평가안기준']||s['AI독자']||0;
+  }).filter(s=>s>0);
   const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
   if(el('sv-avg')) el('sv-avg').textContent=avg;
   const lowVidCount=allScores.filter(s=>s<=70).length;
-  const noVidUsers=filtered.filter(u=>!filteredVids.some(vid=>vid.userId===u.id)).length;
-  if(el('sv-s')) el('sv-s').textContent=lowVidCount+noVidUsers;
-  try{renderAIStrip(filtered);}catch(e){console.error('aistrip:',e);}
-  try{renderRanking(filtered);}catch(e){console.error('ranking:',e);}
+  if(el('sv-s')) el('sv-s').textContent=lowVidCount;
+  try{renderAIStrip(evaledUsers);}catch(e){console.error('aistrip:',e);}
+  try{renderRanking(evaledUsers);}catch(e){console.error('ranking:',e);}
   try{renderEvalHistory(filtered);}catch(e){console.error('evalHistory:',e);}
   try{renderVoiceHistory(filtered);}catch(e){console.error('voiceHistory:',e);}
-  try{renderGrid(filtered);}catch(e){console.error('grid:',e);}
+  try{renderGrid(evaledUsers);}catch(e){console.error('grid:',e);}
   }catch(e){console.error('renderDashboard error:',e);}
 }
 
@@ -8205,18 +8215,24 @@ function renderEvalHistory(filtered){
   if(!tbody) return;
   const fVids=getFilteredVideos(filtered);
 
+  // evaluations 테이블 기반 실제 평가받은 영상만 (평가안기준 또는 AI독자 overall_score > 0)
+  const evalScoreMap={};
+  (D.evaluations||[]).forEach(e=>{
+    if(!e.video_id||!e.overall_score) return;
+    if(!evalScoreMap[e.video_id]) evalScoreMap[e.video_id]={};
+    evalScoreMap[e.video_id][e.eval_type]=e.overall_score;
+  });
+
   evalHistoryRows=[];
   filtered.forEach(u=>{
     const userVids=fVids.filter(v=>v.userId===u.id);
-    if(userVids.length){
-      userVids.forEach(v=>{
-        const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
-        const score=goodCount*10+(v.timestamps||[]).length*3;
-        evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
-      });
-    } else if(!v('f-product')){
-      evalHistoryRows.push({date:u.registered||'—',channel:u.channel||'—',team:u.team||'—',product:'—',name:u.name,score:u.score||0,userId:u.id,videoId:null,hireDate:u.hireDate});
-    }
+    userVids.forEach(v=>{
+      const sMap=evalScoreMap[v.id];
+      if(!sMap) return; // 평가 없는 영상은 제외
+      const score=sMap['평가안기준']||sMap['AI독자']||0;
+      if(!score) return;
+      evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
+    });
   });
   evalSortKey='date'; evalSortAsc=false;
   renderEvalRows();
