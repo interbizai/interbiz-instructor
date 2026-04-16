@@ -5181,6 +5181,7 @@ async function saveEvaluation({videoId,checklistId,eduFileUrl,evalType,result}){
     good:result.good||[], bad:result.bad||[], upgrade:result.upgrade||[],
     scenarios:result.scenarios||[], level_tips:result.level_tips||[],
     teaching_patterns:result.teaching_patterns||[],
+    speech_report:{rubric_alignment_score:result.rubric_alignment_score,rubric_alignment_reason:result.rubric_alignment_reason},
     mood:result.mood||null, decibel:result.decibel||null, tempo:result.tempo_wpm||null,
     habits:result.habits||[], engagement_gaps:result.engagement_gaps_minutes||[]
   };
@@ -5780,25 +5781,26 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     if(anPlayer){
       anPlayer.innerHTML=`<video id="an-video-el" controls style="width:100%;height:100%;border-radius:var(--r2)"><source src="${videoUrl}" type="${videoMime}"></video>`;
     }
-    // 3) Vertex AI 호출 (quota 보호 위해 순차 처리)
+    // 3) Vertex AI 호출 (교육자료 있으면 평가안+AI독자, 없으면 AI독자만)
     el('an-ai-summary').textContent='AI 영상 분석 중... (1~3분)';
     const hasEdu=!!eduFileUrl;
-    // 병렬 호출 시 Vertex quota(RESOURCE_EXHAUSTED) 빈번 → 순차 처리
-    setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
-    const critResultRaw=await callVertexAnalyze({
-      video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-      checklist_items:checklistItems, eval_type:'평가안기준',
-      edu_file_url:hasEdu?eduFileUrl:undefined,
-      edu_file_mime:hasEdu?(eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/pdf'):undefined
-    });
-    setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
-    const aiResultRaw=await callVertexAnalyze({
+    let critResult=null, aiResult=null;
+    if(hasEdu){
+      setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
+      critResult=normalizeVertexResult(await callVertexAnalyze({
+        video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
+        checklist_items:checklistItems, eval_type:'평가안기준',
+        edu_file_url:eduFileUrl,
+        edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
+      }));
+      setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
+    } else {
+      setAiLoadingStep('AI 영상 분석 (AI 독자)...');
+    }
+    aiResult=normalizeVertexResult(await callVertexAnalyze({
       video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
       checklist_items:checklistItems, eval_type:'AI독자'
-    });
-    // sub_scores 기반 재계산 — 모든 화면 숫자 일관성 보장
-    const critResult=normalizeVertexResult(critResultRaw);
-    const aiResult=normalizeVertexResult(aiResultRaw);
+    }));
     // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
     const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
     const vidRow=await dbCreateVideo({
@@ -5810,10 +5812,9 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     });
     const videoId=vidRow?.id||null;
     // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장
-    await Promise.all([
-      saveEvaluation({videoId,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult}),
-      saveEvaluation({videoId,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult})
-    ]);
+    const saveTasks=[saveEvaluation({videoId,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
+    if(critResult) saveTasks.push(saveEvaluation({videoId,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult}));
+    await Promise.all(saveTasks);
     await loadFromDB();
     // 6) 전역에 보관 + 렌더
     window._lastVertexResult={crit:critResult,ai:aiResult};
@@ -5913,6 +5914,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ① 총점 배너 — overall_score(100점 만점) 우선, 없으면 criteriaScores 합산
   const critRaw=window._lastVertexResult?.crit;
   const aiRaw=window._lastVertexResult?.ai;
+  // 교육자료 없으면 평가안 기준 배너+탭 숨김
+  const hasCrit=!!critRaw;
+  const critBanner=document.querySelector('#an-step2 div[style*="linear-gradient(135deg,#9f1239"]')?.parentElement;
+  if(critBanner){ critBanner.style.display=hasCrit?'':'none'; }
+  const critTab=document.querySelector('button[onclick*="switchAnTab(\'criteria\'"]');
+  if(critTab) critTab.style.display=hasCrit?'':'none';
+  if(!hasCrit){
+    const aiTab=document.querySelector('button[onclick*="switchAnTab(\'ai\'"]');
+    if(aiTab) aiTab.click();
+  }
   let pctScore = (typeof r.overallScore==='number' && r.overallScore>0) ? r.overallScore : 0;
   if(!pctScore){
     const sSum=(r.criteriaScores||[]).reduce((a,b)=>a+(b.score||0),0);
@@ -9494,7 +9505,9 @@ function openVideo(id){
       good:row.good||[], bad:row.bad||[], upgrade:row.upgrade||[],
       scenarios:row.scenarios||[], level_tips:row.level_tips||[], teaching_patterns:row.teaching_patterns||[],
       habits:row.habits||[], engagement_gaps_minutes:row.engagement_gaps||[],
-      mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo
+      mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo,
+      rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
+      rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||''
     }:null;
     const critResult=normalizeVertexResult(toVertex(critRow));
     const aiResult=normalizeVertexResult(toVertex(aiRow));
