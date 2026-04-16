@@ -281,7 +281,8 @@ export default async function handler(req, res) {
       if (edu.kind === 'fileData') {
         parts.push({ fileData: { mimeType: edu.mime, fileUri: edu.url } });
       } else if (edu.kind === 'text') {
-        eduInlineText = `\n\n${edu.label}\n${edu.text.slice(0, 30000)}`;
+        // 1시간 영상 대비 토큰 여유를 위해 교육자료 텍스트 상한을 20K자로 축소
+        eduInlineText = `\n\n${edu.label}\n${edu.text.slice(0, 20000)}`;
       }
     }
     parts.push({
