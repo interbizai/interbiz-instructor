@@ -7158,13 +7158,14 @@ JSON으로 응답: {"decibel":{"current":0,"status":"적정"},"tempo":{"wpm":0,"
     const parsed=JSON.parse(m[0]);
     renderVoiceResult(parsed,hasCL,count,tone);
     autoSaveVoice(parsed,count,tone);
-  } catch(e){
-    console.error('Gemini voice error:',e);
+  } catch(e2){
+    console.error('Gemini voice fallback error:',e2);
     const mock=generateMockVoice(count,tone);
     renderVoiceResult(mock,hasCL,count,tone);
     autoSaveVoice(mock,count,tone);
   }
-}
+  } // catch(e) 끝
+} // runVoiceAnalysis 끝
 
 function generateMockVoice(count,tone){
   const role=v('va-role')||'현장강사';
