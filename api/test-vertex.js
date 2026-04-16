@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
     const vertex = new VertexAI({
       project: projectId,
-      location: 'asia-northeast3',
+      location: 'global',
       googleAuthOptions: {
         projectId,
         credentials: {
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       ok: true,
       project: projectId,
       model: 'gemini-2.5-flash',
-      location: 'asia-northeast3',
+      location: 'global',
       response: text,
     });
   } catch (e) {
