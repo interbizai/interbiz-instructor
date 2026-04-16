@@ -301,39 +301,53 @@ export default async function handler(req, res) {
     const text = cand?.content?.parts?.[0]?.text || '';
     const finishReason = cand?.finishReason || '';
 
-    // 마크다운 코드펜스 제거
-    let cleaned = text.trim();
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
-    // 첫 {부터 마지막 }까지 추출
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace >= 0 && lastBrace > firstBrace) {
-      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    const tryParse = (raw) => {
+      if (!raw) return null;
+      let cleaned = raw.trim();
+      // 마크다운 펜스 제거 (```json ... ```)
+      cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, '').replace(/```\s*$/i, '');
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace >= 0 && lastBrace > firstBrace) cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+      // 1차 시도
+      try { return JSON.parse(cleaned); } catch (e) {}
+      // 제어문자 제거 후 재시도
+      let c2 = cleaned.replace(/[\u0000-\u001F]+/g, ' ');
+      try { return JSON.parse(c2); } catch (e) {}
+      // 꼬리 쉼표 제거
+      let c3 = c2.replace(/,\s*([}\]])/g, '$1');
+      try { return JSON.parse(c3); } catch (e) {}
+      // 불완전 괄호 복구 (MAX_TOKENS/STOP 공통)
+      let c4 = c3.replace(/,\s*$/, '');
+      const openObj = (c4.match(/\{/g) || []).length - (c4.match(/\}/g) || []).length;
+      const openArr = (c4.match(/\[/g) || []).length - (c4.match(/\]/g) || []).length;
+      const openStr = (c4.match(/"/g) || []).length % 2;
+      if (openStr) c4 += '"';
+      for (let i = 0; i < openArr; i++) c4 += ']';
+      for (let i = 0; i < openObj; i++) c4 += '}';
+      try { return JSON.parse(c4); } catch (e) {}
+      return null;
+    };
+
+    let parsed = tryParse(text);
+
+    // 1차 파싱 실패 시 한 번 재시도 (seed 살짝 바꿔서)
+    if (!parsed) {
+      try {
+        const retry = await gm.generateContent({ contents: [{ role: 'user', parts }] });
+        const rText = retry.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        parsed = tryParse(rText);
+      } catch (e) {}
     }
 
-    let parsed = null;
-    try { parsed = JSON.parse(cleaned); } catch (e) {
-      // MAX_TOKENS로 잘린 경우: 불완전 JSON 복구 시도 (열린 괄호 닫기)
-      if (finishReason === 'MAX_TOKENS') {
-        let fix = cleaned.replace(/,\s*$/, '');
-        const openObj = (fix.match(/\{/g) || []).length - (fix.match(/\}/g) || []).length;
-        const openArr = (fix.match(/\[/g) || []).length - (fix.match(/\]/g) || []).length;
-        const openStr = (fix.match(/"/g) || []).length % 2;
-        if (openStr) fix += '"';
-        for (let i = 0; i < openArr; i++) fix += ']';
-        for (let i = 0; i < openObj; i++) fix += '}';
-        try { parsed = JSON.parse(fix); } catch (e2) {}
-      }
-      if (!parsed) {
-        return res.status(502).json({
-          ok: false,
-          error: `AI 응답 JSON 파싱 실패 (finishReason=${finishReason})`,
-          raw_head: text.slice(0, 500),
-          raw_tail: text.slice(-500),
-          raw_length: text.length,
-          parse_error: e.message,
-        });
-      }
+    if (!parsed) {
+      return res.status(502).json({
+        ok: false,
+        error: `AI 응답 JSON 파싱 실패 (finishReason=${finishReason})`,
+        raw_head: text.slice(0, 500),
+        raw_tail: text.slice(-500),
+        raw_length: text.length,
+      });
     }
 
     return res.status(200).json({ ok: true, eval_type, model, result: parsed });
