@@ -5095,12 +5095,13 @@ function normalizeVertexResult(raw){
   if(!raw||!Array.isArray(raw.sub_scores)||!raw.sub_scores.length) return raw;
   // level에 맞춰 score를 5/3/0(또는 max 비율) 강제 보정 + 중간값 금지
   raw.sub_scores=raw.sub_scores.map(s=>{
-    const max=Number(s.max||0);
+    const max=Number(s.max||5);
     let level=s.level;
+    const rawScore=Number(s.score||0);
     if(!['good','normal','bad','na'].includes(level)){
-      // 미지정이면 score 비율로 추정
-      const ratio=max>0?(Number(s.score||0)/max):0;
-      level=ratio>=0.9?'good':ratio>=0.3?'normal':'bad';
+      // level 미지정/DB에서 복원 → score 비율로 추정
+      const ratio=max>0?(rawScore/max):0;
+      level=ratio>=0.85?'good':ratio>=0.4?'normal':rawScore===0?'bad':'normal';
     }
     let score;
     if(level==='good') score=max;
@@ -5122,7 +5123,7 @@ function normalizeVertexResult(raw){
       } else if(Array.isArray(h.timestamps)){
         h.timestamps.forEach(t=>{timestamps.push(typeof t==='string'?t:(t?.time||'')); contexts.push(typeof t==='object'?(t?.context||''):'');});
       }
-      return {...h, timestamps, contexts, count: timestamps.length||Number(h.count||0)};
+      return {...h, timestamps, contexts, count: timestamps.length||Number(h.count||0), solution:h.solution||h.replacement||''};
     });
   }
   // na 제외 후 집계
@@ -5913,15 +5914,17 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ① 총점 배너 — overall_score(100점 만점) 우선, 없으면 criteriaScores 합산
   const critRaw=window._lastVertexResult?.crit;
   const aiRaw=window._lastVertexResult?.ai;
-  // 교육자료 없으면 평가안 기준 배너+탭 숨김
-  const hasCrit=!!critRaw;
-  const critBanner=document.querySelector('#an-step2 div[style*="linear-gradient(135deg,#9f1239"]')?.parentElement;
-  if(critBanner){ critBanner.style.display=hasCrit?'':'none'; }
+  // 교육자료 없으면 평가안 기준 전체(배너+탭+레이더+피드백) 숨김
+  const hasCrit=!!critRaw&&!!critRaw.sub_scores?.length;
+  const critBannerWrap=document.querySelector('#an-step2 div[style*="linear-gradient(135deg,#9f1239"]')?.parentElement;
+  if(critBannerWrap) critBannerWrap.style.display=hasCrit?'':'none';
   const critTab=document.querySelector('button[onclick*="switchAnTab(\'criteria\'"]');
   if(critTab) critTab.style.display=hasCrit?'':'none';
+  const critPane=el('an-tab-criteria');
+  if(critPane) critPane.style.display=hasCrit?'':'none';
   if(!hasCrit){
     const aiTab=document.querySelector('button[onclick*="switchAnTab(\'ai\'"]');
-    if(aiTab) aiTab.click();
+    if(aiTab){aiTab.click();aiTab.classList.add('active');}
   }
   let pctScore = (typeof r.overallScore==='number' && r.overallScore>0) ? r.overallScore : 0;
   if(!pctScore){
@@ -5973,9 +5976,21 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     }
   }
 
-  // ③ 타임스탬프 피드 (엑셀 기반) + 최종의견
-  window._anTimestamps=r.timestamps||[];
-  el('an-criteria-result').innerHTML=renderTsTable(r.timestamps||[]);
+  // ③ 타임스탬프 피드 — 평가안은 critRaw, AI독자는 aiRaw 별도 렌더
+  const critTimestamps=(critRaw?.sub_scores||[]).map(s=>({
+    category:s.category, item:s.sub_item, criteria:s.criterion||'',
+    score:s.score||0, maxScore:s.max||0,
+    t:s.timestamp||'', type:s.level==='good'?'good':s.level==='bad'?'bad':'tip',
+    text:s.analysis||'', solution:s.solution||'', tags:[]
+  }));
+  const aiTimestamps=(aiRaw?.sub_scores||[]).map(s=>({
+    category:s.category, item:s.sub_item, criteria:s.criterion||'',
+    score:s.score||0, maxScore:s.max||0,
+    t:s.timestamp||'', type:s.level==='good'?'good':s.level==='bad'?'bad':'tip',
+    text:s.analysis||'', solution:s.solution||'', tags:[]
+  }));
+  window._anTimestamps=critTimestamps.length?critTimestamps:aiTimestamps;
+  el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 평가안 기준 피드백이 생성됩니다</div>';
   // 평가안 기준 Good/Bad/Upgrade — Vertex raw 데이터 사용
   const criGood=(critRaw?.good||r.good||[]).slice(0,5);
   const criBad=(critRaw?.bad||r.bad||[]).slice(0,5);
@@ -6089,8 +6104,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'||'—'}</strong></div>
     <div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning||''}</div>`;
 
-  // ⑦ AI 기반 타임스탬프 + 최종의견
-  el('an-ts-feed').innerHTML=renderTsTable(r.timestamps||[]);
+  // ⑦ AI 독자 타임스탬프 (aiRaw 기반 — 평가안과 별도)
+  el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
   // AI 독자 Good/Bad/Upgrade — Vertex raw 데이터 사용
   const aiGoodItems=(aiRaw?.good||r.good||[]).slice(0,5);
   const aiBadItems=(aiRaw?.bad||r.bad||[]).slice(0,5);
@@ -6274,16 +6289,9 @@ ${tsInfo}
 ${savedTimestamps.length?'기존 타임스탬프를 참고하여 더 정밀하게 분석하세요.':''}`;
 
   try {
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4000}})
-    });
-    const data=await resp.json();
-    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('no json');
-    renderAnalysisResult(JSON.parse(m[0]),true,studentCount);
+    // 레거시 영상: 목업 데이터로 대체 (Vertex 분석 미지원)
+    throw new Error('legacy-mock');
   } catch(e){
-    console.error('Gemini full analysis error:',e);
     const mock=generateMockResult(studentCount);
     if(savedTimestamps.length) mock.timestamps=savedTimestamps;
     renderAnalysisResult(mock,true,studentCount);
@@ -7164,29 +7172,10 @@ async function runVoiceAnalysis(){
     showAiLoading(false);
     alert('스피치 분석 실패: '+e.message);
 
-    // 폴백: 기존 방식으로 시도
-    const role=v('va-role')||'현장강사';
-    const task=v('va-task')||'교육 강의';
-    const prompt=`당신은 interbiz 현장강사 음성 분석 전문 AI입니다.
-강의 제목: ${title}, 교육생: ${count}명, 목표 분위기: ${tone}, 직군: ${role}
-JSON으로 응답: {"decibel":{"current":0,"status":"적정"},"tempo":{"wpm":0,"status":"적정"},"habits":[],"overall_score":0,"solution":"솔루션","training":"훈련법"}`;
-    try {
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4000}})
-    });
-    const data=await resp.json();
-    let txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('no json');
-    const parsed=JSON.parse(m[0]);
-    renderVoiceResult(parsed,hasCL,count,tone);
-    autoSaveVoice(parsed,count,tone);
-  } catch(e2){
-    console.error('Gemini voice fallback error:',e2);
+    // 폴백: 목업 데이터 표시
     const mock=generateMockVoice(count,tone);
     renderVoiceResult(mock,hasCL,count,tone);
     autoSaveVoice(mock,count,tone);
-  }
   } // catch(e) 끝
 } // runVoiceAnalysis 끝
 
@@ -9501,9 +9490,10 @@ function openVideo(id){
     const critRow=pickLatest('평가안기준');
     const aiRow=pickLatest('AI독자');
     if(!critRow&&!aiRow){
-      // 저장된 평가 없음 — 구 버전 영상 → 목업/레거시 모드
-      el('an-ai-summary').textContent='저장된 평가 데이터가 없습니다.';
-      generateFullAnalysis(title, count, vid.timestamps||[], vid.youtube||'');
+      // 저장된 평가 없음 — 구 버전 영상 → 목업 모드 + 재분석 안내
+      el('an-ai-summary').textContent='이전 버전 영상입니다. 재분석이 필요합니다.';
+      el('an-criteria-result').innerHTML='<div style="padding:20px;text-align:center;color:var(--t3)">평가 데이터 없음 — 영상을 다시 업로드하여 AI 분석을 받아주세요.</div>';
+      el('an-ts-feed').innerHTML='<div style="padding:20px;text-align:center;color:var(--t3)">평가 데이터 없음</div>';
       return;
     }
     const toVertex=(row)=>row?{
