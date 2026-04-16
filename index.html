@@ -6079,13 +6079,24 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const hasCrit=!!critRaw&&!!critRaw.sub_scores?.length;
   const critBannerWrap=document.querySelector('#an-step2 div[style*="linear-gradient(135deg,#9f1239"]')?.parentElement;
   if(critBannerWrap) critBannerWrap.style.display=hasCrit?'':'none';
-  const critTab=document.querySelector('button[onclick*="switchAnTab(\'criteria\'"]');
-  if(critTab) critTab.style.display=hasCrit?'':'none';
+  const critTabBtn=document.querySelector('button[onclick*="switchAnTab(\'criteria\'"]');
+  const aiTabBtn=document.querySelector('button[onclick*="switchAnTab(\'ai\'"]');
   const critPane=el('an-tab-criteria');
-  if(critPane) critPane.style.display=hasCrit?'':'none';
-  if(!hasCrit){
-    const aiTab=document.querySelector('button[onclick*="switchAnTab(\'ai\'"]');
-    if(aiTab){aiTab.click();aiTab.classList.add('active');}
+  const aiPane=el('an-tab-ai');
+  if(critTabBtn) critTabBtn.style.display=hasCrit?'':'none';
+  // 모든 패널 숨기고 기본 활성 탭만 표시 (재진입 시 이전 상태 잔존 방지)
+  if(critPane) critPane.style.display='none';
+  if(aiPane) aiPane.style.display='none';
+  if(critTabBtn) critTabBtn.classList.remove('active');
+  if(aiTabBtn) aiTabBtn.classList.remove('active');
+  if(hasCrit){
+    // 평가안 기준 기본 활성화
+    if(critPane) critPane.style.display='block';
+    if(critTabBtn) critTabBtn.classList.add('active');
+  } else {
+    // 교육자료 없으면 AI독자 탭으로
+    if(aiPane) aiPane.style.display='block';
+    if(aiTabBtn) aiTabBtn.classList.add('active');
   }
   let pctScore = (typeof r.overallScore==='number' && r.overallScore>0) ? r.overallScore : 0;
   if(!pctScore){
