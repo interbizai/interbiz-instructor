@@ -5179,7 +5179,7 @@ async function saveEvaluation({videoId,checklistId,eduFileUrl,evalType,result}){
     good:result.good||[], bad:result.bad||[], upgrade:result.upgrade||[],
     scenarios:result.scenarios||[], level_tips:result.level_tips||[],
     teaching_patterns:result.teaching_patterns||[],
-    speech_report:{rubric_alignment_score:result.rubric_alignment_score,rubric_alignment_reason:result.rubric_alignment_reason},
+    speech_report:{rubric_alignment_score:result.rubric_alignment_score,rubric_alignment_reason:result.rubric_alignment_reason,summary_opinion:result.summary_opinion||''},
     mood:result.mood||null, decibel:result.decibel||null, tempo:result.tempo_wpm||null,
     habits:result.habits||[], engagement_gaps:result.engagement_gaps_minutes||[]
   };
@@ -5199,10 +5199,10 @@ function mapVertexToLegacy(critRes,aiRes){
   }));
   return {
     criteriaScores, timestamps,
-    criteriaSummary:(c.good?.[0]?.title)||'',
+    criteriaSummary:c?.summary_opinion||(c?.good?.[0]?.title)||'',
     overallScore:c.overall_score||a.overall_score||0,
     focusScore:a.overall_score||c.overall_score||0,
-    overallComment:(c.upgrade?.[0]?.detail)||'',
+    overallComment:a?.summary_opinion||c?.summary_opinion||(c?.upgrade?.[0]?.detail)||'',
     focusComment:(a.upgrade?.[0]?.detail)||'',
     habits:(a.habits||c.habits||[]).map(h=>({word:h.word,count:h.count||0,timestamps:h.timestamps||[],contexts:h.contexts||[],solution:h.solution||''})),
     decibel:a.decibel||c.decibel||0, decibelStatus:'적정',
@@ -9505,7 +9505,8 @@ function openVideo(id){
       habits:row.habits||[], engagement_gaps_minutes:row.engagement_gaps||[],
       mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo,
       rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
-      rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||''
+      rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
+      summary_opinion:row.speech_report?.summary_opinion||''
     }:null;
     const critResult=normalizeVertexResult(toVertex(critRow));
     const aiResult=normalizeVertexResult(toVertex(aiRow));

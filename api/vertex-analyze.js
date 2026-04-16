@@ -178,6 +178,7 @@ ${JSON.stringify(checklistSpec, null, 2)}
   "scenarios": [{"situation":"상황","original_line":"영상 속 원문","suggested_line":"추천 시나리오 대사"}],
   "level_tips": [{"title":"레벨UP 팁","detail":"설명"}],
   "teaching_patterns": [{"type":"도입|피드백|마무리|기타","original":"원 화법","alternative":"추천 대체 화법"}],
+  "summary_opinion": "종합 의견 3~5문장. 이번 강의의 전체적 평가 + 가장 큰 강점 1개 + 가장 큰 약점 1개 + 다음 강의에서 즉시 적용 가능한 구체 액션 1개를 포함. 평가안기준이면 교육자료 대비 달성도도 언급. AI독자면 체크리스트 전체 달성도 요약.",
   "habits": [{"word":"반복어 (정확히 강사 입에서 들린 표현)","count":int,"occurrences":[{"time":"MM:SS","context":"해당 시점 전후 실제 발화 문장 10~25자 인용"}, ...],"solution":"줄이는 솔루션"}],
   "engagement_gaps_minutes": [분단위 간격 배열 (예: [7,12,9])],
   "mood": "열정적이고 에너지 넘치는|밝고 경쾌한|친근하고 편안한|전문적이고 진지한|차분하고 신뢰감 있는|재미있고 유머러스한",
