@@ -6255,7 +6255,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   }
 
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
-  if(hasChecklist&&r.criteriaScores?.length){
+  // 손상 감지: categories는 있으나 max 합계가 0 → 재분석 안내
+  const critValid=(r.criteriaScores||[]).some(c=>Number(c.max||0)>0);
+  if(hasChecklist&&r.criteriaScores?.length&&critValid){
     const eduRadar=el('an-edu-radar');
     if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores,{clickable:true,which:'crit'});
     const eduBars=el('an-edu-bars');
@@ -6265,6 +6267,17 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
           <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
           <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
         </div>`;}).join('');
+    }
+  } else if(hasChecklist){
+    const eduRadar=el('an-edu-radar');
+    if(eduRadar) eduRadar.innerHTML='';
+    const eduBars=el('an-edu-bars');
+    if(eduBars){
+      eduBars.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">평가안 기준 세부 점수 데이터가 손상되었습니다.<br>영상을 다시 분석해주세요.</div>';
+    }
+    const eduRadarParent=el('an-edu-radar');
+    if(eduRadarParent&&eduRadarParent.parentElement){
+      eduRadarParent.parentElement.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">📊 평가안 레이더 생성 불가<br><span style="font-size:11px">sub_scores 누락 — 재분석 필요</span></div>';
     }
   }
 
