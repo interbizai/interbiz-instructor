@@ -5944,7 +5944,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const rubricReason=critRaw?.rubric_alignment_reason||'';
   const gradeLabel=pctScore>=90?'우수':pctScore>=70?'양호':'개선 필요';
   const gradeColor=pctScore>=90?'#10b981':pctScore>=70?'#f59e0b':'#fecaca';
-  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong> — <span style="color:${gradeColor}">${gradeLabel}</span>${rubricQ!=null?` · 평가안 이해 <strong>${rubricQ}%</strong>`:''}`;
+  const rubricRsnShort=rubricReason?` (${rubricReason})`:'';
+  const critSummaryShort=critRaw?.summary_opinion?critRaw.summary_opinion.split('.').slice(0,2).join('.')+'.':'';
+  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong>으로 <span style="color:${gradeColor}">${gradeLabel}</span> 성과입니다.${rubricQ!=null?` 평가안 이해 <strong>${rubricQ}%</strong>${rubricRsnShort}`:''} ${critSummaryShort}`;
   // 뱃지 판별
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);
@@ -6017,7 +6019,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiCriEl=el('an-ai-criteria');if(aiCriEl) aiCriEl.textContent=(aiRaw?.sub_scores?.length)||subCount||0;
   const aiGradeLabel=aiScore>=90?'우수':aiScore>=70?'양호':'개선 필요';
   const aiGradeColor=aiScore>=90?'#10b981':aiScore>=70?'#f59e0b':'#fecaca';
-  const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.innerHTML=`총점 <strong>${aiScore}/100점(${aiScore}%)</strong> — <span style="color:${aiGradeColor}">${aiGradeLabel}</span>`;
+  const aiSummaryShort=aiRaw?.summary_opinion?aiRaw.summary_opinion.split('.').slice(0,2).join('.')+'.':'';
+  const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.innerHTML=`총점 <strong>${aiScore}/100점(${aiScore}%)</strong>으로 <span style="color:${aiGradeColor}">${aiGradeLabel}</span> 성과입니다. ${aiSummaryShort}`;
   // AI 독자 + 누적 뱃지 (16~50)
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
