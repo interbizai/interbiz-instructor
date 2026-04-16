@@ -6418,9 +6418,30 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
       <div style="padding:10px;background:#f8f9fa;border-radius:8px"><div style="font-size:10px;color:var(--t3)">적정 인원</div><div style="font-size:14px;font-weight:800;color:var(--t1)">${fitPersons}</div><div style="font-size:10px;color:var(--t3)">${db}dB 기준</div></div>
       <div style="padding:10px;background:${moodColors[aiMood]||'#f8f9fa'};border-radius:8px;color:#fff"><div style="font-size:10px;color:rgba(255,255,255,.7)">강의 분위기</div><div style="font-size:13px;font-weight:800">${aiMood}</div><div style="font-size:10px;color:rgba(255,255,255,.6)">AI 판정</div></div>
     </div>`;
-  el('an-engagement').innerHTML=`
-    <div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${r.engagementGaps?.join('분 → ')+'분'||'—'}</strong></div>
-    <div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning||''}</div>`;
+  // 환기 타이밍 — 신(객체) 포맷: timestamp/gap_minutes/observation/suggestion, 구(숫자) 포맷: 분 배열
+  const gaps=r.engagementGaps||[];
+  const isRichGaps=gaps.length&&typeof gaps[0]==='object'&&gaps[0]!==null;
+  let engageHtml='';
+  if(isRichGaps){
+    engageHtml=gaps.map(g=>{
+      const ts=String(g.timestamp||'').trim();
+      const gm=Number(g.gap_minutes||0);
+      const obs=g.observation||'';
+      const sug=g.suggestion||'';
+      const tsTag=ts?`<span style="padding:2px 8px;background:rgba(0,120,200,.12);color:var(--blue);border-radius:10px;font-size:11px;font-weight:800;cursor:pointer" onclick="seekToTime('${ts.replace(/'/g,"")}')">▶ ${ts}</span>`:'';
+      const gmTag=gm>0?`<span style="padding:2px 7px;background:${gm>=12?'#fee2e2':gm>=8?'#fef3c7':'#dcfce7'};color:${gm>=12?'#dc2626':gm>=8?'#d97706':'#16a34a'};border-radius:10px;font-size:10px;font-weight:800">${gm}분 공백</span>`:'';
+      return `<div style="padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:6px;background:#fff">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">${tsTag}${gmTag}</div>
+        ${obs?`<div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:3px">${obs}</div>`:''}
+        ${sug?`<div style="font-size:11px;color:var(--blue);line-height:1.5">💡 ${sug}</div>`:''}
+      </div>`;
+    }).join('');
+  } else if(gaps.length){
+    engageHtml=`<div style="font-size:12px;color:var(--t2);line-height:1.7">간격: <strong>${gaps.join('분 → ')}분</strong></div>`;
+  } else {
+    engageHtml='<div style="font-size:11px;color:var(--t3)">환기 데이터 없음</div>';
+  }
+  el('an-engagement').innerHTML=engageHtml+(r.engagementWarning?`<div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning}</div>`:'');
 
   // ⑦ AI 독자 타임스탬프 (aiRaw 기반 — 평가안과 별도)
   el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps,'ai'):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
