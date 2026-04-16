@@ -7285,37 +7285,18 @@ async function runVoiceAnalysis(){
     // 3) 영상 길이 → fps (오디오이므로 fps 불필요, 1.0으로)
     const fps=1.0;
 
-    // 4) Vertex 호출 (체크리스트 있으면 평가안기준, 없으면 AI독자만)
-    if(checklistItems.length){
-      setAiLoadingStep('AI 스피치 분석 1/2 (평가안 기준)...');
-      const critRes=normalizeVertexResult(await callVertexAnalyze({
-        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
-        checklist_items:checklistItems, eval_type:'평가안기준',
-        edu_file_url:eduFileUrl||undefined
-      }));
-      setAiLoadingStep('AI 스피치 분석 2/2 (AI 독자)...');
-      const aiRes=normalizeVertexResult(await callVertexAnalyze({
-        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
-        checklist_items:checklistItems, eval_type:'AI독자'
-      }));
-      window._lastVertexResult={crit:critRes,ai:aiRes};
-      const mapped=mapVertexToLegacy(critRes,aiRes);
-      renderVoiceResult(mapped,count,tone);
-      // evaluations 저장
-      saveEvaluation({videoId:null,checklistId,eduFileUrl,evalType:'평가안기준',result:critRes});
-      saveEvaluation({videoId:null,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiRes});
-    } else {
-      setAiLoadingStep('AI 스피치 분석 중...');
-      const aiRes=normalizeVertexResult(await callVertexAnalyze({
-        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
-        checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
-        eval_type:'AI독자'
-      }));
-      window._lastVertexResult={crit:null,ai:aiRes};
-      const mapped=mapVertexToLegacy(null,aiRes);
-      renderVoiceResult(mapped,count,tone);
-      saveEvaluation({videoId:null,checklistId:null,eduFileUrl:null,evalType:'AI독자',result:aiRes});
-    }
+    // 4) 스피치는 평가안기준 분기 없음 — 항상 AI독자 단일 호출 (교육자료가 있으면 참고 자료로만 주입)
+    setAiLoadingStep('AI 스피치 분석 중...');
+    const aiRes=normalizeVertexResult(await callVertexAnalyze({
+      video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
+      checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
+      eval_type:'AI독자',
+      edu_file_url:eduFileUrl||undefined
+    }));
+    window._lastVertexResult={crit:null,ai:aiRes};
+    const mapped=mapVertexToLegacy(null,aiRes);
+    renderVoiceResult(mapped,count,tone);
+    saveEvaluation({videoId:null,checklistId:checklistId||null,eduFileUrl:eduFileUrl||null,evalType:'AI독자',result:aiRes});
     showAiLoading(false);
   } catch(e){
     console.error('스피치 분석 실패:',e);

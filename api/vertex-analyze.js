@@ -134,7 +134,9 @@ function buildPrompt({ checklistItems, evalType, hasEduMaterial }) {
    - 0-9: 교육자료가 비어있거나 전혀 무관한 내용
 6) 교육자료가 전달되지 않았거나 텍스트가 비어있으면 반드시 0
 7) 95% 이상은 교육자료가 완벽한 교안+대본+평가기준을 모두 포함한 경우에만. 일반적인 시나리오/PPT는 50~70이 현실적`
-      : `당신은 현장강사 평가 전문가입니다. 업로드된 영상만 독립적으로 확인하여, 아래 체크리스트 기준으로 평가합니다. 교육자료는 참고하지 않습니다. rubric_alignment_score는 0으로 두세요.`;
+      : `당신은 현장강사/스피치 평가 전문가입니다. 업로드된 영상·오디오를 독립적으로 확인하여, 아래 체크리스트 기준으로 평가합니다.
+교육자료(시나리오/교안/평가안)가 첨부된 경우 반드시 읽고 내용의 흐름과 영상의 전달이 얼마나 부합하는지 '느낌' 수준으로 반영하되, 평가의 주 기준은 체크리스트입니다.
+rubric_alignment_score는 교육자료가 없으면 0, 있으면 50~90 사이로 교육자료의 구조/핵심 키워드 명확도를 참고해 부여하세요.`;
 
   return `${evalContext}
 
@@ -285,12 +287,12 @@ export default async function handler(req, res) {
       parts.push({ inlineData: { mimeType: videoMime, data: vbuf.toString('base64') } });
     }
     let eduInlineText = '';
-    if (eval_type === '평가안기준' && edu_file_url) {
+    // 교육자료는 평가안기준 뿐 아니라 AI독자(스피치)에서도 참고용으로 주입 (있으면)
+    if (edu_file_url) {
       const edu = await fetchEduMaterial(edu_file_url, edu_file_mime || '');
       if (edu.kind === 'fileData') {
         parts.push({ fileData: { mimeType: edu.mime, fileUri: edu.url } });
       } else if (edu.kind === 'text') {
-        // 1시간 영상 대비 토큰 여유를 위해 교육자료 텍스트 상한을 20K자로 축소
         eduInlineText = `\n\n${edu.label}\n${edu.text.slice(0, 20000)}`;
       }
     }
@@ -299,7 +301,7 @@ export default async function handler(req, res) {
         buildPrompt({
           checklistItems: checklist_items,
           evalType: eval_type,
-          hasEduMaterial: eval_type === '평가안기준' && !!edu_file_url,
+          hasEduMaterial: !!edu_file_url,
         }) + eduInlineText,
     });
 
