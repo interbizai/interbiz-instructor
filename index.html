@@ -5330,7 +5330,8 @@ function mapVertexToLegacy(critRes,aiRes){
   const timestamps=(main.sub_scores||[]).map(s=>({
     category:s.category, item:s.sub_item, criteria:s.criterion||'',
     score:s.score||0, maxScore:s.max||0,
-    t:s.timestamp||'', type: s.level==='good'?'good':s.level==='bad'?'bad':'tip',
+    level:s.level||'',
+    t:s.timestamp||'', type: s.level==='good'?'good':s.level==='bad'?'bad':s.level==='na'?'na':'tip',
     text:s.analysis||'', solution:s.solution||'', tags:[]
   }));
   return {
@@ -6287,7 +6288,9 @@ function renderTsTable(timestamps){
       <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">솔루션</th>
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
-      const scoreColor=ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
+      const isNA=ts.level==='na'||ts.type==='na';
+      const scoreColor=isNA?'var(--t3)':ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
+      const scoreDisplay=isNA?'<span style="color:var(--t3);font-size:10px;font-weight:600">해당없음</span>':ts.score;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
       // 현재 평가안 기준의 sub_scores에서 세부항목 인덱스 찾기
       const crit=window._lastVertexResult?.crit;
@@ -6301,8 +6304,8 @@ function renderTsTable(timestamps){
         <td style="padding:8px;font-size:11px;font-weight:700;color:var(--t1)">${ts.category||'—'}</td>
         <td style="padding:8px;font-size:11px;font-weight:600;color:var(--blue)">${ts.item||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2);word-break:break-word;line-height:1.4">${ts.criteria||'—'}</td>
-        <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.maxScore||5}</td>
-        <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${ts.score||0}</td>
+        <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:${isNA?'var(--t3)':'var(--t1)'}">${isNA?'—':(ts.maxScore||5)}</td>
+        <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${scoreDisplay}</td>
         <td style="padding:8px;text-align:center;font-size:10px;color:var(--t2)">${ts.t||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.5;word-break:break-word">${ts.text||''}</td>
         <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4;word-break:break-word">${ts.type==='good'?'<span style="color:#10b981;font-weight:600">—</span>':(ts.solution||'—')}</td>
