@@ -1576,7 +1576,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 & 습관 분석</div>
         <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
-            <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">반복어 습관</div><div id="an-habits" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>
+            <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">반복어 습관</div><div id="an-habits" style="display:flex;flex-direction:column"></div></div>
             <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">음성 분석</div><div id="an-voice-stats"></div></div>
             <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">환기 타이밍</div><div id="an-engagement"></div></div>
           </div>
@@ -6387,12 +6387,25 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   else if(totalHabitCount>5) habitSolution='소량의 반복어가 감지되었습니다. 자연스러운 수준이나 의식하면 더 좋아집니다.';
   window._anHabits=r.habits||[];
   el('an-habits').innerHTML=(r.habits?.length?r.habits.map((h,hi)=>{
-    const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
-    const hasTs=(h.timestamps&&h.timestamps.length);
-    const clickable=hasTs?'cursor:pointer;text-decoration:underline dotted':'';
-    return `<span class="habit-badge ${cls}" style="${clickable}" ${hasTs?`onclick="openHabitTimestamps(${hi})"`:''}>${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+    const cnt=Number(h.count||0);
+    const tone=cnt>10?{bg:'#fee2e2',col:'#dc2626',label:'과다'}:cnt>5?{bg:'#fef3c7',col:'#d97706',label:'주의'}:{bg:'#dcfce7',col:'#16a34a',label:'양호'};
+    const tsList=(h.timestamps||[]).filter(Boolean);
+    const ctxList=(h.contexts||[]).filter(Boolean);
+    const tsChips=tsList.length?tsList.slice(0,8).map((t,ti)=>`<span style="padding:2px 7px;background:rgba(0,120,200,.08);color:var(--blue);border-radius:10px;font-size:10px;font-weight:700;cursor:${tsList.length?'pointer':'default'}" ${tsList.length?`onclick="openHabitTimestamps(${hi})"`:''}>${t}</span>`).join(''):'';
+    const moreTs=tsList.length>8?`<span style="padding:2px 7px;background:rgba(0,0,0,.04);color:var(--t3);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer" onclick="openHabitTimestamps(${hi})">+${tsList.length-8}</span>`:'';
+    const ctxSample=ctxList.length?`<div style="margin-top:6px;font-size:11px;color:var(--t2);line-height:1.5;padding:6px 9px;background:rgba(0,0,0,.02);border-left:2px solid rgba(0,0,0,.1);border-radius:4px">"${ctxList[0].length>70?ctxList[0].slice(0,70)+'…':ctxList[0]}"</div>`:'';
+    const sol=h.solution?`<div style="margin-top:6px;font-size:11px;color:var(--blue);line-height:1.5">💡 ${h.solution}</div>`:'';
+    return `<div style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:8px;background:#fff">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:800;color:var(--t1)">${h.word}</span>
+        <span style="padding:2px 8px;background:${tone.bg};color:${tone.col};border-radius:10px;font-size:10px;font-weight:800">${cnt}회 · ${tone.label}</span>
+      </div>
+      ${tsChips||moreTs?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${tsChips}${moreTs}</div>`:''}
+      ${ctxSample}
+      ${sol}
+    </div>`;
   }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>')
-  +(habitSolution?`<div style="margin-top:10px;font-size:11px;color:var(--t2);line-height:1.5;padding:8px 10px;background:#f8f9fa;border-radius:8px">${habitSolution}</div>`:'');
+  +(habitSolution?`<div style="margin-top:6px;font-size:11px;color:var(--t2);line-height:1.5;padding:8px 10px;background:#f8f9fa;border-radius:8px">📊 전체 요약: ${habitSolution}</div>`:'');
   // 데시벨 → 적정 인원 계산
   const db=r.decibel||0;
   const fitPersons=db>=80?'20명+':db>=75?'15~20명':db>=70?'10~15명':db>=65?'5~10명':db>=60?'3~5명':'1~3명';
