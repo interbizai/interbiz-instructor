@@ -7039,7 +7039,12 @@ async function runVoiceAnalysis(){
 
   const count=parseInt(v('va-count'))||20;
   const tone=v('va-tone');
-  const hasCL=el('va-checklist').files?.length>0||document.getElementById('va-checklist-url')?.value||document.getElementById('va-cl-url')?.value;
+  const checklistId=parseInt(document.getElementById('va-cl-select')?.value||'0')||null;
+  const eduFileUrl=document.getElementById('va-checklist-url')?.value||'';
+  const hasCL=!!checklistId||el('va-checklist').files?.length>0||!!document.getElementById('va-cl-url')?.value;
+
+  showAiLoading(true);
+  setAiLoadingStep('스피치 분석 준비 중...');
 
   el('va-step1').style.display='none';
   el('va-step2').style.display='';
@@ -7055,45 +7060,68 @@ async function runVoiceAnalysis(){
   el('va-ai-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3)">AI 스피치 분석 중...</div>';
   el('va-report').innerHTML='';
 
-  const role=v('va-role')||'현장강사';
-  const task=v('va-task')||'교육 강의';
-  const prompt=`당신은 interbiz 현장강사 음성 분석 전문 AI입니다. 아래 정보를 바탕으로 강사의 음성/발성을 정밀 분석해주세요.
-
-강의 제목: ${title}
-교육생 인원: ${count}명
-강의 분위기 목표: ${tone}
-직군: ${role}
-세부 업무: ${task}
-녹음 길이: ${vaSec?Math.floor(vaSec/60)+'분 '+vaSec%60+'초':'파일 업로드'}
-평가안 유무: ${hasCL?'있음':'없음'}
-
-반드시 아래 JSON 형식으로만 응답하세요:
-{
-  "decibel": {"current": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
-  "tempo": {"wpm": 0, "recommended_min": 0, "recommended_max": 0, "status": "적정/조정필요", "comment": "코멘트"},
-  "tone_match": {"score": 0, "percent": 0, "target": "${tone}", "actual": "실제 감지된 톤", "comment": "목표 분위기 대비 현재 음성 톤 적합도 상세 평가"},
-  "role_fit": {"score": 0, "role": "${role}", "task": "${task}", "comment": "${role}의 ${task} 업무 특성에 맞는 음성 평가"},
-  "clarity": {"score": 0, "comment": "발음 명확도 평가"},
-  "energy": {"score": 0, "pattern": "상승형/하강형/균등형/불규칙형", "comment": "강의 에너지 패턴 분석"},
-  "habits": [{"word": "반복어", "count": 0, "context": "사용된 상황 예시", "replacement": "나라면 이렇게 말하겠다 - 대체 문구 제안"}],
-  "silence_ratio": {"percent": 0, "comment": "적절한 침묵 활용도"},
-  "engagement_voice": {"score": 0, "comment": "음성으로 판단한 수강생 관심 유지력"},
-  ${hasCL?'"criteriaScores": [{"name":"발성 크기","score":0,"max":20},{"name":"발음 명확도","score":0,"max":20},{"name":"속도 조절","score":0,"max":15},{"name":"톤 적절성","score":0,"max":15},{"name":"강약 조절","score":0,"max":15},{"name":"침묵 활용","score":0,"max":15}], "criteriaSummary": "평가안 기준 종합 한줄",':''}
-  "overall_score": 0,
-  "solution": "개선 솔루션 4가지 (<br>로 줄바꿈). 각 항목마다 '나라면 이렇게' 식의 코칭형 표현 포함",
-  "training": "음성 트레이닝 추천 3가지 (<br>로 줄바꿈). ${role}의 ${task} 업무에 최적화된 훈련법"
-}
-
-중요 지침:
-1. tone_match.percent는 목표 분위기(${tone})와 실제 톤의 적합도를 0~100%로 산출하세요.
-2. role_fit은 ${role}이 ${task} 업무를 수행할 때 필요한 음성 특성을 기준으로 평가하세요.
-3. habits의 replacement는 반드시 "나라면 이렇게 말하겠다" 식의 실무 코칭형 대체 문구를 제안하세요.
-   예: "음~" → "잠시 정리하면요," / "그래서" → "이 부분이 핵심인데요,"
-4. solution도 단순 지적이 아닌 코칭형으로 작성하세요.
-5. 교육생 ${count}명 기준 권장 데시벨과 템포를 산출하세요.
-6. 점수는 /100 기준으로 현실적으로 작성하세요.`;
-
   try {
+    // 1) 파일 업로드 (GCS)
+    setAiLoadingStep('음성 파일 업로드 중...');
+    let audioFile=el('va-file').files?.[0];
+    if(!audioFile&&hasRec){ audioFile=new Blob(vaChunks,{type:'audio/webm'}); audioFile.name='recording.webm'; }
+    const up=await uploadAnalysisVideo(audioFile);
+    const audioUrl=up.public_url;
+    const audioGcsUri=up.gcs_uri;
+    const audioMime=audioFile.type||'audio/webm';
+
+    // 2) 체크리스트 로드
+    setAiLoadingStep('체크리스트 로드 중...');
+    let checklistItems=[];
+    if(checklistId) checklistItems=await loadChecklistItemsForEval(checklistId);
+
+    // 3) 영상 길이 → fps (오디오이므로 fps 불필요, 1.0으로)
+    const fps=1.0;
+
+    // 4) Vertex 호출 (체크리스트 있으면 평가안기준, 없으면 AI독자만)
+    if(checklistItems.length){
+      setAiLoadingStep('AI 스피치 분석 1/2 (평가안 기준)...');
+      const critRes=normalizeVertexResult(await callVertexAnalyze({
+        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
+        checklist_items:checklistItems, eval_type:'평가안기준',
+        edu_file_url:eduFileUrl||undefined
+      }));
+      setAiLoadingStep('AI 스피치 분석 2/2 (AI 독자)...');
+      const aiRes=normalizeVertexResult(await callVertexAnalyze({
+        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
+        checklist_items:checklistItems, eval_type:'AI독자'
+      }));
+      window._lastVertexResult={crit:critRes,ai:aiRes};
+      const mapped=mapVertexToLegacy(critRes,aiRes);
+      renderVoiceResult(mapped,count,tone);
+      // evaluations 저장
+      saveEvaluation({videoId:null,checklistId,eduFileUrl,evalType:'평가안기준',result:critRes});
+      saveEvaluation({videoId:null,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiRes});
+    } else {
+      setAiLoadingStep('AI 스피치 분석 중...');
+      const aiRes=normalizeVertexResult(await callVertexAnalyze({
+        video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps,
+        checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
+        eval_type:'AI독자'
+      }));
+      window._lastVertexResult={crit:null,ai:aiRes};
+      const mapped=mapVertexToLegacy(null,aiRes);
+      renderVoiceResult(mapped,count,tone);
+      saveEvaluation({videoId:null,checklistId:null,eduFileUrl:null,evalType:'AI독자',result:aiRes});
+    }
+    showAiLoading(false);
+  } catch(e){
+    console.error('스피치 분석 실패:',e);
+    showAiLoading(false);
+    alert('스피치 분석 실패: '+e.message);
+
+    // 폴백: 기존 방식으로 시도
+    const role=v('va-role')||'현장강사';
+    const task=v('va-task')||'교육 강의';
+    const prompt=`당신은 interbiz 현장강사 음성 분석 전문 AI입니다.
+강의 제목: ${title}, 교육생: ${count}명, 목표 분위기: ${tone}, 직군: ${role}
+JSON으로 응답: {"decibel":{"current":0,"status":"적정"},"tempo":{"wpm":0,"status":"적정"},"habits":[],"overall_score":0,"solution":"솔루션","training":"훈련법"}`;
+    try {
     const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4000}})
