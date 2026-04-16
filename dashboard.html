@@ -5840,15 +5840,24 @@ function runAnalysis(){
   generateAIAnalysis(title,count,hasChecklist);
 }
 
-// 영상 duration(초) 읽기
+// 영상/오디오 duration(초) 읽기 — 오디오는 <audio>로 폴백
 function readVideoDuration(file){
   return new Promise((resolve)=>{
     const url=URL.createObjectURL(file);
-    const vid=document.createElement('video');
-    vid.preload='metadata';
-    vid.onloadedmetadata=()=>{URL.revokeObjectURL(url);resolve(isFinite(vid.duration)?vid.duration:0);};
-    vid.onerror=()=>{URL.revokeObjectURL(url);resolve(0);};
-    vid.src=url;
+    const isAudio=(file.type||'').startsWith('audio')||/\.(mp3|wav|m4a|aac|ogg|webm)$/i.test(file.name||'');
+    const tag=document.createElement(isAudio?'audio':'video');
+    tag.preload='metadata';
+    const done=(d)=>{URL.revokeObjectURL(url);resolve(isFinite(d)&&d>0?d:0);};
+    tag.onloadedmetadata=()=>done(tag.duration);
+    tag.onerror=()=>{
+      // 실패 시 반대 태그로 재시도
+      const tag2=document.createElement(isAudio?'video':'audio');
+      tag2.preload='metadata';
+      tag2.onloadedmetadata=()=>done(tag2.duration);
+      tag2.onerror=()=>done(0);
+      tag2.src=url;
+    };
+    tag.src=url;
   });
 }
 // 영상 길이별 적정 fps 자동 계산
@@ -7278,9 +7287,24 @@ async function runVoiceAnalysis(){
     let checklistItems=[];
     if(checklistId) checklistItems=await loadChecklistItemsForEval(checklistId);
 
-    // 3) 길이 → 적응형 fps (오디오/영상 공통)
-    const durSec=await readVideoDuration(audioFile).catch(()=>0);
-    const fps=pickAdaptiveFps(durSec);
+    // 3) 길이 → 적응형 fps — 오디오는 영상보다 분석 부담 낮음
+    // 모델이 오디오를 '비디오 프레임'처럼 처리하지 않더라도 파일 크기 기반 토큰 방어 필요
+    let durSec=await readVideoDuration(audioFile).catch(()=>0);
+    // duration 못 읽으면 파일 크기로 추정 (192kbps 기준 ≈ 초당 24KB)
+    if(!durSec&&audioFile.size) durSec=Math.round(audioFile.size/24000);
+    // 안전 마진을 더 보수적으로 (토큰 max 70K)
+    const fps=(()=>{
+      if(!durSec||durSec<=0) return 0.2;
+      const maxTokens=70000;
+      const ideal=maxTokens/(durSec*263);
+      if(ideal>=1) return 1.0;
+      if(ideal>=0.5) return 0.5;
+      if(ideal>=0.25) return 0.25;
+      if(ideal>=0.15) return 0.15;
+      if(ideal>=0.1) return 0.1;
+      if(ideal>=0.06) return 0.06;
+      return 0.04;
+    })();
 
     // 4) 스피치는 평가안기준 분기 없음 — 항상 AI독자 단일 호출 (교육자료가 있으면 참고 자료로만 주입)
     setAiLoadingStep('AI 스피치 분석 중...');
