@@ -2275,13 +2275,18 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h2>관리자</h2></div>
-  <div id="admin-credit-banner" style="display:none"></div>
   <div class="content-card">
   <div class="tab-bar">
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
+    <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">💳 금액 현황</button>
+  </div>
+
+  <!-- 금액 현황 (크레딧) -->
+  <div class="tab-pane" id="tab-금액현황">
+    <div id="admin-credit-banner"></div>
   </div>
 
   <!-- 평가결과 (관리자 내부) -->
@@ -10059,6 +10064,7 @@ const CREDIT_INFO={
 function renderAdminCreditBanner(){
   const banner=document.getElementById('admin-credit-banner');
   if(!banner) return;
+  banner.style.display='block';
   const now=new Date();
   const cards=Object.values(CREDIT_INFO).map(c=>{
     const end=new Date(c.end);
@@ -10093,7 +10099,6 @@ function renderAdminCreditBanner(){
 }
 
 function renderAdmin(){
-  renderAdminCreditBanner();
   // User table (정렬)
   const sortedUsers=[...D.users].sort((a,b)=>{
     let va=(a[adminSortKey]||'').toString(), vb=(b[adminSortKey]||'').toString();

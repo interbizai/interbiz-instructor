@@ -238,7 +238,7 @@ export default async function handler(req, res) {
 
     const vertex = new VertexAI({
       project: creds.project_id,
-      location: 'global',
+      location: 'us-central1',
       googleAuthOptions: {
         projectId: creds.project_id,
         credentials: {
