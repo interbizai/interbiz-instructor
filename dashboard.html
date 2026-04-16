@@ -6162,7 +6162,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     text:s.analysis||'', solution:s.solution||'', tags:[]
   }));
   window._anTimestamps=critTimestamps.length?critTimestamps:aiTimestamps;
-  el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 평가안 기준 피드백이 생성됩니다</div>';
+  el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps,'crit'):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 평가안 기준 피드백이 생성됩니다</div>';
   // 평가안 기준 Good/Bad/Upgrade — Vertex raw 데이터 사용
   const criGood=(critRaw?.good||r.good||[]).slice(0,5);
   const criBad=(critRaw?.bad||r.bad||[]).slice(0,5);
@@ -6277,7 +6277,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     <div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning||''}</div>`;
 
   // ⑦ AI 독자 타임스탬프 (aiRaw 기반 — 평가안과 별도)
-  el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
+  el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps,'ai'):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
   // AI 독자 Good/Bad/Upgrade — Vertex raw 데이터 사용
   const aiGoodItems=(aiRaw?.good||r.good||[]).slice(0,5);
   const aiBadItems=(aiRaw?.bad||r.bad||[]).slice(0,5);
@@ -6286,7 +6286,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 }
 
 // 타임스탬프 테이블 공통 렌더
-function renderTsTable(timestamps){
+function renderTsTable(timestamps,which){
+  const srcWhich=which||'crit';
   return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px;table-layout:fixed">
     <colgroup>
       <col style="width:80px"><col style="width:75px"><col style="width:200px">
@@ -6308,14 +6309,14 @@ function renderTsTable(timestamps){
       const scoreColor=isNA?'var(--t3)':ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
       const scoreDisplay=isNA?'<span style="color:var(--t3);font-size:10px;font-weight:600">해당없음</span>':ts.score;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      // 현재 평가안 기준의 sub_scores에서 세부항목 인덱스 찾기
-      const crit=window._lastVertexResult?.crit;
+      // 현재 탭의 소스(crit/ai)에서 세부항목 인덱스 찾기
+      const srcRaw=srcWhich==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
       let subIdx=-1;
-      if(crit?.sub_scores?.length){
-        const inCat=crit.sub_scores.filter(s=>(s.category||'').trim()===(ts.category||'').trim());
+      if(srcRaw?.sub_scores?.length){
+        const inCat=srcRaw.sub_scores.filter(s=>(s.category||'').trim()===(ts.category||'').trim());
         subIdx=inCat.findIndex(s=>(s.sub_item||'').trim()===(ts.item||'').trim());
       }
-      const onClick=subIdx>=0?`openSubItemVideoModal('crit','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
+      const onClick=subIdx>=0?`openSubItemVideoModal('${srcWhich}','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
       return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="${onClick}">
         <td style="padding:8px;font-size:11px;font-weight:700;color:var(--t1)">${ts.category||'—'}</td>
         <td style="padding:8px;font-size:11px;font-weight:600;color:var(--blue)">${ts.item||'—'}</td>
@@ -7572,7 +7573,7 @@ function renderVoiceResult(r,hasCL,count,tone){
       <!-- 타임스탬프 피드백 -->
       ${timestamps.length?`<div style="margin-bottom:20px">
         <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden">${renderTsTable(timestamps)}</div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden">${renderTsTable(timestamps,'ai')}</div>
       </div>`:''}
 
       <!-- 반복어 습관 + 환기 -->
