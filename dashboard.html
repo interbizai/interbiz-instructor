@@ -5193,7 +5193,8 @@ function mapVertexToLegacy(critRes,aiRes){
   const main=c.sub_scores?.length?c:a; // 평가안 있으면 그걸 메인, 아니면 AI독자
   const criteriaScores=(main.categories||[]).map(x=>({name:x.name,score:x.score||0,max:x.max||0}));
   const timestamps=(main.sub_scores||[]).map(s=>({
-    category:s.category, item:s.sub_item, score:s.score||0, maxScore:s.max||0,
+    category:s.category, item:s.sub_item, criteria:s.criterion||'',
+    score:s.score||0, maxScore:s.max||0,
     t:s.timestamp||'', type: s.level==='good'?'good':s.level==='bad'?'bad':'tip',
     text:s.analysis||'', solution:s.solution||'', tags:[]
   }));
@@ -6092,11 +6093,11 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps){
-  return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;table-layout:fixed">
+  return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px;table-layout:fixed">
     <colgroup>
-      <col style="width:80px"><col style="width:80px"><col style="width:140px">
+      <col style="width:80px"><col style="width:75px"><col style="width:200px">
       <col style="width:36px"><col style="width:36px"><col style="width:85px">
-      <col><col>
+      <col style="width:30%"><col style="width:25%">
     </colgroup>
     <thead><tr style="background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.12);position:sticky;top:0;z-index:1">
       <th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--t1);font-weight:700">대항목</th>
@@ -6122,11 +6123,11 @@ function renderTsTable(timestamps){
       return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="${onClick}">
         <td style="padding:8px;font-size:11px;font-weight:700;color:var(--t1)">${ts.category||'—'}</td>
         <td style="padding:8px;font-size:11px;font-weight:600;color:var(--blue)">${ts.item||'—'}</td>
-        <td style="padding:8px;font-size:11px;color:var(--t2)">${ts.criteria||ts.text?.substring(0,30)||'—'}</td>
+        <td style="padding:8px;font-size:11px;color:var(--t2);word-break:break-word;line-height:1.4">${ts.criteria||'—'}</td>
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.maxScore||5}</td>
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${ts.score||0}</td>
         <td style="padding:8px;text-align:center;font-size:10px;color:var(--t2)">${ts.t||'—'}</td>
-        <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
+        <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.5;word-break:break-word">${ts.text||''}</td>
         <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4;word-break:break-word">${ts.type==='good'?'<span style="color:#10b981;font-weight:600">—</span>':(ts.solution||'—')}</td>
       </tr>`;}).join('')}
     </tbody></table></div>`;
