@@ -5309,6 +5309,50 @@ function populateChecklistSelects(){
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
 }
+// 반복어 배지 클릭 → 해당 반복어 발화 시점 리스트 + 영상 재생 팝업
+function openHabitTimestamps(idx){
+  const h=(window._anHabits||[])[idx];
+  if(!h){alert('반복어 데이터가 없습니다.');return;}
+  const tsList=Array.isArray(h.timestamps)?h.timestamps:[];
+  const url=window._anUploadedVideoUrl||'';
+  const vidEl=document.getElementById('an-video-el');
+  const fallback=vidEl?.querySelector('source')?.src||vidEl?.src||'';
+  const src=url||fallback;
+  const firstSec=tsList.length?parseTimestampToSeconds(tsList[0]):0;
+  document.getElementById('habit-ts-overlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='habit-ts-overlay';
+  overlay.style.zIndex='10050';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:960px;width:94vw;max-height:90vh;overflow:hidden;display:grid;grid-template-columns:1.4fr 1fr;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--bdr);max-height:90vh">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--bdr);background:#fafafa;display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:#fee2e2;color:#b91c1c">반복어</span>
+        <span style="font-size:15px;font-weight:900">"${h.word}"</span>
+        <span style="font-size:12px;color:var(--t3);font-weight:600">· ${h.count}회 감지</span>
+      </div>
+      <div style="background:#000;aspect-ratio:16/9">
+        ${src?`<video id="hts-video" controls autoplay playsinline style="width:100%;height:100%;background:#000"><source src="${src}#t=${firstSec}"></video>`:'<div style="color:#fff;display:flex;align-items:center;justify-content:center;height:100%;font-size:12px">영상이 없습니다</div>'}
+      </div>
+      ${h.solution?`<div style="padding:12px 18px;font-size:12px;color:var(--t2);line-height:1.6;border-top:1px solid var(--bdr);background:rgba(239,68,68,.04)"><strong style="color:#ef4444">솔루션:</strong> ${h.solution}</div>`:''}
+    </div>
+    <div style="max-height:90vh;overflow-y:auto">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:#fff;z-index:2;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:900">발화 시점 (${tsList.length})</div>
+        <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+      </div>
+      <div style="padding:10px 14px">
+        ${tsList.length?tsList.map((t,i)=>`<div data-sec="${parseTimestampToSeconds(t)}" style="padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="(function(s){const v=document.getElementById('hts-video');if(v){try{v.currentTime=s;v.play();}catch(e){}}})(${parseTimestampToSeconds(t)})">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--t3);font-weight:700">#${i+1}</span><span style="font-size:13px;font-weight:800;color:var(--blue)">${t}</span></div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
+        </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">시점 정보가 없습니다</div>'}
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
 // 세부항목 행 클릭 → 영상 + 타임라인 리치 모달
 function openSubItemVideoModal(which,categoryName,subIndex){
   const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
@@ -5922,9 +5966,12 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(totalHabitCount>30) habitSolution='반복어가 매우 많습니다. 강의 중 2초 멈추기 연습과 핵심 문장 사전 준비를 권장합니다.';
   else if(totalHabitCount>15) habitSolution='반복어 줄이기 위해 핵심 키워드를 메모하고, 의식적으로 끊어 말하기를 연습하세요.';
   else if(totalHabitCount>5) habitSolution='소량의 반복어가 감지되었습니다. 자연스러운 수준이나 의식하면 더 좋아집니다.';
-  el('an-habits').innerHTML=(r.habits?.length?r.habits.map(h=>{
+  window._anHabits=r.habits||[];
+  el('an-habits').innerHTML=(r.habits?.length?r.habits.map((h,hi)=>{
     const cls=h.count>10?'hb-high':h.count>5?'hb-mid':'hb-low';
-    return `<span class="habit-badge ${cls}">${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
+    const hasTs=(h.timestamps&&h.timestamps.length);
+    const clickable=hasTs?'cursor:pointer;text-decoration:underline dotted':'';
+    return `<span class="habit-badge ${cls}" style="${clickable}" ${hasTs?`onclick="openHabitTimestamps(${hi})"`:''}>${h.word} <span class="habit-cnt">${h.count}회</span></span>`;
   }).join(''):'<span style="font-size:11px;color:var(--t3)">감지된 반복어 없음</span>')
   +(habitSolution?`<div style="margin-top:10px;font-size:11px;color:var(--t2);line-height:1.5;padding:8px 10px;background:#f8f9fa;border-radius:8px">${habitSolution}</div>`:'');
   // 데시벨 → 적정 인원 계산
