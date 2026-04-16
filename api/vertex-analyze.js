@@ -99,13 +99,18 @@ ${JSON.stringify(checklistSpec, null, 2)}
 
 # 채점 규칙
 - 각 세부항목은 3단계 판정: "good"(잘했다=배점 100%), "normal"(보통=배점 60%), "bad"(못했다=0점)
-- 판정 불가(해당없음)인 경우 "na"로 표기 — 최종 점수 계산에서 해당 항목은 제외되고, 남은 항목으로 100점 환산
+- 판정 불가(해당없음)인 경우 "na"로 표기 — 점수 합산에서 제외
 - 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기
-- reason/analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 권장)
+- analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 권장)
+- solution은 "normal"/"bad" 항목에만 작성. "good"/"na" 항목은 solution을 빈 문자열("")로 둔다
+- overall_score = sum(sub_scores[i].score) / sum(sub_scores[i].max) × 100 을 반올림한 정수 (na 항목은 양쪽 합계에서 제외)
+- categories[].score = 해당 대항목에 속한 sub_scores의 score 합, categories[].max = max 합 (na 제외)
+- categories[].achievement = round(score/max × 100) (max=0이면 0)
 
 # 응답 JSON 스키마 (반드시 이 구조로만 응답)
 {
-  "overall_score": 0~100 정수(해당없음 제외 환산),
+  "overall_score": 0~100 정수 (=sub_scores의 score 합 ÷ max 합 × 100 반올림, na 제외),
+  "rubric_alignment_score": 0~100 정수 (평가안/시나리오 품질 — 얼마나 명확하고 유용한지. 평가안기준일 때만 작성, AI독자는 0),
   "categories": [{"name":"대항목명","score":int,"max":int,"achievement":0~100}],
   "sub_scores": [{
     "n": 문항번호,

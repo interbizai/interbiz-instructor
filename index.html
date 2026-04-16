@@ -1392,10 +1392,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0;min-width:120px">
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가항목</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">종목</div></div>
+        <div style="display:flex;gap:16px;flex-shrink:0">
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점(100)</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">대항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">세부항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-rubric-quality">—</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가안 이해%</div></div>
         </div>
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">평가안 기준 요약</div>
@@ -1412,9 +1413,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct-ai">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0;min-width:120px">
+        <div style="display:flex;gap:16px;flex-shrink:0">
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">AI점수</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900">6</div><div style="font-size:9px;color:rgba(255,255,255,.5)">역량항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">대항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-subs">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">세부항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-criteria">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">평가기준</div></div>
         </div>
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 독자 분석 요약</div>
@@ -1446,7 +1449,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="an-tab-pane" id="an-tab-criteria">
       <!-- 교육분석 레이더 + 달성도 -->
       <div style="margin-bottom:28px">
-        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">교육 분석</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 분석</div>
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('crit')">전체 보기</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-edu-radar-wrap">
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
             <svg id="an-edu-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
@@ -1490,7 +1496,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     <div class="an-tab-pane" id="an-tab-ai" style="display:none">
       <!-- AI 6대역량 레이더 + 달성도 -->
       <div style="margin-bottom:28px">
-        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">AI 역량 분석</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-ai-radar-wrap">
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
             <svg id="an-ai-radar" viewBox="0 0 400 370" style="width:100%;max-width:380px;height:auto"></svg>
@@ -5273,6 +5282,116 @@ function populateChecklistSelects(){
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
 }
+// 세부항목 행 클릭 → 영상 + 타임라인 리치 모달
+function openSubItemVideoModal(which,categoryName,subIndex){
+  const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
+  if(!raw||!raw.sub_scores?.length){alert('평가 데이터가 없습니다.');return;}
+  const itemsInCat=raw.sub_scores.filter(s=>(s.category||'').trim()===categoryName.trim());
+  if(!itemsInCat.length){alert('세부항목이 없습니다.');return;}
+  const active=itemsInCat[subIndex]||itemsInCat[0];
+  const url=window._anUploadedVideoUrl||'';
+  const vidEl=document.getElementById('an-video-el');
+  const fallback=vidEl?.querySelector('source')?.src||vidEl?.src||'';
+  const src=url||fallback;
+  const firstSec=parseTimestampToSeconds(active.timestamp);
+  const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
+  const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
+  // 기존 모달이 있으면 제거
+  document.getElementById('sub-item-video-overlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='sub-item-video-overlay';
+  overlay.style.zIndex='10050';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:1200px;width:95vw;max-height:92vh;overflow:hidden;display:grid;grid-template-columns:1.3fr 1fr;gap:0;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <!-- 좌측: 영상 + 현재 세부항목 카드 -->
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--bdr);max-height:92vh;overflow:hidden">
+      <div style="padding:14px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);background:#fafafa">
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.06);color:var(--t2)">${categoryName}</span>
+        <span id="sivm-active-title" style="font-size:13px;font-weight:800">${active.sub_item||''}</span>
+      </div>
+      <div style="background:#000;aspect-ratio:16/9;position:relative">
+        ${src?`<video id="sivm-video" controls autoplay playsinline style="width:100%;height:100%;background:#000"><source src="${src}#t=${firstSec}"></video>`:'<div style="color:#fff;display:flex;align-items:center;justify-content:center;height:100%;font-size:12px">영상이 없습니다</div>'}
+      </div>
+      <div id="sivm-active-card" style="padding:16px 18px;overflow-y:auto"></div>
+    </div>
+    <!-- 우측: 타임라인 리스트 -->
+    <div style="max-height:92vh;overflow-y:auto">
+      <div style="padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:#fff;z-index:2">
+        <div style="font-size:14px;font-weight:900">타임라인</div>
+        <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+      </div>
+      <div id="sivm-timeline" style="padding:8px 14px"></div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  function pickItem(i){
+    const it=itemsInCat[i]; if(!it) return;
+    const sec=parseTimestampToSeconds(it.timestamp);
+    const v=document.getElementById('sivm-video');
+    if(v){try{v.currentTime=sec;v.play();}catch(e){}}
+    document.getElementById('sivm-active-title').textContent=it.sub_item||'';
+    const scoreTxt=`${it.score||0}/${it.max||0}`;
+    const card=document.getElementById('sivm-active-card');
+    if(card){
+      card.innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.06);color:var(--t2)">${it.category||''}</span>
+          <span style="font-size:14px;font-weight:800;color:var(--t1)">${it.sub_item||''}</span>
+          <span style="margin-left:auto;font-size:13px;font-weight:900;color:${levelColor[it.level]||'var(--t3)'}">${scoreTxt}</span>
+          <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[it.level]||'#eee'};color:#fff">${levelLabel[it.level]||'-'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #3b82f6;background:rgba(59,130,246,.06);border-radius:4px;margin-bottom:8px">${it.analysis||'-'}</div>
+        ${it.solution?`<div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #ef4444;background:rgba(239,68,68,.06);border-radius:4px">${it.solution}</div>`:''}
+        ${it.timestamp?`<div style="margin-top:10px;font-size:10px;color:var(--t3)">영상 시점 · <strong>${it.timestamp}</strong></div>`:''}
+      `;
+    }
+    // 타임라인 활성 하이라이트
+    document.querySelectorAll('#sivm-timeline [data-idx]').forEach(n=>{n.style.background=n.dataset.idx==String(i)?'rgba(59,130,246,.08)':'';n.style.borderLeftColor=n.dataset.idx==String(i)?'#3b82f6':'transparent';});
+  }
+  const tl=document.getElementById('sivm-timeline');
+  if(tl){
+    tl.innerHTML=itemsInCat.map((it,i)=>`<div data-idx="${i}" style="padding:12px 12px 12px 14px;border-left:3px solid transparent;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04)" onclick="(function(){const ov=document.getElementById('sub-item-video-overlay');if(!ov)return;ov._pick&&ov._pick(${i});})()">
+      <div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:3px">${it.timestamp||'-'}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px">${it.sub_item||'-'}</div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5">${it.analysis||''}</div>
+    </div>`).join('');
+  }
+  overlay._pick=pickItem;
+  pickItem(subIndex);
+}
+
+// 타임스탬프(MM:SS 또는 MM:SS-MM:SS) → 시작 초
+function parseTimestampToSeconds(ts){
+  if(!ts) return 0;
+  const m=String(ts).match(/(\d+):(\d+)/);
+  if(!m) return 0;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+// 특정 시점부터 영상 재생 팝업
+function openVideoAtTime(seconds,label){
+  const url=window._anUploadedVideoUrl||'';
+  const vidEl=document.getElementById('an-video-el');
+  const fallback=vidEl?.querySelector('source')?.src||vidEl?.src||'';
+  const src=url||fallback;
+  if(!src){alert('재생할 영상이 없습니다.');return;}
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.style.zIndex='10000';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  const sec=Math.max(0,parseInt(seconds)||0);
+  overlay.innerHTML=`<div style="background:#000;border-radius:14px;max-width:900px;width:94vw;position:relative;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <button style="position:absolute;top:10px;right:10px;z-index:5;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:32px;height:32px;border-radius:50%;font-size:16px" onclick="this.closest('.overlay').remove()">✕</button>
+    ${label?`<div style="position:absolute;top:14px;left:16px;z-index:5;color:#fff;font-size:12px;font-weight:700;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:8px">${label}</div>`:''}
+    <video controls autoplay playsinline style="width:100%;aspect-ratio:16/9;border-radius:14px;background:#000" id="ts-jump-video">
+      <source src="${src}#t=${sec}">
+    </video>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>{const v=document.getElementById('ts-jump-video');if(v){try{v.currentTime=sec;}catch(e){}}},200);
+}
+
 // 체크리스트 전체보기 모달 — 대항목별 세부 다각 그래프 + 달성도 + 상세 테이블
 function openChecklistDetail(which){
   const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
@@ -5318,17 +5437,17 @@ function openChecklistDetail(which){
             </tr>
           </thead>
           <tbody>
-            ${arr.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
-              <td style="padding:8px;font-weight:600">${s.sub_item||'-'}</td>
+            ${arr.map((s,si)=>{const safeCat=cat.replace(/'/g,"\\'");return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openSubItemVideoModal('${which}','${safeCat}',${si})">
+              <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
               <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
               <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
               <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
               <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
               <td style="padding:8px;color:var(--t2);line-height:1.5">
                 ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
-                ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
+                ${s.level!=='good'&&s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
               </td>
-            </tr>`).join('')}
+            </tr>`;}).join('')}
           </tbody>
         </table>
       </div>
@@ -5651,18 +5770,28 @@ function drawRadarChart(items, color, size, items2, color2, label1, label2){
 }
 
 function renderAnalysisResult(r,hasChecklist,studentCount){
-  // ① 총점 배너
-  const total=r.criteriaScores?.reduce((a,b)=>a+b.score,0)||0;
-  const maxTotal=r.criteriaScores?.reduce((a,b)=>a+b.max,0)||100;
-  const pctScore=Math.round(total/maxTotal*100);
-  // 평가안 기준 배너 색상
+  // ① 총점 배너 — overall_score(100점 만점) 우선, 없으면 criteriaScores 합산
+  const critRaw=window._lastVertexResult?.crit;
+  const aiRaw=window._lastVertexResult?.ai;
+  let pctScore = (typeof r.overallScore==='number' && r.overallScore>0) ? r.overallScore : 0;
+  if(!pctScore){
+    const sSum=(r.criteriaScores||[]).reduce((a,b)=>a+(b.score||0),0);
+    const sMax=(r.criteriaScores||[]).reduce((a,b)=>a+(b.max||0),0);
+    pctScore=sMax>0?Math.round(sSum/sMax*100):0;
+  }
+  const total=pctScore; // 총점 표기는 100점 만점 환산 점수로 통일
+  // 대항목/세부항목 개수 (체크리스트 기준)
+  const catCount=(critRaw?.categories?.length)||(r.criteriaScores?.length)||0;
+  const subCount=(critRaw?.sub_scores?.length)||0;
+  const rubricQ=(typeof critRaw?.rubric_alignment_score==='number')?critRaw.rubric_alignment_score:null;
   const ring=document.getElementById('an-score-ring');
   if(ring) ring.setAttribute('stroke-dashoffset',264-264*pctScore/100);
   const pctEl=el('an-score-pct');if(pctEl) pctEl.textContent=pctScore+'%';
   const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
-  const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=r.criteriaScores?.length||0;
-  const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=[...new Set((r.timestamps||[]).map(t=>t.category))].length;
-  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/${maxTotal}점(${pctScore}%)</strong>으로 ${pctScore>=90?'<span style="color:#10b981">우수한</span>':pctScore>=70?'<span style="color:#f59e0b">양호한</span>':'<span style="color:#E21E26">개선이 필요한</span>'} 성과입니다. ${r.criteriaSummary||''}`;
+  const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=catCount;
+  const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=subCount;
+  const rqEl=el('an-rubric-quality');if(rqEl) rqEl.textContent=(rubricQ==null)?'—':(rubricQ+'%');
+  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong> — ${pctScore>=90?'<span style="color:#10b981">우수</span>':pctScore>=70?'<span style="color:#f59e0b">양호</span>':'<span style="color:#fecaca">개선 필요</span>'}${rubricQ!=null?` · 평가안 이해 <strong>${rubricQ}%</strong>`:''}. ${r.criteriaSummary||''}`;
   // 뱃지 판별
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);
@@ -5681,10 +5810,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores,{clickable:true,which:'crit'});
     const eduBars=el('an-edu-bars');
     if(eduBars){
-      eduBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:14px;font-weight:800">역량별 달성도</div>
-        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--blue)" onclick="openChecklistDetail('crit')">전체 보기</button>
-      </div>`+
+      eduBars.innerHTML=`<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>`+
         r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
           <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
@@ -5711,12 +5837,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   el('an-tip-levelup').innerHTML=(r.levelUpTips||[]).map(t=>tipCard(t.title||'TIP',t.text||t)).join('')||tipCard('레벨UP TIP','도입 3분이 강의 전체를 결정합니다')+tipCard('실습 강화','실습 피드백은 즉각적·구체적으로');
   el('an-tip-speech').innerHTML=(r.speechTips||[]).map(t=>tipCard(t.title||'화법',t.text||t)).join('')||tipCard('도입 화법','"오늘 이 내용 배우면 고객 질문에 답이 달라집니다."')+tipCard('피드백 화법','"한 가지만 바꿔 보면 더 잘 될 것 같아서요."');
 
-  // ⑤ AI 독자 분석 배너 + 레이더
-  const aiAvgScore=Math.round(((r.overallScore||0)+(r.focusScore||0))/2);
+  // ⑤ AI 독자 분석 배너 + 레이더 — ai.overall_score 기준 통일
+  const aiScore=(typeof aiRaw?.overall_score==='number')?aiRaw.overall_score:Math.round(((r.overallScore||0)+(r.focusScore||0))/2);
   const aiRing=document.getElementById('an-score-ring-ai');
-  if(aiRing) aiRing.setAttribute('stroke-dashoffset',264-264*aiAvgScore/100);
-  const aiPctEl=el('an-score-pct-ai');if(aiPctEl) aiPctEl.textContent=aiAvgScore+'%';
-  const aiScEl=el('an-ai-score');if(aiScEl) aiScEl.textContent=aiAvgScore;
+  if(aiRing) aiRing.setAttribute('stroke-dashoffset',264-264*aiScore/100);
+  const aiPctEl=el('an-score-pct-ai');if(aiPctEl) aiPctEl.textContent=aiScore+'%';
+  const aiScEl=el('an-ai-score');if(aiScEl) aiScEl.textContent=aiScore;
+  // AI 독자 대항목/세부항목/평가기준 수 = 체크리스트 기준 (criterion = 세부항목당 1개라 세부항목 수와 동일)
+  const aiCatsEl=el('an-ai-cats');if(aiCatsEl) aiCatsEl.textContent=(aiRaw?.categories?.length)||catCount||0;
+  const aiSubsEl=el('an-ai-subs');if(aiSubsEl) aiSubsEl.textContent=(aiRaw?.sub_scores?.length)||subCount||0;
+  const aiCriEl=el('an-ai-criteria');if(aiCriEl) aiCriEl.textContent=(aiRaw?.sub_scores?.length)||subCount||0;
   const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.textContent=`${r.overallComment||''}`;
   // AI 독자 + 누적 뱃지 (16~50)
   const kw2El=el('an-banner-keywords2');
@@ -5735,10 +5865,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems,{clickable:true,which:'ai'});
   const aiBars=el('an-ai-bars');
   if(aiBars){
-    aiBars.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:800">AI 역량별 달성도</div>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--blue)" onclick="openChecklistDetail('ai')">전체 보기</button>
-    </div>`+
+    aiBars.innerHTML=`<div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>`+
       aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
         <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
@@ -5814,15 +5941,24 @@ function renderTsTable(timestamps){
     </tr></thead>
     <tbody>${timestamps.map((ts,idx)=>{
       const scoreColor=ts.score>=ts.maxScore*0.8?'var(--green)':ts.score>=ts.maxScore*0.5?'var(--orange)':'var(--red)';
-      return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openTimestampModal2(${idx})">
+      const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      // 현재 평가안 기준의 sub_scores에서 세부항목 인덱스 찾기
+      const crit=window._lastVertexResult?.crit;
+      let subIdx=-1;
+      if(crit?.sub_scores?.length){
+        const inCat=crit.sub_scores.filter(s=>(s.category||'').trim()===(ts.category||'').trim());
+        subIdx=inCat.findIndex(s=>(s.sub_item||'').trim()===(ts.item||'').trim());
+      }
+      const onClick=subIdx>=0?`openSubItemVideoModal('crit','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
+      return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="${onClick}">
         <td style="padding:8px;font-size:11px;font-weight:700;color:var(--t1)">${ts.category||'—'}</td>
-        <td style="padding:8px;font-size:11px;font-weight:600;color:var(--t1)">${ts.item||'—'}</td>
+        <td style="padding:8px;font-size:11px;font-weight:600;color:var(--blue)">${ts.item||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2)">${ts.criteria||ts.text?.substring(0,30)||'—'}</td>
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t1)">${ts.maxScore||5}</td>
         <td style="padding:8px;text-align:center;font-size:11px;font-weight:800;color:${scoreColor}">${ts.score||0}</td>
         <td style="padding:8px;text-align:center;font-size:10px;color:var(--t2)">${ts.t||'—'}</td>
         <td style="padding:8px;font-size:11px;color:var(--t2);line-height:1.4">${ts.text||''}</td>
-        <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4">${ts.solution||'—'}</td>
+        <td style="padding:8px;font-size:10px;color:var(--t2);line-height:1.4">${ts.type==='good'?'<span style="color:#10b981;font-weight:600">—</span>':(ts.solution||'—')}</td>
       </tr>`;}).join('')}
     </tbody></table>`;
 }
@@ -5902,17 +6038,17 @@ function openCategoryRadar(which,categoryName){
           </tr>
         </thead>
         <tbody>
-          ${items.map(s=>`<tr style="border-bottom:1px solid rgba(0,0,0,.04)">
-            <td style="padding:8px;font-weight:600">${s.sub_item||'-'}</td>
+          ${items.map((s,si)=>{const safeCat=categoryName.replace(/'/g,"\\'");return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openSubItemVideoModal('${which}','${safeCat}',${si})">
+            <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
             <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
             <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
             <td style="padding:8px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff">${levelLabel[s.level]||s.level||'-'}</span></td>
             <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
             <td style="padding:8px;color:var(--t2);line-height:1.5">
               ${s.analysis?`<div style="margin-bottom:4px">${s.analysis}</div>`:''}
-              ${s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
+              ${s.level!=='good'&&s.solution?`<div style="padding:5px 8px;background:rgba(239,68,68,.06);border-left:2px solid #ef4444;border-radius:3px;font-size:10px"><strong style="color:#ef4444">솔루션:</strong> ${s.solution}</div>`:''}
             </td>
-          </tr>`).join('')}
+          </tr>`;}).join('')}
         </tbody>
       </table>
     </div>
