@@ -5305,9 +5305,9 @@ async function callVertexAnalyze(payload){
   throw lastErr||new Error('분석 호출 실패');
 }
 // evaluations 테이블 저장
-async function saveEvaluation({videoId,checklistId,eduFileUrl,evalType,result}){
+async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalType,result}){
   const payload={
-    video_id:videoId||null, checklist_id:checklistId||null,
+    video_id:videoId||null, voice_eval_id:voiceEvalId||null, checklist_id:checklistId||null,
     edu_file_url:eduFileUrl||null, eval_type:evalType,
     overall_score:result.overall_score||0,
     categories:result.categories||[], sub_scores:result.sub_scores||[],
@@ -7291,9 +7291,22 @@ async function runVoiceAnalysis(){
       edu_file_url:eduFileUrl||undefined
     }));
     window._lastVertexResult={crit:null,ai:aiRes};
+    // voice_evals 레코드 생성 → id 확보 후 evaluations 연결
+    let voiceEvalId=null;
+    try{
+      const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
+      const insertData={user_name:CU?.name||'관리자', title, score:aiRes.overall_score||0,
+        tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
+        result_data:{analysis:aiRes}};
+      if(userId) insertData.user_id=userId;
+      const {data:vRow}=await sb.from('voice_evals').insert(insertData).select().single();
+      voiceEvalId=vRow?.id||null;
+    }catch(e){console.warn('voice_evals insert failed:',e);}
+    await saveEvaluation({videoId:null,voiceEvalId,checklistId:checklistId||null,eduFileUrl:eduFileUrl||null,evalType:'AI독자',result:aiRes});
+    await loadFromDB();
+    window._anVoiceEvalId=voiceEvalId;
     const mapped=mapVertexToLegacy(null,aiRes);
     renderVoiceResult(mapped,count,tone);
-    saveEvaluation({videoId:null,checklistId:checklistId||null,eduFileUrl:eduFileUrl||null,evalType:'AI독자',result:aiRes});
     showAiLoading(false);
   } catch(e){
     console.error('스피치 분석 실패:',e);
@@ -7703,15 +7716,35 @@ function openVoiceResult(vaId){
   const v=raw.find(x=>x.id===vaId);
   if(v){v.studentCount=v.student_count;v.userName=v.user_name;}
   if(!v) return;
-  // page-voice Step2로 이동하여 결과 재생성
   el('va-step1').style.display='none';
   el('va-step2').style.display='';
-  el('va-split').style.gridTemplateColumns='1fr';
-  el('va-criteria-result').parentElement.parentElement.style.display='none';
-  // Mock 결과 재생성
-  const mock=generateMockVoice(v.studentCount||20, v.tone||'밝고 경쾌한');
-  mock.overall_score=v.score;
-  renderVoiceResult(mock, false, v.studentCount||20, v.tone||'밝고 경쾌한');
+  const split=document.getElementById('va-split');if(split) split.style.display='none';
+  (async()=>{
+    // evaluations 테이블에서 원본 Vertex 결과 로드
+    const{data:evals}=await sb.from('evaluations').select('*').eq('voice_eval_id',vaId).order('created_at',{ascending:false});
+    const aiRow=(evals||[]).find(e=>e.eval_type==='AI독자')||(evals||[])[0];
+    const toVertex=(row)=>row?{
+      overall_score:row.overall_score, categories:row.categories||[], sub_scores:row.sub_scores||[],
+      good:row.good||[], bad:row.bad||[], upgrade:row.upgrade||[],
+      scenarios:row.scenarios||[], level_tips:row.level_tips||[], teaching_patterns:row.teaching_patterns||[],
+      habits:row.habits||[], engagement_gaps_minutes:row.engagement_gaps||[],
+      mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo,
+      rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
+      rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
+      summary_opinion:row.speech_report?.summary_opinion||''
+    }:null;
+    const aiRes=normalizeVertexResult(toVertex(aiRow));
+    if(aiRes){
+      window._lastVertexResult={crit:null,ai:aiRes};
+      const mapped=mapVertexToLegacy(null,aiRes);
+      renderVoiceResult(mapped, v.studentCount||20, v.tone||'밝고 경쾌한');
+    } else {
+      // 레거시: 원본 없으면 mock으로
+      const mock=generateMockVoice(v.studentCount||20, v.tone||'밝고 경쾌한');
+      mock.overall_score=v.score;
+      renderVoiceResult(mock, false, v.studentCount||20, v.tone||'밝고 경쾌한');
+    }
+  })();
   // 삭제 버튼
   const delArea=el('va-delete-area');
   if(delArea){
