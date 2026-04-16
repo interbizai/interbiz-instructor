@@ -140,11 +140,14 @@ function buildPrompt({ checklistItems, evalType, hasEduMaterial }) {
 ${JSON.stringify(checklistSpec, null, 2)}
 
 # 채점 규칙
-- 각 세부항목은 3단계 판정: "good"(잘했다=배점 100%), "normal"(보통=배점 60%), "bad"(못했다=0점)
+- 각 세부항목은 3단계 판정만 허용: "good"(잘했다 = 배점 100% = 5점 만점 기준 5점), "normal"(보통 = 배점 60% = 5점 만점 기준 3점), "bad"(못했다 = 0점)
+- 절대 2점/4점 같은 중간값을 내지 않는다. 애매한 경우 무조건 "normal"(3점)로 반올림하지 말고 분명히 잘했으면 good, 그렇지 않으면 normal, 못 했으면 bad로만 판정
+- score 필드 값은 정확히 max 또는 round(max*0.6) 또는 0 중 하나여야 함
 - 판정 불가(해당없음)인 경우 "na"로 표기 — 점수 합산에서 제외
 - 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기
 - analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 권장)
 - solution은 "normal"/"bad" 항목에만 작성. "good"/"na" 항목은 solution을 빈 문자열("")로 둔다
+- habits(반복어)는 엄격 검증: 강사 입에서 실제로 여러 번(5회 이상) 반복해서 들리는 표현만 포함. 추측·유추 금지. 각 occurrence에는 MM:SS와 함께 그 시점의 실제 발화 문장 10~25자를 context로 반드시 인용. count는 occurrences 배열 길이와 일치해야 함. 확실하지 않은 반복어는 아예 제외(빈 배열이어도 OK)
 - overall_score = sum(sub_scores[i].score) / sum(sub_scores[i].max) × 100 을 반올림한 정수 (na 항목은 양쪽 합계에서 제외)
 - categories[].score = 해당 대항목에 속한 sub_scores의 score 합, categories[].max = max 합 (na 제외)
 - categories[].achievement = round(score/max × 100) (max=0이면 0)
@@ -172,7 +175,7 @@ ${JSON.stringify(checklistSpec, null, 2)}
   "scenarios": [{"situation":"상황","original_line":"영상 속 원문","suggested_line":"추천 시나리오 대사"}],
   "level_tips": [{"title":"레벨UP 팁","detail":"설명"}],
   "teaching_patterns": [{"type":"도입|피드백|마무리|기타","original":"원 화법","alternative":"추천 대체 화법"}],
-  "habits": [{"word":"반복어","count":int,"timestamps":["MM:SS",...],"solution":"줄이는 솔루션"}],
+  "habits": [{"word":"반복어 (정확히 강사 입에서 들린 표현)","count":int,"occurrences":[{"time":"MM:SS","context":"해당 시점 전후 실제 발화 문장 10~25자 인용"}, ...],"solution":"줄이는 솔루션"}],
   "engagement_gaps_minutes": [분단위 간격 배열 (예: [7,12,9])],
   "mood": "열정적이고 에너지 넘치는|밝고 경쾌한|친근하고 편안한|전문적이고 진지한|차분하고 신뢰감 있는|재미있고 유머러스한",
   "decibel": 대략적 dB 값(int),

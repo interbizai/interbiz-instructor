@@ -1392,7 +1392,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0">
+        <div style="display:flex;gap:18px;flex-shrink:0;min-width:280px">
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점(100)</div></div>
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-rubric-quality">—</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가안 이해%</div></div>
           <div style="display:none" id="an-eval-cats"></div>
@@ -1413,7 +1413,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct-ai">0%</div>
         </div>
-        <div style="display:flex;gap:16px;flex-shrink:0">
+        <div style="display:flex;gap:16px;flex-shrink:0;min-width:280px">
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">AI점수</div></div>
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">대항목</div></div>
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-ai-subs">0</div><div style="font-size:9px;color:rgba(255,255,255,.5)">세부항목</div></div>
@@ -5069,7 +5069,39 @@ async function loadChecklistItemsForEval(checklistId){
 // (AI가 가끔 합계를 다르게 반환해도 화면 숫자 불일치 방지)
 function normalizeVertexResult(raw){
   if(!raw||!Array.isArray(raw.sub_scores)||!raw.sub_scores.length) return raw;
-  // na 제외
+  // level에 맞춰 score를 5/3/0(또는 max 비율) 강제 보정 + 중간값 금지
+  raw.sub_scores=raw.sub_scores.map(s=>{
+    const max=Number(s.max||0);
+    let level=s.level;
+    if(!['good','normal','bad','na'].includes(level)){
+      // 미지정이면 score 비율로 추정
+      const ratio=max>0?(Number(s.score||0)/max):0;
+      level=ratio>=0.9?'good':ratio>=0.3?'normal':'bad';
+    }
+    let score;
+    if(level==='good') score=max;
+    else if(level==='normal') score=Math.round(max*0.6);
+    else if(level==='bad') score=0;
+    else score=0; // na
+    return {...s, level, score};
+  });
+  // habits: occurrences 정규화 — 문자열 배열/객체 배열 혼재 대응 → timestamps[](MM:SS) + contexts[](문구)
+  if(Array.isArray(raw.habits)){
+    raw.habits=raw.habits.map(h=>{
+      const occ=Array.isArray(h.occurrences)?h.occurrences:null;
+      const timestamps=[], contexts=[];
+      if(occ){
+        occ.forEach(o=>{
+          if(typeof o==='string'){timestamps.push(o);contexts.push('');}
+          else if(o&&typeof o==='object'){timestamps.push(o.time||o.timestamp||''); contexts.push(o.context||'');}
+        });
+      } else if(Array.isArray(h.timestamps)){
+        h.timestamps.forEach(t=>{timestamps.push(typeof t==='string'?t:(t?.time||'')); contexts.push(typeof t==='object'?(t?.context||''):'');});
+      }
+      return {...h, timestamps, contexts, count: timestamps.length||Number(h.count||0)};
+    });
+  }
+  // na 제외 후 집계
   const effective=raw.sub_scores.filter(s=>s.level!=='na');
   // 카테고리별 집계
   const catMap=new Map();
@@ -5147,7 +5179,7 @@ function mapVertexToLegacy(critRes,aiRes){
     focusScore:a.overall_score||c.overall_score||0,
     overallComment:(c.upgrade?.[0]?.detail)||'',
     focusComment:(a.upgrade?.[0]?.detail)||'',
-    habits:(a.habits||c.habits||[]).map(h=>({word:h.word,count:h.count||0,timestamps:h.timestamps||[],solution:h.solution||''})),
+    habits:(a.habits||c.habits||[]).map(h=>({word:h.word,count:h.count||0,timestamps:h.timestamps||[],contexts:h.contexts||[],solution:h.solution||''})),
     decibel:a.decibel||c.decibel||0, decibelStatus:'적정',
     tempo:a.tempo_wpm||c.tempo_wpm||0, tempoStatus:'적정',
     engagementGaps:a.engagement_gaps_minutes||c.engagement_gaps_minutes||[],
@@ -5343,10 +5375,13 @@ function openHabitTimestamps(idx){
         <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
       </div>
       <div style="padding:10px 14px">
-        ${tsList.length?tsList.map((t,i)=>`<div data-sec="${parseTimestampToSeconds(t)}" style="padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="(function(s){const v=document.getElementById('hts-video');if(v){try{v.currentTime=s;v.play();}catch(e){}}})(${parseTimestampToSeconds(t)})">
-          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--t3);font-weight:700">#${i+1}</span><span style="font-size:13px;font-weight:800;color:var(--blue)">${t}</span></div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
-        </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">시점 정보가 없습니다</div>'}
+        ${tsList.length?tsList.map((t,i)=>{const ctx=(h.contexts||[])[i]||''; const sec=parseTimestampToSeconds(t); return `<div style="padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='rgba(0,120,200,.04)'" onmouseout="this.style.background=''" onclick="(function(s){const v=document.getElementById('hts-video');if(v){try{v.currentTime=s;v.play();}catch(e){}}})(${sec})">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${ctx?'4px':'0'}">
+            <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--t3);font-weight:700">#${i+1}</span><span style="font-size:13px;font-weight:800;color:var(--blue)">${t}</span></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
+          </div>
+          ${ctx?`<div style="font-size:11px;color:var(--t2);line-height:1.5;padding:4px 8px;background:#f8f9fa;border-radius:4px">"${ctx}"</div>`:''}
+        </div>`;}).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">시점 정보가 없습니다</div>'}
       </div>
     </div>
   </div>`;
