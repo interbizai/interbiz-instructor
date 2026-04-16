@@ -5868,20 +5868,17 @@ function readVideoDuration(file){
   });
 }
 // 영상 길이별 적정 fps 자동 계산
-// Gemini 2.5 Flash 입력 한도 131,072 토큰, 초당 ~263 토큰/프레임(1fps)
-// 안전 마진 확보: 체크리스트/프롬프트 오버헤드 ~10K + 교육자료 텍스트 ~10K → 영상은 100K 이하로 제한
+// Gemini 2.5 Pro 입력 한도 2M 토큰(실전 900K 여유 마진), 초당 ~263 토큰/프레임(1fps)
+// Pro는 컨텍스트가 넉넉해 대부분 fps 1.0 가능, 1시간+ 초장편만 0.5~0.25로
 function pickAdaptiveFps(durationSec){
-  if(!durationSec||durationSec<=0) return 0.5;
-  const maxVideoTokens=95000;
+  if(!durationSec||durationSec<=0) return 1.0;
+  const maxVideoTokens=900000; // Pro 여유 900K (체크리스트/교육자료/출력 고려)
   const ideal=maxVideoTokens/(durationSec*263);
-  // 선택지 확장: 1시간 영상도 안전하게 커버 (fps 0.08 = 12.5초당 1프레임)
   if(ideal>=1) return 1.0;
   if(ideal>=0.5) return 0.5;
   if(ideal>=0.25) return 0.25;
   if(ideal>=0.15) return 0.15;
-  if(ideal>=0.1) return 0.1;
-  if(ideal>=0.08) return 0.08;
-  return 0.06; // 1시간 초과 대비
+  return 0.1;
 }
 function setAiLoadingStep(msg){
   const el=document.getElementById('ai-loading-step');

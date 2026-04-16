@@ -223,7 +223,7 @@ export default async function handler(req, res) {
       eval_type,
       edu_file_url,
       edu_file_mime,
-      model = 'gemini-2.5-flash',
+      model = 'gemini-2.5-pro',
     } = req.body || {};
 
     if (!video_url && !video_gcs_uri) return res.status(400).json({ ok: false, error: 'video_url 또는 video_gcs_uri 필요' });
