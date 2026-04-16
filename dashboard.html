@@ -9140,20 +9140,6 @@ function renderRadarChart(userId){
     const [x,y]=toXY(a,maxR);
     svg+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
   });
-  // 전기 역량 (이전 평가 데이터가 2건 이상일 때만)
-  const prevVidsAll=(D.videos||[]).filter(v=>v.userId===userId&&v.status==='분석완료'&&(v.timestamps||[]).length>0);
-  const hasPrev=prevVidsAll.length>=2;
-  const prevScores6=hasPrev?cats6.map(cat=>{
-    let t=0,c=0;
-    if(u.scores) Object.entries(u.scores).forEach(([k,v])=>{
-      if(cat.keys.some(key=>k.includes(key))){t+=v/((u.maxes||{})[k]||1)*80;c++;}
-    });
-    return c>0?Math.max(0,Math.min(100,Math.round(t/c))):0;
-  }):[];
-  if(hasPrev){
-    const prevPts=prevScores6.map((s,i)=>toXY(angles[i],maxR*s/100).join(',')).join(' ');
-    svg+=`<polygon points="${prevPts}" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  }
   // 현재 역량 (빨강)
   const dataPts=scores6.map((s,i)=>toXY(angles[i],maxR*s/100).join(',')).join(' ');
   svg+=`<polygon points="${dataPts}" fill="rgba(220,38,38,.12)" stroke="#dc2626" stroke-width="2.5"/>`;
@@ -9171,10 +9157,6 @@ function renderRadarChart(userId){
   });
   // 범례
   svgEl.innerHTML=svg;
-
-  // 전기 역량 범례 표시/숨김
-  const prevLegend=document.getElementById('radar-legend-prev-'+userId);
-  if(prevLegend) prevLegend.style.display=hasPrev?'flex':'none';
 
   // 달성도 바
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
@@ -9694,10 +9676,7 @@ function openLecturer(id, fromPage){
     <div class="lect-tab-pane" id="lect-tab-역량">
       <!-- 역량 분석 제목 + 전체보기 + 필터 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
-          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('lect')">전체 보기</button>
-        </div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
         <div style="display:flex;gap:6px">
           <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
             <option value="">전체 교육자료</option>
@@ -9717,7 +9696,6 @@ function openLecturer(id, fromPage){
             </div>
             <div style="display:flex;gap:20px;justify-content:center;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);margin-top:8px">
               <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dc2626"></div><span style="font-size:12px;font-weight:600;color:var(--t1)">현재 역량</span></div>
-              <div style="display:flex;align-items:center;gap:6px" id="radar-legend-prev-${u.id}"><div style="width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.25)"></div><span style="font-size:12px;font-weight:600;color:var(--t2)">전기 역량</span></div>
             </div>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="lect-skills-bars-${u.id}"></div>
