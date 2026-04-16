@@ -1289,11 +1289,40 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 ════════════════════════════════════ -->
 <!-- AI 분석 로딩 오버레이 -->
 <div id="ai-loading-overlay">
-  <div class="ai-loading-box">
+  <div class="ai-loading-box" style="max-width:460px">
     <div class="ai-loading-ring"></div>
     <div class="ai-loading-title">AI 코칭 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
     <div class="ai-loading-step" id="ai-loading-step">준비 중...</div>
-    <div class="ai-loading-sub">영상을 프레임 단위로 분석하고<br>평가안 기준 · AI 독자 평가를 동시에 생성합니다</div>
+    <!-- 경과 시간 + 예상 남은 시간 -->
+    <div style="display:flex;justify-content:space-around;margin-top:18px;padding:12px;background:#f8f9fa;border-radius:10px">
+      <div style="text-align:center"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">경과 시간</div><div id="ai-loading-elapsed" style="font-size:17px;font-weight:900;color:var(--t1)">00:00</div></div>
+      <div style="width:1px;background:var(--bdr)"></div>
+      <div style="text-align:center"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">예상 남은 시간</div><div id="ai-loading-remaining" style="font-size:17px;font-weight:900;color:var(--blue)">—</div></div>
+    </div>
+    <!-- 단계 체크리스트 -->
+    <div id="ai-loading-steps" style="margin-top:16px;text-align:left">
+      <div class="alstep" data-step="upload" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>영상 업로드</span>
+      </div>
+      <div class="alstep" data-step="checklist" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>체크리스트 로드</span>
+      </div>
+      <div class="alstep" data-step="crit" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>평가안 기준 분석 (영상 + 교육자료)</span>
+      </div>
+      <div class="alstep" data-step="ai" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>AI 독자 분석 (영상 + 체크리스트)</span>
+      </div>
+      <div class="alstep" data-step="save" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>결과 저장 및 렌더</span>
+      </div>
+    </div>
+    <div id="ai-loading-tip" class="ai-loading-sub" style="margin-top:14px;font-style:italic;min-height:28px"></div>
   </div>
 </div>
 <div id="page-analysis" class="page">
@@ -5891,10 +5920,66 @@ function setAiLoadingStep(msg){
   const el=document.getElementById('ai-loading-step');
   if(el) el.textContent=msg;
 }
-function showAiLoading(show){
+// 단계 체크: 'upload'|'checklist'|'crit'|'ai'|'save' → 'done'|'active'|'pending'
+function setAiLoadingStage(step,state){
+  const node=document.querySelector(`.alstep[data-step="${step}"]`);
+  if(!node) return;
+  const icon=node.querySelector('.alstep-icon');
+  if(state==='done'){
+    node.style.color='#10b981';
+    if(icon){icon.style.background='#10b981';icon.style.borderColor='#10b981';icon.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="5 12 10 17 19 6"/></svg>';}
+  } else if(state==='active'){
+    node.style.color='var(--blue)';
+    node.style.fontWeight='700';
+    if(icon){icon.style.background='var(--blue)';icon.style.borderColor='var(--blue)';icon.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:ringPulse 1s infinite"></span>';}
+  } else { // pending
+    node.style.color='var(--t3)';
+    node.style.fontWeight='';
+    if(icon){icon.style.background='';icon.style.borderColor='#e5e7eb';icon.innerHTML='';}
+  }
+}
+let _aiLoadingTimer=null, _aiLoadingStart=0, _aiLoadingExpected=60;
+const AI_LOADING_TIPS=[
+  'Gemini 2.5 Pro가 영상을 프레임 단위로 살펴보고 있습니다.',
+  '체크리스트의 20개 항목 하나하나를 영상과 매칭 중입니다.',
+  '강사의 목소리·발음·템포를 분석하고 있습니다.',
+  '반복어 습관과 발화 시점을 찾는 중입니다.',
+  '교육자료와 영상 내용의 일치도를 검사하고 있습니다.',
+  '시나리오/레벨UP TIP/교육 화법을 생성 중입니다.',
+  '타임스탬프를 정밀하게 기록하고 있습니다.',
+  '종합 의견과 개선 솔루션을 작성 중입니다.',
+];
+function _updateAiLoadingTimer(){
+  const elapsed=Math.floor((Date.now()-_aiLoadingStart)/1000);
+  const mm=String(Math.floor(elapsed/60)).padStart(2,'0');
+  const ss=String(elapsed%60).padStart(2,'0');
+  const elEl=document.getElementById('ai-loading-elapsed');
+  if(elEl) elEl.textContent=mm+':'+ss;
+  const rem=Math.max(0,_aiLoadingExpected-elapsed);
+  const rm=String(Math.floor(rem/60)).padStart(2,'0');
+  const rs=String(rem%60).padStart(2,'0');
+  const remEl=document.getElementById('ai-loading-remaining');
+  if(remEl) remEl.textContent=rem>0?(rm+':'+rs):'거의 다 됐어요';
+  // 팁 회전 (8초마다)
+  const tipEl=document.getElementById('ai-loading-tip');
+  if(tipEl){const idx=Math.floor(elapsed/8)%AI_LOADING_TIPS.length;tipEl.textContent=AI_LOADING_TIPS[idx];}
+}
+function showAiLoading(show,expectedSec){
   const ov=document.getElementById('ai-loading-overlay');
   if(!ov) return;
-  if(show) ov.classList.add('show'); else ov.classList.remove('show');
+  if(show){
+    ov.classList.add('show');
+    _aiLoadingStart=Date.now();
+    _aiLoadingExpected=expectedSec||90;
+    // 모든 단계 초기화
+    ['upload','checklist','crit','ai','save'].forEach(s=>setAiLoadingStage(s,'pending'));
+    _updateAiLoadingTimer();
+    if(_aiLoadingTimer) clearInterval(_aiLoadingTimer);
+    _aiLoadingTimer=setInterval(_updateAiLoadingTimer,1000);
+  } else {
+    ov.classList.remove('show');
+    if(_aiLoadingTimer){clearInterval(_aiLoadingTimer);_aiLoadingTimer=null;}
+  }
 }
 
 async function generateAIAnalysis(title,studentCount,hasChecklist){
@@ -5905,15 +5990,20 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     alert('영상 파일이 없습니다.');
     return;
   }
-  showAiLoading(true);
+  // 영상 길이로 예상 시간 추정 (Pro 기준 길이에 비례)
+  const tmpFile=el('an-file').files?.[0];
+  const tmpDur=tmpFile?await readVideoDuration(tmpFile).catch(()=>0):0;
+  const expectedSec=Math.max(60,Math.round(20+tmpDur*0.15)); // 기본 60s + 영상 길이의 15%
+  showAiLoading(true,expectedSec);
   try{
     // 0) 영상 길이로 fps 자동 계산
     setAiLoadingStep('영상 길이 분석 중...');
-    const durationSec=await readVideoDuration(file);
+    const durationSec=tmpDur||await readVideoDuration(file);
     const fps=pickAdaptiveFps(durationSec);
     window._anFps=fps;
     // 1) 체크리스트 항목 로드 (필수)
     setAiLoadingStep('체크리스트 로드 중...');
+    setAiLoadingStage('checklist','active');
     el('an-ai-summary').textContent='체크리스트 로드 중...';
     const checklistItems=await loadChecklistItemsForEval(checklistId);
     if(!checklistItems.length){
@@ -5921,11 +6011,14 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       showAiLoading(false);
       return;
     }
+    setAiLoadingStage('checklist','done');
     // 2) 영상 GCS 업로드 (무제한 크기, gs:// URI 반환)
     const durMin=Math.round(durationSec/60);
     setAiLoadingStep(`영상 업로드 중 (약 ${durMin}분 영상, fps=${fps})...`);
+    setAiLoadingStage('upload','active');
     el('an-ai-summary').textContent='영상 업로드 중... (파일 크기에 따라 30초~5분)';
     const up=await uploadAnalysisVideo(file);
+    setAiLoadingStage('upload','done');
     const videoUrl=up.public_url;
     const videoGcsUri=up.gcs_uri;
     const videoMime=up.mime;
@@ -5942,6 +6035,7 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     const errors=[];
     if(hasEdu){
       setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
+      setAiLoadingStage('crit','active');
       try{
         critResult=normalizeVertexResult(await callVertexAnalyze({
           video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
@@ -5949,16 +6043,20 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
           edu_file_url:eduFileUrl,
           edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
         }));
+        setAiLoadingStage('crit','done');
       }catch(e){errors.push('평가안 기준: '+e.message); console.error(e);}
       setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
     } else {
+      setAiLoadingStage('crit','done'); // skip
       setAiLoadingStep('AI 영상 분석 (AI 독자)...');
     }
+    setAiLoadingStage('ai','active');
     try{
       aiResult=normalizeVertexResult(await callVertexAnalyze({
         video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
         checklist_items:checklistItems, eval_type:'AI독자'
       }));
+      setAiLoadingStage('ai','done');
     }catch(e){errors.push('AI 독자: '+e.message); console.error(e);}
     if(!critResult&&!aiResult){
       throw new Error(errors.join(' / ')||'분석 실패');
@@ -5985,10 +6083,12 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     // 6) 전역에 보관 + 렌더
     window._lastVertexResult={crit:critResult,ai:aiResult};
     window._anVideoId=videoId;
+    setAiLoadingStage('save','active');
     setAiLoadingStep('결과 렌더 중...');
     const mapped=mapVertexToLegacy(critResult,aiResult);
     renderAnalysisResult(mapped,true,studentCount);
-    showAiLoading(false);
+    setAiLoadingStage('save','done');
+    setTimeout(()=>showAiLoading(false),400);
   }catch(e){
     console.error('Vertex AI 분석 실패:',e);
     showAiLoading(false);
@@ -7280,8 +7380,13 @@ async function runVoiceAnalysis(){
   const eduFileUrl=document.getElementById('va-checklist-url')?.value||'';
   const hasCL=!!checklistId||el('va-checklist').files?.length>0||!!document.getElementById('va-cl-url')?.value;
 
-  showAiLoading(true);
+  // 예상 시간 추정 (파일 길이 반영)
+  const vaTmpFile=el('va-file').files?.[0];
+  const vaTmpDur=vaTmpFile?await readVideoDuration(vaTmpFile).catch(()=>0):0;
+  showAiLoading(true,Math.max(45,Math.round(20+vaTmpDur*0.15)));
   setAiLoadingStep('스피치 분석 준비 중...');
+  // 스피치는 평가안 기준 단계 스킵 표시
+  setAiLoadingStage('crit','done');
 
   el('va-step1').style.display='none';
   el('va-step2').style.display='';
@@ -7300,17 +7405,21 @@ async function runVoiceAnalysis(){
   try {
     // 1) 파일 업로드 (GCS)
     setAiLoadingStep('음성 파일 업로드 중...');
+    setAiLoadingStage('upload','active');
     let audioFile=el('va-file').files?.[0];
     if(!audioFile&&hasRec){ audioFile=new Blob(vaChunks,{type:'audio/webm'}); audioFile.name='recording.webm'; }
     const up=await uploadAnalysisVideo(audioFile);
+    setAiLoadingStage('upload','done');
     const audioUrl=up.public_url;
     const audioGcsUri=up.gcs_uri;
     const audioMime=audioFile.type||'audio/webm';
 
     // 2) 체크리스트 로드
     setAiLoadingStep('체크리스트 로드 중...');
+    setAiLoadingStage('checklist','active');
     let checklistItems=[];
     if(checklistId) checklistItems=await loadChecklistItemsForEval(checklistId);
+    setAiLoadingStage('checklist','done');
 
     // 3) 길이 → 적응형 fps
     let durSec=await readVideoDuration(audioFile).catch(()=>0);
@@ -7350,6 +7459,7 @@ async function runVoiceAnalysis(){
       {model:'gemini-2.5-pro', fps:0.2, label:'Pro (안전 모드)'},
     ];
     let lastErr=null;
+    setAiLoadingStage('ai','active');
     for(let i=0;i<attempts.length&&!aiResRaw;i++){
       const a=attempts[i];
       setAiLoadingStep(`AI 스피치 분석 중 (${a.label})...`);
@@ -7367,6 +7477,8 @@ async function runVoiceAnalysis(){
       }
     }
     if(!aiResRaw) throw new Error('모든 모델/fps 조합으로 시도했으나 실패. '+(lastErr?.message||''));
+    setAiLoadingStage('ai','done');
+    setAiLoadingStage('save','active');
     const aiRes=normalizeVertexResult(aiResRaw);
     window._lastVertexResult={crit:null,ai:aiRes};
     // voice_evals 레코드 생성 → id 확보 후 evaluations 연결
@@ -7385,7 +7497,8 @@ async function runVoiceAnalysis(){
     window._anVoiceEvalId=voiceEvalId;
     const mapped=mapVertexToLegacy(null,aiRes);
     renderVoiceResult(mapped,count,tone);
-    showAiLoading(false);
+    setAiLoadingStage('save','done');
+    setTimeout(()=>showAiLoading(false),400);
   } catch(e){
     console.error('스피치 분석 실패:',e);
     showAiLoading(false);
