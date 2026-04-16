@@ -1561,10 +1561,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
     <div style="display:none" id="an-report"></div>
 
-    <!-- 저장 + 다시입력 -->
+    <!-- 삭제 -->
     <div style="display:flex;gap:10px" id="an-action-btns">
-      <button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px" onclick="saveAnalysisVideo()">영상 & 분석 결과 저장</button>
-      <button class="btn btn-ghost" onclick="el('an-step1').style.display='';el('an-step2').style.display='none';var pb=el('an-pdf-btn');if(pb)pb.style.display='none'">← 다시 입력</button>
       <span id="an-delete-area"></span>
     </div>
   </div>
@@ -9483,8 +9481,8 @@ function openVideo(id){
   // 삭제 버튼
   const delArea=el('an-delete-area');
   if(delArea){
-    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn btn-red" style="padding:8px 16px;font-size:13px" onclick="adminDeleteVideo(${vid.id})">삭제</button>`;
-    else if(CU?.id===vid.userId) delArea.innerHTML=`<button class="btn" style="padding:8px 16px;font-size:13px;color:var(--orange);border:1px solid var(--orange)" onclick="openDeleteRequest(${vid.id},'${(vid.title||'').replace(/'/g,'')}')">삭제 요청</button>`;
+    if(CU?.isAdmin) delArea.innerHTML=`<button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px;font-size:13px;border-radius:999px" onclick="adminDeleteVideo(${vid.id})">삭제</button>`;
+    else if(CU?.id===vid.userId) delArea.innerHTML=`<button class="btn" style="background:var(--t1);color:#fff;padding:10px 24px;font-size:13px;border-radius:999px" onclick="openDeleteRequest(${vid.id},'${(vid.title||'').replace(/'/g,'')}')">삭제 요청</button>`;
     else delArea.innerHTML='';
   }
 
