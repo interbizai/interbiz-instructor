@@ -2787,7 +2787,9 @@ async function dbGetUsers(){
     habits:r.habits||[], habitCounts:r.habit_counts||[], engagementGaps:r.engagement_gaps||[],
     decibel:r.decibel||0, tempo:r.tempo||0, studentCount:r.student_count||0,
     registered:r.created_at?r.created_at.split('T')[0]:'',
-    isSubAdmin:r.is_sub_admin||false
+    isSubAdmin:r.is_sub_admin||false,
+    satisfaction:r.satisfaction||null,
+    grade_override:r.grade_override||null
   }));
 }
 // DB에서 모든 영상 가져오기
@@ -2834,6 +2836,8 @@ async function dbUpdateUser(id,fields){
   if('grade' in fields) map.grade=fields.grade;
   if('scores' in fields) map.scores=fields.scores;
   if('isSubAdmin' in fields) map.is_sub_admin=fields.isSubAdmin;
+  if('satisfaction' in fields) map.satisfaction=fields.satisfaction;
+  if('grade_override' in fields) map.grade_override=fields.grade_override;
   const {error}=await sb.from('users').update(map).eq('id',id);
   if(error) console.error('dbUpdateUser:',error);
 }
@@ -9173,28 +9177,8 @@ function renderRadarChart(userId){
 }
 
 function filterLectStats(userId){
-  const catVal=document.getElementById('lect-cat-filter')?.value||'';
-  const prodVal=document.getElementById('lect-prod-filter')?.value||'';
-  const u=D.users.find(x=>x.id===userId);
-  if(!u) return;
-  // 분석완료 영상만
-  let vids=(D.videos||[]).filter(v=>v.userId===userId&&v.status==='분석완료');
-  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
-  if(prodVal) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodVal));
-  // 분석완료 영상만 점수 계산 (timestamps 있는 것만)
-  const vidScores=vids.filter(v=>(v.timestamps||[]).length>0).map(v=>{
-    const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
-    return Math.min(100,g*10+(v.timestamps||[]).length*3);
-  });
-  const avg=vidScores.length?(vidScores.reduce((a,b)=>a+b,0)/vidScores.length):0;
-  const cnt=vidScores.length;
-  const allUserVids=(D.videos||[]).filter(v=>v.userId===userId);
-  const lvData=getLevelInfo(avg,cnt,allUserVids.length);
-  // 통계 카드 업데이트
-  const cards=document.querySelectorAll('#lect-stat-cards > div');
-  if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
-  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 강의횟수</div>`;
-  if(cards[3]) cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${lvData.color}">${cnt?lvData.grade:'—'}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
+  _refreshLectStats(userId);
+  renderRadarChartFromEvals(userId);
 }
 
 function openLevelDetail(avgScore,evalCount,totalVids){
@@ -9588,13 +9572,15 @@ function openLecturer(id, fromPage){
 
   const isOwner=CU && (CU.id===u.id || CU.isAdmin);
 
-  // Lv 계산 (분석완료 + timestamps 있는 영상만)
-  const analyzedVids=userVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
-  const allUserVidScores=analyzedVids.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
-  const userAvgScore=allUserVidScores.length?(allUserVidScores.reduce((a,b)=>a+b,0)/allUserVidScores.length):0;
-  const evalCount=allUserVidScores.length;
-  const totalVids=userVids.length; // 삭제 포함 총 등록 영상 수
-  const lvData=getLevelInfo(userAvgScore,evalCount,totalVids);
+  // ── 실 평가 데이터 로드 (evaluations 테이블) ──
+  // 동기 렌더링 후 비동기로 데이터 채움
+  const totalVids=userVids.length;
+  // 초기값 — DB 로드 후 갱신
+  let userAvgScore=0, evalCount=0;
+  const lvData=getLevelInfo(0,0,totalVids);
+  // 유저별 evaluations 캐시 (필터용)
+  window._lectEvals=[];
+  window._lectUserId=id;
 
   // AI 한줄평가 + 키워드
   const aiKeywords=getAIKeywords(u,userVids);
@@ -9699,11 +9685,11 @@ function openLecturer(id, fromPage){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
         <div style="display:flex;gap:6px">
-          <select id="radar-cat-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+          <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
             <option value="">전체 교육자료</option>
             ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
           </select>
-          <select id="radar-prod-filter" onchange="renderRadarChart(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+          <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
             <option value="">전체 제품</option>
             ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
           </select>
@@ -9848,14 +9834,142 @@ function openLecturer(id, fromPage){
   showPage('page-lecturer');
   requestAnimationFrame(()=>{
     document.querySelectorAll('#lecturer-main .bar-fill').forEach(e=>{ e.style.width=e.dataset.pct+'%'; });
-    renderRadarChart(id);
     renderCareerList(id);
     renderPortfolioList(id);
-    renderMyBadges(id,userAvgScore);
   });
   // 음성 목록 렌더링
   renderUserVoiceList(id);
+  // ── 비동기: evaluations 로드 → 통계/레이더 실데이터 반영 ──
+  (async()=>{
+    const vidIds=userVids.map(v=>v.id);
+    if(!vidIds.length){
+      renderRadarChart(id); renderMyBadges(id,0);
+      return;
+    }
+    const{data:evals}=await sb.from('evaluations').select('*').in('video_id',vidIds);
+    window._lectEvals=evals||[];
+    _refreshLectStats(id);
+    renderRadarChartFromEvals(id);
+    renderMyBadges(id,window._lectAvgScore||0);
+  })();
 }
+
+// evaluations 기반 통계 카드 갱신 (필터 적용)
+function _refreshLectStats(userId){
+  const catFilter=document.getElementById('lect-cat-filter')?.value||'';
+  const prodFilter=document.getElementById('lect-prod-filter')?.value||'';
+  let evals=(window._lectEvals||[]);
+  // 필터: 영상의 videoType/productName과 매칭
+  if(catFilter||prodFilter){
+    const vidIds=new Set((D.videos||[]).filter(v=>{
+      if(catFilter&&(v.videoType||v.video_type||'')!==catFilter) return false;
+      if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
+      return true;
+    }).map(v=>v.id));
+    evals=evals.filter(e=>vidIds.has(e.video_id));
+  }
+  // 영상 1개당 최신 평가 1건만 (AI독자 우선)
+  const byVid=new Map();
+  evals.forEach(e=>{
+    if(!e.video_id) return;
+    const exist=byVid.get(e.video_id);
+    if(!exist||e.eval_type==='AI독자') byVid.set(e.video_id,e);
+  });
+  const latest=[...byVid.values()];
+  const scores=latest.map(e=>Number(e.overall_score||0)).filter(s=>s>0);
+  const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const cnt=scores.length;
+  window._lectAvgScore=avg;
+  const u=D.users.find(x=>x.id===userId);
+  const totalVids=(D.videos||[]).filter(v=>v.userId===userId).length;
+  const lvData=getLevelInfo(avg,cnt,totalVids);
+  // 관리자 지정 등급이 있으면 우선
+  const gradeOverride=u?.grade_override||'';
+  const satVal=u?.satisfaction||'—';
+  const cards=document.querySelectorAll('#lect-stat-cards > div');
+  if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0.0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
+  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 강의횟수</div>`;
+  if(cards[2]) cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--orange)">${satVal}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">수강 만족도</div>${CU?.isAdmin?`<div style="margin-top:4px"><button class="btn btn-ghost" style="padding:2px 8px;font-size:9px" onclick="editSatisfaction(${userId})">수정</button></div>`:''}`;
+  if(cards[3]){
+    const grade=gradeOverride||lvData.grade;
+    const color=gradeOverride?({'S':'#dc2626','A':'#2563eb','B':'#10b981','C':'#f59e0b','D':'#9ca3af'}[gradeOverride[0]]||lvData.color):lvData.color;
+    cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${color}">${grade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>${CU?.isAdmin?`<div style="margin-top:4px"><button class="btn btn-ghost" style="padding:2px 8px;font-size:9px" onclick="editGrade(${userId})">수정</button></div>`:''}`;
+  }
+}
+
+// 관리자 수강 만족도 수정
+async function editSatisfaction(userId){
+  const val=prompt('수강 만족도 (0.0~5.0):');
+  if(val===null) return;
+  const num=parseFloat(val);
+  if(isNaN(num)||num<0||num>5){alert('0~5 사이 숫자를 입력하세요.');return;}
+  await dbUpdateUser(userId,{satisfaction:num});
+  const u=D.users.find(x=>x.id===userId); if(u) u.satisfaction=num;
+  _refreshLectStats(userId);
+}
+
+// 관리자 종합 등급 수정
+async function editGrade(userId){
+  const val=prompt('종합 등급 (S/A/B/C/D 또는 빈칸=자동):');
+  if(val===null) return;
+  const upper=val.trim().toUpperCase();
+  if(upper&&!['S','A','B','C','D'].includes(upper)){alert('S/A/B/C/D 중 하나를 입력하세요.');return;}
+  await dbUpdateUser(userId,{grade_override:upper||null});
+  const u=D.users.find(x=>x.id===userId); if(u) u.grade_override=upper||null;
+  _refreshLectStats(userId);
+}
+
+// evaluations의 categories를 집계하여 레이더 그리기
+function renderRadarChartFromEvals(userId){
+  const catFilter=document.getElementById('radar-cat-filter')?.value||'';
+  const prodFilter=document.getElementById('radar-prod-filter')?.value||'';
+  let evals=(window._lectEvals||[]);
+  if(catFilter||prodFilter){
+    const vidIds=new Set((D.videos||[]).filter(v=>{
+      if(catFilter&&(v.videoType||v.video_type||'')!==catFilter) return false;
+      if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
+      return true;
+    }).map(v=>v.id));
+    evals=evals.filter(e=>vidIds.has(e.video_id));
+  }
+  // 영상별 최신 1건 (AI독자 우선)
+  const byVid=new Map();
+  evals.forEach(e=>{if(!e.video_id) return; const ex=byVid.get(e.video_id); if(!ex||e.eval_type==='AI독자') byVid.set(e.video_id,e);});
+  const latest=[...byVid.values()];
+  // categories 집계
+  const catAgg=new Map(); // name → {score,max,count}
+  latest.forEach(e=>{
+    (e.categories||[]).forEach(c=>{
+      if(!c.name) return;
+      const a=catAgg.get(c.name)||{name:c.name,score:0,max:0,count:0};
+      a.score+=Number(c.score||0); a.max+=Number(c.max||0); a.count++;
+      catAgg.set(c.name,a);
+    });
+  });
+  const cats=[...catAgg.values()];
+  if(!cats.length){renderRadarChart(userId); return;} // 실데이터 없으면 기존 폴백
+  const items=cats.map(c=>({name:c.name,score:c.score,max:c.max||1}));
+  const scores=cats.map(c=>c.max>0?Math.round(c.score/c.max*100):0);
+  // 레이더 SVG 직접 그리기
+  const svgEl=document.getElementById('radar-chart-'+userId);
+  if(!svgEl) return;
+  svgEl.setAttribute('viewBox','0 0 500 440');
+  svgEl.innerHTML=drawRadarSVG(items);
+  // 달성도 바
+  const barsEl=document.getElementById('lect-skills-bars-'+userId);
+  if(barsEl){
+    const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316'];
+    barsEl.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
+      cats.map((c,i)=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700">${c.name}</span>
+          <span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span>
+        </div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div>
+        </div>
+      </div>`;}).join('');
+  }
 
 async function saveMemo(uid){
   const memo=el('self-memo').value;
