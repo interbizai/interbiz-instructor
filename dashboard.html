@@ -4901,12 +4901,13 @@ function renderAdminCoaching(){
     const u=D.users?.find(x=>x.id===vid.userId);
     const vCat=vid.videoType||vid.video_type||'';
     const vProd=vid.productName||vid.product_name||'';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
-      <div style="flex:1;min-width:0">
+    const title=(vid.title||'—').replace(/'/g,"\\'");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04)">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openVideo(${vid.id})">
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
         <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'(삭제된 강사)'} · ${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <button class="btn" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="event.stopPropagation();adminDeleteVideoFromList(${vid.id},'${title}')">삭제</button>
     </div>`;
   }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
 
@@ -4914,16 +4915,39 @@ function renderAdminCoaching(){
   const voiceListEl=document.getElementById('admin-coach-voice-list');
   const voiceCntEl=document.getElementById('admin-coach-voice-cnt');
   if(voiceCntEl) voiceCntEl.textContent=voices.length+'건';
-  if(voiceListEl) voiceListEl.innerHTML=voices.length?voices.map(v=>{
-    const u=D.users?.find(x=>x.id===v.user_id);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVoiceResult(${v.id})">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title||'—'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||v.user_name||'(삭제된 강사)'} · ${v.eval_date||v.created_at?.slice(0,10)||'—'}</div>
+  if(voiceListEl) voiceListEl.innerHTML=voices.length?voices.map(vo=>{
+    const u=D.users?.find(x=>x.id===vo.user_id);
+    const title=(vo.title||'—').replace(/'/g,"\\'");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04)">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openVoiceResult(${vo.id})">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vo.title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||vo.user_name||'(삭제된 강사)'} · ${vo.eval_date||vo.created_at?.slice(0,10)||'—'}</div>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <button class="btn" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="event.stopPropagation();adminDeleteVoiceFromList(${vo.id},'${title}')">삭제</button>
     </div>`;
   }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 스피치 평가가 없습니다</div>';
+}
+
+// 관리자 — AI 코칭 목록에서 바로 삭제
+async function adminDeleteVideoFromList(id,title){
+  if(!confirm(`영상 "${title}" 을(를) 삭제하시겠습니까?\n관련 평가 데이터도 함께 삭제됩니다.`)) return;
+  try{
+    await sb.from('evaluations').delete().eq('video_id',id);
+    await sb.from('video_timestamps').delete().eq('video_id',id).then(()=>{}).catch(()=>{});
+    const{error}=await sb.from('videos').delete().eq('id',id);
+    if(error){alert('삭제 실패: '+error.message);return;}
+    await loadFromDB();
+    renderAdminCoaching();
+  }catch(e){alert('삭제 오류: '+(e.message||e));}
+}
+async function adminDeleteVoiceFromList(id,title){
+  if(!confirm(`스피치 평가 "${title}" 을(를) 삭제하시겠습니까?`)) return;
+  try{
+    const{error}=await sb.from('voice_evals').delete().eq('id',id);
+    if(error){alert('삭제 실패: '+error.message);return;}
+    await loadFromDB();
+    renderAdminCoaching();
+  }catch(e){alert('삭제 오류: '+(e.message||e));}
 }
 
 function renderPickAdmin(){
