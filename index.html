@@ -5930,8 +5930,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
   const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=catCount;
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=subCount;
-  const rqEl=el('an-rubric-quality');if(rqEl) rqEl.textContent=(rubricQ==null)?'—':(rubricQ+'%');
-  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong> — ${pctScore>=90?'<span style="color:#10b981">우수</span>':pctScore>=70?'<span style="color:#f59e0b">양호</span>':'<span style="color:#fecaca">개선 필요</span>'}${rubricQ!=null?` · 평가안 이해 <strong>${rubricQ}%</strong>`:''}. ${r.criteriaSummary||''}`;
+  const rqEl=el('an-rubric-quality');if(rqEl){rqEl.textContent=(rubricQ==null)?'—':(rubricQ+'%');rqEl.title=critRaw?.rubric_alignment_reason||'';}
+  const rubricReason=critRaw?.rubric_alignment_reason||'';
+  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong> — ${pctScore>=90?'<span style="color:#10b981">우수</span>':pctScore>=70?'<span style="color:#f59e0b">양호</span>':'<span style="color:#fecaca">개선 필요</span>'}${rubricQ!=null?` · 평가안 이해 <strong>${rubricQ}%</strong>${rubricReason?' <span style="font-size:10px;color:rgba(255,255,255,.7)">('+rubricReason+')</span>':''}`:''}. ${r.criteriaSummary||''}`;
   // 뱃지 판별
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);

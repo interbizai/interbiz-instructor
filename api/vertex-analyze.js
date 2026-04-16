@@ -155,7 +155,8 @@ ${JSON.stringify(checklistSpec, null, 2)}
 # 응답 JSON 스키마 (반드시 이 구조로만 응답)
 {
   "overall_score": 0~100 정수 (=sub_scores의 score 합 ÷ max 합 × 100 반올림, na 제외),
-  "rubric_alignment_score": 0~100 정수 (평가안/시나리오 품질 — 얼마나 명확하고 유용한지. 평가안기준일 때만 작성, AI독자는 0),
+  "rubric_alignment_score": 0~100 정수 (교육자료가 얼마나 명확하고 유용한지. 평가안기준일 때만 작성, AI독자는 0),
+  "rubric_alignment_reason": "rubric_alignment_score의 근거를 한줄로 (예: '교안 구조가 명확하고 핵심 키워드 10개 확인됨' 또는 '교육자료가 전달되지 않아 평가 불가')",
   "categories": [{"name":"대항목명","score":int,"max":int,"achievement":0~100}],
   "sub_scores": [{
     "n": 문항번호,
