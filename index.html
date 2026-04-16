@@ -2275,6 +2275,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 </header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h2>관리자</h2></div>
+  <div id="admin-credit-banner" style="display:none"></div>
   <div class="content-card">
   <div class="tab-bar">
     <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
@@ -10049,7 +10050,50 @@ function sortAdminTable(key){
   else {adminSortKey=key;adminSortAsc=true;}
   renderAdmin();
 }
+// 크레딧 만료 추적 — 관리자 페이지 상단 배너
+// 크레딧 정보 (Google Cloud 실제 데이터로 주기적 업데이트 필요)
+const CREDIT_INFO={
+  trial: { name:'Trial credit for GenAI App Builder', amount:1510026, end:'2027-04-16' },
+  free:  { name:'GCP Free Credit', amount:450061, end:'2026-07-13' }
+};
+function renderAdminCreditBanner(){
+  const banner=document.getElementById('admin-credit-banner');
+  if(!banner) return;
+  const now=new Date();
+  const cards=Object.values(CREDIT_INFO).map(c=>{
+    const end=new Date(c.end);
+    const days=Math.ceil((end-now)/(1000*60*60*24));
+    const warn=days<=30, urgent=days<=7, expired=days<=0;
+    const color=expired?'#E21E26':urgent?'#E21E26':warn?'#f59e0b':'#10b981';
+    const status=expired?'만료됨':urgent?`⚠️ ${days}일 남음`:warn?`${days}일 남음`:`${days}일 남음`;
+    return `<div style="flex:1;padding:12px 16px;border:1px solid ${color};border-radius:10px;background:${color}10">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:3px">${c.name}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">${c.amount.toLocaleString()}원</div>
+        <div style="font-size:12px;font-weight:700;color:${color}">${status}</div>
+      </div>
+      <div style="font-size:10px;color:var(--t3);margin-top:2px">만료일: ${c.end}</div>
+    </div>`;
+  }).join('');
+  const anyWarn=Object.values(CREDIT_INFO).some(c=>{
+    const days=Math.ceil((new Date(c.end)-now)/(1000*60*60*24));
+    return days<=30;
+  });
+  banner.style.display='block';
+  banner.innerHTML=`<div style="margin-bottom:14px;padding:12px 16px;border-radius:12px;background:#fafafa;border:1px solid var(--bdr)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:800;color:var(--t1)">💳 Google Cloud 크레딧 현황</div>
+      <a href="https://console.cloud.google.com/billing" target="_blank" style="font-size:11px;color:var(--blue);font-weight:600;text-decoration:none">Cloud Console 열기 →</a>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">${cards}</div>
+    ${anyWarn?`<div style="margin-top:10px;padding:10px;background:rgba(245,158,11,.08);border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:var(--t2);line-height:1.6">
+      ⚠️ 크레딧 만료가 임박했습니다. 소진 후 카드 결제로 자동 전환되므로, Cloud Console에서 <strong>예산 알림</strong>을 설정하거나 사용량을 점검해주세요.
+    </div>`:''}
+  </div>`;
+}
+
 function renderAdmin(){
+  renderAdminCreditBanner();
   // User table (정렬)
   const sortedUsers=[...D.users].sort((a,b)=>{
     let va=(a[adminSortKey]||'').toString(), vb=(b[adminSortKey]||'').toString();
