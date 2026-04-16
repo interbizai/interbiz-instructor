@@ -5724,7 +5724,26 @@ function openVideoAtTime(seconds,label){
 
 // 체크리스트 전체보기 모달 — 대항목별 세부 다각 그래프 + 달성도 + 상세 테이블
 function openChecklistDetail(which){
-  const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
+  // My역량 전체보기: evaluations 집계 데이터 사용
+  if(which==='lect'){
+    const evals=window._lectEvals||[];
+    if(!evals.length){alert('평가 데이터가 없습니다.');return;}
+    const byVid=new Map();
+    evals.forEach(e=>{if(!e.video_id)return;const ex=byVid.get(e.video_id);if(!ex||e.eval_type==='AI독자')byVid.set(e.video_id,e);});
+    const latest=[...byVid.values()];
+    // sub_scores 전체 집계
+    const allSubs=[];
+    latest.forEach(e=>(e.sub_scores||[]).forEach(s=>allSubs.push(s)));
+    if(!allSubs.length){alert('세부 평가 데이터가 없습니다.');return;}
+    const fakeRaw={sub_scores:allSubs,categories:[]};
+    const byCat2=new Map();
+    allSubs.forEach(s=>{const k=s.category||'기타';if(!byCat2.has(k))byCat2.set(k,[]);byCat2.get(k).push(s);});
+    // 카테고리별 평균 계산 후 openChecklistDetail 로직 재사용
+    window._lastVertexResult=window._lastVertexResult||{};
+    window._lastVertexResult._lect=fakeRaw;
+    which='_lect';
+  }
+  const raw=which==='ai'?window._lastVertexResult?.ai:which==='_lect'?window._lastVertexResult?._lect:window._lastVertexResult?.crit;
   if(!raw||!raw.sub_scores?.length){alert('평가 데이터가 없습니다.');return;}
   const items=raw.sub_scores;
   // 대항목별 그룹 (체크리스트 기준 순서 유지)
@@ -9160,18 +9179,10 @@ function renderRadarChart(userId){
   // 달성도 바
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
   if(barsEl){
-    const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4'];
     barsEl.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-      cats6.map((cat,i)=>`<div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div>
-            <span style="font-size:12px;font-weight:700">${cat.name.replace('\n',' ')}</span>
-          </div>
-          <span style="font-size:13px;font-weight:800;color:${colors[i]}">${scores6[i]}%</span>
-        </div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${scores6[i]}%;background:${colors[i]};border-radius:4px;transition:width .8s ease"></div>
-        </div>
+      cats6.map((cat,i)=>`<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${cat.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:#10b981">${scores6[i]}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${scores6[i]}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
       </div>`).join('');
   }
 }
@@ -9658,7 +9669,7 @@ function openLecturer(id, fromPage){
           </div>
           <div style="text-align:center;padding:12px 8px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
             <div style="font-size:22px;font-weight:900;color:var(--t1)">${evalCount}<span style="font-size:10px;color:var(--t3)">회</span></div>
-            <div style="font-size:9px;color:var(--t3);margin-top:3px">누적 강의횟수</div>
+            <div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>
           </div>
           <div style="text-align:center;padding:12px 8px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
             <div style="font-size:22px;font-weight:900;color:var(--orange)">${u.satisfaction||'—'}<span style="font-size:10px;color:var(--t3)">/5.0</span></div>
@@ -9681,9 +9692,12 @@ function openLecturer(id, fromPage){
 
     <!-- TAB: MY 역량 -->
     <div class="lect-tab-pane" id="lect-tab-역량">
-      <!-- 역량 분석 제목 + 필터 오른쪽 위 pill -->
+      <!-- 역량 분석 제목 + 전체보기 + 필터 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('lect')">전체 보기</button>
+        </div>
         <div style="display:flex;gap:6px">
           <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
             <option value="">전체 교육자료</option>
@@ -9888,7 +9902,7 @@ function _refreshLectStats(userId){
   const satVal=u?.satisfaction||'—';
   const cards=document.querySelectorAll('#lect-stat-cards > div');
   if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0.0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
-  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 강의횟수</div>`;
+  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>`;
   if(cards[2]) cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--orange)">${satVal}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">수강 만족도</div>${CU?.isAdmin?`<div style="margin-top:4px"><button class="btn btn-ghost" style="padding:2px 8px;font-size:9px" onclick="editSatisfaction(${userId})">수정</button></div>`:''}`;
   if(cards[3]){
     const grade=gradeOverride||lvData.grade;
@@ -9958,16 +9972,10 @@ function renderRadarChartFromEvals(userId){
   // 달성도 바
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
   if(barsEl){
-    const colors=['#dc2626','#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316'];
     barsEl.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-      cats.map((c,i)=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:12px;font-weight:700">${c.name}</span>
-          <span style="font-size:13px;font-weight:800;color:${colors[i%colors.length]}">${p}%</span>
-        </div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${p}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .8s"></div>
-        </div>
+      cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
       </div>`;}).join('');
   }
 }
