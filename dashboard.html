@@ -9995,8 +9995,8 @@ function openLecturer(id, fromPage){
       <!-- 사진 + Lv 뱃지 -->
       <div style="text-align:center;flex-shrink:0;min-width:200px;padding:0 24px">
         <div style="position:relative;width:130px;height:130px;margin:0 auto 8px">
-          <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);cursor:pointer" onclick="document.getElementById('prof-photo-input').click()" id="prof-photo-display">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
-          <input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">
+          <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);${isOwner?'cursor:pointer':'cursor:default'}" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} id="prof-photo-display">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+          ${isOwner?`<input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">`:''}
         </div>
         <div style="font-size:18px;font-weight:900;margin-top:6px">${u.name}</div>
         <div style="font-size:11px;color:var(--t2);margin-top:2px">${u.channel} · ${u.team}
