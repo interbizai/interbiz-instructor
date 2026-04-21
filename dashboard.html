@@ -839,9 +839,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 .pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:stretch}
 .pick-main-left{min-width:0}
-.pick-photo-aside{position:relative;height:100%}
+.pick-photo-aside{position:relative;align-self:stretch;display:flex}
 
-.pick-photo-scroll{position:relative;height:100%;min-height:720px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
+.pick-photo-scroll{position:relative;flex:1;width:100%;min-height:720px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;animation:pickScroll 48s linear infinite;will-change:transform}
 .pick-photo-track.paused{animation-play-state:paused}
@@ -2243,23 +2243,34 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="pick-main-split">
     <!-- 좌측 -->
     <div class="pick-main-left">
-      <!-- 상단 3컬럼: 추천 학습 / 이번 주 일정 / 공지 -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
-        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
-          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">추천 학습 콘텐츠</div>
-          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
-            <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
+      <!-- 히어로 타이틀 -->
+      <div class="pick-hero-wide" style="margin-bottom:18px">
+        <div class="pick-hero-bg"></div>
+        <div class="pick-hero-inner">
+          <h1 class="pick-hero-title">강사가 성장하면,<br>현장이 달라집니다</h1>
+          <p class="pick-hero-sub">수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.</p>
+        </div>
+      </div>
+
+      <!-- 2×2 보드: 좌 상·하 + 우 풀높이 공지 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div style="display:grid;grid-template-rows:1fr 1fr;gap:14px">
+          <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+            <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">추천 학습 콘텐츠</div>
+            <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+              <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+            <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">이번 주 일정</div>
+            <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+              <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
+            </div>
           </div>
         </div>
-        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
-          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">이번 주 일정</div>
-          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
-            <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
-          </div>
-        </div>
-        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm);display:flex;flex-direction:column">
           <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">공지 및 알림</div>
-          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;flex:1;overflow-y:auto">
             <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
           </div>
         </div>
