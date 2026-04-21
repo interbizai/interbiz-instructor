@@ -841,23 +841,22 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-main-left{min-width:0}
 .pick-photo-aside{position:sticky;top:20px}
 
-.pick-photo-scroll{position:relative;height:1080px;border-radius:24px;overflow:hidden;background:linear-gradient(160deg,#fef3c7 0%,#fde68a 20%,#fbcfe8 50%,#e0e7ff 80%,#dbeafe 100%);box-shadow:var(--sh-sm);padding:18px}
-.pick-photo-scroll::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 25% 15%,rgba(255,255,255,.5) 0%,transparent 40%),radial-gradient(circle at 75% 85%,rgba(255,255,255,.4) 0%,transparent 40%),radial-gradient(circle at 1px 1px,rgba(0,0,0,.03) 1px,transparent 0);background-size:100% 100%,100% 100%,28px 28px;pointer-events:none;z-index:0}
+.pick-photo-scroll{position:relative;height:1080px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
+.pick-photo-scroll::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;animation:pickScroll 48s linear infinite;will-change:transform}
 .pick-photo-track.paused{animation-play-state:paused}
 .pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:56px}
 @keyframes pickScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-.pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:#1f2937;box-shadow:0 6px 20px rgba(0,0,0,.15);transition:transform .3s ease}
+.pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .3s ease}
 .pick-photo-card:hover{transform:translateY(-4px) scale(1.02)}
-.pick-photo-card .pick-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
-.pick-photo-card .pick-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.25) 100%)}
-.pick-photo-card img.pick-portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1}
-.pick-photo-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,41,59,.55);backdrop-filter:blur(6px);color:rgba(255,255,255,.85);font-size:13px;font-weight:700;gap:10px;z-index:1}
-.pick-photo-placeholder svg{width:36px;height:36px;opacity:.8}
+.pick-photo-card .pick-bg{position:absolute;inset:0;z-index:0}
+.pick-photo-card img.pick-portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1;mix-blend-mode:multiply}
+.pick-photo-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.35);color:rgba(255,255,255,.9);font-size:13px;font-weight:700;gap:10px;z-index:1;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pick-photo-placeholder svg{width:36px;height:36px;opacity:.85}
 
 .pick-photo-fade-top,.pick-photo-fade-bot{position:absolute;left:0;right:0;height:80px;pointer-events:none;z-index:3}
-.pick-photo-fade-top{top:0;background:linear-gradient(180deg,rgba(254,243,199,.95) 0%,transparent 100%)}
-.pick-photo-fade-bot{bottom:0;background:linear-gradient(0deg,rgba(219,234,254,.95) 0%,transparent 100%)}
+.pick-photo-fade-top{top:0;background:linear-gradient(180deg,rgba(10,10,10,.95) 0%,transparent 100%)}
+.pick-photo-fade-bot{bottom:0;background:linear-gradient(0deg,rgba(10,10,10,.95) 0%,transparent 100%)}
 
 .pick-photo-pause{position:absolute;right:16px;bottom:16px;z-index:4;width:46px;height:46px;border-radius:999px;border:none;background:rgba(255,255,255,.92);color:var(--t1);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.2);transition:all .2s ease;backdrop-filter:blur(8px)}
 .pick-photo-pause:hover{background:#fff;transform:scale(1.08)}
@@ -2239,15 +2238,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <header class="hdr" style="display:none"></header>
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:var(--blue)"></span></div>
-
-  <!-- ══ 히어로 풀폭 타이틀 ══ -->
-  <div class="pick-hero-wide">
-    <div class="pick-hero-bg"></div>
-    <div class="pick-hero-inner">
-      <h1 class="pick-hero-title">강사가 성장하면,<br>현장이 달라집니다</h1>
-      <p class="pick-hero-sub">수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.</p>
-    </div>
-  </div>
 
   <!-- ══ 메인 분할: 좌측 콘텐츠 + 우측 사진 스크롤 ══ -->
   <div class="pick-main-split">
