@@ -838,6 +838,17 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   body{padding-bottom:60px}
 }
 
+/* ── AI 독자 분석 배너 (주황) → 밝은 회색 + 검정 글씨 (전 페이지 공통) ── */
+div[style*="linear-gradient(135deg,#e8590c"]{
+  background:#f3f4f6!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+div[style*="linear-gradient(135deg,#e8590c"] *{color:#000!important}
+div[style*="linear-gradient(135deg,#e8590c"] svg circle:first-of-type{stroke:rgba(0,0,0,.1)!important}
+div[style*="linear-gradient(135deg,#e8590c"] svg circle:last-of-type{stroke:#000!important}
+div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,255,255,.9)"]{background:#fff!important;color:#000!important;border:1px solid rgba(0,0,0,.15)!important}
+
 /* ── 인터 PICK Masterclass-lite ── */
 .pick-hero-wide{position:relative;background:#fff;border-radius:20px;padding:56px 48px;margin-bottom:20px;overflow:hidden;box-shadow:var(--sh-sm)}
 .pick-hero-bg{position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(0,0,0,.04) 1px,transparent 0);background-size:32px 32px;pointer-events:none}
