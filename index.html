@@ -4143,10 +4143,14 @@ function parseHeroValue(raw,fallback){
 function applyHeroStyle(elx,cfg){
   if(!elx) return;
   elx.textContent=cfg.text;
-  elx.style.color=cfg.color||'';
-  elx.style.fontFamily=cfg.font&&cfg.font!=='inherit'?cfg.font:'';
-  elx.style.fontWeight=cfg.weight||'';
-  elx.style.fontStyle=cfg.italic?'italic':'';
+  // scoped CSS 의 !important 규칙을 이기려면 setProperty + 'important' 사용
+  if(cfg.color) elx.style.setProperty('color',cfg.color,'important');
+  else elx.style.removeProperty('color');
+  if(cfg.font && cfg.font!=='inherit') elx.style.setProperty('font-family',cfg.font,'important');
+  else elx.style.removeProperty('font-family');
+  if(cfg.weight) elx.style.setProperty('font-weight',String(cfg.weight),'important');
+  else elx.style.removeProperty('font-weight');
+  elx.style.setProperty('font-style',cfg.italic?'italic':'normal','important');
 }
 async function loadHeroText(){
   const t=el('pick-hero-title'), s=el('pick-hero-sub');
