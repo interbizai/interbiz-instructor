@@ -4151,19 +4151,19 @@ function applyHeroStyle(elx,cfg){
 async function loadHeroText(){
   const t=el('pick-hero-title'), s=el('pick-hero-sub');
   let tCfg={...HERO_DEFAULTS.hero_title}, sCfg={...HERO_DEFAULTS.hero_sub};
-  let usedLocal=false;
+  // 1) localStorage 먼저 기본값으로 깔기 (DB 가 비어 있어도 커스텀 값 유지)
+  const lt=localStorage.getItem('hero_title'), ls=localStorage.getItem('hero_sub');
+  if(lt) tCfg=parseHeroValue(lt,HERO_DEFAULTS.hero_title);
+  if(ls) sCfg=parseHeroValue(ls,HERO_DEFAULTS.hero_sub);
+  // 2) Supabase 가 값이 있으면 덮어쓰기 (없으면 localStorage 유지)
+  let usedLocal=!!(lt||ls);
   try{
     const{data,error}=await sb.from('app_settings').select('key,value').in('key',['hero_title','hero_sub']);
     if(error) throw error;
     const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
-    if(map.hero_title) tCfg=parseHeroValue(map.hero_title,HERO_DEFAULTS.hero_title);
-    if(map.hero_sub) sCfg=parseHeroValue(map.hero_sub,HERO_DEFAULTS.hero_sub);
-  }catch(e){
-    usedLocal=true;
-    const lt=localStorage.getItem('hero_title'), ls=localStorage.getItem('hero_sub');
-    if(lt) tCfg=parseHeroValue(lt,HERO_DEFAULTS.hero_title);
-    if(ls) sCfg=parseHeroValue(ls,HERO_DEFAULTS.hero_sub);
-  }
+    if(map.hero_title){tCfg=parseHeroValue(map.hero_title,HERO_DEFAULTS.hero_title);usedLocal=false}
+    if(map.hero_sub){sCfg=parseHeroValue(map.hero_sub,HERO_DEFAULTS.hero_sub);usedLocal=false}
+  }catch(e){}
   window._heroLocalMode=usedLocal;
   applyHeroStyle(t,tCfg); applyHeroStyle(s,sCfg);
   window._heroCfg={hero_title:tCfg,hero_sub:sCfg};
@@ -4266,21 +4266,20 @@ async function saveHeroEdit(key){
   };
   if(!cfg.text.trim()){alert('텍스트를 입력하세요.');return;}
   const json=JSON.stringify(cfg);
-  // DB 시도 → 실패 시 localStorage 폴백
+  // 항상 localStorage 에 백업 저장 (DB 가 비어 있거나 RLS 로 막혀도 새로고침 후 유지)
+  try{localStorage.setItem(key,json);}catch(e){}
+  // DB 저장 시도 (선택적)
   let dbOk=true;
   try{
     const{error}=await sb.from('app_settings').upsert({key,value:json});
     if(error) throw error;
   }catch(e){
     dbOk=false;
-    localStorage.setItem(key,json);
+    console.warn('app_settings DB 저장 실패 — localStorage 에만 저장됨:',e?.message||e);
   }
   applyHeroStyle(el(key==='hero_title'?'pick-hero-title':'pick-hero-sub'),cfg);
   window._heroCfg=window._heroCfg||{}; window._heroCfg[key]=cfg;
   document.getElementById('hero-edit-overlay')?.remove();
-  if(!dbOk){
-    console.warn('app_settings 테이블 없음 — localStorage에 임시 저장됨. SQL로 테이블 생성 후 영구 저장됩니다.');
-  }
 }
 
 // 히어로 우측 — 2컬럼 독립 스크롤 사진 패널 (컬럼별 랜덤 순서 + animation-delay 로 무한 루프)
