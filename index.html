@@ -838,6 +838,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   body{padding-bottom:60px}
 }
 
+/* ── 평가 키워드 뱃지 : 전 페이지 통일 스타일 ── */
+.eval-kw-pill{display:inline-block;padding:4px 12px;border-radius:14px;font-size:10.5px;font-weight:600;background:#e5e7eb;color:#000;border:1px solid rgba(0,0,0,.08);cursor:pointer;white-space:nowrap;line-height:1.3}
+.eval-kw-pill:hover{background:#d1d5db}
+/* 뱃지 툴팁 : 검정 배경 + 흰 글씨 (부모의 color:#000!important 를 이기도록 강제) */
+.badge-tip.badge-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#111!important;color:#fff!important;padding:6px 12px;border-radius:8px;font-size:10.5px;font-weight:500;white-space:nowrap;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:none}
+.badge-tip.badge-tip *{color:#fff!important}
+.badge-tip-arrow.badge-tip-arrow{position:absolute;top:100%;left:50%;transform:translateX(-50%);width:0;height:0;border:5px solid transparent;border-top-color:#111!important}
+
 /* ── AI 독자 분석 배너 (주황) → 밝은 회색 + 검정 글씨 (전 페이지 공통) ── */
 div[style*="linear-gradient(135deg,#e8590c"]{
   background:#f3f4f6!important;
@@ -4467,11 +4475,10 @@ function renderPick(){
           const mockR={criteriaScores:[],timestamps:[],overallScore:u.pickScore,focusScore:u.pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
           const allBadges=evaluateBadges(mockR,u.id);
           if(!allBadges.length) return '<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 뱃지 생성</span>';
-          const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};
           const shown=[];
           const byCat={};
           allBadges.forEach(id=>{const b=getBadgeInfo(id);if(!byCat[b.cat]){byCat[b.cat]=b;shown.push(id);}});
-          const pills=shown.map(id=>{const b=getBadgeInfo(id);const c=catColors[b.cat]||'var(--t3)';return `<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:${c}10;color:${c}">${b.name}</span>`;}).join('');
+          const pills=shown.map(id=>{const b=getBadgeInfo(id);return `<span class="eval-kw-pill">${b.name}</span>`;}).join('');
           const rest=allBadges.length-shown.length;
           const moreBtnHtml=rest>0?`<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer" onclick="event.stopPropagation();showAllBadges(${u.id},${u.pickScore})">+${rest}</span>`:'';
           return pills+moreBtnHtml;
@@ -5267,15 +5274,13 @@ function evaluateBadges(r, userId){
 // 뱃지 ID → 이름/분류 조회
 function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?'};}
 
-// 뱃지 HTML 렌더 (pill 형태)
+// 뱃지 HTML 렌더 (pill 형태) — 밝은 회색 + 검정 글씨로 전 페이지 통일
 function renderBadgePills(badgeIds){
-  const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};
   return badgeIds.map(id=>{
     const b=getBadgeInfo(id);
-    const c=catColors[b.cat]||'var(--t3)';
-    return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
-      <span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20;cursor:pointer;display:inline-block">${b.name}</span>
-      <span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--t1);color:#fff;padding:6px 12px;border-radius:8px;font-size:10px;font-weight:500;white-space:nowrap;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--t1)"></span></span>
+    return `<span class="eval-kw-wrap" style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
+      <span class="eval-kw-pill">${b.name}</span>
+      <span class="badge-tip">${b.desc}<span class="badge-tip-arrow"></span></span>
     </span>`;
   }).join('');
 }
@@ -6671,8 +6676,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
     const criteriaBadges=earnedBadges.filter(id=>id<=15);
-    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4);cursor:pointer';
-    kw1El.innerHTML=criteriaBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
+    kw1El.innerHTML=renderBadgePills(criteriaBadges);
   }
 
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
@@ -6768,8 +6772,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
     const aiBadges=earnedBadges.filter(id=>id>=16);
-    const kwStyle='padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;background:rgba(255,255,255,.9);color:var(--t1);border:1px solid rgba(255,255,255,.4)';
-    kw2El.innerHTML=aiBadges.map(id=>{const b=getBadgeInfo(id);return `<span style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'"><span style="${kwStyle}">${b.name}</span><span class="badge-tip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:5px 10px;border-radius:6px;font-size:9px;white-space:nowrap;z-index:100">${b.desc}<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#333"></span></span></span>`;}).join('');
+    kw2El.innerHTML=renderBadgePills(aiBadges);
   }
 
   // AI 독자 레이더: Vertex 결과의 categories를 직접 사용 (체크리스트 대항목과 동일)
