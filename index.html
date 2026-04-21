@@ -837,15 +837,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-hero-title{font-size:48px;font-weight:900;color:var(--t1);letter-spacing:-1.4px;line-height:1.15;margin:0 0 18px;word-break:keep-all}
 .pick-hero-sub{font-size:17px;font-weight:600;color:var(--t2);line-height:1.6;margin:0;word-break:keep-all}
 
-.pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:start}
+.pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:stretch}
 .pick-main-left{min-width:0}
-.pick-photo-aside{position:sticky;top:20px}
+.pick-photo-aside{position:relative;height:100%}
 
-.pick-photo-scroll{position:relative;height:1080px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
+.pick-photo-scroll{position:relative;height:100%;min-height:720px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;animation:pickScroll 48s linear infinite;will-change:transform}
 .pick-photo-track.paused{animation-play-state:paused}
-.pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:56px}
+.pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:120px}
 @keyframes pickScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .3s ease}
 .pick-photo-card:hover{transform:translateY(-4px) scale(1.02)}
@@ -2243,6 +2243,28 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   <div class="pick-main-split">
     <!-- 좌측 -->
     <div class="pick-main-left">
+      <!-- 상단 3컬럼: 추천 학습 / 이번 주 일정 / 공지 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">추천 학습 콘텐츠</div>
+          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+            <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">이번 주 일정</div>
+          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+            <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">공지 및 알림</div>
+          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
+            <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 당월 통계 -->
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px">
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="pick-stats"></div>
@@ -2302,27 +2324,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
     </aside>
   </div>
 
-  <!-- ══ 하단: 추천 학습 / 이번 주 일정 / 공지 ══ -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px">
-    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm)">
-      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">추천 학습 콘텐츠</div>
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;min-height:140px">
-        <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
-      </div>
-    </div>
-    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm)">
-      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">이번 주 일정</div>
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;min-height:140px">
-        <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
-      </div>
-    </div>
-    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm)">
-      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">공지 및 알림</div>
-      <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;min-height:140px">
-        <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
-      </div>
-    </div>
-  </div>
 </main>
 </div>
 
