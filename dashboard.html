@@ -861,12 +861,11 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 .pick-photo-scroll{position:absolute;inset:0;border-radius:24px;overflow:hidden;background:#000;box-shadow:var(--sh-sm);padding:0 14px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none;z-index:0}
-.pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;animation:pickScroll 55s linear infinite;will-change:transform;align-items:start}
-.pick-photo-track.paused{animation-play-state:paused}
-.pick-photo-col{display:flex;flex-direction:column;gap:12px}
-.pick-photo-col.offset{margin-top:33.333%}
-/* 초기 공백 방지: 애니메이션을 중간부터 시작 → -17%~-67%로 루프(범위 50% 유지) */
-@keyframes pickScroll{0%{transform:translateY(-17%)}100%{transform:translateY(-67%)}}
+.pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.pick-photo-col{display:flex;flex-direction:column;gap:12px;animation:pickScroll 55s linear infinite;will-change:transform}
+.pick-photo-col.offset{animation-delay:-27.5s}
+.pick-photo-track.paused .pick-photo-col{animation-play-state:paused}
+@keyframes pickScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5);transition:transform .3s ease;background:#1a1a1a}
 .pick-photo-card:hover{transform:scale(1.02);z-index:5}
 .pick-photo-card .pick-bg{position:absolute;inset:0;z-index:0}
@@ -4190,30 +4189,36 @@ async function saveHeroEdit(key){
   }
 }
 
-// 히어로 우측 — 2컬럼 독립 스크롤 사진 패널 (세로 간격 최소화 + 우측 1/2 오프셋)
+// 히어로 우측 — 2컬럼 독립 스크롤 사진 패널 (컬럼별 랜덤 순서 + animation-delay 로 무한 루프)
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
   const users=(D.users||[]).filter(u=>!u.isAdmin&&u.email!=='admin'&&u.photo);
-  const SLOTS=10; // 2컬럼 × 5행
-  const bgKeywords=['nature','mountain','forest','ocean','sunset','landscape','autumn','sky','valley','lake'];
-  const bgUrl=(i)=>`https://source.unsplash.com/400x560/?${bgKeywords[i%bgKeywords.length]}&sig=${i}`;
+  const PER_COL=6; // 컬럼당 카드 수 (총 12칸)
+  const bgKeywords=['nature','mountain','forest','ocean','sunset','landscape','autumn','sky','valley','lake','snow','desert'];
+  const bgUrl=(sig)=>`https://source.unsplash.com/400x560/?${bgKeywords[sig%bgKeywords.length]}&sig=${sig}`;
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
-  const cardHtml=(i)=>{
-    const u=users[i];
-    const bg=`<div class="pick-bg" style="background-image:url('${bgUrl(i)}')"></div>`;
-    return u
-      ? `<div class="pick-photo-card">${bg}<img class="pick-portrait" src="${u.photo}" alt="" onerror="this.remove()"/></div>`
+  // 카드 풀: 유저(사진 있는) + 플레이스홀더로 SLOTS 채움
+  const TOTAL=PER_COL*2;
+  const pool=[];
+  for(let i=0;i<TOTAL;i++){
+    pool.push({user:users[i%Math.max(1,users.length)]||null,real:i<users.length,sig:i});
+  }
+  const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const cardHtml=(it,sig)=>{
+    const bg=`<div class="pick-bg" style="background-image:url('${bgUrl(sig)}')"></div>`;
+    return it.real&&it.user?.photo
+      ? `<div class="pick-photo-card">${bg}<img class="pick-portrait" src="${it.user.photo}" alt="" onerror="this.remove()"/></div>`
       : `<div class="pick-photo-card">${bg}${placeholderHtml}</div>`;
   };
-  // 좌 컬럼(짝수 인덱스), 우 컬럼(홀수 인덱스)을 각각 flex 열로 구성
-  const leftCards=[], rightCards=[];
-  for(let i=0;i<SLOTS;i++){
-    (i%2===0?leftCards:rightCards).push(cardHtml(i));
-  }
-  // 무한 루프를 위해 각 컬럼 콘텐츠를 두 번 반복
-  const col=(inner,offset)=>`<div class="pick-photo-col${offset?' offset':''}">${inner+inner}</div>`;
-  track.innerHTML=col(leftCards.join(''),false)+col(rightCards.join(''),true);
+  // 좌/우 컬럼은 풀에서 각각 랜덤 셔플된 PER_COL개씩 뽑음
+  const leftItems=shuffle(pool).slice(0,PER_COL);
+  const rightItems=shuffle(pool).slice(0,PER_COL);
+  const colHtml=(items,startSig)=>items.map((it,i)=>cardHtml(it,startSig+i)).join('');
+  const leftInner=colHtml(leftItems,0);
+  const rightInner=colHtml(rightItems,100);
+  // 무한 루프를 위해 각 컬럼 콘텐츠를 2번 반복 (translateY 0→-50% 로 seamless)
+  track.innerHTML=`<div class="pick-photo-col">${leftInner+leftInner}</div><div class="pick-photo-col offset">${rightInner+rightInner}</div>`;
 }
 
 // 스크롤 일시정지/재생
