@@ -863,8 +863,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 .pick-photo-col{display:flex;flex-direction:column;gap:12px;animation:pickScroll 55s linear infinite;will-change:transform}
-.pick-photo-col.offset{animation-delay:-27.5s}
 .pick-photo-track.paused .pick-photo-col{animation-play-state:paused}
+.pick-photo-spacer{aspect-ratio:3/2;width:100%;flex-shrink:0}
 @keyframes pickScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5);transition:transform .3s ease;background:#1a1a1a}
 .pick-photo-card:hover{transform:scale(1.02);z-index:5}
@@ -4215,10 +4215,11 @@ function renderPickPhotoCollage(){
   const leftItems=shuffle(pool).slice(0,PER_COL);
   const rightItems=shuffle(pool).slice(0,PER_COL);
   const colHtml=(items,startSig)=>items.map((it,i)=>cardHtml(it,startSig+i)).join('');
-  const leftInner=colHtml(leftItems,0);
-  const rightInner=colHtml(rightItems,100);
-  // 무한 루프를 위해 각 컬럼 콘텐츠를 2번 반복 (translateY 0→-50% 로 seamless)
-  track.innerHTML=`<div class="pick-photo-col">${leftInner+leftInner}</div><div class="pick-photo-col offset">${rightInner+rightInner}</div>`;
+  // 우측 컬럼: 매 단위 앞에 반 카드 spacer → 절반 offset 지그재그 + seamless 루프
+  const spacer=`<div class="pick-photo-spacer"></div>`;
+  const leftUnit=colHtml(leftItems,0);
+  const rightUnit=spacer+colHtml(rightItems,100);
+  track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col">${rightUnit+rightUnit}</div>`;
 }
 
 // 스크롤 일시정지/재생
