@@ -4194,31 +4194,29 @@ function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
   const users=(D.users||[]).filter(u=>!u.isAdmin&&u.email!=='admin'&&u.photo);
-  const PER_COL=6; // 컬럼당 카드 수 (총 12칸)
-  const bgKeywords=['nature','mountain','forest','ocean','sunset','landscape','autumn','sky','valley','lake','snow','desert'];
-  const bgUrl=(sig)=>`https://source.unsplash.com/400x560/?${bgKeywords[sig%bgKeywords.length]}&sig=${sig}`;
+  const PER_COL=6;
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
-  // 카드 풀: 유저(사진 있는) + 플레이스홀더로 SLOTS 채움
-  const TOTAL=PER_COL*2;
-  const pool=[];
-  for(let i=0;i<TOTAL;i++){
-    pool.push({user:users[i%Math.max(1,users.length)]||null,real:i<users.length,sig:i});
-  }
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-  const cardHtml=(it,sig)=>{
-    const bg=`<div class="pick-bg" style="background-image:url('${bgUrl(sig)}')"></div>`;
+  // 사진 1장이라도 등록되어 있으면 빈 슬롯을 같은 사진으로 채워 빈틈 없이 타일링
+  // 등록 사진이 0장인 경우에만 '추가 예정' 플레이스홀더 사용
+  const pool=[];
+  const TOTAL=PER_COL*2;
+  if(users.length>0){
+    for(let i=0;i<TOTAL;i++) pool.push({user:users[i%users.length],real:true});
+  } else {
+    for(let i=0;i<TOTAL;i++) pool.push({user:null,real:false});
+  }
+  const cardHtml=(it)=>{
     return it.real&&it.user?.photo
-      ? `<div class="pick-photo-card">${bg}<img class="pick-portrait" src="${it.user.photo}" alt="" onerror="this.remove()"/></div>`
-      : `<div class="pick-photo-card">${bg}${placeholderHtml}</div>`;
+      ? `<div class="pick-photo-card"><img class="pick-portrait" src="${it.user.photo}" alt="" onerror="this.remove()"/></div>`
+      : `<div class="pick-photo-card">${placeholderHtml}</div>`;
   };
-  // 좌/우 컬럼은 풀에서 각각 랜덤 셔플된 PER_COL개씩 뽑음
   const leftItems=shuffle(pool).slice(0,PER_COL);
   const rightItems=shuffle(pool).slice(0,PER_COL);
-  const colHtml=(items,startSig)=>items.map((it,i)=>cardHtml(it,startSig+i)).join('');
-  // 우측 컬럼: 매 단위 앞에 반 카드 spacer → 절반 offset 지그재그 + seamless 루프
+  const colHtml=(items)=>items.map(cardHtml).join('');
   const spacer=`<div class="pick-photo-spacer"></div>`;
-  const leftUnit=colHtml(leftItems,0);
-  const rightUnit=spacer+colHtml(rightItems,100);
+  const leftUnit=colHtml(leftItems);
+  const rightUnit=spacer+colHtml(rightItems);
   track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col">${rightUnit+rightUnit}</div>`;
 }
 
