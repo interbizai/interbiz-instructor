@@ -839,9 +839,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 .pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:stretch}
 .pick-main-left{min-width:0}
-.pick-photo-aside{position:relative;align-self:stretch;display:flex}
+.pick-photo-aside{position:relative;align-self:stretch;min-height:720px}
 
-.pick-photo-scroll{position:relative;flex:1;width:100%;min-height:720px;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
+.pick-photo-scroll{position:absolute;inset:0;border-radius:24px;overflow:hidden;background:radial-gradient(ellipse at top,#1a1a1a 0%,#0a0a0a 70%);box-shadow:var(--sh-sm);padding:18px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;animation:pickScroll 48s linear infinite;will-change:transform}
 .pick-photo-track.paused{animation-play-state:paused}
