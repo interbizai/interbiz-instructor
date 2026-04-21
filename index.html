@@ -945,8 +945,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 #page-pick #pick-filter-row{gap:10px!important;align-items:center!important}
 #page-pick #pick-filter-row > *{display:inline-flex!important;align-items:center!important}
 #page-pick #pick-filter-row button,
-#page-pick #pick-filter-row select{background:#fff!important;border:1px solid #000!important;color:#000!important;border-radius:0!important;font-family:'LG글씨',sans-serif!important;font-weight:700!important;font-size:12px!important;padding:0 14px!important;height:34px!important;line-height:32px!important;width:160px!important;max-width:160px!important;box-sizing:border-box!important;text-align:left!important}
-#page-pick #pick-filter-row select{appearance:none!important;-webkit-appearance:none!important;-moz-appearance:none!important;background-color:#fff!important;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000'/%3E%3C/svg%3E")!important;background-position:right 12px center!important;background-size:10px 6px!important;background-repeat:no-repeat!important;padding-right:30px!important}
+#page-pick #pick-filter-row select{appearance:none!important;-webkit-appearance:none!important;-moz-appearance:none!important;background-color:#fff!important;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000'/%3E%3C/svg%3E")!important;background-position:right 12px center!important;background-size:10px 6px!important;background-repeat:no-repeat!important;border:1px solid #000!important;color:#000!important;border-radius:0!important;font-family:'LG글씨',sans-serif!important;font-weight:700!important;font-size:12px!important;padding:0 30px 0 14px!important;height:34px!important;line-height:32px!important;width:160px!important;max-width:160px!important;box-sizing:border-box!important;text-align:left!important}
 
 /* 통계 카드 : 위아래만 테두리, 좌우는 없음 */
 #page-pick #pick-stats > *{background:#fff!important;border-left:none!important;border-right:none!important;border-top:1px solid #000!important;border-bottom:1px solid #000!important;box-shadow:none!important;border-radius:0!important;color:#000!important;padding:18px 8px!important}
@@ -2439,7 +2438,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
             <div style="position:relative" id="pick-cat-multi-wrap">
-              <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료 ▾</button>
+              <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료</button>
               <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
             </div>
             <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
@@ -4769,7 +4768,7 @@ function updatePickCatBtn(){
   const btn=document.getElementById('pick-cat-multi-btn');
   if(!btn) return;
   const sz=window._pickCatSel.size;
-  btn.textContent=sz===0?'전체 교육자료 ▾':sz===1?`${[...window._pickCatSel][0]} ▾`:`${[...window._pickCatSel][0]} 외 ${sz-1}개 ▾`;
+  btn.textContent=sz===0?'전체 교육자료':sz===1?`${[...window._pickCatSel][0]}`:`${[...window._pickCatSel][0]} 외 ${sz-1}개`;
 }
 
 function renderPickVideos(){
