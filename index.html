@@ -831,11 +831,21 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 }
 
 /* ── 인터 PICK Masterclass-lite ── */
-.pick-hero-wide{position:relative;background:linear-gradient(135deg,#fafafa 0%,#f1f5f9 60%,#e2e8f0 100%);border-radius:20px;padding:70px 56px;margin-bottom:20px;overflow:hidden;box-shadow:var(--sh-sm)}
-.pick-hero-bg{position:absolute;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(226,30,38,.05) 0%,transparent 45%),radial-gradient(circle at 85% 80%,rgba(0,120,200,.05) 0%,transparent 45%),radial-gradient(circle at 1px 1px,rgba(0,0,0,.04) 1px,transparent 0);background-size:100% 100%,100% 100%,32px 32px;pointer-events:none}
-.pick-hero-inner{position:relative;max-width:800px;z-index:1}
-.pick-hero-title{font-size:48px;font-weight:900;color:var(--t1);letter-spacing:-1.4px;line-height:1.15;margin:0 0 18px;word-break:keep-all}
-.pick-hero-sub{font-size:17px;font-weight:600;color:var(--t2);line-height:1.6;margin:0;word-break:keep-all}
+.pick-hero-wide{position:relative;background:#fff;border-radius:20px;padding:56px 48px;margin-bottom:20px;overflow:hidden;box-shadow:var(--sh-sm)}
+.pick-hero-bg{position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(0,0,0,.04) 1px,transparent 0);background-size:32px 32px;pointer-events:none}
+.pick-hero-inner{position:relative;z-index:1}
+.pick-hero-title{font-size:56px;font-weight:900;color:var(--t1);letter-spacing:-1.6px;line-height:1.1;margin:0;white-space:nowrap}
+.pick-hero-sub{font-size:20px;font-weight:700;color:var(--t2);line-height:1.4;margin:0;white-space:nowrap}
+
+@media(max-width:1400px){
+  .pick-hero-wide{padding:44px 36px}
+  .pick-hero-title{font-size:44px;letter-spacing:-1.2px}
+  .pick-hero-sub{font-size:16px}
+}
+@media(max-width:1100px){
+  .pick-hero-title{white-space:normal}
+  .pick-hero-sub{white-space:normal}
+}
 
 .pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:stretch}
 .pick-main-left{min-width:0}
@@ -2247,8 +2257,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
       <div class="pick-hero-wide" style="margin-bottom:18px">
         <div class="pick-hero-bg"></div>
         <div class="pick-hero-inner">
-          <h1 class="pick-hero-title">강사가 성장하면,<br>현장이 달라집니다</h1>
-          <p class="pick-hero-sub">수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h1 id="pick-hero-title" class="pick-hero-title">강사가 성장하면, 현장이 달라집니다</h1>
+            <button id="pick-edit-title-btn" onclick="editHeroText('hero_title')" style="display:none;padding:6px 10px;font-size:11px;font-weight:700;color:var(--blue);background:rgba(0,120,200,.08);border:1px solid rgba(0,120,200,.2);border-radius:8px;cursor:pointer">✎ 제목 수정</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <p id="pick-hero-sub" class="pick-hero-sub">수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.</p>
+            <button id="pick-edit-sub-btn" onclick="editHeroText('hero_sub')" style="display:none;padding:5px 9px;font-size:10px;font-weight:700;color:var(--blue);background:rgba(0,120,200,.08);border:1px solid rgba(0,120,200,.2);border-radius:8px;cursor:pointer">✎ 부제 수정</button>
+          </div>
         </div>
       </div>
 
@@ -4007,6 +4023,35 @@ async function deleteLink(id){
 }
 
 /* ── 인터PICK 대시보드 ── */
+// 히어로 타이틀/부제 — DB 로드 (app_settings 테이블)
+async function loadHeroText(){
+  const t=el('pick-hero-title'), s=el('pick-hero-sub');
+  try{
+    const{data}=await sb.from('app_settings').select('key,value').in('key',['hero_title','hero_sub']);
+    const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
+    if(t&&map.hero_title) t.textContent=map.hero_title;
+    if(s&&map.hero_sub) s.textContent=map.hero_sub;
+  }catch(e){/* 테이블 미생성 시 기본값 유지 */}
+  // 관리자/부관리자에게만 수정 버튼 노출
+  const canEdit=CU?.isAdmin; // 부관리자(isSubAdmin)도 isAdmin 플래그 유지
+  const tb=el('pick-edit-title-btn'), sb2=el('pick-edit-sub-btn');
+  if(tb) tb.style.display=canEdit?'':'none';
+  if(sb2) sb2.style.display=canEdit?'':'none';
+}
+
+async function editHeroText(key){
+  const id=key==='hero_title'?'pick-hero-title':'pick-hero-sub';
+  const cur=el(id)?.textContent||'';
+  const label=key==='hero_title'?'메인 제목':'부제';
+  const v=prompt(`${label} 수정:`,cur);
+  if(v===null) return;
+  const val=v.trim();
+  if(!val){alert('빈 값은 저장할 수 없습니다.');return;}
+  const{error}=await sb.from('app_settings').upsert({key,value:val});
+  if(error){alert('저장 실패: '+error.message);return;}
+  const elx=el(id);if(elx) elx.textContent=val;
+}
+
 // 히어로 우측 — 2컬럼 세로 스크롤 사진 패널 (관리자 제외, 풍경 배경 + 어긋난 배치)
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
@@ -4047,6 +4092,7 @@ function renderPick(){
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
   const ymEl=el('pick-title-ym');if(ymEl)ymEl.textContent=monthLabel;
   renderPickPhotoCollage();
+  loadHeroText();
 
   // 당월 기준 데이터 — 영상 평가만
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
