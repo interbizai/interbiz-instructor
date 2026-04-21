@@ -4844,7 +4844,7 @@ function renderPickVideos(){
     const selBg=isSel?'rgba(239,68,68,.06)':'#fff';
     const selShadow=isSel?'0 8px 22px rgba(239,68,68,.22)':'none';
     return `<div style="position:relative;border:${selBorder};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .25s;background:${selBg};box-shadow:${selShadow}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow='none'}">
-      <div style="height:120px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+      <div style="aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
         ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:videoSrc?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${videoSrc}#t=1"></video>`:'<span style="font-size:12px;color:var(--t3)">미리보기 없음</span>'}
         ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
         <span style="position:absolute;top:8px;right:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(16,185,129,.92);color:#fff">총점 ${score}점</span>
