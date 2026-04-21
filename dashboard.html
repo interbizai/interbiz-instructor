@@ -911,24 +911,35 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 @media(max-width:1400px){#page-pick .pick-hero-title{font-size:48px}}
 @media(max-width:900px){#page-pick .pick-hero-title{font-size:34px;letter-spacing:-1px}}
 
-#page-pick .pick-main-split{gap:48px!important;grid-template-columns:minmax(0,1fr) 440px!important}
-@media(max-width:1200px){#page-pick .pick-main-split{grid-template-columns:1fr!important;gap:32px!important;max-width:none!important}}
+#page-pick .pick-main-split{gap:48px!important;grid-template-columns:minmax(0,1fr) 440px!important;align-items:stretch!important}
+#page-pick .pick-photo-aside{min-height:0!important}
+@media(max-width:1200px){#page-pick .pick-main-split{grid-template-columns:1fr!important;gap:32px!important;max-width:none!important}#page-pick .pick-photo-aside{min-height:560px!important}}
 
-/* 카드 껍데기 제거 — 여백으로만 구분 */
-#page-pick .pick-main-left > div{background:#fff!important;box-shadow:none!important;border:none!important;border-radius:0!important}
-#page-pick .pick-main-left > div > div{box-shadow:none!important}
-#page-pick .pick-main-left [style*="background:#fff"]{background:#fff!important;box-shadow:none!important;border-radius:0!important}
-#page-pick .pick-main-left [style*="border:1px solid var(--bdr)"]{border:none!important;border-radius:0!important;padding:0!important}
-#page-pick .pick-main-left [style*="background:#fafafa"]{background:#fff!important;border-color:#000!important}
+/* 카드 껍데기 제거 — 여백으로만 구분 (.pick-main-left + .pick-full 공통) */
+#page-pick .pick-main-left > div,
+#page-pick .pick-full > div{background:#fff!important;box-shadow:none!important;border:none!important;border-radius:0!important}
+#page-pick .pick-main-left > div > div,
+#page-pick .pick-full > div > div{box-shadow:none!important}
+#page-pick .pick-main-left [style*="background:#fff"],
+#page-pick .pick-full [style*="background:#fff"]{background:#fff!important;box-shadow:none!important;border-radius:0!important}
+#page-pick .pick-main-left [style*="border:1px solid var(--bdr)"],
+#page-pick .pick-full [style*="border:1px solid var(--bdr)"]{border:none!important;border-radius:0!important;padding:0!important}
+#page-pick .pick-main-left [style*="background:#fafafa"],
+#page-pick .pick-full [style*="background:#fafafa"]{background:#fff!important;border-color:#000!important}
 
 /* 섹션 제목 */
-#page-pick .pick-main-left [style*="font-weight:800"]{color:#000!important;font-size:14px!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.5px;padding-bottom:10px;border-bottom:1px solid #000;margin-bottom:14px!important}
+#page-pick .pick-main-left [style*="font-weight:800"],
+#page-pick .pick-full [style*="font-weight:800"]{color:#000!important;font-size:14px!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.5px;padding-bottom:10px;border-bottom:1px solid #000;margin-bottom:14px!important}
 
 /* 본문 텍스트 */
-#page-pick .pick-main-left{color:#000}
+#page-pick .pick-main-left,
+#page-pick .pick-full{color:#000}
 #page-pick .pick-main-left [style*="color:var(--t2)"],
 #page-pick .pick-main-left [style*="color:var(--t3)"],
-#page-pick .pick-main-left [style*="color:var(--t1)"]{color:#000!important}
+#page-pick .pick-main-left [style*="color:var(--t1)"],
+#page-pick .pick-full [style*="color:var(--t2)"],
+#page-pick .pick-full [style*="color:var(--t3)"],
+#page-pick .pick-full [style*="color:var(--t1)"]{color:#000!important}
 
 /* 필터 칩 : 두 개 동일 크기·폰트 */
 #page-pick #pick-filter-row{gap:10px!important;align-items:center!important}
@@ -952,10 +963,14 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 /* 과정 제품별 영상 박스 */
 #page-pick #pick-section-box{border:none!important;border-radius:0!important;padding:0!important;background:#fff!important}
 
-/* 우측 사진 패널 : 원래대로 검정 배경 복원 */
-/* (원본 .pick-photo-scroll 의 background:#000, 페이드 rgba(0,0,0,.85) 그대로 사용) */
-#page-pick .pick-photo-pause{background:rgba(255,255,255,.92)!important;color:#000!important;border-radius:999px!important;box-shadow:0 6px 16px rgba(0,0,0,.2)!important}
-#page-pick .pick-photo-pause:hover{background:#fff!important}
+/* 우측 사진 패널 : 흰 배경 · 그림자 제거 (롤백된 버전) */
+#page-pick .pick-photo-scroll{background:#fff!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+#page-pick .pick-photo-scroll::before{display:none!important}
+#page-pick .pick-photo-card{border-radius:0!important;box-shadow:none!important;background:#000!important}
+#page-pick .pick-photo-fade-top{background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0) 100%)!important}
+#page-pick .pick-photo-fade-bot{background:linear-gradient(0deg,#fff 0%,rgba(255,255,255,0) 100%)!important}
+#page-pick .pick-photo-pause{background:#000!important;color:#fff!important;border-radius:0!important;box-shadow:none!important}
+#page-pick .pick-photo-pause:hover{background:#000!important;transform:none!important}
 
 /* 히어로 수정 버튼 흑백 */
 #page-pick #pick-edit-title-btn,
@@ -2377,53 +2392,9 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
           </div>
         </div>
       </div>
-
-      <!-- 당월 통계 -->
-      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="pick-stats"></div>
-      </div>
-
-      <!-- 이달의 인터PICK + 과정 제품별 영상 -->
-      <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:var(--sh-sm)">
-        <div style="margin-bottom:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">이달의 인터PICK 강사</div>
-            <button id="pick-viewall-btn" class="btn btn-ghost" style="padding:5px 12px;font-size:11px;display:none" onclick="openPickRankingModal()">전체보기</button>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-top3"></div>
-        </div>
-
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">과정 제품별 영상</div>
-          <div id="pick-section-box" style="border:1px solid var(--bdr);border-radius:14px;padding:20px;background:#fff;transition:background .25s">
-            <div id="pick-admin-add" style="display:none;margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
-              <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px">영상 추가 (관리자)</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <select id="pick-add-vid-select" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;min-width:200px">
-                  <option value="">영상 선택...</option>
-                </select>
-                <button class="btn btn-blue" style="padding:5px 12px;font-size:11px" onclick="addPickFeaturedVideo()">추가</button>
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
-              <div style="position:relative" id="pick-cat-multi-wrap">
-                <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료 ▾</button>
-                <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
-              </div>
-              <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
-                <option value="">전체 제품</option>
-              </select>
-            </div>
-            <div id="pick-selected-group">
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
-              <div id="pick-video-detail"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- 우측 사진 스크롤 패널 -->
+    <!-- 우측 사진 스크롤 패널 (hero + 2x2 높이에 맞춤) -->
     <aside class="pick-photo-aside">
       <div class="pick-photo-scroll" id="pick-photo-scroll">
         <div class="pick-photo-track" id="pick-photo-track"></div>
@@ -2435,6 +2406,53 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
         <div class="pick-photo-fade-bot"></div>
       </div>
     </aside>
+  </div>
+
+  <!-- ══ 페이지 전체 너비 섹션 : 통계 / TOP3 / 영상 ══ -->
+  <div class="pick-full" style="margin-top:32px">
+    <!-- 당월 통계 -->
+    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="pick-stats"></div>
+    </div>
+
+    <!-- 이달의 인터PICK + 과정 제품별 영상 -->
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:var(--sh-sm)">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">이달의 인터PICK 강사</div>
+          <button id="pick-viewall-btn" class="btn btn-ghost" style="padding:5px 12px;font-size:11px;display:none" onclick="openPickRankingModal()">전체보기</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pick-top3"></div>
+      </div>
+
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">과정 제품별 영상</div>
+        <div id="pick-section-box" style="border:1px solid var(--bdr);border-radius:14px;padding:20px;background:#fff;transition:background .25s">
+          <div id="pick-admin-add" style="display:none;margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+            <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px">영상 추가 (관리자)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="pick-add-vid-select" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px;min-width:200px">
+                <option value="">영상 선택...</option>
+              </select>
+              <button class="btn btn-blue" style="padding:5px 12px;font-size:11px" onclick="addPickFeaturedVideo()">추가</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
+            <div style="position:relative" id="pick-cat-multi-wrap">
+              <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료 ▾</button>
+              <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
+            </div>
+            <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
+              <option value="">전체 제품</option>
+            </select>
+          </div>
+          <div id="pick-selected-group">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="pick-videos"></div>
+            <div id="pick-video-detail"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </main>
