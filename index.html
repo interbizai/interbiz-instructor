@@ -896,6 +896,83 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   .pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:36px}
 }
 
+/* ── 인터PICK : MasterClass 오마주 · 흑백 전용 ── */
+#page-pick{background:#fff!important}
+#page-pick > main{max-width:1280px!important;margin:0 auto!important;padding:24px 56px 64px!important;background:#fff!important}
+#page-pick .page-title{padding:12px 0 28px;margin-bottom:0;border-bottom:1px solid #000}
+#page-pick .page-title h2{color:#000!important;font-weight:900;letter-spacing:-.3px}
+#page-pick .page-title-icon svg{fill:#000!important;stroke:#000!important}
+#page-pick #pick-title-ym{color:#000!important;font-weight:700}
+
+#page-pick .pick-hero-wide{background:#fff!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:48px 0 40px!important;margin-bottom:40px!important}
+#page-pick .pick-hero-bg{display:none!important}
+#page-pick .pick-hero-title{color:#000!important;font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1;text-transform:uppercase}
+#page-pick .pick-hero-sub{color:#000!important;font-weight:500;margin-top:18px!important}
+@media(max-width:1400px){#page-pick .pick-hero-title{font-size:48px}}
+@media(max-width:900px){#page-pick .pick-hero-title{font-size:34px;letter-spacing:-1px}}
+
+#page-pick .pick-main-split{gap:48px!important;grid-template-columns:minmax(0,1fr) 440px!important}
+@media(max-width:1200px){#page-pick .pick-main-split{grid-template-columns:1fr!important;gap:32px!important;max-width:none!important}}
+
+/* 카드 껍데기 제거 — 여백으로만 구분 */
+#page-pick .pick-main-left > div{background:#fff!important;box-shadow:none!important;border:none!important;border-radius:0!important}
+#page-pick .pick-main-left > div > div{box-shadow:none!important}
+#page-pick .pick-main-left [style*="background:#fff"]{background:#fff!important;box-shadow:none!important;border-radius:0!important}
+#page-pick .pick-main-left [style*="border:1px solid var(--bdr)"]{border:none!important;border-radius:0!important;padding:0!important}
+#page-pick .pick-main-left [style*="background:#fafafa"]{background:#fff!important;border-color:#000!important}
+
+/* 섹션 제목 */
+#page-pick .pick-main-left [style*="font-weight:800"]{color:#000!important;font-size:14px!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.5px;padding-bottom:10px;border-bottom:1px solid #000;margin-bottom:14px!important}
+
+/* 본문 텍스트 */
+#page-pick .pick-main-left{color:#000}
+#page-pick .pick-main-left [style*="color:var(--t2)"],
+#page-pick .pick-main-left [style*="color:var(--t3)"],
+#page-pick .pick-main-left [style*="color:var(--t1)"]{color:#000!important}
+
+/* 필터 칩 */
+#page-pick #pick-filter-row button,
+#page-pick #pick-filter-row select{background:#fff!important;border:1px solid #000!important;color:#000!important;border-radius:0!important;font-weight:700!important}
+
+/* 통계 카드 흑백 */
+#page-pick #pick-stats > *{background:#fff!important;border:none!important;border-top:1px solid #000;border-bottom:1px solid #000;box-shadow:none!important;border-radius:0!important;color:#000!important}
+#page-pick #pick-stats *{color:#000!important}
+
+/* TOP3 강사 카드 흑백 */
+#page-pick .pick-top-card{background:#fff!important;border:1px solid #000!important;box-shadow:none!important;border-radius:0!important}
+#page-pick .pick-top-card-inner{background:#fff!important;border-radius:0!important;color:#000!important}
+#page-pick .pick-top-card-inner *{color:#000!important}
+#page-pick .pick-top-card:hover{transform:none!important;box-shadow:none!important;background:#000!important;color:#fff!important}
+#page-pick .pick-top-card:hover .pick-top-card-inner,
+#page-pick .pick-top-card:hover .pick-top-card-inner *{background:#000!important;color:#fff!important}
+
+/* 과정 제품별 영상 박스 */
+#page-pick #pick-section-box{border:none!important;border-radius:0!important;padding:0!important;background:#fff!important}
+
+/* 우측 사진 패널 : 흰 배경 · 그림자 제거 · 기존 스크롤 유지 */
+#page-pick .pick-photo-scroll{background:#fff!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+#page-pick .pick-photo-scroll::before{display:none!important}
+#page-pick .pick-photo-card{border-radius:0!important;box-shadow:none!important;background:#000!important}
+#page-pick .pick-photo-fade-top{background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0) 100%)!important}
+#page-pick .pick-photo-fade-bot{background:linear-gradient(0deg,#fff 0%,rgba(255,255,255,0) 100%)!important}
+#page-pick .pick-photo-pause{background:#000!important;color:#fff!important;border-radius:0!important;box-shadow:none!important}
+#page-pick .pick-photo-pause:hover{background:#000!important;transform:none!important}
+
+/* 히어로 수정 버튼 흑백 */
+#page-pick #pick-edit-title-btn,
+#page-pick #pick-edit-sub-btn{background:#fff!important;color:#000!important;border:1px solid #000!important;border-radius:0!important}
+
+/* 영상 썸네일 카드 흑백 */
+#page-pick #pick-videos > *{border-radius:0!important;border:1px solid #000!important;box-shadow:none!important;background:#fff!important}
+#page-pick #pick-videos *{color:#000!important}
+
+/* 모바일 여백 축소 */
+@media(max-width:900px){
+  #page-pick > main{padding:16px 20px 48px!important}
+  #page-pick .pick-hero-wide{padding:24px 0 28px!important;margin-bottom:24px!important}
+  #page-pick .pick-main-left [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+}
+
 /* ── 분석 결과: 피드백 + 최종의견 반응형 ── */
 .an-feed-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px}
 @media(max-width:1280px){
@@ -2257,7 +2334,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 <div id="page-pick" class="page">
 <header class="hdr" style="display:none"></header>
 <main>
-  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:var(--blue)"></span></div>
+  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#000" stroke="#000" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:#000"></span></div>
 
   <!-- ══ 메인 분할: 좌측 콘텐츠 + 우측 사진 스크롤 ══ -->
   <div class="pick-main-split">
