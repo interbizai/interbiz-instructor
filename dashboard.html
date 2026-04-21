@@ -806,7 +806,13 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
   /* 영상 보기 버튼 위치 조정 */
   #page-analysis div[style*="position:absolute;right:28px;top:50%"]{ position:relative!important; right:auto!important; top:auto!important; transform:none!important; margin:10px 16px; justify-content:flex-end!important }
   /* 전체보기 모달 — 레이더+바 세로 */
-  #cl-detail-overlay div[style*="grid-template-columns:340px"]{ grid-template-columns:1fr!important }
+  #cl-detail-overlay div[style*="grid-template-columns:440px"]{ grid-template-columns:1fr!important }
+  /* 평가 화면 레이더+바 세로 */
+  #an-edu-radar-wrap,#an-ai-radar-wrap{grid-template-columns:1fr!important}
+  /* 모바일에선 바 max-width 제약 해제 */
+  #an-edu-bars>div>div[style*="max-width:50%"],
+  #an-ai-bars>div>div[style*="max-width:50%"],
+  #cl-detail-overlay div[style*="max-width:50%"]{max-width:100%!important}
   /* 세부항목 영상 모달 — 좌우 → 세로 */
   #sub-item-video-overlay>div>div{ grid-template-columns:1fr!important }
   #sub-item-video-overlay>div>div>div:first-child{ border-right:none!important; border-bottom:1px solid var(--bdr) }
@@ -1692,9 +1698,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 분석</div>
           <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('crit')">전체 보기</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-edu-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-            <svg id="an-edu-radar" viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto"></svg>
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px" id="an-edu-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px">
+            <svg id="an-edu-radar" viewBox="0 0 500 440" style="width:100%;max-width:480px;height:auto"></svg>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
         </div>
@@ -1739,9 +1745,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
           <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="an-ai-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
-            <svg id="an-ai-radar" viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto"></svg>
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px" id="an-ai-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px">
+            <svg id="an-ai-radar" viewBox="0 0 500 440" style="width:100%;max-width:480px;height:auto"></svg>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
         </div>
@@ -6161,18 +6167,18 @@ function openChecklistDetail(which){
     const pct=max>0?Math.round(sum/max*100):0;
     const radarItems=arr.map(s=>({name:s.sub_item||'', score:s.score||0, max:s.max||1}));
     const radarSvg=drawRadarSVG(radarItems);
-    const bars=radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:600">${c.name}</span><span style="font-size:11px;font-weight:800;color:#10b981">${p}%</span></div>
-      <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+    const bars=radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><span style="font-size:11px;font-weight:600">${c.name}</span><span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;font-weight:800;background:${cc};color:#fff;min-width:44px;text-align:center">${p}%</span></div>
+      <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px"></div></div>
     </div>`;}).join('');
     return `<div style="margin-bottom:22px;border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff">
       <div style="padding:12px 16px;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr)">
         <div style="font-size:14px;font-weight:900;color:var(--t1)">${cat}</div>
         <div style="font-size:12px;font-weight:800;color:#10b981">${sum}/${max}점 · ${pct}%</div>
       </div>
-      <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;padding:16px">
+      <div style="display:grid;grid-template-columns:440px 1fr;gap:18px;padding:16px">
         <div style="border:1px solid var(--bdr);border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;background:#fafafa">
-          <svg viewBox="0 0 500 440" style="width:100%;max-width:320px;height:auto">${radarSvg}</svg>
+          <svg viewBox="0 0 500 440" style="width:100%;max-width:420px;height:auto">${radarSvg}</svg>
         </div>
         <div>${bars}</div>
       </div>
@@ -6688,9 +6694,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     const eduBars=el('an-edu-bars');
     if(eduBars){
       eduBars.innerHTML=`<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>`+
-        r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
+        r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center">${p}%</span></div>
+          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px;transition:width .8s"></div></div>
         </div>`;}).join('');
     }
   } else if(hasChecklist){
@@ -6785,9 +6791,9 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>`+
-      aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
+      aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px;transition:width .8s"></div></div>
       </div>`;}).join('');
   }
 
@@ -6966,14 +6972,14 @@ function openCategoryRadar(which,categoryName){
       <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
     </div>
     <div style="font-size:12px;color:var(--t2);margin-bottom:14px">총점: <strong style="color:#10b981">${totalScore}/${totalMax}점 (${pct}%)</strong> · 세부항목 ${items.length}개</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:center;margin-bottom:14px">
       <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems)}</svg>
+        <svg viewBox="0 0 500 440" style="width:100%;max-width:460px;height:auto">${drawRadarSVG(radarItems)}</svg>
       </div>
       <div>
-        ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:700">${c.name}</span><span style="font-size:12px;font-weight:800;color:#10b981">${p}%</span></div>
-          <div style="height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+        ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><span style="font-size:12px;font-weight:700">${c.name}</span><span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;font-weight:800;background:${cc};color:#fff;min-width:44px;text-align:center">${p}%</span></div>
+          <div style="height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px"></div></div>
         </div>`;}).join('')}
       </div>
     </div>
@@ -8180,15 +8186,15 @@ function renderVoiceResult(r,hasCL,count,tone){
           <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
           <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px">
           <div style="display:flex;align-items:center;justify-content:center">
-            <svg viewBox="0 0 500 440" style="width:100%;max-width:380px;height:auto">${drawRadarSVG(radarItems,{clickable:true,which:'ai'})}</svg>
+            <svg viewBox="0 0 500 440" style="width:100%;max-width:480px;height:auto">${drawRadarSVG(radarItems,{clickable:true,which:'ai'})}</svg>
           </div>
           <div>
             <div style="font-size:14px;font-weight:800;margin-bottom:16px">AI 역량별 달성도</div>
-            ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
-              <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px"></div></div>
+            ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center">${p}%</span></div>
+              <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px"></div></div>
             </div>`;}).join('')}
           </div>
         </div>
@@ -9563,10 +9569,10 @@ function renderRadarChart(userId){
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
   if(barsEl){
     barsEl.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-      cats6.map((cat,i)=>`<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${cat.name.replace('\n',' ')}</span><span style="font-size:13px;font-weight:800;color:#10b981">${scores6[i]}%</span></div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${scores6[i]}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
-      </div>`).join('');
+      cats6.map((cat,i)=>{const p=scores6[i];const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${cat.name.replace('\n',' ')}</span><span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px;transition:width .8s"></div></div>
+      </div>`;}).join('');
   }
 }
 
@@ -10090,10 +10096,10 @@ function openLecturer(id, fromPage){
         </div>
       </div>
       <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="lect-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:350px">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px" id="lect-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:380px">
             <div style="display:flex;align-items:center;justify-content:center">
-              <svg id="radar-chart-${u.id}" viewBox="0 0 400 400" style="width:100%;max-width:380px;height:auto"></svg>
+              <svg id="radar-chart-${u.id}" viewBox="0 0 400 400" style="width:100%;max-width:480px;height:auto"></svg>
             </div>
             <div style="display:flex;gap:20px;justify-content:center;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);margin-top:8px">
               <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dc2626"></div><span style="font-size:12px;font-weight:600;color:var(--t1)">현재 역량</span></div>
@@ -10352,9 +10358,9 @@ function renderRadarChartFromEvals(userId){
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
   if(barsEl){
     barsEl.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:16px">역량별 달성도</div>'+
-      cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="font-size:13px;font-weight:800;color:#10b981">${p}%</span></div>
-        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:${p}%;background:#10b981;border-radius:4px;transition:width .8s"></div></div>
+      cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--t1)">${c.name}</span><span style="display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center">${p}%</span></div>
+        <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;max-width:50%"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px;transition:width .8s"></div></div>
       </div>`;}).join('');
   }
 }
