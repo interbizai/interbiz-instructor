@@ -906,8 +906,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 
 #page-pick .pick-hero-wide{background:#fff!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:48px 0 40px!important;margin-bottom:40px!important}
 #page-pick .pick-hero-bg{display:none!important}
-#page-pick .pick-hero-title{color:#000!important;font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1;text-transform:uppercase}
-#page-pick .pick-hero-sub{color:#000!important;font-weight:500;margin-top:18px!important}
+#page-pick .pick-hero-title{color:#000!important;font-family:'LG글씨',sans-serif!important;font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1.15;white-space:normal!important;word-break:keep-all}
+#page-pick .pick-hero-sub{color:#000!important;font-family:'LG글씨',sans-serif!important;font-weight:500;margin-top:18px!important;white-space:normal!important;word-break:keep-all}
 @media(max-width:1400px){#page-pick .pick-hero-title{font-size:48px}}
 @media(max-width:900px){#page-pick .pick-hero-title{font-size:34px;letter-spacing:-1px}}
 
@@ -934,17 +934,15 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 #page-pick #pick-filter-row button,
 #page-pick #pick-filter-row select{background:#fff!important;border:1px solid #000!important;color:#000!important;border-radius:0!important;font-weight:700!important}
 
-/* 통계 카드 흑백 */
-#page-pick #pick-stats > *{background:#fff!important;border:none!important;border-top:1px solid #000;border-bottom:1px solid #000;box-shadow:none!important;border-radius:0!important;color:#000!important}
+/* 통계 카드 : 위아래만 테두리, 좌우는 없음 */
+#page-pick #pick-stats > *{background:#fff!important;border-left:none!important;border-right:none!important;border-top:1px solid #000!important;border-bottom:1px solid #000!important;box-shadow:none!important;border-radius:0!important;color:#000!important;padding:18px 8px!important}
 #page-pick #pick-stats *{color:#000!important}
 
-/* TOP3 강사 카드 흑백 */
-#page-pick .pick-top-card{background:#fff!important;border:1px solid #000!important;box-shadow:none!important;border-radius:0!important}
-#page-pick .pick-top-card-inner{background:#fff!important;border-radius:0!important;color:#000!important}
+/* TOP3 강사 카드 : 테두리 없이 */
+#page-pick .pick-top-card{background:#fff!important;border:none!important;box-shadow:none!important;border-radius:0!important}
+#page-pick .pick-top-card-inner{background:#fff!important;border-radius:0!important;color:#000!important;padding:12px 4px!important}
 #page-pick .pick-top-card-inner *{color:#000!important}
-#page-pick .pick-top-card:hover{transform:none!important;box-shadow:none!important;background:#000!important;color:#fff!important}
-#page-pick .pick-top-card:hover .pick-top-card-inner,
-#page-pick .pick-top-card:hover .pick-top-card-inner *{background:#000!important;color:#fff!important}
+#page-pick .pick-top-card:hover{transform:translateY(-2px)!important;box-shadow:none!important;background:#fff!important}
 
 /* 과정 제품별 영상 박스 */
 #page-pick #pick-section-box{border:none!important;border-radius:0!important;padding:0!important;background:#fff!important}
@@ -962,8 +960,8 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 #page-pick #pick-edit-title-btn,
 #page-pick #pick-edit-sub-btn{background:#fff!important;color:#000!important;border:1px solid #000!important;border-radius:0!important}
 
-/* 영상 썸네일 카드 흑백 */
-#page-pick #pick-videos > *{border-radius:0!important;border:1px solid #000!important;box-shadow:none!important;background:#fff!important}
+/* 영상 썸네일 카드 : 테두리 없이 */
+#page-pick #pick-videos > *{border-radius:0!important;border:none!important;box-shadow:none!important;background:#fff!important}
 #page-pick #pick-videos *{color:#000!important}
 
 /* 모바일 여백 축소 */
