@@ -862,9 +862,10 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pick-photo-scroll{position:absolute;inset:0;border-radius:24px;overflow:hidden;background:#000;box-shadow:var(--sh-sm);padding:0 14px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none;z-index:0}
 .pick-photo-track{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-.pick-photo-col{display:flex;flex-direction:column;gap:12px;animation:pickScroll 55s linear infinite;will-change:transform}
+.pick-photo-col{display:flex;flex-direction:column;animation:pickScroll 55s linear infinite;will-change:transform}
+.pick-photo-col.offset{margin-top:calc(-66.666% - 6px)}
+.pick-photo-col > .pick-photo-card{margin-bottom:12px;flex-shrink:0}
 .pick-photo-track.paused .pick-photo-col{animation-play-state:paused}
-.pick-photo-spacer{aspect-ratio:3/2;width:100%;flex-shrink:0}
 @keyframes pickScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .pick-photo-card{position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5);transition:transform .3s ease;background:#1a1a1a}
 .pick-photo-card:hover{transform:scale(1.02);z-index:5}
@@ -4214,10 +4215,10 @@ function renderPickPhotoCollage(){
   const leftItems=shuffle(pool).slice(0,PER_COL);
   const rightItems=shuffle(pool).slice(0,PER_COL);
   const colHtml=(items)=>items.map(cardHtml).join('');
-  const spacer=`<div class="pick-photo-spacer"></div>`;
   const leftUnit=colHtml(leftItems);
-  const rightUnit=spacer+colHtml(rightItems);
-  track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col">${rightUnit+rightUnit}</div>`;
+  const rightUnit=colHtml(rightItems);
+  // 우측 컬럼은 CSS margin-top:-66.666%-6px 으로 반 카드(+반 gap)만큼 위로 이동 → 맨 위/아래 반씩 보임
+  track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col offset">${rightUnit+rightUnit}</div>`;
 }
 
 // 스크롤 일시정지/재생
