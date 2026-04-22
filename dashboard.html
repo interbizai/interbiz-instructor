@@ -6562,7 +6562,10 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       setTimeout(()=>alert('일부 분석 실패:\n'+errors.join('\n')+'\n\n성공한 결과만 표시됩니다.'),100);
     }
     // 4) videos 레코드 먼저 생성(파일 URL 포함) → 그 ID로 evaluations에 원본 결과 연결
-    const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
+    // 하드코딩 관리자(email='admin')만 null; 실계정(부관리자 포함)은 본인 id 사용
+    if(CU?.email==='admin'){alert('평가 업로드는 강사 본인 계정으로 진행해주세요.');return;}
+    const userId=CU?.id||null;
+    if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
     const vidRow=await dbCreateVideo({
       userId, title, youtube:'', filePath:videoUrl,
       date:new Date().toISOString().split('T')[0], duration:'—',
@@ -7299,9 +7302,10 @@ function openAnVideoAt(timeStr){
 }
 
 async function autoSaveAnalysis(resultJson){
-  if(!CU) return;
+  if(!CU||CU.email==='admin') return; // 하드코딩 관리자는 자동저장 건너뜀
   try{
-    const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
+    const userId=CU?.id||null;
+    if(!userId) return;
     const yt=v('an-youtube').trim();
     const result=await dbCreateVideo({
       userId:userId, title:v('an-title'), youtube:yt,
@@ -7319,7 +7323,9 @@ async function autoSaveAnalysis(resultJson){
 
 async function saveAnalysisVideo(){
   if(!CU){ alert('로그인이 필요합니다.'); return; }
-  const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
+  if(CU.email==='admin'){alert('영상 저장은 강사 본인 계정으로 진행해주세요.');return;}
+  const userId=CU?.id||null;
+  if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
   const yt=v('an-youtube').trim();
   const result=await dbCreateVideo({
     userId:userId, title:v('an-title'), youtube:yt,
@@ -8050,7 +8056,10 @@ async function runVoiceAnalysis(){
     // voice_evals 레코드 생성 → id 확보 후 evaluations 연결
     let voiceEvalId=null;
     try{
-      const userId=CU?.isAdmin?(D.users[0]?.id||null):(CU?.id||null);
+      // 하드코딩 관리자(email='admin')만 null; 실계정(부관리자 포함)은 본인 id 사용
+    if(CU?.email==='admin'){alert('평가 업로드는 강사 본인 계정으로 진행해주세요.');return;}
+    const userId=CU?.id||null;
+    if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
       const insertData={user_name:CU?.name||'관리자', title, score:aiRes.overall_score||0,
         tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
         result_data:{analysis:aiRes}};
@@ -8577,7 +8586,9 @@ async function autoSaveVoice(resultJson,count,tone){
     const title=v('va-title').trim()||'음성 분석';
     const score=resultJson.overall_score||resultJson.overallScore||0;
     const product=v('va-product')||'';
-    const userId=CU.isAdmin?(D.users[0]?.id||null):CU.id;
+    if(CU?.email==='admin'){alert('평가 업로드는 강사 본인 계정으로 진행해주세요.');return;}
+    const userId=CU?.id||null;
+    if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
     const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
       tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
       result_data:{product,analysis:resultJson}};
