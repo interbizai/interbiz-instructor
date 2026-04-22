@@ -644,16 +644,16 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .tn-dd-item:hover{background:rgba(0,120,200,.06);color:var(--blue)}
 .tn-dd-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center}
 /* Right: search + profile */
-.tn-right{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0}
+.tn-right{display:flex;align-items:center;gap:24px;margin-left:auto;flex-shrink:0}
 .tn-search-btn{width:36px;height:36px;border-radius:50%;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;color:var(--t2)}
 .tn-search-btn:hover{background:rgba(0,0,0,.04)}
-.tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 8px 10px;margin-bottom:-10px;border-radius:10px;transition:background .15s;position:relative}
+.tn-profile{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 8px;border-radius:10px;transition:background .15s;position:relative}
 .tn-profile:hover{background:rgba(0,0,0,.03)}
-.tn-profile-photo{width:34px;height:34px;border-radius:50%;overflow:hidden;background:transparent;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.tn-profile-photo{width:36px;height:36px;border-radius:50%;overflow:hidden;background:transparent;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
 .tn-profile-photo img{width:100%;height:100%;object-fit:cover;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
-.tn-profile-info{text-align:right}
-.tn-profile-name{font-size:13px;font-weight:700;color:var(--t1)}
-.tn-profile-sub{font-size:11px;color:var(--t3)}
+.tn-profile-info{display:flex;flex-direction:column;justify-content:center;text-align:right;line-height:1.3}
+.tn-profile-name{font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px}
+.tn-profile-sub{font-size:11px;color:var(--t3);white-space:nowrap}
 .tn-profile-dropdown{display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;box-shadow:var(--sh-lg);min-width:180px;padding:6px;z-index:300;padding-top:10px}
 .tn-profile-dropdown::before{content:'';position:absolute;top:-12px;right:0;width:80px;height:16px}
 .tn-profile:hover .tn-profile-dropdown{display:block}
@@ -3371,7 +3371,7 @@ function updateTopNav(activePage){
   const isRealAdmin=CU?.isAdmin&&!CU?.isSubAdmin;
   if(nEl) nEl.textContent=isRealAdmin?'관리자':(CU?.name||'—');
   const sEl=document.getElementById('tn-profile-sub');
-  if(sEl) sEl.textContent=isRealAdmin?'interbiz':(u?`${u.channel} · ${u.team}`:'—');
+  if(sEl) sEl.textContent=isRealAdmin?'interbiz':(u?[u.channel,u.team,u.position].filter(Boolean).join(' · '):'—');
 }
 // 검색
 function toggleTopSearch(){
@@ -3585,7 +3585,7 @@ function updateHeaderUI(){
   const u=D.users.find(x=>x.id===CU?.id);
   const isRA=CU?.isAdmin&&!CU?.isSubAdmin;
   const userName=isRA?'관리자':(CU?.name||'—');
-  const userSub=isRA?'interbiz':(u?`${u.channel} · ${u.team}`:(CU?.email||'—'));
+  const userSub=isRA?'interbiz':(u?[u.channel,u.team,u.position].filter(Boolean).join(' · '):(CU?.email||'—'));
   document.querySelectorAll('.hdr-user-name').forEach(e=>e.textContent=userName);
   document.querySelectorAll('.hdr-user-sub').forEach(e=>e.textContent=userSub);
   // 관리자 버튼: 관리자 로그인일 때만 표시
