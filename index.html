@@ -3038,7 +3038,8 @@ async function dbGetVideos(){
 }
 // 유저 생성
 async function dbCreateUser(u){
-  const payload={
+  // 1차 시도: 모든 필드 포함
+  const full={
     name:u.name, email:u.email, pw:u.pw||'1234', channel:u.channel||'', team:u.team||'',
     birth_year:u.birthYear||null, hire_date:u.hireDate||null, phone:u.phone||'',
     photo:u.photo||null, memo:'', score:0, grade:'—',
@@ -3047,9 +3048,18 @@ async function dbCreateUser(u){
     org_name:u.orgName||null, office:u.office||null, birth_date:u.birthDate||null,
     status:u.status||'근무', position:u.position||'현장강사'
   };
-  const {data,error}=await sb.from('users').insert(payload).select().single();
-  if(error){ console.error('dbCreateUser error:',error,'payload:',payload); return {_error:error.message||'unknown'}; }
-  return data;
+  let {data,error}=await sb.from('users').insert(full).select().single();
+  if(!error) return data;
+  const msg=(error.message||'').toLowerCase();
+  // position 컬럼이 없으면 제외하고 재시도
+  if(msg.includes('column') && msg.includes('position')){
+    console.warn('position 컬럼 없음 — 제외 후 재시도');
+    const {position,...noPos}=full;
+    ({data,error}=await sb.from('users').insert(noPos).select().single());
+    if(!error) return data;
+  }
+  console.error('dbCreateUser error:',error,'payload:',full);
+  return {_error:error.message||'unknown'};
 }
 // 유저 업데이트
 async function dbUpdateUser(id,fields){
