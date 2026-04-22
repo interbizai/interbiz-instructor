@@ -876,9 +876,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   .pick-hero-sub{white-space:normal}
 }
 
-.pick-main-split{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:24px;align-items:stretch}
+.pick-main-split{display:grid;grid-template-columns:380px minmax(0,1fr);gap:24px;align-items:stretch}
 .pick-main-left{min-width:0}
-.pick-photo-aside{position:relative;align-self:stretch;min-height:720px}
+.pick-photo-aside{position:relative;align-self:stretch;min-height:420px}
 
 .pick-photo-scroll{position:absolute;inset:0;border-radius:24px;overflow:hidden;background:#000;box-shadow:var(--sh-sm);padding:0 14px}
 .pick-photo-scroll::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none;z-index:0}
@@ -932,9 +932,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 @media(max-width:1400px){#page-pick .pick-hero-title{font-size:48px}}
 @media(max-width:900px){#page-pick .pick-hero-title{font-size:34px;letter-spacing:-1px}}
 
-#page-pick .pick-main-split{gap:48px!important;grid-template-columns:minmax(0,1fr) 440px!important;align-items:stretch!important}
-#page-pick .pick-photo-aside{min-height:0!important}
-@media(max-width:1200px){#page-pick .pick-main-split{grid-template-columns:1fr!important;gap:32px!important;max-width:none!important}#page-pick .pick-photo-aside{min-height:560px!important}}
+#page-pick .pick-main-split{gap:36px!important;grid-template-columns:380px minmax(0,1fr)!important;align-items:stretch!important}
+#page-pick .pick-photo-aside{min-height:420px!important}
+@media(max-width:1200px){#page-pick .pick-main-split{grid-template-columns:1fr!important;gap:24px!important;max-width:none!important}#page-pick .pick-photo-aside{min-height:380px!important}#page-pick #pick-3card-row{grid-template-columns:1fr!important}}
 
 /* 카드 껍데기 제거 — 여백으로만 구분 (.pick-main-left + .pick-full 공통) */
 #page-pick .pick-main-left > div,
@@ -2376,12 +2376,24 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 <main>
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#000" stroke="#000" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:#000"></span></div>
 
-  <!-- ══ 메인 분할: 좌측 콘텐츠 + 우측 사진 스크롤 ══ -->
+  <!-- ══ 메인 분할: 좌측 사진 스크롤(축소) + 우측 히어로 텍스트(세로 중앙) ══ -->
   <div class="pick-main-split">
-    <!-- 좌측 -->
-    <div class="pick-main-left">
-      <!-- 히어로 타이틀 -->
-      <div class="pick-hero-wide" style="margin-bottom:18px">
+    <!-- 좌측: 사진 스크롤 (축소) -->
+    <aside class="pick-photo-aside">
+      <div class="pick-photo-scroll" id="pick-photo-scroll">
+        <div class="pick-photo-track" id="pick-photo-track"></div>
+        <button class="pick-photo-pause" id="pick-photo-pause" onclick="togglePhotoScroll()" aria-label="일시정지">
+          <svg id="pick-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <svg id="pick-play-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="display:none"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        </button>
+        <div class="pick-photo-fade-top"></div>
+        <div class="pick-photo-fade-bot"></div>
+      </div>
+    </aside>
+
+    <!-- 우측: 히어로만 세로 중앙 -->
+    <div class="pick-main-left" style="display:flex;align-items:center;justify-content:center">
+      <div class="pick-hero-wide" style="width:100%;background:transparent;box-shadow:none;padding:24px 8px">
         <div class="pick-hero-bg"></div>
         <div class="pick-hero-inner">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2394,44 +2406,29 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- 2×2 보드: 좌 상·하 + 우 풀높이 공지 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
-        <div style="display:grid;grid-template-rows:1fr 1fr;gap:14px">
-          <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
-            <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">추천 학습 콘텐츠</div>
-            <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
-              <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
-            </div>
-          </div>
-          <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
-            <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">이번 주 일정</div>
-            <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:110px">
-              <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
-            </div>
-          </div>
-        </div>
-        <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm);display:flex;flex-direction:column">
-          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">공지 및 알림</div>
-          <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;flex:1;overflow-y:auto">
-            <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
-          </div>
-        </div>
+  <!-- ══ 전체 너비: 추천 학습 콘텐츠 / 이번 주 일정 / 공지 및 알림 ══ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:24px;margin-bottom:20px" id="pick-3card-row">
+    <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">추천 학습 콘텐츠</div>
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:130px">
+        <div id="pick-links" style="font-size:12px;color:var(--t2)"></div>
       </div>
     </div>
-
-    <!-- 우측 사진 스크롤 패널 (hero + 2x2 높이에 맞춤) -->
-    <aside class="pick-photo-aside">
-      <div class="pick-photo-scroll" id="pick-photo-scroll">
-        <div class="pick-photo-track" id="pick-photo-track"></div>
-        <button class="pick-photo-pause" id="pick-photo-pause" onclick="togglePhotoScroll()" aria-label="일시정지">
-          <svg id="pick-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-          <svg id="pick-play-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="display:none"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-        </button>
-        <div class="pick-photo-fade-top"></div>
-        <div class="pick-photo-fade-bot"></div>
+    <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm)">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">이번 주 일정</div>
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;min-height:130px">
+        <div id="pick-events" style="font-size:12px;color:var(--t2)"></div>
       </div>
-    </aside>
+    </div>
+    <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:var(--sh-sm);display:flex;flex-direction:column">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">공지 및 알림</div>
+      <div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;flex:1;min-height:130px;overflow-y:auto">
+        <div id="pick-notices" style="font-size:12px;color:var(--t2)"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ 페이지 전체 너비 섹션 : 통계 / TOP3 / 영상 ══ -->
