@@ -1188,6 +1188,10 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
   <div class="auth-err" id="li-err"></div>
   <button class="auth-btn auth-btn-primary" onclick="doLogin()">로그인</button>
+  <div style="margin-top:14px;padding:10px 12px;background:rgba(0,120,200,.06);border:1px solid rgba(0,120,200,.15);border-radius:10px;font-size:12px;color:var(--t2);text-align:center;line-height:1.6">
+    처음 로그인하시나요? 초기 비밀번호는 <strong style="color:var(--blue);font-weight:800">1234</strong>입니다.<br>
+    <span style="font-size:11px;color:var(--t3)">로그인 후 마이페이지에서 변경해 주세요.</span>
+  </div>
 </div>
 </div>
 </div>
@@ -2544,7 +2548,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
   <!-- 관리 -->
   <div class="tab-pane active" id="tab-관리">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:700;color:var(--t3)">가입 시기:</span>
       <select class="form-input" id="admin-avg-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px">
         <option value="all">전체</option>
@@ -2553,18 +2557,30 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <option value="6">최근 6개월</option>
         <option value="12">최근 12개월</option>
       </select>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700" onclick="downloadUserTemplate()">📥 엑셀 양식</button>
+      <label class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700;color:var(--green);cursor:pointer;margin:0">
+        📤 엑셀 일괄 등록
+        <input type="file" accept=".xlsx,.xls" style="display:none" onchange="bulkImportUsers(this)">
+      </label>
+      <button class="btn" style="padding:6px 12px;font-size:12px;font-weight:700;background:var(--blue);color:#fff" onclick="openAddUserModal()">+ 강사 추가</button>
     </div>
     <div class="acc-wrap neu" style="overflow:auto">
-      <table class="tbl" id="admin-user-tbl">
+      <table class="tbl" id="admin-user-tbl" style="min-width:1600px">
         <thead><tr>
-          <th style="cursor:pointer" onclick="sortAdminTable('name')">이름 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('email')">이메일 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('phone')">번호 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('channel')">소속 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('team')">팀 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('birthYear')">생년 ↕</th>
-          <th style="cursor:pointer" onclick="sortAdminTable('hireDate')">입사 ↕</th>
-          <th>권한</th><th>관리</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('orgName')">조직명 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('team')">팀명 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('office')">사무실 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('position')">직군 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('name')">성명 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('phone')">연락처 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('birthDate')">생년월일 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('hireDate')">입사일 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('channel')">상권 ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('email')">메일(아이디) ↕</th>
+          <th style="cursor:pointer" onclick="sortAdminTable('status')">상태 ↕</th>
+          <th>권한</th>
+          <th>관리</th>
         </tr></thead>
         <tbody id="admin-user-tbody"></tbody>
       </table>
@@ -2990,7 +3006,7 @@ async function dbGetUsers(){
   if(error){ console.error('dbGetUsers:',error); return []; }
   return data.map(r=>({
     id:r.id, name:r.name, email:r.email, pw:r.pw, channel:r.channel, team:r.team,
-    position:'강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
+    position:r.position||'현장강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
     photo:r.photo, memo:r.memo||'', score:r.score||0, grade:r.grade||'—',
     lgCareerStart:r.lg_career_start||'', teachCareerStart:r.teach_career_start||'',
     scores:r.scores||{}, maxes:r.maxes||{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
@@ -3001,7 +3017,11 @@ async function dbGetUsers(){
     satisfaction:r.satisfaction||null,
     grade_override:r.grade_override||null,
     deleted:!!r.deleted_at,
-    deletedAt:r.deleted_at||null
+    deletedAt:r.deleted_at||null,
+    orgName:r.org_name||'',
+    office:r.office||'',
+    birthDate:r.birth_date||'',
+    status:r.status||'근무'
   }));
 }
 // DB에서 모든 영상 가져오기
@@ -3022,13 +3042,16 @@ async function dbGetVideos(){
 }
 // 유저 생성
 async function dbCreateUser(u){
-  const {data,error}=await sb.from('users').insert({
-    name:u.name, email:u.email, pw:u.pw, channel:u.channel, team:u.team,
-    birth_year:u.birthYear, hire_date:u.hireDate||null, phone:u.phone||'',
-    photo:u.photo, memo:'', score:0, grade:'—',
+  const payload={
+    name:u.name, email:u.email, pw:u.pw||'1234', channel:u.channel||'', team:u.team||'',
+    birth_year:u.birthYear||null, hire_date:u.hireDate||null, phone:u.phone||'',
+    photo:u.photo||null, memo:'', score:0, grade:'—',
     scores:{}, maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
-    habits:[], habit_counts:[], engagement_gaps:[], decibel:0, tempo:0, student_count:0
-  }).select().single();
+    habits:[], habit_counts:[], engagement_gaps:[], decibel:0, tempo:0, student_count:0,
+    org_name:u.orgName||null, office:u.office||null, birth_date:u.birthDate||null,
+    status:u.status||'근무', position:u.position||'현장강사'
+  };
+  const {data,error}=await sb.from('users').insert(payload).select().single();
   if(error){ console.error('dbCreateUser:',error); return null; }
   return data;
 }
@@ -3050,6 +3073,11 @@ async function dbUpdateUser(id,fields){
   if('isSubAdmin' in fields) map.is_sub_admin=fields.isSubAdmin;
   if('satisfaction' in fields) map.satisfaction=fields.satisfaction;
   if('grade_override' in fields) map.grade_override=fields.grade_override;
+  if('orgName' in fields) map.org_name=fields.orgName;
+  if('office' in fields) map.office=fields.office;
+  if('birthDate' in fields) map.birth_date=fields.birthDate;
+  if('status' in fields) map.status=fields.status;
+  if('position' in fields) map.position=fields.position;
   const {error}=await sb.from('users').update(map).eq('id',id);
   if(error) console.error('dbUpdateUser:',error);
 }
@@ -10035,8 +10063,11 @@ function openLecturer(id, fromPage){
           <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);${isOwner?'cursor:pointer':'cursor:default'}" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} id="prof-photo-display">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
           ${isOwner?`<input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">`:''}
         </div>
-        <div style="font-size:18px;font-weight:900;margin-top:6px">${u.name}</div>
-        <div style="font-size:11px;color:var(--t2);margin-top:2px">${u.channel} · ${u.team}
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
+          <div style="font-size:22px;font-weight:900;color:var(--t1)">${u.name}</div>
+          ${(()=>{const st=u.status||'근무';const stColor=st==='근무'?'#10b981':(st==='육아휴직'||st==='휴직')?'#f59e0b':(st==='퇴사')?'#9ca3af':'#6b7280';return `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${stColor}22;color:${stColor};font-weight:800">${st}</span>`;})()}
+        </div>
+        <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5">${[u.orgName,u.team,u.position,u.office].filter(Boolean).join(' · ')||(u.channel+' · '+u.team)}
           <span style="cursor:pointer;color:var(--blue);margin-left:4px;font-size:10px" onclick="document.getElementById('prof-info-toggle').style.display=document.getElementById('prof-info-toggle').style.display==='none'?'block':'none'">ⓘ 정보</span>
         </div>
         <div style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:16px;background:${lvData.color};color:#fff;font-size:10px;font-weight:800;margin-top:6px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
@@ -10048,12 +10079,16 @@ function openLecturer(id, fromPage){
         </div>`:''}
         <!-- 정보 토글 -->
         <div id="prof-info-toggle" style="display:none;text-align:left;margin-top:10px;padding:10px;border-radius:10px;background:#fff;font-size:11px;box-shadow:var(--sh-sm)">
-          <div class="prof-row"><span class="prof-key">소속</span><span class="prof-val">${u.channel||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">조직</span><span class="prof-val">${u.orgName||'—'}</span></div>
           <div class="prof-row"><span class="prof-key">팀</span><span class="prof-val">${u.team||'—'}</span></div>
-          <div class="prof-row"><span class="prof-key">생년</span><span class="prof-val">${u.birthYear?u.birthYear+'년생':'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">사무실</span><span class="prof-val">${u.office||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">직군</span><span class="prof-val">${u.position||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">상권</span><span class="prof-val">${u.channel||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">생년월일</span><span class="prof-val">${u.birthDate||(u.birthYear?u.birthYear+'년생':'—')}</span></div>
           <div class="prof-row"><span class="prof-key">입사</span><span class="prof-val">${u.hireDate||'—'}</span></div>
           <div class="prof-row"><span class="prof-key">번호</span><span class="prof-val">${u.phone||'—'}</span></div>
           <div class="prof-row"><span class="prof-key">이메일</span><span class="prof-val">${u.email||'—'}</span></div>
+          <div class="prof-row"><span class="prof-key">상태</span><span class="prof-val">${u.status||'근무'}</span></div>
         </div>
       </div>
 
@@ -10849,19 +10884,28 @@ function renderAdmin(){
     const isSubAdmin=u.isSubAdmin;
     const deletedStyle=u.deleted?'background:rgba(239,68,68,.04)':'';
     const deletedBadge=u.deleted?'<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(239,68,68,.12);color:var(--red);font-weight:700;margin-left:6px">삭제됨</span>':'';
+    const st=u.status||'근무';
+    const stColor=st==='근무'?'#10b981':(st==='육아휴직'||st==='휴직')?'#f59e0b':(st==='퇴사')?'#9ca3af':'#6b7280';
+    const statusBadge=`<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:${stColor}22;color:${stColor};font-weight:700;white-space:nowrap">${st}</span>`;
+    const birthDisplay=u.birthDate||(u.birthYear?u.birthYear+'년':'—');
     return `<tr style="${deletedStyle}">
+      <td style="font-size:11px;color:var(--t2)">${u.orgName||'—'}</td>
+      <td style="font-size:11px">${u.team||'—'}</td>
+      <td style="font-size:11px">${u.office||'—'}</td>
+      <td style="font-size:11px">${u.position||'—'}</td>
       <td><strong style="${u.deleted?'color:var(--t3);text-decoration:line-through':''}">${u.name}</strong>${deletedBadge}</td>
-      <td style="color:var(--t3);font-size:11px">${u.email}</td>
       <td style="font-size:11px">${u.phone||'—'}</td>
-      <td><span class="channel-chip ch-${u.channel}">${u.channel||'—'}</span></td>
-      <td>${u.team||'—'}</td>
-      <td style="color:var(--t3)">${u.birthYear?u.birthYear+'년':'—'}</td>
+      <td style="color:var(--t3);font-size:11px">${birthDisplay}</td>
       <td style="color:var(--t3);font-size:11px">${u.hireDate||'—'}</td>
+      <td style="font-size:11px">${u.channel||'—'}</td>
+      <td style="color:var(--t3);font-size:11px">${u.email}</td>
+      <td>${statusBadge}</td>
       <td>${isSubAdmin?'<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(0,120,200,.1);color:var(--blue);font-weight:700">부관리자</span>':''}</td>
       <td style="white-space:nowrap">
         ${u.deleted
           ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--green)" onclick="restoreUser(${u.id})">복구</button>`
-          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
+          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="openEditUserModal(${u.id})">수정</button>
+            <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
             <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
             ${CU?.isSubAdmin?'':(isSubAdmin
               ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--orange)" onclick="toggleSubAdmin(${u.id},false)">권한취소</button>`
@@ -10869,6 +10913,214 @@ function renderAdmin(){
       </td>
     </tr>`;
   }).join('');
+}
+/* ════════════════════════════════
+   강사 등록 — 엑셀 일괄 / 단일 수동 / 양식 다운로드
+════════════════════════════════ */
+// YYMMDD 6자리 숫자 → YYYY-MM-DD 문자열 (25 이하 → 2000대, 초과 → 1900대)
+function parseBirth(v){
+  if(!v&&v!==0) return null;
+  // Excel 날짜 시리얼(숫자, 대략 25000~60000)
+  if(typeof v==='number'&&v>=10000&&v<60000){
+    const d=new Date(Math.round((v-25569)*86400*1000));
+    if(isNaN(d)) return null;
+    return d.toISOString().slice(0,10);
+  }
+  let s=String(v).trim().replace(/[^\d-]/g,'');
+  // YYYY-MM-DD 또는 YYYY/MM/DD
+  const iso=s.match(/^(\d{4})-?(\d{2})-?(\d{2})$/);
+  if(iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // YYMMDD 6자리
+  const m=s.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if(m){
+    const yy=parseInt(m[1]);
+    const year=yy<=25?2000+yy:1900+yy;
+    return `${year}-${m[2]}-${m[3]}`;
+  }
+  return null;
+}
+// 입사일 파싱 (Excel 시리얼 or 문자열)
+function parseHireDate(v){
+  if(!v&&v!==0) return null;
+  if(typeof v==='number'&&v>=10000&&v<60000){
+    const d=new Date(Math.round((v-25569)*86400*1000));
+    if(isNaN(d)) return null;
+    return d.toISOString().slice(0,10);
+  }
+  const s=String(v).trim();
+  const m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return s||null;
+}
+// 엑셀 양식 다운로드
+function downloadUserTemplate(){
+  const header=['조직명','팀명','사무실','직군','성명','연락처','생년월일','입사일','상권','메일(아이디)','상태'];
+  const sample=['가전AM','수도권1','서울','현장강사','홍길동','010-1234-5678','930113','2020-06-01','서울','hong@interbiz.co.kr','근무'];
+  const ws=XLSX.utils.aoa_to_sheet([header,sample]);
+  ws['!cols']=header.map(()=>({wch:18}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'강사등록');
+  XLSX.writeFile(wb,'강사등록_양식.xlsx');
+}
+// 엑셀 일괄 업로드 (중복 건너뛰기, pw='1234' 자동)
+function bulkImportUsers(input){
+  const file=input.files?.[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.length<2){alert('데이터가 없습니다.');input.value='';return;}
+      // 헤더 검증 (1행은 헤더)
+      const dataRows=rows.slice(1).filter(r=>(r[4]||'').toString().trim()&&(r[9]||'').toString().trim());
+      if(!dataRows.length){alert('유효한 데이터 행이 없습니다.');input.value='';return;}
+      const existingEmails=new Set((D.users||[]).map(u=>(u.email||'').toLowerCase().trim()));
+      let added=0, skipped=0, failed=0;
+      const skippedEmails=[];
+      for(const r of dataRows){
+        const email=(r[9]||'').toString().trim();
+        if(!email){failed++;continue;}
+        if(existingEmails.has(email.toLowerCase())){skipped++;skippedEmails.push(email);continue;}
+        const payload={
+          orgName:(r[0]||'').toString().trim()||null,
+          team:(r[1]||'').toString().trim()||null,
+          office:(r[2]||'').toString().trim()||null,
+          position:(r[3]||'').toString().trim()||'현장강사',
+          name:(r[4]||'').toString().trim(),
+          phone:(r[5]||'').toString().trim()||null,
+          birthDate:parseBirth(r[6]),
+          hireDate:parseHireDate(r[7]),
+          channel:(r[8]||'').toString().trim()||null,
+          email:email,
+          status:(r[10]||'').toString().trim()||'근무',
+          pw:'1234'
+        };
+        if(!payload.name){failed++;continue;}
+        const created=await dbCreateUser(payload);
+        if(created){added++;existingEmails.add(email.toLowerCase());}else{failed++;}
+      }
+      await loadFromDB();
+      renderAdmin();
+      let msg=`✅ ${added}명 등록 완료`;
+      if(skipped>0) msg+=`\n⏭ ${skipped}명 중복으로 건너뜀`+(skippedEmails.length<=5?'\n  '+skippedEmails.join(', '):'');
+      if(failed>0) msg+=`\n❌ ${failed}명 실패 (필수값 누락)`;
+      msg+='\n\n초기 비밀번호는 전원 1234입니다.';
+      alert(msg);
+    }catch(err){
+      console.error(err);
+      alert('엑셀 읽기 실패: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+// 단일 강사 추가 모달
+function openAddUserModal(){
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='add-user-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:560px;width:94vw;max-height:92vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:900;color:var(--t1)">강사 추가</div>
+      <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${[
+        ['au-org','조직명','가전AM'],['au-team','팀명','수도권1'],['au-office','사무실','서울'],
+        ['au-pos','직군','현장강사'],['au-name','성명 *',''],['au-phone','연락처','010-0000-0000'],
+        ['au-birth','생년월일','YYYY-MM-DD 또는 YYMMDD'],['au-hire','입사일','YYYY-MM-DD'],
+        ['au-ch','상권','서울'],['au-email','메일(아이디) *','hong@interbiz.co.kr']
+      ].map(([id,label,ph])=>`<div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">${label}</label><input id="${id}" type="text" placeholder="${ph}" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px"></div>`).join('')}
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">상태</label>
+        <select id="au-status" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="근무">근무</option><option value="육아휴직">육아휴직</option><option value="휴직">휴직</option><option value="퇴사">퇴사</option>
+        </select>
+      </div>
+    </div>
+    <div style="padding:10px 12px;background:rgba(0,120,200,.06);border-radius:8px;margin-top:14px;font-size:11px;color:var(--t2)">초기 비밀번호는 <strong style="color:var(--blue)">1234</strong>로 설정됩니다. 로그인 후 본인이 변경할 수 있습니다.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="this.closest('.overlay').remove()">취소</button>
+      <button class="btn" style="background:var(--blue);color:#fff" onclick="submitAddUser()">등록</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function submitAddUser(){
+  const email=v('au-email').trim(), name=v('au-name').trim();
+  if(!name){alert('성명을 입력하세요.');return;}
+  if(!email){alert('메일(아이디)을 입력하세요.');return;}
+  if(D.users.some(u=>(u.email||'').toLowerCase()===email.toLowerCase())){alert('이미 등록된 이메일입니다.');return;}
+  const payload={
+    orgName:v('au-org').trim()||null,
+    team:v('au-team').trim()||null,
+    office:v('au-office').trim()||null,
+    position:v('au-pos').trim()||'현장강사',
+    name, phone:v('au-phone').trim()||null,
+    birthDate:parseBirth(v('au-birth').trim()),
+    hireDate:parseHireDate(v('au-hire').trim()),
+    channel:v('au-ch').trim()||null, email,
+    status:v('au-status')||'근무', pw:'1234'
+  };
+  const created=await dbCreateUser(payload);
+  if(!created){alert('등록 실패');return;}
+  await loadFromDB();renderAdmin();
+  document.getElementById('add-user-overlay')?.remove();
+  alert(`✅ ${name} 강사 등록 완료\n초기 비밀번호: 1234`);
+}
+// 기존 강사 수정 모달
+function openEditUserModal(id){
+  const u=D.users.find(x=>x.id===id);if(!u){alert('강사를 찾을 수 없습니다.');return;}
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='edit-user-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  const fields=[
+    ['eu-org','조직명',u.orgName||''],['eu-team','팀명',u.team||''],['eu-office','사무실',u.office||''],
+    ['eu-pos','직군',u.position||''],['eu-name','성명',u.name||''],['eu-phone','연락처',u.phone||''],
+    ['eu-birth','생년월일',u.birthDate||''],['eu-hire','입사일',u.hireDate||''],
+    ['eu-ch','상권',u.channel||''],['eu-email','메일(아이디)',u.email||'']
+  ];
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:560px;width:94vw;max-height:92vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:900;color:var(--t1)">강사 정보 수정</div>
+      <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${fields.map(([id,label,val])=>`<div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">${label}</label><input id="${id}" type="text" value="${(val+'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px"></div>`).join('')}
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">상태</label>
+        <select id="eu-status" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          ${['근무','육아휴직','휴직','퇴사'].map(s=>`<option value="${s}" ${u.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="this.closest('.overlay').remove()">취소</button>
+      <button class="btn" style="background:var(--blue);color:#fff" onclick="submitEditUser(${id})">저장</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function submitEditUser(id){
+  const fields={
+    orgName:v('eu-org').trim()||null,
+    team:v('eu-team').trim()||null,
+    office:v('eu-office').trim()||null,
+    position:v('eu-pos').trim()||null,
+    name:v('eu-name').trim(),
+    phone:v('eu-phone').trim()||null,
+    birthDate:parseBirth(v('eu-birth').trim()),
+    hireDate:parseHireDate(v('eu-hire').trim()),
+    channel:v('eu-ch').trim()||null,
+    status:v('eu-status')||'근무'
+  };
+  await dbUpdateUser(id,fields);
+  const u=D.users.find(x=>x.id===id);
+  if(u) Object.assign(u,fields);
+  document.getElementById('edit-user-overlay')?.remove();
+  renderAdmin();
 }
 async function toggleSubAdmin(id,grant){
   if(CU?.isSubAdmin){alert('부관리자 등록/취소는 관리자만 가능합니다.');return;}
@@ -11084,37 +11336,75 @@ function renderMyProfile(){
   if(!CU||!CU.id){ showPage('page-login'); return; }
   const u=D.users.find(x=>x.id===CU.id);
   if(!u){ showPage('page-login'); return; }
+  const st=u.status||'근무';
+  const stColor=st==='근무'?'#10b981':(st==='육아휴직'||st==='휴직')?'#f59e0b':(st==='퇴사')?'#9ca3af':'#6b7280';
   el('myprofile-main').innerHTML=`
-    <div class="content-card" style="max-width:520px;margin:0 auto">
-      <div class="sec-lbl">내 프로필 수정</div>
-      <div class="prof-card neu" style="padding:24px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-row" style="grid-column:1/-1;margin:0"><label class="form-label">이름</label><input type="text" id="mp-name" value="${u.name}"></div>
-          <div class="form-row" style="margin:0"><label class="form-label">소속 채널</label>
-            <select id="mp-ch"><option ${u.channel==='가전'?'selected':''}>가전</option><option ${u.channel==='IT'?'selected':''}>IT</option><option ${u.channel==='서비스'?'selected':''}>서비스</option></select>
+    <div class="content-card" style="max-width:640px;margin:0 auto">
+      <!-- 프로필 헤더: 성명 크게 + 보조정보 -->
+      <div style="padding:24px;margin-bottom:18px;border:1px solid var(--bdr);border-radius:14px;background:#fff">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f1f5f9;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--t2)">
+            ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name?.[0]||'?'}
           </div>
-          <div class="form-row" style="margin:0"><label class="form-label">팀</label>
-            <select id="mp-team"><option ${u.team==='교육1팀'?'selected':''}>교육1팀</option><option ${u.team==='교육2팀'?'selected':''}>교육2팀</option><option ${u.team==='현장지원팀'?'selected':''}>현장지원팀</option></select>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+              <div style="font-size:26px;font-weight:900;color:var(--t1)">${u.name||'—'}</div>
+              <span style="font-size:11px;padding:3px 10px;border-radius:10px;background:${stColor}22;color:${stColor};font-weight:800">${st}</span>
+            </div>
+            <div style="font-size:13px;color:var(--t2);line-height:1.6">
+              ${[u.orgName,u.team,u.position,u.office].filter(Boolean).join(' · ')||'—'}
+            </div>
+            <div style="font-size:11px;color:var(--t3);margin-top:3px">${u.email||''}</div>
           </div>
-          <div class="form-row" style="margin:0"><label class="form-label">직책</label>
-            <select id="mp-pos"><option ${u.position==='강사'?'selected':''}>강사</option><option ${u.position==='주임'?'selected':''}>주임</option><option ${u.position==='선임강사'?'selected':''}>선임강사</option></select>
-          </div>
-          <div class="form-row" style="margin:0"><label class="form-label">담당 종목</label><input type="text" id="mp-spec" value="${u.specialty}"></div>
-          <div class="form-row" style="grid-column:1/-1;margin:0"><label class="form-label">비밀번호 변경 (비워두면 유지)</label><input type="password" id="mp-pw" placeholder="새 비밀번호 8자 이상"></div>
+        </div>
+      </div>
+      <!-- 비밀번호 변경 -->
+      <div style="padding:20px;margin-bottom:18px;border:1px solid var(--bdr);border-radius:14px;background:#fff">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">🔒 비밀번호 변경</div>
+        <div style="display:grid;grid-template-columns:1fr;gap:10px">
+          <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">현재 비밀번호</label><input type="password" id="mp-pw-old" placeholder="현재 비밀번호" style="width:100%;padding:9px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:13px"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">새 비밀번호</label><input type="password" id="mp-pw-new" placeholder="4자 이상" style="width:100%;padding:9px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:13px"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">새 비밀번호 확인</label><input type="password" id="mp-pw-new2" placeholder="다시 입력" style="width:100%;padding:9px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:13px"></div>
+          <button class="btn" style="background:var(--blue);color:#fff;padding:9px 16px;font-weight:700;font-size:13px" onclick="changeMyPassword()">비밀번호 변경</button>
+        </div>
+      </div>
+      <!-- 본인 수정 가능한 필드 (이름/연락처 등) -->
+      <div style="padding:20px;border:1px solid var(--bdr);border-radius:14px;background:#fff">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">✏️ 내 정보 수정</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">성명</label><input type="text" id="mp-name" value="${u.name||''}" style="width:100%;padding:9px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:13px"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:4px">연락처</label><input type="text" id="mp-phone" value="${u.phone||''}" style="width:100%;padding:9px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:13px"></div>
+          <div style="grid-column:1/-1;padding:10px 12px;background:rgba(0,120,200,.04);border-radius:8px;font-size:11px;color:var(--t3)">조직명, 팀명, 직군 등은 관리자에게 수정 요청해주세요.</div>
+          <button class="btn" style="grid-column:1/-1;background:var(--blue);color:#fff;padding:9px 16px;font-weight:700;font-size:13px" onclick="saveProfile()">저장</button>
         </div>
       </div>
     </div>`;
   showPage('page-myprofile');
 }
-function saveProfile(){
+async function changeMyPassword(){
   if(!CU||!CU.id) return;
   const u=D.users.find(x=>x.id===CU.id);
   if(!u) return;
-  u.name=v('mp-name'); u.channel=v('mp-ch'); u.team=v('mp-team'); u.position=v('mp-pos'); u.specialty=v('mp-spec');
-  const pw=v('mp-pw');
-  if(pw){ if(pw.length<8){ alert('비밀번호는 8자 이상이어야 합니다.'); return; } u.pw=pw; }
-  CU=u; localStorage.setItem('ib_user',JSON.stringify(CU)); save();
-  alert('프로필이 저장되었습니다.'); showPage('page-pick');
+  const oldPw=v('mp-pw-old'), newPw=v('mp-pw-new'), newPw2=v('mp-pw-new2');
+  if(!oldPw){alert('현재 비밀번호를 입력하세요.');return;}
+  if(u.pw!==oldPw){alert('현재 비밀번호가 일치하지 않습니다.');return;}
+  if(!newPw||newPw.length<4){alert('새 비밀번호는 4자 이상이어야 합니다.');return;}
+  if(newPw!==newPw2){alert('새 비밀번호 확인이 일치하지 않습니다.');return;}
+  if(newPw===oldPw){alert('새 비밀번호가 기존과 동일합니다.');return;}
+  await dbUpdateUser(u.id,{pw:newPw});
+  u.pw=newPw;CU=u;localStorage.setItem('ib_user',JSON.stringify(CU));
+  el('mp-pw-old').value='';el('mp-pw-new').value='';el('mp-pw-new2').value='';
+  alert('✅ 비밀번호가 변경되었습니다.');
+}
+async function saveProfile(){
+  if(!CU||!CU.id) return;
+  const u=D.users.find(x=>x.id===CU.id);
+  if(!u) return;
+  const name=v('mp-name').trim(), phone=v('mp-phone').trim();
+  if(!name){alert('성명을 입력하세요.');return;}
+  await dbUpdateUser(u.id,{name,phone});
+  u.name=name;u.phone=phone;CU=u;localStorage.setItem('ib_user',JSON.stringify(CU));
+  alert('✅ 프로필이 저장되었습니다.');
 }
 
 /* ════════════════════════════════
