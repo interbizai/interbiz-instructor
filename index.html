@@ -2999,7 +2999,9 @@ async function dbGetUsers(){
     registered:r.created_at?r.created_at.split('T')[0]:'',
     isSubAdmin:r.is_sub_admin||false,
     satisfaction:r.satisfaction||null,
-    grade_override:r.grade_override||null
+    grade_override:r.grade_override||null,
+    deleted:!!r.deleted_at,
+    deletedAt:r.deleted_at||null
   }));
 }
 // DB에서 모든 영상 가져오기
@@ -3092,8 +3094,13 @@ async function dbDeleteTimestamp(id){
 }
 // 유저 삭제
 async function dbDeleteUser(id){
-  const {error}=await sb.from('users').delete().eq('id',id);
+  // 소프트 삭제: deleted_at만 기록, 영상/평가 데이터는 보존
+  const {error}=await sb.from('users').update({deleted_at:new Date().toISOString()}).eq('id',id);
   if(error) console.error('dbDeleteUser:',error);
+}
+async function dbRestoreUser(id){
+  const {error}=await sb.from('users').update({deleted_at:null}).eq('id',id);
+  if(error) console.error('dbRestoreUser:',error);
 }
 // DB에서 전체 데이터 로드 → D에 저장
 async function loadFromDB(){
@@ -3151,6 +3158,14 @@ async function loadFromDB(){
   } catch(e){ console.warn('evaluations exception:',e); D.evaluations=[]; }
   // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
+  // 세션 가드: 로그인 중인 강사가 삭제됐으면 강제 로그아웃
+  if(CU && !CU.isAdmin && CU.id){
+    const me=D.users.find(x=>x.id===CU.id);
+    if(!me || me.deleted){
+      alert('계정이 삭제되었습니다. 관리자에게 문의하세요.');
+      doLogout();
+    }
+  }
 }
 
 /* ════════════════════════════════
@@ -3665,6 +3680,7 @@ async function doLogin(){
   // DB에서 확인
   const {data,error}=await sb.from('users').select('*').eq('email',em).eq('pw',pw).single();
   if(error||!data){ el('li-err').textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
+  if(data.deleted_at){ el('li-err').textContent='삭제된 계정입니다. 관리자에게 문의하세요.'; return; }
   el('li-err').textContent='';
   await loadFromDB();
   CU=D.users.find(x=>x.id===data.id);
@@ -3683,7 +3699,7 @@ function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.r
   function renderResults(q){
     const r=res(); if(!r) return;
     if(!q){r.classList.remove('show');r.innerHTML='';return;}
-    const users=(D.users||[]).filter(u=>u.name.includes(q)||u.team.includes(q)||u.channel.includes(q));
+    const users=(D.users||[]).filter(u=>!u.deleted&&(u.name.includes(q)||u.team.includes(q)||u.channel.includes(q)));
     if(!users.length){r.innerHTML='<div class="home-search-empty">검색 결과가 없습니다</div>';r.classList.add('show');return;}
     r.innerHTML=users.map((u,i)=>{
       const bg=colors[(u.id-1)%6];
@@ -4317,7 +4333,7 @@ async function saveHeroEdit(key){
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
-  const users=(D.users||[]).filter(u=>!u.isAdmin&&u.email!=='admin'&&u.photo);
+  const users=(D.users||[]).filter(u=>!u.deleted&&!u.isAdmin&&u.email!=='admin'&&u.photo);
   const PER_COL=6;
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -4423,7 +4439,7 @@ function renderPick(){
     const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
     return Math.min(100,g*10+(v.timestamps||[]).length*3);
   };
-  const userScores=(D.users||[]).map(u=>{
+  const userScores=(D.users||[]).filter(u=>!u.deleted).map(u=>{
     const uVids=monthVids.filter(v=>v.userId===u.id);
     const scores=uVids.map(vidScore);
     const avg2=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
@@ -4621,7 +4637,7 @@ function openPickRankingModal(){
   const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
   const prevVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
-  const allScored=(D.users||[]).map(u=>{
+  const allScored=(D.users||[]).filter(u=>!u.deleted).map(u=>{
     const uV=monthVids.filter(v=>v.userId===u.id);
     const uVo=monthVoice.filter(v=>v.user_id===u.id);
     const sc=[...uV.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...uVo.map(v=>v.score||0)];
@@ -10411,11 +10427,11 @@ let compareMyId=null;
 function openCompareModal(myId){
   compareMyId=myId;
   const ts=el('cmp-team'); ts.innerHTML='<option value="">전체</option>';
-  [...new Set(D.users.map(u=>u.team).filter(Boolean))].forEach(t=>{
+  [...new Set(D.users.filter(u=>!u.deleted).map(u=>u.team).filter(Boolean))].forEach(t=>{
     const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o);
   });
   const ns=el('cmp-name'); ns.innerHTML='<option value="">전체</option>';
-  D.users.filter(u=>u.id!==myId).forEach(u=>{
+  D.users.filter(u=>!u.deleted&&u.id!==myId).forEach(u=>{
     const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o);
   });
   el('cmp-results').innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px;text-align:center">필터를 선택하거나 이름을 선택하세요</div>';
@@ -10428,6 +10444,7 @@ function renderCompareResults(myId){
   const ch=v('cmp-ch'),team=v('cmp-team'),tenure=v('cmp-tenure'),name=v('cmp-name');
   const now=new Date();
   let list=D.users.filter(u=>{
+    if(u.deleted) return false;
     if(u.id===myId) return false;
     if(ch&&u.channel!==ch) return false;
     if(team&&u.team!==team) return false;
@@ -10830,8 +10847,10 @@ function renderAdmin(){
   });
   el('admin-user-tbody').innerHTML=sortedUsers.map(u=>{
     const isSubAdmin=u.isSubAdmin;
-    return `<tr>
-      <td><strong>${u.name}</strong></td>
+    const deletedStyle=u.deleted?'background:rgba(239,68,68,.04)':'';
+    const deletedBadge=u.deleted?'<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(239,68,68,.12);color:var(--red);font-weight:700;margin-left:6px">삭제됨</span>':'';
+    return `<tr style="${deletedStyle}">
+      <td><strong style="${u.deleted?'color:var(--t3);text-decoration:line-through':''}">${u.name}</strong>${deletedBadge}</td>
       <td style="color:var(--t3);font-size:11px">${u.email}</td>
       <td style="font-size:11px">${u.phone||'—'}</td>
       <td><span class="channel-chip ch-${u.channel}">${u.channel||'—'}</span></td>
@@ -10840,11 +10859,13 @@ function renderAdmin(){
       <td style="color:var(--t3);font-size:11px">${u.hireDate||'—'}</td>
       <td>${isSubAdmin?'<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(0,120,200,.1);color:var(--blue);font-weight:700">부관리자</span>':''}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
-        <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
-        ${CU?.isSubAdmin?'':(isSubAdmin
-          ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--orange)" onclick="toggleSubAdmin(${u.id},false)">권한취소</button>`
-          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;color:var(--blue)" onclick="toggleSubAdmin(${u.id},true)">부관리자</button>`)}
+        ${u.deleted
+          ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--green)" onclick="restoreUser(${u.id})">복구</button>`
+          :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
+            <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
+            ${CU?.isSubAdmin?'':(isSubAdmin
+              ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--orange)" onclick="toggleSubAdmin(${u.id},false)">권한취소</button>`
+              :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;color:var(--blue)" onclick="toggleSubAdmin(${u.id},true)">부관리자</button>`)}`}
       </td>
     </tr>`;
   }).join('');
@@ -10858,7 +10879,20 @@ async function toggleSubAdmin(id,grant){
   renderAdmin();
 }
 async function resetPw(id){ await dbUpdateUser(id,{pw:'0000'}); const u=D.users.find(x=>x.id===id); if(u) u.pw='0000'; alert(`${u?.name||''} 님의 비밀번호가 0000으로 초기화되었습니다.`); }
-async function deleteUser(id){ if(!confirm('강사를 삭제하시겠습니까?')) return; await dbDeleteUser(id); D.users=D.users.filter(x=>x.id!==id); renderAdmin(); }
+async function deleteUser(id){
+  if(!confirm('강사를 삭제하시겠습니까?\n\n삭제 시:\n- 해당 강사는 바로 로그아웃되며 재로그인 불가\n- 인터픽·홈 검색에서 제외\n- 관리자 페이지에는 영상·평가 기록이 그대로 보존됩니다')) return;
+  await dbDeleteUser(id);
+  const u=D.users.find(x=>x.id===id);
+  if(u){ u.deleted=true; u.deletedAt=new Date().toISOString(); }
+  renderAdmin();
+}
+async function restoreUser(id){
+  if(!confirm('삭제된 강사를 복구하시겠습니까?')) return;
+  await dbRestoreUser(id);
+  const u=D.users.find(x=>x.id===id);
+  if(u){ u.deleted=false; u.deletedAt=null; }
+  renderAdmin();
+}
 function renderCriteria(){
   el('criteria-rows').innerHTML=D.criteria.map((c,i)=>`
     <div style="display:grid;grid-template-columns:1fr 80px 2fr auto;gap:8px;margin-bottom:8px;align-items:center">
