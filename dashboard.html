@@ -2412,15 +2412,15 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <!-- ══ 3카드 행: 추천 학습 콘텐츠 / 이번 주 일정 / 공지 및 알림 ══ -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:28px;margin-bottom:24px" id="pick-3card-row">
     <div>
-      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">추천 학습 콘텐츠</div>
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">추천 학습 콘텐츠</div>
       <div id="pick-links" style="font-size:12px;color:var(--t3);min-height:110px;text-align:left"></div>
     </div>
     <div>
-      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">이번 주 일정</div>
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">이번 주 일정</div>
       <div id="pick-events" style="font-size:12px;color:var(--t3);min-height:110px;text-align:left"></div>
     </div>
     <div style="display:flex;flex-direction:column">
-      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">공지 및 알림</div>
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left">공지 및 알림</div>
       <div id="pick-notices" style="font-size:12px;color:var(--t3);flex:1;min-height:110px;overflow-y:auto;text-align:left"></div>
     </div>
   </div>
@@ -4586,7 +4586,7 @@ function renderPick(){
         <div style="flex:1;min-width:0;cursor:${clickAction?'pointer':'default'}" ${clickAction?`onclick="${clickAction}"`:''}><div style="font-size:12px;font-weight:600;color:var(--t1)">${ct.title}</div><div style="font-size:9px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ct.url||ct.file_name||''}</div></div>
         ${isAdmin?`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:14px;padding:2px" onclick="event.stopPropagation();deletePickContent(${ct.id})">×</button>`:''}
       </div>`;
-    }).join(''):'<div style="padding:12px;text-align:center;font-size:12px;color:var(--t3)">등록된 학습 콘텐츠가 없습니다</div>';
+    }).join(''):'<div style="padding:8px 0;font-size:12px;color:var(--t3);text-align:left">등록된 학습 콘텐츠가 없습니다</div>';
     linksEl.innerHTML=lkHtml;
   }
 
@@ -4602,10 +4602,10 @@ function renderPick(){
       const d=new Date(e.start_date);
       const dayName=dayNames[d.getDay()];
       return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openCalendar()">
-        <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.title}</div><div style="font-size:10px;color:var(--t3)">${e.start_date} (${dayName})</div></div>
+        <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--t1)">${e.title}</div><div style="font-size:10px;color:var(--t3)">${e.start_date} (${dayName})</div></div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
-    }).join(''):'<div style="padding:12px 0;color:var(--t3);font-size:12px">이번 주 일정이 없습니다</div>';
+    }).join(''):'<div style="padding:8px 0;color:var(--t3);font-size:12px;text-align:left">이번 주 일정이 없습니다</div>';
   }
 
   // ── 공지 및 알림 (Supabase pick_notices) ──
@@ -4628,7 +4628,7 @@ function renderPick(){
       notices+=`<div style="border-bottom:1px solid rgba(0,0,0,.04);padding:8px 0">
         <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleNoticeDetail(${n.id})">
           <div style="flex:1">
-            <div style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px">${n.title}${hasUrl?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>':''}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:4px">${n.title}${hasUrl?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>':''}</div>
             <div style="font-size:10px;color:var(--t3)">${n.created_at?.slice(0,10)||''}</div>
           </div>
           ${hasContent?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" style="flex-shrink:0;transition:transform .2s" id="notice-arrow-'+n.id+'"><polyline points="6 9 12 15 18 9"/></svg>':''}
@@ -4638,7 +4638,7 @@ function renderPick(){
         ${!hasContent&&hasUrl?`<div style="margin-top:4px"><a href="${n.url}" target="_blank" style="font-size:11px;color:var(--blue);font-weight:600;text-decoration:none" onclick="event.stopPropagation()">링크 이동 →</a></div>`:''}
       </div>`;
     });
-    if(!(D.pickNotices||[]).length&&!isAdmin) notices+='<div style="padding:8px 0;color:var(--t3);font-size:12px">등록된 공지가 없습니다</div>';
+    if(!(D.pickNotices||[]).length&&!isAdmin) notices+='<div style="padding:8px 0;color:var(--t3);font-size:12px;text-align:left">등록된 공지가 없습니다</div>';
     noticesEl.innerHTML=notices;
   }
 
