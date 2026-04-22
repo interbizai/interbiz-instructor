@@ -2545,14 +2545,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <!-- 관리 -->
   <div class="tab-pane active" id="tab-관리">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <span style="font-size:12px;font-weight:700;color:var(--t3)">가입 시기:</span>
-      <select class="form-input" id="admin-avg-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px">
-        <option value="all">전체</option>
-        <option value="1">최근 1개월</option>
-        <option value="3">최근 3개월</option>
-        <option value="6">최근 6개월</option>
-        <option value="12">최근 12개월</option>
-      </select>
+      <span style="font-size:12px;font-weight:700;color:var(--t3)">조직:</span>
+      <select class="form-input" id="admin-org-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px"></select>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700" onclick="downloadUserTemplate()">📥 엑셀 양식</button>
       <label class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700;color:var(--green);cursor:pointer;margin:0">
@@ -10881,8 +10875,29 @@ function renderAdminCreditBanner(){
 }
 
 function renderAdmin(){
+  // 조직 필터 드롭다운 채우기 (현재 존재하는 org_name들 + 기본값 유지)
+  const orgSel=el('admin-org-filter');
+  if(orgSel){
+    const currentVal=orgSel.value;
+    const orgs=[...new Set((D.users||[]).map(u=>u.orgName).filter(Boolean))].sort();
+    // 기본값: 기존 선택 유지 → 없으면 '가전AM' → 없으면 첫 번째 조직 → 없으면 '(조직 미설정)'
+    let defaultOrg=currentVal && orgs.includes(currentVal) ? currentVal
+                  : orgs.includes('가전AM') ? '가전AM'
+                  : orgs[0] || '';
+    orgSel.innerHTML=orgs.length
+      ? orgs.map(o=>`<option value="${o}"${o===defaultOrg?' selected':''}>${o}</option>`).join('')
+        +`<option value="__NONE__"${!defaultOrg?' selected':''}>(조직 미설정)</option>`
+      : `<option value="__NONE__" selected>(조직 미설정)</option>`;
+    if(!currentVal) orgSel.value=defaultOrg||'__NONE__';
+  }
+  const selectedOrg=orgSel?.value||'';
+  // 선택된 조직만 필터
+  const filtered=(D.users||[]).filter(u=>{
+    if(selectedOrg==='__NONE__') return !u.orgName;
+    return u.orgName===selectedOrg;
+  });
   // User table (정렬)
-  const sortedUsers=[...D.users].sort((a,b)=>{
+  const sortedUsers=[...filtered].sort((a,b)=>{
     let va=(a[adminSortKey]||'').toString(), vb=(b[adminSortKey]||'').toString();
     if(adminSortKey==='birthYear'){va=parseInt(va)||0;vb=parseInt(vb)||0;return adminSortAsc?va-vb:vb-va;}
     return adminSortAsc?va.localeCompare(vb):vb.localeCompare(va);
