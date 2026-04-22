@@ -3408,7 +3408,7 @@ function topSearchHandler(q){
     html+=`<div style="padding:6px 14px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">강사 (${users.length})</div>`;
     html+=users.slice(0,5).map((u,i)=>`<div class="tn-dd-item" onclick="openLecturer(${u.id},'page-pick');toggleTopSearch()">
       <div style="width:28px;height:28px;border-radius:50%;background:${colors[i%6]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
-      <div><div style="font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${u.channel} · ${u.team}</div></div>
+      <div><div style="font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')}</div></div>
     </div>`).join('');
   }
 
@@ -3734,7 +3734,7 @@ function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.r
       const bg=colors[(u.id-1)%6];
       return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-home');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
         <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
-        <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.channel}</span></div><div class="hs-meta">${u.team} · ${u.position||'강사'}</div></div>
+        <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.channel||''}</span></div><div class="hs-meta">${[u.team,u.position].filter(Boolean).join(' · ')}</div></div>
         <svg class="hs-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
       </div>`;
     }).join('');
@@ -4496,7 +4496,7 @@ function renderPick(){
         <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
         <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</span><span style="font-size:14px;flex-shrink:0">${medals2[i]}</span></div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.channel} · ${u.team}</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
         </div>
       </div>
       <!-- 점수 + 달성 바 -->
@@ -4690,7 +4690,7 @@ function openPickRankingModal(){
         <div style="font-size:18px;font-weight:900;color:var(--t3);width:30px;text-align:center">${i<3?medals[i]:(i+1)}</div>
         <div style="width:44px;height:44px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:800">${u.name} <span style="font-size:11px;color:var(--t3);font-weight:500">${u.channel} · ${u.team}</span></div>
+          <div style="font-size:14px;font-weight:800">${u.name} <span style="font-size:11px;color:var(--t3);font-weight:500">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px">평가 ${u.evalCount}건 · AI ${u.pickScore}점 · 성장 <span style="color:${growthColor}">${growthTxt}</span></div>
         </div>
       </div>
@@ -4925,7 +4925,7 @@ function renderPickVideos(){
       </div>
       <div style="padding:14px 16px">
         <div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:39px">${vid.title||'—'}</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:7px"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:7px"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}</div>
       </div>
     </div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 영상이 없습니다</div>';
@@ -5018,7 +5018,7 @@ function renderPickDetail(){
             ${rubric!=null?`<span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(139,92,246,.12);color:#8b5cf6;border:1px solid rgba(139,92,246,.35)">평가안 이해도 ${rubric}%</span>`:''}
           </div>
           <div class="pick-hero-title" style="font-size:16.5px;font-weight:800;color:var(--t1);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${title}</div>
-          <div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''} · ${product} · ${vid.date||''}</div>
+          <div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''} · ${product} · ${vid.date||''}</div>
           <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-top:4px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${comment}</div>
           <div style="margin-top:8px">
             <button onclick="event.stopPropagation();openVideo(${vid.id})" style="padding:7px 18px;font-size:12px;font-weight:700;background:#dc2626;color:#fff;border:none;border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(220,38,38,.25)" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">평가 상세보기 →</button>
