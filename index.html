@@ -3048,7 +3048,7 @@ async function dbCreateUser(u){
     status:u.status||'근무', position:u.position||'현장강사'
   };
   const {data,error}=await sb.from('users').insert(payload).select().single();
-  if(error){ console.error('dbCreateUser:',error); return null; }
+  if(error){ console.error('dbCreateUser error:',error,'payload:',payload); return {_error:error.message||'unknown'}; }
   return data;
 }
 // 유저 업데이트
@@ -10973,18 +10973,21 @@ function bulkImportUsers(input){
       const dataRows=rows.slice(1).filter(r=>(r[4]||'').toString().trim()&&(r[9]||'').toString().trim());
       if(!dataRows.length){alert('유효한 데이터 행이 없습니다.');input.value='';return;}
       const existingEmails=new Set((D.users||[]).map(u=>(u.email||'').toLowerCase().trim()));
-      let added=0, skipped=0, failed=0;
-      const skippedEmails=[];
-      for(const r of dataRows){
+      let added=0, skipped=0, failMissing=0, failDB=0;
+      const skippedEmails=[], dbErrors=[];
+      for(let i=0;i<dataRows.length;i++){
+        const r=dataRows[i];
+        const rowNum=i+2; // 엑셀에선 1행이 헤더, 2행부터 데이터
         const email=(r[9]||'').toString().trim();
-        if(!email){failed++;continue;}
+        const name=(r[4]||'').toString().trim();
+        if(!name||!email){failMissing++;dbErrors.push(`${rowNum}행: 성명 또는 메일 누락`);continue;}
         if(existingEmails.has(email.toLowerCase())){skipped++;skippedEmails.push(email);continue;}
         const payload={
           orgName:(r[0]||'').toString().trim()||null,
           team:(r[1]||'').toString().trim()||null,
           office:(r[2]||'').toString().trim()||null,
           position:(r[3]||'').toString().trim()||'현장강사',
-          name:(r[4]||'').toString().trim(),
+          name:name,
           phone:(r[5]||'').toString().trim()||null,
           birthDate:parseBirth(r[6]),
           hireDate:parseHireDate(r[7]),
@@ -10993,16 +10996,23 @@ function bulkImportUsers(input){
           status:(r[10]||'').toString().trim()||'근무',
           pw:'1234'
         };
-        if(!payload.name){failed++;continue;}
         const created=await dbCreateUser(payload);
-        if(created){added++;existingEmails.add(email.toLowerCase());}else{failed++;}
+        if(created&&!created._error){added++;existingEmails.add(email.toLowerCase());}
+        else{failDB++;dbErrors.push(`${rowNum}행 ${email}: ${created?._error||'DB 저장 실패'}`);}
       }
       await loadFromDB();
       renderAdmin();
       let msg=`✅ ${added}명 등록 완료`;
-      if(skipped>0) msg+=`\n⏭ ${skipped}명 중복으로 건너뜀`+(skippedEmails.length<=5?'\n  '+skippedEmails.join(', '):'');
-      if(failed>0) msg+=`\n❌ ${failed}명 실패 (필수값 누락)`;
-      msg+='\n\n초기 비밀번호는 전원 1234입니다.';
+      if(skipped>0) msg+=`\n⏭ ${skipped}명 중복으로 건너뜀`;
+      if(failMissing>0) msg+=`\n⚠️ ${failMissing}명 실패 (성명/메일 누락)`;
+      if(failDB>0){
+        msg+=`\n❌ ${failDB}명 DB 저장 실패`;
+        if(dbErrors.length){
+          msg+='\n\n에러 상세 (최대 3건):\n'+dbErrors.slice(0,3).join('\n');
+          console.error('전체 실패 내역:',dbErrors);
+        }
+      }
+      if(added>0) msg+='\n\n초기 비밀번호는 전원 1234입니다.';
       alert(msg);
     }catch(err){
       console.error(err);
