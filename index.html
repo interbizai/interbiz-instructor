@@ -6932,6 +6932,10 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     // 6) 전역에 보관 + 렌더
     window._lastVertexResult={crit:critResult,ai:aiResult};
     window._anVideoId=videoId;
+    // 방금 저장한 evaluations row ID 확보 (관리자 인라인 수정 기능에서 사용)
+    const freshEvals=(D.evaluations||[]).filter(e=>e.video_id===videoId);
+    window._anCritEvalId=freshEvals.find(e=>e.eval_type==='평가안기준')?.id||null;
+    window._anAiEvalId=freshEvals.find(e=>e.eval_type==='AI독자')?.id||null;
     setAiLoadingStage('save','active');
     setAiLoadingStep('결과 렌더 중...');
     const mapped=mapVertexToLegacy(critResult,aiResult);
@@ -7117,14 +7121,16 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   }
 
   // ③ 타임스탬프 피드 — 평가안은 critRaw, AI독자는 aiRaw 별도 렌더
-  const critTimestamps=(critRaw?.sub_scores||[]).map(s=>({
+  const critTimestamps=(critRaw?.sub_scores||[]).map((s,idx)=>({
+    _subIdx:idx,  // 관리자 수정 시 sub_scores 내 위치 식별
     category:s.category, item:s.sub_item, criteria:s.criterion||'',
     score:s.score||0, maxScore:s.max||0,
     level:s.level||'',
     t:s.timestamp||'', type:s.level==='good'?'good':s.level==='bad'?'bad':s.level==='na'?'na':'tip',
     text:s.analysis||'', solution:s.solution||'', tags:[]
   }));
-  const aiTimestamps=(aiRaw?.sub_scores||[]).map(s=>({
+  const aiTimestamps=(aiRaw?.sub_scores||[]).map((s,idx)=>({
+    _subIdx:idx,
     category:s.category, item:s.sub_item, criteria:s.criterion||'',
     score:s.score||0, maxScore:s.max||0,
     level:s.level||'',
@@ -7283,6 +7289,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps,which){
   const srcWhich=which||'crit';
+  const canEdit=!!(CU?.isAdmin||CU?.isSubAdmin);  // 관리자/부관리자만 인라인 수정 허용
   // 공통 스타일 — 점수 외 모든 셀: 종합 의견과 동일 (회색 · 12px · LG글씨 · 기본 굵기)
   const FONT="'LG글씨','LG Smart',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
   const CELL_SIZE='12px';
@@ -7307,7 +7314,9 @@ function renderTsTable(timestamps,which){
       const scoreRatio=ts.maxScore?ts.score/ts.maxScore:0;
       const scoreColor=isNA?'#94a3b8':scoreRatio>=0.8?'#10b981':scoreRatio>=0.5?'#f59e0b':'#ef4444';
       const rowBg=idx%2===0?'#ffffff':'#fafbfc';
-      const scoreDisplay=isNA?`<span style="color:#94a3b8;font-family:${FONT};font-size:11.5px;font-weight:700">해당없음</span>`:`<span style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT}">${ts.score}</span>`;
+      // 점수 셀 — 관리자는 인라인 수정 가능 (contenteditable + onblur 저장)
+      const scorePill=`<span class="ts-score-edit" data-sub-idx="${ts._subIdx}" data-max="${ts.maxScore||5}" ${canEdit?'contenteditable="true" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onfocus="this.style.outline=\'2px dashed #0078C8\';this.style.outlineOffset=\'1px\'" onblur="this.style.outline=\'none\';saveSubScoreEdit(\''+srcWhich+'\','+ts._subIdx+',\'score\',this.textContent)"':''} style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT};${canEdit?'cursor:text;':''}">${ts.score}</span>`;
+      const scoreDisplay=isNA?(canEdit?scorePill:`<span style="color:#94a3b8;font-family:${FONT};font-size:11.5px;font-weight:700">해당없음</span>`):scorePill;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
       const srcRaw=srcWhich==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
       let subIdx=-1;
@@ -7316,6 +7325,13 @@ function renderTsTable(timestamps,which){
         subIdx=inCat.findIndex(s=>(s.sub_item||'').trim()===(ts.item||'').trim());
       }
       const onClick=subIdx>=0?`openSubItemVideoModal('${srcWhich}','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
+      // 분석 / 솔루션 셀 — 관리자 인라인 수정
+      const escCell=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const mkEditable=(value,field)=>{
+        const raw=escCell(value);
+        if(!canEdit) return raw;
+        return `<span contenteditable="true" onclick="event.stopPropagation()" onfocus="this.style.background='#fffbeb';this.style.outline='1px dashed #f59e0b';this.style.outlineOffset='1px'" onblur="this.style.background='transparent';this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'${field}',this.textContent)" style="display:inline-block;width:100%;min-height:1.2em;cursor:text;border-radius:4px">${raw||'<span style=\'color:#cbd5e1\'>—</span>'}</span>`;
+      };
       return `<tr style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'" onclick="${onClick}">
         <td style="${tdNowrap}">${ts.category||'—'}</td>
         <td style="${tdNowrap}">${ts.item||'—'}</td>
@@ -7323,8 +7339,8 @@ function renderTsTable(timestamps,which){
         <td style="${tdNowrap};text-align:center">${isNA?'—':(ts.maxScore||5)}</td>
         <td style="${tdNowrap};text-align:center">${scoreDisplay}</td>
         <td style="${tdNowrap};text-align:center">${ts.t||'—'}</td>
-        <td style="${tdWrap}">${ts.text||''}</td>
-        <td style="${tdWrap}">${ts.type==='good'?'—':(ts.solution||'—')}</td>
+        <td style="${tdWrap}">${mkEditable(ts.text,'analysis')}</td>
+        <td style="${tdWrap}">${ts.type==='good'&&!canEdit?'—':mkEditable(ts.solution,'solution')}</td>
       </tr>`;}).join('');
   // 헤더 테이블(스크롤 밖) + 본문 래퍼(스크롤 안) 분리
   // → 스크롤바가 헤더 아래부터만 표시됨
@@ -12001,6 +12017,69 @@ async function saveProfile(){
 ════════════════════════════════ */
 function el(id){ return document.getElementById(id)||null; }
 function v(id){ const e=el(id); return e?(e.value||''):''; }
+// 관리자/부관리자용: 평가 항목별 피드백 인라인 수정 저장
+// (score / analysis / solution 필드를 해당 evaluations row의 sub_scores[subIdx]에 반영)
+async function saveSubScoreEdit(which,subIdx,field,newValue){
+  try{
+    if(!(CU?.isAdmin||CU?.isSubAdmin)){ return; }
+    const evalId=which==='ai'?window._anAiEvalId:window._anCritEvalId;
+    if(!evalId){ if(typeof showToast==='function')showToast('평가 ID 없음 — 새로고침 후 다시 시도','#ef4444'); return; }
+    const row=(D.evaluations||[]).find(e=>e.id===evalId);
+    if(!row){ if(typeof showToast==='function')showToast('평가 row 로드 실패','#ef4444'); return; }
+    const subs=Array.isArray(row.sub_scores)?JSON.parse(JSON.stringify(row.sub_scores)):[];
+    if(!subs[subIdx]){ if(typeof showToast==='function')showToast('항목 인덱스 오류','#ef4444'); return; }
+    const prev={...subs[subIdx]};
+    if(field==='score'){
+      let n=parseInt(String(newValue).replace(/[^0-9-]/g,''),10);
+      if(isNaN(n)) n=0;
+      const max=prev.max||5;
+      if(n<0) n=0;
+      if(n>max) n=max;
+      if(n===prev.score) return;
+      subs[subIdx].score=n;
+      // level 자동 재지정 (score 변화에 맞춰)
+      if(n>=max) subs[subIdx].level='good';
+      else if(n>=Math.round(max*0.6)) subs[subIdx].level='normal';
+      else if(n<=0) subs[subIdx].level='bad';
+      else subs[subIdx].level='normal';
+    } else if(field==='analysis'){
+      const val=String(newValue||'').trim();
+      if(val===String(prev.analysis||'').trim()) return;
+      subs[subIdx].analysis=val;
+    } else if(field==='solution'){
+      const val=String(newValue||'').trim();
+      if(val===String(prev.solution||'').trim()) return;
+      subs[subIdx].solution=val;
+    } else { return; }
+    // Supabase 업데이트
+    const {error}=await sb.from('evaluations').update({sub_scores:subs}).eq('id',evalId);
+    if(error){
+      if(typeof showToast==='function')showToast('저장 실패: '+error.message,'#ef4444');
+      console.error('saveSubScoreEdit:',error);
+      return;
+    }
+    // 로컬 상태 동기화
+    row.sub_scores=subs;
+    const rawKey=which==='ai'?'ai':'crit';
+    if(window._lastVertexResult?.[rawKey]?.sub_scores&&window._lastVertexResult[rawKey].sub_scores[subIdx]){
+      Object.assign(window._lastVertexResult[rawKey].sub_scores[subIdx],subs[subIdx]);
+    }
+    // overall_score 재계산 (na 제외)
+    const valid=subs.filter(s=>s.level!=='na');
+    const sumS=valid.reduce((a,s)=>a+(s.score||0),0);
+    const sumM=valid.reduce((a,s)=>a+(s.max||0),0);
+    if(sumM>0){
+      const newOverall=Math.round(sumS/sumM*100);
+      await sb.from('evaluations').update({overall_score:newOverall}).eq('id',evalId);
+      row.overall_score=newOverall;
+      if(window._lastVertexResult?.[rawKey]) window._lastVertexResult[rawKey].overall_score=newOverall;
+    }
+    if(typeof showToast==='function') showToast(`저장됨 (${field==='score'?'점수':field==='analysis'?'분석':'솔루션'})`,'#10b981');
+  }catch(e){
+    console.error('saveSubScoreEdit exception:',e);
+    if(typeof showToast==='function') showToast('저장 중 오류','#ef4444');
+  }
+}
 // 분석 결과 상단 헤더 세팅: 제목 + 교육종류/강사/팀/직군 chip
 // 스타일: 배경 없음 · 검정 테두리만 · 라벨/값 모두 검정
 function setAnResultMeta(opts){
