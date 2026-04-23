@@ -3198,23 +3198,27 @@ async function loadFromDB(){
   // 교육종류 (관리자 공유 · Supabase 우선, localStorage 고아 항목 자동 마이그레이션)
   const et=await dbGetEduTypes();
   if(et!==null){
-    // Supabase 사용 가능 — localStorage에 있지만 DB에 없는 항목을 자동 이관
+    // Supabase 사용 가능 — localStorage에 있지만 DB에 없는 항목 자동 이관 시도
     const supabaseNames=new Set(et.map(r=>r.name));
-    const localNames=(()=>{try{return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');}catch(e){return [];}})();
+    let localNames=[];
+    try{ localNames=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
     const orphans=localNames.filter(n=>n&&!supabaseNames.has(n));
+    const failedOrphans=[];
     if(orphans.length){
-      console.log(`교육종류 마이그레이션: ${orphans.length}건 Supabase로 이관`,orphans);
+      console.log(`교육종류 마이그레이션 시도: ${orphans.length}건`,orphans);
       for(const name of orphans){
         const row=await dbAddEduType(name);
-        if(row&&!row._error) et.push(row);
+        if(row&&!row._error){ et.push(row); }
+        else { failedOrphans.push(name); console.warn('마이그레이션 실패:',name,row?._error); }
       }
     }
     D.eduTypes=et.map(r=>({id:String(r.id),name:r.name}));
-    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
+    // localStorage는 DB 이름 + 실패한 고아 이름만 유지 (실패 항목은 관리자 탭에서 수동 처리)
+    const keepNames=[...D.eduTypes.map(x=>x.name),...failedOrphans];
+    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(keepNames));}catch(e){}
   } else {
     // Supabase 미가용 (테이블 없음 등) — localStorage 폴백
-    const names=(()=>{try{return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');}catch(e){return [];}})();
-    D.eduTypes=names.map((n,i)=>({id:'local-'+i,name:n}));
+    D.eduTypes=[];
   }
   // 추천영상
   const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
@@ -3862,14 +3866,18 @@ function getEduCategories(){
   const db=(D.eduCategories||[]).map(c=>c.name);
   return [...new Set([...defaults,...db])];
 }
-// 교육종류 (관리자 공유 · Supabase 우선, localStorage 캐시)
-function getEduTypes(){
-  const db=(window.D&&Array.isArray(D.eduTypes))?D.eduTypes.map(x=>x?.name||x).filter(Boolean):null;
-  if(db&&db.length) return db;
-  try{ return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){ return []; }
-}
+// 교육종류 (관리자 공유 · Supabase 우선, localStorage 고아 항목도 관리 가능하게 병합 노출)
 function getEduTypeRecords(){
-  return (window.D&&Array.isArray(D.eduTypes))?D.eduTypes:[];
+  const dbRecs=(window.D&&Array.isArray(D.eduTypes))?D.eduTypes:[];
+  let localNames=[];
+  try{ localNames=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
+  const dbNameSet=new Set(dbRecs.map(r=>r.name));
+  const orphans=localNames.filter(n=>n&&!dbNameSet.has(n)).map((n,i)=>({id:'local-'+i,name:n}));
+  return [...dbRecs,...orphans];
+}
+function getEduTypes(){
+  const recs=getEduTypeRecords();
+  return recs.map(r=>r?.name||r).filter(Boolean);
 }
 function setEduTypes(list){
   try{ localStorage.setItem('interbiz_eduTypes', JSON.stringify(list||[])); }catch(e){}
@@ -11391,19 +11399,21 @@ async function addEduType(){
   if(existing.includes(name)){ showEduTypeToast('이미 등록된 교육종류입니다','#f59e0b'); return; }
   // 1) Supabase 시도
   const row=await dbAddEduType(name);
-  let newRecord;
   if(row?._error){
     const msg=(row._error||'').toLowerCase();
     const isTableMissing=msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache');
     if(!isTableMissing){ showEduTypeToast('저장 실패: '+row._error,'#ef4444'); return; }
     // 2) 테이블 미존재 → localStorage 폴백
-    newRecord={id:'local-'+Date.now(),name};
     console.warn('edu_types 테이블 없음 → localStorage 저장');
+    try{
+      const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
+      if(!cur.includes(name)){ cur.push(name); localStorage.setItem('interbiz_eduTypes',JSON.stringify(cur)); }
+    }catch(e){}
   } else {
-    newRecord={id:String(row.id),name:row.name};
+    // Supabase 저장 성공 — D.eduTypes 갱신
+    const currentDb=(Array.isArray(D.eduTypes)?D.eduTypes:[]);
+    D.eduTypes=[...currentDb,{id:String(row.id),name:row.name}];
   }
-  D.eduTypes=[...getEduTypeRecords(),newRecord];
-  try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   if(inp) inp.value='';
   renderEduTypeManage();
   showEduTypeToast(`"${name}" 추가되었습니다`);
@@ -11420,9 +11430,14 @@ async function removeEduType(id,name){
         showEduTypeToast('삭제 실패: '+res._error,'#ef4444'); return;
       }
     }
+    D.eduTypes=(Array.isArray(D.eduTypes)?D.eduTypes:[]).filter(r=>String(r.id)!==String(id));
   }
-  D.eduTypes=getEduTypeRecords().filter(r=>String(r.id||'')!==String(id));
-  try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
+  // localStorage에서도 이름 기준으로 제거 (DB와 local 양쪽 정리)
+  try{
+    const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
+    const next=cur.filter(n=>n!==name);
+    localStorage.setItem('interbiz_eduTypes',JSON.stringify(next));
+  }catch(e){}
   renderEduTypeManage();
   showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
 }
