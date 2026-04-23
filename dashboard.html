@@ -1704,34 +1704,30 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
     <!-- TAB: 평가안 기준 -->
     <div class="an-tab-pane" id="an-tab-criteria">
-      <!-- 교육분석 레이더 + 달성도 -->
-      <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:12px">
-          <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 분석</div>
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
+      <!-- 교육분석 (radar+bars 세로) | 최종 의견 (아이콘) -->
+      <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-bottom:28px;align-items:start" id="an-edu-radar-wrap">
+        <!-- 좌측: radar 위, 달성도 아래 -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 분석</div>
             <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('crit')">전체 보기</button>
           </div>
-        </div>
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:stretch" id="an-edu-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px;margin-bottom:14px">
             <svg id="an-edu-radar" viewBox="0 0 500 440" style="width:100%;max-width:480px;height:auto"></svg>
           </div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:24px;display:flex;flex-direction:column;min-height:340px" id="an-edu-bars"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">역량별 달성도</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
+        </div>
+        <!-- 우측: 최종 의견 (아이콘 방식) -->
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-criteria-opinion"></div>
         </div>
       </div>
-      <!-- 타임스탬프 + 최종의견 -->
+      <!-- 평가 항목별 피드백 (전체 폭) -->
       <div style="margin-bottom:28px">
-        <div class="an-feed-grid">
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
-            <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-criteria-result"></div>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
-            <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-criteria-opinion"></div>
-          </div>
-        </div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
+        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-criteria-result"></div>
       </div>
       <!-- 추천 시나리오 / 레벨UP / 화법 -->
       <div style="margin-bottom:28px;background:rgba(159,18,57,.02);border-radius:14px;padding:20px">
@@ -1754,20 +1750,24 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
     <!-- TAB: AI 독자 분석 -->
     <div class="an-tab-pane" id="an-tab-ai" style="display:none">
-      <!-- AI 6대역량 레이더 + 달성도 -->
-      <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:12px">
-          <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량별 달성도</div>
+      <!-- AI 6대역량 (radar+bars 세로) | 최종 의견 (아이콘) -->
+      <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-bottom:28px;align-items:start" id="an-ai-radar-wrap">
+        <!-- 좌측: radar 위, 달성도 아래 -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
             <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
           </div>
-        </div>
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:stretch" id="an-ai-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px;margin-bottom:14px">
             <svg id="an-ai-radar" viewBox="0 0 500 440" style="width:100%;max-width:480px;height:auto"></svg>
           </div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:24px;display:flex;flex-direction:column;min-height:340px" id="an-ai-bars"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">AI 역량별 달성도</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
+        </div>
+        <!-- 우측: 최종 의견 (아이콘 방식) -->
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-ai-result"></div>
         </div>
       </div>
       <!-- 음성 & 습관 분석 -->
@@ -1781,18 +1781,10 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           </div>
         </div>
       </div>
-      <!-- AI 타임스탬프 + 최종의견 -->
+      <!-- 타임스탬프 피드백 (전체 폭) -->
       <div style="margin-bottom:28px">
-        <div class="an-feed-grid">
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
-            <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-ts-feed"></div>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
-            <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-ai-result"></div>
-          </div>
-        </div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">타임스탬프 피드백</div>
+        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;max-height:500px;overflow-y:auto" id="an-ts-feed"></div>
       </div>
     </div>
 
@@ -10130,17 +10122,16 @@ function renderMyBadges(userId,avgScore){
 
 function openScenario(){ showPage('page-scenario'); }
 
-// Good/Bad/Upgrade 탭 최종 의견
+// Good/Bad/Upgrade 최종 의견 — 아이콘 3개 (클릭 시 아래에 해당 내용 펼침)
 function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix,summary){
   const p=prefix||'op';
-  const tabStyle=(active,color)=>`padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border:none;background:none;border-bottom:2px solid ${active?color:'transparent'};color:${active?color:'var(--t1)'};flex:1;text-align:center`;
   const goodCard=(items)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(16,185,129,.15);background:rgba(16,185,129,.03)">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:13px;font-weight:800;color:#10b981">${i+1}</span>
       <span style="font-size:13px;font-weight:700;color:var(--t1)">${g.title}</span>
     </div>
     <div style="font-size:12px;color:var(--t2);line-height:1.6;padding-left:22px">${g.reason||g.desc||''}</div>
-  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px">데이터 없음</div>';
+  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px;text-align:center">아이콘을 클릭하면 의견이 표시됩니다</div>';
   const badCard=(items)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(226,30,38,.15);background:rgba(226,30,38,.03)">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:13px;font-weight:800;color:#E21E26">${i+1}</span>
@@ -10148,26 +10139,36 @@ function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix,su
     </div>
     <div style="font-size:12px;color:var(--t2);line-height:1.6;padding-left:22px;margin-bottom:6px">${g.reason||g.desc||''}</div>
     ${g.solution?`<div style="padding:8px 10px;margin-left:22px;background:rgba(226,30,38,.06);border-left:3px solid #E21E26;border-radius:4px;font-size:11px;color:var(--t2);line-height:1.5"><strong style="color:#E21E26">솔루션:</strong> ${g.solution}</div>`:''}
-  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px">데이터 없음</div>';
+  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px;text-align:center">개선 포인트가 없습니다</div>';
   const upgradeCard=(items)=>items.map((g,i)=>`<div style="padding:14px 16px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(245,158,11,.15);background:rgba(245,158,11,.03)">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:13px;font-weight:800;color:#f59e0b">${i+1}</span>
       <span style="font-size:13px;font-weight:700;color:var(--t1)">${g.title}</span>
     </div>
     <div style="font-size:12px;color:var(--t2);line-height:1.6;padding-left:22px">${g.detail||g.desc||''}</div>
-  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px">데이터 없음</div>';
-  return `<div>
-    <div style="display:flex;border-bottom:1px solid var(--bdr)">
-      <button style="${tabStyle(true,'#10b981')}" onclick="switchOpTab('${p}','good',this)">Good (${goodItems.length})</button>
-      <button style="${tabStyle(false,'#E21E26')}" onclick="switchOpTab('${p}','bad',this)">Bad (${badItems.length})</button>
-      <button style="${tabStyle(false,'#f59e0b')}" onclick="switchOpTab('${p}','upgrade',this)">Upgrade (${upgradeItems.length})</button>
+  </div>`).join('')||'<div style="font-size:12px;color:var(--t3);padding:16px;text-align:center">업그레이드 제안이 없습니다</div>';
+  const iconBtn=(kind,color,bg,label,count,svg,active)=>`<button type="button" data-op-kind="${kind}" onclick="switchOpTab('${p}','${kind}',this)" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;border:2px solid ${active?color+'40':'transparent'};border-radius:14px;background:${active?color+'08':'none'};cursor:pointer;transition:all .2s ease">
+    <div class="op-icon-circle" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};border:3px solid ${color};color:${color};transition:transform .2s ease;transform:scale(${active?1.1:1})">${svg}</div>
+    <div style="font-size:12px;font-weight:900;color:${color};letter-spacing:.5px">${label}</div>
+    <div style="font-size:10px;color:var(--t3);font-weight:700;margin-top:-4px">${count}건</div>
+  </button>`;
+  const goodSvg=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l5-7a2 2 0 0 1 3 3z"/></svg>`;
+  const badSvg=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-5 7a2 2 0 0 1-3-3z"/></svg>`;
+  const upSvg=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`;
+  return `<div style="padding:18px 16px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px">
+      ${iconBtn('good','#10b981','rgba(16,185,129,.10)','GOOD',goodItems.length,goodSvg,true)}
+      ${iconBtn('bad','#E21E26','rgba(226,30,38,.10)','BAD',badItems.length,badSvg,false)}
+      ${iconBtn('upgrade','#f59e0b','rgba(245,158,11,.10)','UPGRADE',upgradeItems.length,upSvg,false)}
     </div>
-    <div id="${p}-good" style="padding:16px">${goodCard(goodItems)}</div>
-    <div id="${p}-bad" style="padding:16px;display:none">${badCard(badItems)}</div>
-    <div id="${p}-upgrade" style="padding:16px;display:none">${upgradeCard(upgradeItems)}</div>
-    ${summary?`<div style="padding:16px;border-top:1px solid var(--bdr)">
-      <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:6px">종합 의견</div>
-      <div style="font-size:12px;color:var(--t2);line-height:1.6">${summary}</div>
+    <div style="border-top:1px solid var(--bdr);padding-top:14px;margin-top:10px">
+      <div id="${p}-good" style="padding:4px 4px">${goodCard(goodItems)}</div>
+      <div id="${p}-bad" style="padding:4px 4px;display:none">${badCard(badItems)}</div>
+      <div id="${p}-upgrade" style="padding:4px 4px;display:none">${upgradeCard(upgradeItems)}</div>
+    </div>
+    ${summary?`<div style="margin-top:10px;padding:14px;border-top:1px solid var(--bdr)">
+      <div style="font-size:12px;font-weight:800;color:var(--t1);margin-bottom:6px">종합 의견</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">${summary}</div>
     </div>`:''}
   </div>`;
 }
@@ -10177,8 +10178,17 @@ function switchOpTab(prefix,tab,btn){
     if(pane) pane.style.display=t===tab?'block':'none';
   });
   const colors={'good':'#10b981','bad':'#E21E26','upgrade':'#f59e0b'};
-  btn.parentElement.querySelectorAll('button').forEach(b=>{b.style.borderBottomColor='transparent';b.style.color='var(--t1)';});
-  btn.style.borderBottomColor=colors[tab];btn.style.color=colors[tab];
+  const parent=btn.parentElement;
+  parent.querySelectorAll('button').forEach(b=>{
+    b.style.borderColor='transparent';
+    b.style.background='none';
+    const circle=b.querySelector('.op-icon-circle');
+    if(circle) circle.style.transform='scale(1)';
+  });
+  btn.style.borderColor=colors[tab]+'40';
+  btn.style.background=colors[tab]+'08';
+  const circle=btn.querySelector('.op-icon-circle');
+  if(circle) circle.style.transform='scale(1.1)';
 }
 function _switchOpTab_old(prefix,tab,btn){
   // 이전 버전 — 미사용
@@ -10504,26 +10514,23 @@ function openLecturer(id, fromPage){
 
     <!-- TAB: MY 역량 -->
     <div class="lect-tab-pane" id="lect-tab-역량">
-      <!-- 역량 분석: 제목 행 공유 + 카드 행 공유 -->
+      <!-- 역량 분석: 레이더 위, 달성도 아래 (한 영역) · 우측 최종 의견은 필요 시 추후 배치 -->
       <div style="margin-bottom:28px">
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
-            <div style="display:flex;gap:6px">
-              <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-                <option value="">전체 교육종류</option>
-                ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
-              </select>
-              <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-                <option value="">전체 제품</option>
-                ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
-              </select>
-            </div>
+          <div style="display:flex;gap:6px">
+            <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+              <option value="">전체 교육종류</option>
+              ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select>
+            <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+              <option value="">전체 제품</option>
+              ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+            </select>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:stretch" id="lect-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:380px">
+        <div id="lect-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:14px">
             <div style="display:flex;align-items:center;justify-content:center">
               <svg id="radar-chart-${u.id}" viewBox="0 0 400 400" style="width:100%;max-width:480px;height:auto"></svg>
             </div>
@@ -10531,7 +10538,8 @@ function openLecturer(id, fromPage){
               <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dc2626"></div><span style="font-size:12px;font-weight:600;color:var(--t1)">현재 역량</span></div>
             </div>
           </div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:24px;display:flex;flex-direction:column;min-height:380px" id="lect-skills-bars-${u.id}"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">역량별 달성도</div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="lect-skills-bars-${u.id}"></div>
         </div>
       </div>
 
