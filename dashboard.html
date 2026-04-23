@@ -10884,12 +10884,12 @@ function _refreshLectStats(userId){
     }).map(v=>v.id));
     evals=evals.filter(e=>vidIds.has(e.video_id));
   }
-  // 영상 1개당 최신 평가 1건만 (AI독자 우선)
+  // 영상 1개당 최신 평가 1건만 (교육맞춤평가 우선, 없으면 AI독자)
   const byVid=new Map();
   evals.forEach(e=>{
     if(!e.video_id) return;
     const exist=byVid.get(e.video_id);
-    if(!exist||e.eval_type==='AI독자') byVid.set(e.video_id,e);
+    if(!exist||e.eval_type==='평가안기준') byVid.set(e.video_id,e);
   });
   const latest=[...byVid.values()];
   const scores=latest.map(e=>Number(e.overall_score||0)).filter(s=>s>0);
@@ -10948,9 +10948,9 @@ function renderRadarChartFromEvals(userId){
     }).map(v=>v.id));
     evals=evals.filter(e=>vidIds.has(e.video_id));
   }
-  // 영상별 최신 1건 (AI독자 우선)
+  // 영상별 최신 1건 (교육맞춤평가 우선, 없으면 AI독자)
   const byVid=new Map();
-  evals.forEach(e=>{if(!e.video_id) return; const ex=byVid.get(e.video_id); if(!ex||e.eval_type==='AI독자') byVid.set(e.video_id,e);});
+  evals.forEach(e=>{if(!e.video_id) return; const ex=byVid.get(e.video_id); if(!ex||e.eval_type==='평가안기준') byVid.set(e.video_id,e);});
   const latest=[...byVid.values()];
   // categories 집계
   const catAgg=new Map(); // name → {score,max,count}
