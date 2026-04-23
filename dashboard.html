@@ -7285,14 +7285,17 @@ function renderTsTable(timestamps,which){
   const CELL_COLOR='#555555';       // var(--t2) — 종합의견 본문 색
   const CELL_LINE='1.7';
   const thStyle=(align)=>`padding:11px 10px;text-align:${align||'left'};font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;color:${CELL_COLOR};background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap;line-height:${CELL_LINE}`;
-  const tdBase=`padding:11px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:400;color:${CELL_COLOR};line-height:${CELL_LINE};vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word`;
-  // 같은 colgroup 두 번 사용 (헤더용 / 본문용) — 컬럼 폭 정합성 유지
+  // 한 줄 강제 컬럼용 스타일 (대항목/세부항목/배점/점수/시점)
+  const tdNowrap=`padding:11px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:400;color:${CELL_COLOR};line-height:${CELL_LINE};vertical-align:top;border-bottom:1px solid #e5e7eb;white-space:nowrap;overflow:visible`;
+  // 여러 줄 허용 컬럼용 (평가 기준/분석/솔루션)
+  const tdWrap=`padding:11px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:400;color:${CELL_COLOR};line-height:${CELL_LINE};vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word;white-space:normal`;
+  // colgroup — 한 줄 컬럼은 충분한 폭 확보 ('교수설계 및 교수법' 같은 긴 대항목도 한 줄)
   const colgroupHtml=`<colgroup>
-    <col style="width:110px"><col style="width:110px"><col style="width:240px">
-    <col style="width:56px"><col style="width:56px"><col style="width:100px">
+    <col style="width:150px"><col style="width:130px"><col style="width:260px">
+    <col style="width:60px"><col style="width:76px"><col style="width:116px">
     <col style="width:30%"><col style="width:22%">
   </colgroup>`;
-  const tableStyle=`width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;table-layout:fixed;background:#fff;font-family:${FONT}`;
+  const tableStyle=`width:100%;border-collapse:separate;border-spacing:0;min-width:1280px;table-layout:fixed;background:#fff;font-family:${FONT}`;
   const bodyRows=timestamps.map((ts,idx)=>{
       const noTs=!ts.t||ts.t==='—'||ts.t==='-'||/^\s*$/.test(ts.t);
       const naText=/(해당 ?없|평가하기 어렵|평가가 어렵|판단하기 어렵|평가 불가|판단 불가|확인 불가|녹화된 강의이므로|해당 항목을 평가할 수 없|평가 대상이 아님)/.test((ts.text||'')+(ts.solution||''));
@@ -7310,14 +7313,14 @@ function renderTsTable(timestamps,which){
       }
       const onClick=subIdx>=0?`openSubItemVideoModal('${srcWhich}','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
       return `<tr style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'" onclick="${onClick}">
-        <td style="${tdBase}">${ts.category||'—'}</td>
-        <td style="${tdBase}">${ts.item||'—'}</td>
-        <td style="${tdBase}">${ts.criteria||'—'}</td>
-        <td style="${tdBase};text-align:center">${isNA?'—':(ts.maxScore||5)}</td>
-        <td style="${tdBase};text-align:center">${scoreDisplay}</td>
-        <td style="${tdBase};text-align:center">${ts.t||'—'}</td>
-        <td style="${tdBase}">${ts.text||''}</td>
-        <td style="${tdBase}">${ts.type==='good'?'—':(ts.solution||'—')}</td>
+        <td style="${tdNowrap}">${ts.category||'—'}</td>
+        <td style="${tdNowrap}">${ts.item||'—'}</td>
+        <td style="${tdWrap}">${ts.criteria||'—'}</td>
+        <td style="${tdNowrap};text-align:center">${isNA?'—':(ts.maxScore||5)}</td>
+        <td style="${tdNowrap};text-align:center">${scoreDisplay}</td>
+        <td style="${tdNowrap};text-align:center">${ts.t||'—'}</td>
+        <td style="${tdWrap}">${ts.text||''}</td>
+        <td style="${tdWrap}">${ts.type==='good'?'—':(ts.solution||'—')}</td>
       </tr>`;}).join('');
   // 헤더 테이블(스크롤 밖) + 본문 래퍼(스크롤 안) 분리
   // → 스크롤바가 헤더 아래부터만 표시됨
