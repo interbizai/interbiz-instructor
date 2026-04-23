@@ -6185,11 +6185,15 @@ function openAnalysis(){
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
   initAnProdSelect();
-  // 체크리스트 드롭다운 즉시 채움 (2개: 평가안 기준 + AI 독자 표준)
+  // 체크리스트 드롭다운 즉시 채움 (2개: 평가안 기준 + AI 독자)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
+  // 드롭다운 값 초기화 (같은 옵션 재클릭 시 onchange 미발화 문제 방지)
+  ['an-cl-select','an-cl-ai-select'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   // 적용 배지 초기화
-  ['an-cl-applied','an-cl-ai-applied','an-edu-applied'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='none';}});
+  ['an-cl-applied','an-cl-ai-applied','an-edu-applied'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   ['an-cl-applied-name','an-cl-ai-applied-name','an-edu-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
+  // 숨겨진 URL/Name input 초기화
+  ['an-cl-url','an-cl-url-name','an-cl-ai-url','an-cl-ai-url-name','an-checklist-url'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const eduWrap=document.getElementById('an-edu-files');if(eduWrap)eduWrap.style.display='none';
   showPage('page-analysis');
 }
@@ -9063,9 +9067,15 @@ function openStreamModal(){
     });
   }
   const stEdu=document.getElementById('st-edu-files');if(stEdu)stEdu.style.display='none';
-  // 배지 초기화 (display만 숨기고 inner span의 텍스트만 비우기 — outer HTML 유지)
+  // 체크리스트 드롭다운 즉시 채움
+  if(typeof populateChecklistSelects==='function') populateChecklistSelects();
+  // 드롭다운 값 초기화 (같은 옵션 재클릭 시 onchange 미발화 방지)
+  ['st-cl-select','st-cl-ai-select'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  // 배지 초기화
   ['st-cl-applied','st-cl-ai-applied','st-edu-applied'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   ['st-cl-applied-name','st-cl-ai-applied-name','st-edu-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
+  // 숨겨진 URL 초기화
+  ['st-cl-url','st-cl-url-name','st-cl-ai-url','st-cl-ai-url-name','st-checklist-url'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   el('stream-info-overlay').classList.add('show');
 }
 function loadStreamEduFiles(){
