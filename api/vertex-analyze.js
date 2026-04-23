@@ -156,13 +156,18 @@ rubric_alignment_score는 교육자료가 없으면 0, 있으면 50~90 사이로
 ${JSON.stringify(checklistSpec, null, 2)}
 
 # 채점 규칙
-- 각 세부항목은 4가지 level 중 하나: "good"(잘함 · 배점의 90% 이상), "normal"(보통 · 70~89%), "bad"(못함 · 70% 미만), "na"(해당없음/평가 불가)
+- 각 세부항목은 4가지 level 중 하나: "good"(잘함), "normal"(보통), "bad"(못함), "na"(해당없음/평가 불가)
 - 중요: 영상에 해당 내용이 전혀 관찰되지 않거나 평가 불가한 경우 반드시 "na"로 분류. "평가하기 어렵다", "판단 불가", "관찰되지 않음" 같은 분석을 쓰면서 "bad"로 처리하지 말 것. na일 때 timestamp는 빈 문자열
-- score는 0 ≤ score ≤ max 범위의 정수. 관찰된 수행 수준에 맞춰 세밀하게 부여 가능 (예: max=5 이면 0·1·2·3·4·5 모두 허용 / max=10이면 0~10 정수 / max=15면 0~15 정수)
-- level은 score/max 비율 기준으로 자동 일치시켜라:
-  · score/max ≥ 0.9  → "good"
-  · 0.7 ≤ score/max < 0.9 → "normal"
-  · score/max < 0.7  → "bad"
+- score는 0 ≤ score ≤ max 범위의 정수. 관찰된 수행 수준에 맞춰 세밀하게 부여 (예: max=5 이면 0·1·2·3·4·5 모두 허용 / max=10이면 0~10 정수 / max=15면 0~15 정수)
+- level은 score/max 비율 기준으로 자동 일치 (max 크기에 따라 임계값 다름):
+  · max ≤ 5 일 때
+     - score/max ≥ 0.8 (예: 5/5, 4/5)         → "good"
+     - 0.6 ≤ score/max < 0.8 (예: 3/5)        → "normal"
+     - score/max < 0.6 (예: 2/5, 1/5, 0/5)    → "bad"
+  · max ≥ 6 일 때
+     - score/max ≥ 0.9 (예: 9/10, 14/15)      → "good"
+     - 0.7 ≤ score/max < 0.9 (예: 7/10, 8/10) → "normal"
+     - score/max < 0.7                         → "bad"
   · 영상에 관찰 불가 → "na" (점수 합산 제외)
 - 애매하면 중간(normal) 쪽. 확실히 뛰어난 부분만 good, 명백한 문제만 bad.
 - overall_score는 전체 sub_scores의 score합/max합×100으로 정확히 계산. 0점 항목이 3개 이상이면 80점 이상 나올 수 없음
