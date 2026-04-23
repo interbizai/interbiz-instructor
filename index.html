@@ -7202,21 +7202,27 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const scenariosRaw=critRaw?.scenarios||[];
   const tipsRaw=critRaw?.level_tips||[];
   const patternsRaw=critRaw?.teaching_patterns||[];
+  // 카드 렌더러 — 신규 필드(script_comparison, reason, observation, expected_effect) 지원 + 기존 호환
   const scenarioCard=(s,i)=>`<div style="padding:14px;border:1px solid rgba(159,18,57,.08);border-radius:10px;background:rgba(159,18,57,.03);margin-bottom:8px">
     <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:6px">시나리오 ${i+1}</div>
     ${s.situation?`<div style="font-size:11px;color:var(--t3);margin-bottom:4px">${s.situation}</div>`:''}
-    ${s.original_line?`<div style="font-size:11px;color:var(--red);text-decoration:line-through;margin-bottom:2px">"${s.original_line}"</div>`:''}
-    ${s.suggested_line?`<div style="font-size:12px;color:var(--blue);font-weight:600">"${s.suggested_line}"</div>`:''}
+    ${s.original_line?`<div style="font-size:11px;color:var(--red);text-decoration:line-through;margin-bottom:2px">현장 발화: "${s.original_line}"</div>`:''}
+    ${s.script_comparison&&s.script_comparison!=='교육자료 미제시'?`<div style="font-size:11px;color:var(--t2);margin-bottom:2px;padding:4px 8px;background:rgba(0,0,0,.04);border-radius:4px">교육자료 대본: "${s.script_comparison}"</div>`:''}
+    ${s.suggested_line?`<div style="font-size:12px;color:var(--blue);font-weight:600">추천 시나리오: "${s.suggested_line}"</div>`:''}
+    ${s.reason?`<div style="font-size:10.5px;color:var(--t2);margin-top:4px;line-height:1.5">💡 ${s.reason}</div>`:''}
     ${typeof s==='string'?`<div style="font-size:11px;color:var(--t2);line-height:1.6">${s}</div>`:''}
   </div>`;
   const tipCard2=(t)=>`<div style="padding:14px;border:1px solid rgba(139,92,246,.08);border-radius:10px;background:rgba(139,92,246,.03);margin-bottom:8px">
     <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px">${t.title||'TIP'}</div>
+    ${t.observation?`<div style="font-size:10.5px;color:var(--t3);margin-bottom:4px">📍 현재: ${t.observation}</div>`:''}
     <div style="font-size:11px;color:var(--t2);line-height:1.6">${t.detail||t.text||t}</div>
+    ${t.expected_effect?`<div style="font-size:10.5px;color:var(--green);margin-top:4px;line-height:1.5;font-weight:600">📈 ${t.expected_effect}</div>`:''}
   </div>`;
   const patternCard=(p)=>`<div style="padding:14px;border:1px solid rgba(16,185,129,.08);border-radius:10px;background:rgba(16,185,129,.03);margin-bottom:8px">
     <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">${p.type||'화법'} 화법</div>
     ${p.original?`<div style="font-size:11px;color:var(--t3);margin-bottom:2px">현재: "${p.original}"</div>`:''}
     ${p.alternative?`<div style="font-size:12px;color:var(--t1);font-weight:600">추천: "${p.alternative}"</div>`:''}
+    ${p.reason?`<div style="font-size:10.5px;color:var(--t2);margin-top:4px;line-height:1.5">💡 ${p.reason}</div>`:''}
     ${typeof p==='string'?`<div style="font-size:11px;color:var(--t2)">${p}</div>`:''}
   </div>`;
   el('an-tip-scenario').innerHTML=scenariosRaw.length?scenariosRaw.map(scenarioCard).join(''):'<div style="padding:14px;text-align:center;font-size:12px;color:var(--t3)">교육자료 첨부 시 시나리오가 생성됩니다</div>';
