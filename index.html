@@ -5294,10 +5294,10 @@ function renderPickDetail(){
               const typeLbl=p.type?(String(p.type).endsWith('화법')?p.type:p.type+' 화법'):'화법';
               const body=p.alternative||p.original||'';
               return `<div class="pick-shell-card" style="${cardStyle}">
-                <div style="font-size:13px;font-weight:800;color:#0078C8;margin-bottom:6px;letter-spacing:-0.2px">${typeLbl}</div>
-                ${body?`<div style="font-size:12.5px;color:var(--t2);line-height:1.55;font-weight:500">"${body}"</div>`:''}
+                <div style="${titleStyle}">${typeLbl}</div>
+                ${body?`<div style="${subStyle}">"${body}"</div>`:''}
               </div>`;
-            }).join(''):`<div class="pick-shell-card" style="${cardStyle}"><div style="font-size:13px;font-weight:800;color:#0078C8">AI 평가 후 자동 생성</div><div style="font-size:12px;color:var(--t3);margin-top:4px">분석 결과에서 추출됩니다</div></div>`}
+            }).join(''):`<div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">AI 평가 후 자동 생성</div><div style="${subStyle}">분석 결과에서 추출됩니다</div></div>`}
           </div>
         </div>
       </div>
