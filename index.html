@@ -1507,7 +1507,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       </div>
       <div class="alstep" data-step="crit" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
         <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
-        <span>평가안 기준 분석 (영상 + 교육자료)</span>
+        <span>교육맞춤평가 분석 (영상 + 교육자료)</span>
       </div>
       <div class="alstep" data-step="ai" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
         <span class="alstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
@@ -1585,9 +1585,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <div class="form-group" style="margin:0">
           <label class="form-lbl">체크리스트</label>
           <select class="form-input" id="an-cl-select" onchange="applyChecklistFromSelect('an')" style="margin-bottom:6px">
-            <option value="">평가안 기준</option>
+            <option value="">교육맞춤평가</option>
           </select>
-          <div id="an-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 평가안 기준: <span id="an-cl-applied-name"></span></div>
+          <div id="an-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 교육맞춤평가: <span id="an-cl-applied-name"></span></div>
           <select class="form-input" id="an-cl-ai-select" onchange="applyChecklistFromSelect('an','ai')">
             <option value="">AI 독자</option>
           </select>
@@ -1640,7 +1640,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
     <!-- ① 총점 배너: 평가안 (위, 주황) + 영상보기 (중간) + AI 독자 (아래, 로즈) -->
     <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);position:relative">
-      <!-- 평가안 기준 -->
+      <!-- 교육맞춤평가 -->
       <div style="background:linear-gradient(135deg,#9f1239,#881337);padding:22px 28px 28px;display:flex;align-items:center;gap:22px;color:#fff">
         <div style="position:relative;width:72px;height:72px;flex-shrink:0">
           <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
@@ -1656,7 +1656,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <div style="display:none" id="an-eval-items"></div>
         </div>
         <div style="flex:1;min-width:180px">
-          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">평가안 기준 요약</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">교육맞춤평가 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary">분석 중...</div>
           <div id="an-banner-keywords1" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
@@ -1696,13 +1696,13 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div class="video-player" id="an-player"></div>
     </div>
 
-    <!-- ▶ 탭: 평가안 기준 | AI 독자 분석 -->
+    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 -->
     <div class="tab-bar" style="margin-bottom:20px">
-      <button class="tab-btn active" onclick="switchAnTab('criteria',this)">평가안 기준</button>
+      <button class="tab-btn active" onclick="switchAnTab('criteria',this)">교육맞춤평가</button>
       <button class="tab-btn" onclick="switchAnTab('ai',this)">AI 독자 분석</button>
     </div>
 
-    <!-- TAB: 평가안 기준 -->
+    <!-- TAB: 교육맞춤평가 -->
     <div class="an-tab-pane" id="an-tab-criteria">
       <!-- 교육분석 (radar+bars 세로) | 최종 의견 (아이콘) -->
       <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-bottom:28px;align-items:start" id="an-edu-radar-wrap">
@@ -2087,10 +2087,10 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <div id="va-step2" style="display:none">
     <!-- 좌우 분할 -->
     <div id="va-split" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-      <!-- 왼쪽: 평가안 기준 -->
+      <!-- 왼쪽: 교육맞춤평가 -->
       <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);background:#fff;overflow:hidden">
         <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid rgba(0,0,0,.18)">
-          <span style="font-size:13px;font-weight:800">📋 평가안 기준 음성 분석</span>
+          <span style="font-size:13px;font-weight:800">📋 교육맞춤평가 음성 분석</span>
         </div>
         <div style="padding:16px" id="va-criteria-result"></div>
       </div>
@@ -2846,9 +2846,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div class="form-group" style="margin:0">
         <label class="form-lbl">체크리스트</label>
         <select class="form-input" id="st-cl-select" onchange="applyChecklistFromSelect('st')" style="margin-bottom:6px">
-          <option value="">평가안 기준</option>
+          <option value="">교육맞춤평가</option>
         </select>
-        <div id="st-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 평가안 기준: <span id="st-cl-applied-name"></span></div>
+        <div id="st-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 교육맞춤평가: <span id="st-cl-applied-name"></span></div>
         <select class="form-input" id="st-cl-ai-select" onchange="applyChecklistFromSelect('st','ai')">
           <option value="">AI 독자</option>
         </select>
@@ -3930,7 +3930,7 @@ function renderEduPage(){
         <option value="">체크리스트 타입 (해당 시)</option>
         <option value="standard">표준 (AI 독자용)</option>
         <option value="speech">스피치 (스피치용)</option>
-        ${(getEduTypes()||[]).map(t=>`<option value="edutype:${t.replace(/"/g,'&quot;')}">${t.replace(/</g,'&lt;')} 체크리스트 (평가안 기준용)</option>`).join('')}
+        ${(getEduTypes()||[]).map(t=>`<option value="edutype:${t.replace(/"/g,'&quot;')}">${t.replace(/</g,'&lt;')} 체크리스트 (교육맞춤평가용)</option>`).join('')}
       </select>
       <input type="file" id="edu-cl-file" accept=".xlsx,.xls,.pdf,.pptx,.ppt,.docx,.doc" style="display:none" onchange="onChecklistFileSelected(this)">
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-cl-file').click()">파일 선택</button>
@@ -3988,7 +3988,7 @@ function renderEduPage(){
     };
     clHtml+=`<div style="margin-top:16px">
       <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:4px">교육자료 카테고리 관리</div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">교안·시나리오 카테고리(평가안 기준 평가에 사용). 체크리스트는 "체크리스트 타입" 드롭다운에서 교육종류별로 자동 생성됩니다.</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">교안·시나리오 카테고리(교육맞춤평가 평가에 사용). 체크리스트는 "체크리스트 타입" 드롭다운에서 교육종류별로 자동 생성됩니다.</div>
       ${renderCatBox('교육자료 카테고리','교안·시나리오용','edu',catsEdu,'new-edu-cat-edu',"addEduCategory('edu')")}
     </div>`;
   }
@@ -5412,7 +5412,7 @@ function evaluateBadges(r, userId){
   const goodTs=ts.filter(t=>t.type==='good').length;
   const badTs=ts.filter(t=>t.type==='bad').length;
 
-  // 평가안 기준 (1~15)
+  // 교육맞춤평가 (1~15)
   if(cs.length) badges.push(1); // 첫 평가 완료
   if(cs.some(c=>c.score>=c.max)) badges.push(2); // 만점 항목
   if(cs.length&&cs.every(c=>c.score/c.max>=.7)) badges.push(3); // 전 항목 통과
@@ -6177,7 +6177,7 @@ function openAnalysis(){
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
   initAnProdSelect();
-  // 체크리스트 드롭다운 즉시 채움 (2개: 평가안 기준 + AI 독자)
+  // 체크리스트 드롭다운 즉시 채움 (2개: 교육맞춤평가 + AI 독자)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
   // 드롭다운 값 초기화 (같은 옵션 재클릭 시 onchange 미발화 문제 방지)
   ['an-cl-select','an-cl-ai-select'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -6215,7 +6215,7 @@ function loadEduFilesForCategory(){
     wrap.style.display='block';
     const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const mkCard=(f,kind,tagColor)=>{
-      const tagHtml=kind?`<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:${tagColor};color:#fff;font-weight:700;margin-right:4px">${esc(kind==='ai'?'AI 독자':kind==='crit'?'평가안 기준':'')}</span>`:'';
+      const tagHtml=kind?`<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:${tagColor};color:#fff;font-weight:700;margin-right:4px">${esc(kind==='ai'?'AI 독자':kind==='crit'?'교육맞춤평가':'')}</span>`:'';
       return `<div class="edu-card-item" data-kind="${esc(kind||'')}" data-id="${esc(f.id)}" data-name="${esc(f.name)}" data-url="${esc(f.file_url)}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;background:#fff;border-radius:6px;margin-bottom:4px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <div style="flex:1;min-width:0">
@@ -6231,7 +6231,7 @@ function loadEduFilesForCategory(){
       html+=eduFiles.map(f=>mkCard(f,'edu',null)).join('');
     }
     if(critCl.length){
-      html+=`<div style="font-size:11px;font-weight:700;color:var(--green);margin:10px 0 6px">✓ 평가안 기준 체크리스트 (${critCl.length})</div>`;
+      html+=`<div style="font-size:11px;font-weight:700;color:var(--green);margin:10px 0 6px">✓ 교육맞춤평가 체크리스트 (${critCl.length})</div>`;
       html+=critCl.map(f=>mkCard(f,'crit','#10b981')).join('');
     }
     if(stdCl.length){
@@ -6277,9 +6277,9 @@ function applyChecklistByFile(prefix,id,name,url,kind){
     sel.value=String(id);
   }
   applyChecklistFromSelect(prefix,kind);
-  showToast(`${kind==='ai'?'AI 독자':'평가안 기준'}: ${name}`,'#0078C8');
+  showToast(`${kind==='ai'?'AI 독자':'교육맞춤평가'}: ${name}`,'#0078C8');
 }
-// 교육콘텐츠 > 체크리스트 필터 — 평가안 기준(교육종류별)/AI 독자(표준)/스피치 각각
+// 교육콘텐츠 > 체크리스트 필터 — 교육맞춤평가(교육종류별)/AI 독자(표준)/스피치 각각
 function populateChecklistSelects(){
   const base=(D.checklists||[]).filter(c=>(c.category||'')==='체크리스트');
   const build=(arr,placeholder)=>{
@@ -6294,7 +6294,7 @@ function populateChecklistSelects(){
   };
   const standardList=base.filter(c=>(c.type||'')==='standard'||!c.type);
   const speechList=base.filter(c=>(c.type||'')==='speech');
-  // 평가안 기준용 = 교육종류별 체크리스트 (type이 standard/speech가 아닌 것, 주로 edutype)
+  // 교육맞춤평가용 = 교육종류별 체크리스트 (type이 standard/speech가 아닌 것, 주로 edutype)
   const critList=base.filter(c=>c.type&&c.type!=='standard'&&c.type!=='speech');
   // 현재 선택된 교육종류에 맞춰 필터 (선택된 경우)
   const anEduType=document.getElementById('an-edu-type')?.value||'';
@@ -6302,9 +6302,9 @@ function populateChecklistSelects(){
   const critForAn=anEduType?critList.filter(c=>c.type===anEduType):critList;
   const critForSt=stEduType?critList.filter(c=>c.type===stEduType):critList;
   const speechHtml=build(speechList,'선택');
-  // 평가안 기준 드롭다운
-  [['an-cl-select',build(critForAn,'평가안 기준')],
-   ['st-cl-select',build(critForSt,'평가안 기준')]].forEach(([id,html])=>{
+  // 교육맞춤평가 드롭다운
+  [['an-cl-select',build(critForAn,'교육맞춤평가')],
+   ['st-cl-select',build(critForSt,'교육맞춤평가')]].forEach(([id,html])=>{
     const sel=document.getElementById(id);
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
@@ -6566,7 +6566,7 @@ function openChecklistDetail(which){
     <div style="position:sticky;top:0;z-index:10;background:#fff;padding:20px 24px 12px;border-bottom:1px solid var(--bdr)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'평가안 기준'}</div>
+          <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'교육맞춤평가'}</div>
           <div style="font-size:18px;font-weight:900;margin-top:2px">체크리스트 대항목 상세 · 총 ${items.length}개 세부항목</div>
         </div>
         <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
@@ -6580,7 +6580,7 @@ function openChecklistDetail(which){
 
 // 체크리스트 드롭다운 전용 URL (교육자료 선택과 독립 저장 — 두 파일 공존 가능)
 function applyChecklistFromSelect(prefix,kind){
-  // kind: undefined (평가안 기준) | 'ai' (AI 독자 표준)
+  // kind: undefined (교육맞춤평가) | 'ai' (AI 독자 표준)
   const selId=kind==='ai'?prefix+'-cl-ai-select':prefix+'-cl-select';
   const hidSuffix=kind==='ai'?'-cl-ai-url':'-cl-url';
   const sel=document.getElementById(selId);
@@ -6595,7 +6595,7 @@ function applyChecklistFromSelect(prefix,kind){
   let nh=document.getElementById(hidId+'-name');
   if(!nh){nh=document.createElement('input');nh.type='hidden';nh.id=hidId+'-name';document.body.appendChild(nh);}
   nh.value=name;
-  // 적용 배지 표시 — 평가안 기준 / AI 독자 각각
+  // 적용 배지 표시 — 교육맞춤평가 / AI 독자 각각
   const badgeId=kind==='ai'?prefix+'-cl-ai-applied':prefix+'-cl-applied';
   const badgeNameId=badgeId+'-name';
   const appEl=document.getElementById(badgeId);
@@ -6604,7 +6604,7 @@ function applyChecklistFromSelect(prefix,kind){
     if(url){
       appEl.style.display='block';
       if(appName) appName.textContent=name;
-      else appEl.textContent=(kind==='ai'?'✓ AI 독자(표준): ':'✓ 평가안 기준: ')+name;
+      else appEl.textContent=(kind==='ai'?'✓ AI 독자(표준): ':'✓ 교육맞춤평가: ')+name;
     } else {
       appEl.style.display='none';
       if(appName) appName.textContent='';
@@ -6838,7 +6838,7 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     let critResult=null, aiResult=null;
     const errors=[];
     if(hasEdu){
-      setAiLoadingStep('AI 영상 분석 1/2 (평가안 기준)...');
+      setAiLoadingStep('AI 영상 분석 1/2 (교육맞춤평가)...');
       setAiLoadingStage('crit','active');
       try{
         critResult=normalizeVertexResult(await callVertexAnalyze({
@@ -6848,7 +6848,7 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
           edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
         }));
         setAiLoadingStage('crit','done');
-      }catch(e){errors.push('평가안 기준: '+e.message); console.error(e);}
+      }catch(e){errors.push('교육맞춤평가: '+e.message); console.error(e);}
       setAiLoadingStep('AI 영상 분석 2/2 (AI 독자)...');
     } else {
       setAiLoadingStage('crit','done'); // skip
@@ -6987,7 +6987,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ① 총점 배너 — overall_score(100점 만점) 우선, 없으면 criteriaScores 합산
   const critRaw=window._lastVertexResult?.crit;
   const aiRaw=window._lastVertexResult?.ai;
-  // 교육자료 없으면 평가안 기준 전체(배너+탭+레이더+피드백) 숨김
+  // 교육자료 없으면 교육맞춤평가 전체(배너+탭+레이더+피드백) 숨김
   const hasCrit=!!critRaw&&!!critRaw.sub_scores?.length;
   const critBannerWrap=document.querySelector('#an-step2 div[style*="linear-gradient(135deg,#9f1239"]')?.parentElement;
   if(critBannerWrap) critBannerWrap.style.display=hasCrit?'':'none';
@@ -7002,7 +7002,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   if(critTabBtn) critTabBtn.classList.remove('active');
   if(aiTabBtn) aiTabBtn.classList.remove('active');
   if(hasCrit){
-    // 평가안 기준 기본 활성화
+    // 교육맞춤평가 기본 활성화
     if(critPane) critPane.style.display='block';
     if(critTabBtn) critTabBtn.classList.add('active');
   } else {
@@ -7065,7 +7065,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     if(eduRadar) eduRadar.innerHTML='';
     const eduBars=el('an-edu-bars');
     if(eduBars){
-      eduBars.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">평가안 기준 세부 점수 데이터가 손상되었습니다.<br>영상을 다시 분석해주세요.</div>';
+      eduBars.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">교육맞춤평가 세부 점수 데이터가 손상되었습니다.<br>영상을 다시 분석해주세요.</div>';
     }
     const eduRadarParent=el('an-edu-radar');
     if(eduRadarParent&&eduRadarParent.parentElement){
@@ -7089,12 +7089,12 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     text:s.analysis||'', solution:s.solution||'', tags:[]
   }));
   window._anTimestamps=critTimestamps.length?critTimestamps:aiTimestamps;
-  el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps,'crit'):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 평가안 기준 피드백이 생성됩니다</div>';
-  // 평가안 기준 Good/Bad/Upgrade — Vertex raw 데이터 사용
+  el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps,'crit'):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 교육맞춤평가 피드백이 생성됩니다</div>';
+  // 교육맞춤평가 Good/Bad/Upgrade — Vertex raw 데이터 사용
   const criGood=(critRaw?.good||r.good||[]).slice(0,5);
   const criBad=(critRaw?.bad||r.bad||[]).slice(0,5);
   const criUpgrade=(critRaw?.upgrade||r.upgrade||[]).slice(0,5);
-  el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop',r.criteriaSummary||'평가안 기준 종합 분석 결과입니다.');
+  el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop',r.criteriaSummary||'교육맞춤평가 종합 분석 결과입니다.');
 
   // ④ 추천 시나리오 / 레벨UP / 교육화법 — Vertex raw 데이터
   const scenariosRaw=critRaw?.scenarios||[];
@@ -7328,7 +7328,7 @@ function openCategoryRadar(which,categoryName){
   overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:22px;max-width:860px;width:92vw;max-height:88vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
-        <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'평가안 기준'} · 대항목 세부 보기</div>
+        <div style="font-size:11px;color:var(--t3);font-weight:600">${which==='ai'?'AI 독자 분석':'교육맞춤평가'} · 대항목 세부 보기</div>
         <div style="font-size:17px;font-weight:900;margin-top:2px">${categoryName}</div>
       </div>
       <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
@@ -7396,7 +7396,7 @@ ${tsInfo}
 반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
   "criteriaScores": [{"name":"발성 및 전달력","score":0,"max":20},{"name":"내용 전문성","score":0,"max":25},{"name":"판서 및 자료","score":0,"max":15},{"name":"수강생 상호작용","score":0,"max":20},{"name":"시간 관리","score":0,"max":10},{"name":"마무리 및 요약","score":0,"max":10}],
-  "criteriaSummary": "평가안 기준 종합 평가 한줄",
+  "criteriaSummary": "교육맞춤평가 종합 평가 한줄",
   "overallScore": 0,
   "focusScore": 0,
   "overallComment": "강의 구성력 코멘트",
@@ -8263,7 +8263,7 @@ async function runVoiceAnalysis(){
   const vaTmpDur=vaTmpFile?await readVideoDuration(vaTmpFile).catch(()=>0):0;
   showAiLoading(true,Math.max(90,Math.round(40+vaTmpDur*0.1)));
   setAiLoadingStep('스피치 분석 준비 중...');
-  // 스피치는 평가안 기준 단계 스킵 표시
+  // 스피치는 교육맞춤평가 단계 스킵 표시
   setAiLoadingStage('crit','done');
 
   el('va-step1').style.display='none';
@@ -11112,12 +11112,12 @@ function openVideo(id){
       <!-- Timestamp feed with dual tabs -->
       <div>
         <div class="dual-tabs">
-          <button class="dual-tab active" onclick="switchDualTab('ts-pane-criteria',this)">평가안 기준</button>
+          <button class="dual-tab active" onclick="switchDualTab('ts-pane-criteria',this)">교육맞춤평가</button>
           <button class="dual-tab" onclick="switchDualTab('ts-pane-ai',this)">AI 종합 분석</button>
         </div>
         <div class="dual-pane active" id="ts-pane-criteria">
           <div style="border-radius:var(--r2);border:1px solid var(--bdr);padding:14px;margin-bottom:14px;background:rgba(0,120,200,.04)">
-            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">${vid.checklist?'업로드된 평가안 기준':'평가안 없음 — AI 자동 분석 적용 중'}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">${vid.checklist?'업로드된 교육맞춤평가':'평가안 없음 — AI 자동 분석 적용 중'}</div>
             <div style="font-size:11px;color:var(--t2);line-height:1.7">${vid.checklist||'별도 평가안이 업로드되지 않아 AI가 영상 흐름을 자체 분석합니다. 평가안을 업로드하면 해당 기준으로 재분석됩니다.'}</div>
           </div>
         </div>
