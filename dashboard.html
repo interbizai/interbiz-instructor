@@ -3108,9 +3108,14 @@ async function dbAddEduType(name){
   return data;
 }
 async function dbRemoveEduType(id){
-  const {error}=await sb.from('edu_types').delete().eq('id',id);
+  const {data,error}=await sb.from('edu_types').delete().eq('id',id).select();
   if(error){ console.error('dbRemoveEduType:',error); return {_error:error.message}; }
-  return {ok:true};
+  return {ok:true,deleted:data?.length||0};
+}
+async function dbRemoveEduTypeByName(name){
+  const {data,error}=await sb.from('edu_types').delete().eq('name',name).select();
+  if(error){ console.error('dbRemoveEduTypeByName:',error); return {_error:error.message}; }
+  return {ok:true,deleted:data?.length||0};
 }
 // 영상 생성
 async function dbCreateVideo(v){
@@ -11397,49 +11402,62 @@ async function addEduType(){
   if(!name){ inp?.focus(); return; }
   const existing=getEduTypeRecords().map(r=>r.name);
   if(existing.includes(name)){ showEduTypeToast('이미 등록된 교육종류입니다','#f59e0b'); return; }
-  // 1) Supabase 시도
+  // 1) 즉시 UI 반영 (optimistic)
+  const tempId='local-'+Date.now();
+  const currentDb=(Array.isArray(D.eduTypes)?D.eduTypes:[]);
+  D.eduTypes=[...currentDb,{id:tempId,name,_pending:true}];
+  if(inp) inp.value='';
+  renderEduTypeManage();
+  showEduTypeToast(`"${name}" 추가되었습니다`);
+  // 2) 백그라운드 Supabase 저장
   const row=await dbAddEduType(name);
   if(row?._error){
     const msg=(row._error||'').toLowerCase();
     const isTableMissing=msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache');
-    if(!isTableMissing){ showEduTypeToast('저장 실패: '+row._error,'#ef4444'); return; }
-    // 2) 테이블 미존재 → localStorage 폴백
-    console.warn('edu_types 테이블 없음 → localStorage 저장');
-    try{
-      const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
-      if(!cur.includes(name)){ cur.push(name); localStorage.setItem('interbiz_eduTypes',JSON.stringify(cur)); }
-    }catch(e){}
+    if(isTableMissing){
+      // 테이블 미존재 → localStorage에 보관하고 tempId 유지
+      try{
+        const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
+        if(!cur.includes(name)){ cur.push(name); localStorage.setItem('interbiz_eduTypes',JSON.stringify(cur)); }
+      }catch(e){}
+    } else {
+      // 다른 에러 → 롤백
+      D.eduTypes=D.eduTypes.filter(r=>r.id!==tempId);
+      renderEduTypeManage();
+      showEduTypeToast('저장 실패: '+row._error,'#ef4444');
+    }
   } else {
-    // Supabase 저장 성공 — D.eduTypes 갱신
-    const currentDb=(Array.isArray(D.eduTypes)?D.eduTypes:[]);
-    D.eduTypes=[...currentDb,{id:String(row.id),name:row.name}];
+    // 성공 → tempId를 real id로 교체
+    D.eduTypes=D.eduTypes.map(r=>r.id===tempId?{id:String(row.id),name:row.name}:r);
   }
-  if(inp) inp.value='';
-  renderEduTypeManage();
-  showEduTypeToast(`"${name}" 추가되었습니다`);
 }
 async function removeEduType(id,name){
   if(!confirm(`"${name}" 교육종류를 삭제할까요?`)) return;
+  // 1) 즉시 UI 반영 (optimistic) — D.eduTypes와 localStorage 양쪽에서 제거
+  D.eduTypes=(Array.isArray(D.eduTypes)?D.eduTypes:[])
+    .filter(r=>String(r.id)!==String(id) && r.name!==name);
+  try{
+    const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
+    localStorage.setItem('interbiz_eduTypes',JSON.stringify(cur.filter(n=>n!==name)));
+  }catch(e){}
+  renderEduTypeManage();
+  showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
+  // 2) 백그라운드 Supabase 삭제 — id 기준 + name 기준 fallback
   const isLocal=!id||String(id).startsWith('local-');
   if(!isLocal){
     const numId=parseInt(id,10);
     const res=await dbRemoveEduType(isNaN(numId)?id:numId);
-    if(res?._error){
-      const msg=(res._error||'').toLowerCase();
-      if(!msg.includes('relation')&&!msg.includes('does not exist')){
-        showEduTypeToast('삭제 실패: '+res._error,'#ef4444'); return;
-      }
+    console.log('DB delete by id:',res);
+    if(res?.deleted===0 || res?._error){
+      // id 매칭 실패 → name 기준 재시도
+      const byName=await dbRemoveEduTypeByName(name);
+      console.log('DB delete by name:',byName);
     }
-    D.eduTypes=(Array.isArray(D.eduTypes)?D.eduTypes:[]).filter(r=>String(r.id)!==String(id));
+  } else if(name){
+    // 이름 기준 한 번 시도 (DB에 있을 수도 있음)
+    const byName=await dbRemoveEduTypeByName(name);
+    console.log('DB delete by name (local id):',byName);
   }
-  // localStorage에서도 이름 기준으로 제거 (DB와 local 양쪽 정리)
-  try{
-    const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
-    const next=cur.filter(n=>n!==name);
-    localStorage.setItem('interbiz_eduTypes',JSON.stringify(next));
-  }catch(e){}
-  renderEduTypeManage();
-  showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
 }
 
 /* ════════════════════════════════
