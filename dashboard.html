@@ -1366,7 +1366,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <option value="1y">최근 1년</option>
       </select>
     </div>
-    <div class="f-item"><label class="f-lbl">소속</label>
+    <div class="f-item"><label class="f-lbl">조직명</label>
       <select id="f-ch" multiple onchange="renderDashboard()" size="1">
         <option value="">전체</option>
       </select>
@@ -1433,7 +1433,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <thead>
         <tr>
           <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('date')">평가일시 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('channel')">소속 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('eduType')">교육종류 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('team')">팀 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('product')">가전 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('name')">이름 ↕</th>
@@ -1456,7 +1456,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <thead>
         <tr>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('date')">평가일시 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('channel')">소속 ↕</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('eduType')">교육종류 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('team')">팀 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('product')">가전 ↕</th>
           <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('name')">이름 ↕</th>
@@ -1571,12 +1571,12 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <input type="text" class="form-input" id="an-title" placeholder="강의 제목">
         </div>
         <div class="form-group" style="margin:0">
-          <label class="form-lbl">소속</label>
-          <select class="form-input" id="an-channel">
-            <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
-            <option value="하이케어솔루션">하이케어솔루션</option>
+          <label class="form-lbl">교육종류</label>
+          <select class="form-input" id="an-edu-type">
+            <option value="">선택</option>
           </select>
         </div>
+        <input type="hidden" id="an-channel" value="">
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육자료</label>
           <select class="form-input" id="an-product" onchange="loadEduFilesForCategory()"></select>
@@ -2526,8 +2526,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h2>관리자</h2></div>
   <div class="content-card">
   <div class="tab-bar">
-    <button class="tab-btn" onclick="switchTab('평가결과',this);loadAdminDashboard()">평가결과</button>
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
+    <button class="tab-btn" onclick="switchTab('교육종류',this);renderEduTypeManage()">교육종류</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
     <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">금액 현황</button>
@@ -2538,9 +2538,17 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
     <div id="admin-credit-banner"></div>
   </div>
 
-  <!-- 평가결과 (관리자 내부) -->
-  <div class="tab-pane" id="tab-평가결과">
-    <div id="admin-dashboard-area"></div>
+  <!-- 교육종류 관리 -->
+  <div class="tab-pane" id="tab-교육종류">
+    <div style="max-width:620px">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육종류 관리</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">강사가 영상 등록 · 녹화 시 선택할 교육종류 목록입니다. 텍스트로 자유롭게 추가/삭제하세요.</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="text" id="edu-type-input" class="form-input" placeholder="예: 신입 기초과정" onkeydown="if(event.key==='Enter')addEduType()" style="flex:1">
+        <button class="btn" style="padding:10px 20px;font-size:12px;font-weight:700;background:var(--blue);color:#fff" onclick="addEduType()">+ 추가</button>
+      </div>
+      <div id="edu-type-list" style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden"></div>
+    </div>
   </div>
 
   <!-- 관리 -->
@@ -2588,7 +2596,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <option value="">전체 기간</option><option value="7">최근 7일</option><option value="30">최근 30일</option><option value="90">최근 3개월</option>
         </select>
       </div>
-      <div class="f-item"><label class="f-lbl">소속</label>
+      <div class="f-item"><label class="f-lbl">조직명</label>
         <select id="admin-coach-channel" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
           <option value="">전체</option>
         </select>
@@ -2808,17 +2816,16 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <input type="text" class="form-input" id="st-title" placeholder="예: 에어컨 교육 3회차">
       </div>
       <div class="form-group" style="margin:0">
+        <label class="form-lbl">교육종류</label>
+        <select class="form-input" id="st-edu-type">
+          <option value="">선택</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
         <label class="form-lbl">교육자료</label>
         <select class="form-input" id="st-type" onchange="loadStreamEduFiles()"></select>
       </div>
-      <div class="form-group" style="margin:0">
-        <label class="form-lbl">소속</label>
-        <select class="form-input" id="st-channel">
-          <option value="" disabled selected>소속 선택</option>
-          <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
-          <option value="하이케어솔루션">하이케어솔루션</option>
-        </select>
-      </div>
+      <input type="hidden" id="st-channel" value="">
       <input type="hidden" id="st-count" value="20">
       <div class="form-group" style="margin:0">
         <label class="form-lbl">제품</label>
@@ -2866,11 +2873,9 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         </select>
       </div>
       <div class="form-group" style="margin:0">
-        <label class="form-lbl">소속</label>
+        <label class="form-lbl">조직명</label>
         <select class="form-input" id="cmp-ch">
           <option value="">전체</option>
-          <option value="현장코칭강사">현장코칭강사</option><option value="현장강사">현장강사</option>
-          <option value="하이케어솔루션">하이케어솔루션</option>
         </select>
       </div>
       <div class="form-group" style="margin:0">
@@ -3026,6 +3031,7 @@ async function dbGetVideos(){
     id:r.id, userId:r.user_id, title:r.title, youtube:r.youtube||'', filePath:r.file_path||'',
     date:r.video_date, duration:r.duration||'', studentCount:r.student_count||0,
     status:r.status||'등록완료', videoType:r.video_type||'', channel:r.channel||'',
+    eduType:r.edu_type||'',
     checklist:r.checklist, solution:r.solution||'', eduFileUrl:r.edu_file_url||'', productName:r.product_name||'',
     timestamps: allTs.filter(t=>t.video_id===r.id).map(t=>({
       id:t.id, t:t.time_mark, type:t.type, text:t.text, tags:t.tags||[]
@@ -3085,14 +3091,25 @@ async function dbUpdateUser(id,fields){
 }
 // 영상 생성
 async function dbCreateVideo(v){
-  const {data,error}=await sb.from('videos').insert({
+  const full={
     user_id:v.userId, title:v.title, youtube:v.youtube||'', file_path:v.filePath||'',
     video_date:v.date||null, duration:v.duration||'', student_count:v.studentCount||0,
     status:v.status||'등록완료', video_type:v.videoType||'', channel:v.channel||'',
-    solution:v.solution||'', edu_file_url:v.eduFileUrl||'', product_name:v.productName||''
-  }).select().single();
-  if(error){ console.error('dbCreateVideo:',error); return null; }
-  return data;
+    solution:v.solution||'', edu_file_url:v.eduFileUrl||'', product_name:v.productName||'',
+    edu_type:v.eduType||null
+  };
+  let {data,error}=await sb.from('videos').insert(full).select().single();
+  if(!error) return data;
+  // edu_type 컬럼이 DB에 없으면 제외 후 재시도
+  const msg=(error.message||'').toLowerCase();
+  if(msg.includes('column') && msg.includes('edu_type')){
+    console.warn('edu_type 컬럼 없음 — 제외 후 재시도');
+    const {edu_type,...noEdu}=full;
+    ({data,error}=await sb.from('videos').insert(noEdu).select().single());
+    if(!error) return data;
+  }
+  console.error('dbCreateVideo:',error);
+  return null;
 }
 // 영상 업데이트
 async function dbUpdateVideo(id,fields){
@@ -3800,6 +3817,13 @@ function getEduCategories(){
   const defaults=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
   const db=(D.eduCategories||[]).map(c=>c.name);
   return [...new Set([...defaults,...db])];
+}
+// 교육종류 (관리자가 텍스트로 등록 · localStorage 저장)
+function getEduTypes(){
+  try{ return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){ return []; }
+}
+function setEduTypes(list){
+  try{ localStorage.setItem('interbiz_eduTypes', JSON.stringify(list||[])); }catch(e){}
 }
 function buildCategorySelect(id,style){
   const cats=getEduCategories();
@@ -5352,7 +5376,7 @@ function renderAdminCoaching(){
   const catSel=document.getElementById('admin-coach-cat');
   const prodSel=document.getElementById('admin-coach-prod');
   if(chSel&&chSel.options.length<=1){
-    [...new Set((D.users||[]).map(u=>u.channel).filter(Boolean))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;chSel.appendChild(o);});
+    [...new Set((D.users||[]).map(u=>u.orgName).filter(Boolean))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;chSel.appendChild(o);});
   }
   if(tmSel&&tmSel.options.length<=1){
     [...new Set((D.users||[]).map(u=>u.team).filter(Boolean))].forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tmSel.appendChild(o);});
@@ -5377,7 +5401,7 @@ function renderAdminCoaching(){
 
   // 유저 필터
   let users=(D.users||[]);
-  if(channel) users=users.filter(u=>u.channel===channel);
+  if(channel) users=users.filter(u=>u.orgName===channel);
   if(team) users=users.filter(u=>u.team===team);
   if(nameQ) users=users.filter(u=>(u.name||'').toLowerCase().includes(nameQ));
   const uids=new Set(users.map(u=>u.id));
@@ -5968,6 +5992,9 @@ function openAnalysis(){
   // 교육자료 카테고리 select 채우기
   const anProd=el('an-product');
   if(anProd){const cats=getEduCategories();anProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
+  // 교육종류 select 채우기
+  const anEduType=el('an-edu-type');
+  if(anEduType){const types=getEduTypes();anEduType.innerHTML='<option value="">선택</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');}
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
   initAnProdSelect();
@@ -6571,7 +6598,7 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       userId, title, youtube:'', filePath:videoUrl,
       date:new Date().toISOString().split('T')[0], duration:'—',
       studentCount, status:'분석완료',
-      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+      channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
       eduFileUrl:eduFileUrl||'', productName:window._anProduct||''
     });
     const videoId=vidRow?.id||null;
@@ -7312,7 +7339,7 @@ async function autoSaveAnalysis(resultJson){
       userId:userId, title:v('an-title'), youtube:yt,
       date:new Date().toISOString().split('T')[0], duration:'—',
       studentCount:parseInt(v('an-count'))||0, status:'분석완료',
-      channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+      channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
       eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
     });
     if(result && resultJson.timestamps?.length){
@@ -7332,7 +7359,7 @@ async function saveAnalysisVideo(){
     userId:userId, title:v('an-title'), youtube:yt,
     date:new Date().toISOString().split('T')[0], duration:'—',
     studentCount:parseInt(v('an-count'))||0, status:'분석완료',
-    channel:v('an-channel'), videoType:v('an-product')||'', solution:'AI 분석 완료',
+    channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
     eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
   });
   if(result && window._anTimestamps?.length){
@@ -8723,6 +8750,7 @@ function openStreaming(){
 function openStreamModal(){
   el('st-title').value=''; el('st-count').value='';
   const stType=el('st-type');if(stType){const cats=getEduCategories();stType.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
+  const stEduType=el('st-edu-type');if(stEduType){const types=getEduTypes();stEduType.innerHTML='<option value="">선택</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');}
   el('st-date').value=new Date().toISOString().split('T')[0];
   el('st-err').textContent='';
   // 제품 셀렉트 초기화
@@ -8769,7 +8797,6 @@ let audioCtx=null, analyser=null, animFrameId=null;
 function goStreamStep2(){
   const title=v('st-title').trim();
   if(!title){ el('st-err').textContent='영상 제목을 입력하세요.'; return; }
-  if(!v('st-channel')){ el('st-err').textContent='소속을 선택하세요.'; return; }
   closeOverlay('stream-info-overlay');
   // Show streaming page
   el('stream-step0').style.display='none';
@@ -8779,8 +8806,8 @@ function goStreamStep2(){
   showPage('page-streaming');
   el('stream-info-display').innerHTML=`
     <strong>제목:</strong> ${title}<br>
-    <strong>소속:</strong> ${v('st-channel')||'—'}<br>
-    <strong>종류:</strong> ${v('st-type')||'—'}<br>
+    <strong>교육종류:</strong> ${v('st-edu-type')||'—'}<br>
+    <strong>교육자료:</strong> ${v('st-type')||'—'}<br>
     <strong>인원:</strong> ${v('st-count')||'—'}명<br>
     <strong>날짜:</strong> ${v('st-date')||'—'}
   `;
@@ -8976,13 +9003,13 @@ async function saveStreamVideo(){
   const result=await dbCreateVideo({
     userId:CU.id, title:v('st-title'), duration:dur,
     studentCount:parseInt(v('st-count'))||0, status:'분석완료',
-    videoType:v('st-type'), channel:v('st-channel'),
+    videoType:v('st-type'), channel:v('st-channel'), eduType:v('st-edu-type'),
     date:v('st-date'), solution:'AI 연동 후 솔루션이 자동 생성됩니다.',
     eduFileUrl:document.getElementById('st-checklist-url')?.value||'',
     checklistUrl:document.getElementById('st-cl-url')?.value||'',
     productName:document.getElementById('st-prod-select')?.value||''
   });
-  if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:''}); }
+  if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:'',videoType:v('st-type')||'',eduType:v('st-edu-type')||''}); }
   alert('영상이 저장되었습니다!');
   showPage('page-home');
 }
@@ -9010,7 +9037,7 @@ function resetFilters(){
 function initDashboard(){
   try{
   const chs=el('f-ch'); const prevCh=chs?.value||''; if(chs){chs.innerHTML='<option value="">전체</option>';
-  [...new Set(D.users.map(u=>(u.channel||'').trim()).filter(Boolean))].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; chs.appendChild(o); });
+  [...new Set(D.users.map(u=>(u.orgName||'').trim()).filter(Boolean))].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; chs.appendChild(o); });
   chs.value=prevCh;}
   const ps=el('f-product'); const prevP=ps?.value||''; if(ps){ps.innerHTML='<option value="">전체</option>';
   getEduCategories().forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
@@ -9061,7 +9088,7 @@ function getFiltered(){
   }
 
   return D.users.filter(u=>{
-    if(chs.length && !chs.includes((u.channel||'').trim())) return false;
+    if(chs.length && !chs.includes((u.orgName||'').trim())) return false;
     if(teams.length && !teams.includes((u.team||'').trim())) return false;
     if(names.length && !names.includes((u.name||'').trim())) return false;
     if(products.length && (!productUserIds || !productUserIds.has(u.id))) return false;
@@ -9156,7 +9183,7 @@ function renderEvalHistory(filtered){
       if(!sMap) return; // 평가 없는 영상은 제외
       const score=sMap['평가안기준']||sMap['AI독자']||0;
       if(!score) return;
-      evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
+      evalHistoryRows.push({date:v.date||'—',channel:u.channel||'—',eduType:v.eduType||v.edu_type||'—',team:u.team||'—',product:v.videoType||v.video_type||'—',name:u.name,score,userId:u.id,videoId:v.id,hireDate:u.hireDate});
     });
   });
   evalSortKey='date'; evalSortAsc=false;
@@ -9198,7 +9225,7 @@ function renderEvalRows(){
 
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="${r.videoId?'openVideo('+r.videoId+')':'openLecturer('+r.userId+',&quot;page-pick&quot;)'}">
       <td style="padding:10px 12px">${r.date}</td>
-      <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
+      <td style="padding:10px 12px">${r.eduType||'—'}</td>
       <td style="padding:10px 12px">${r.team}</td>
       <td style="padding:10px 12px">${r.product}</td>
       <td style="padding:10px 12px;font-size:12px;font-weight:600">${r.name}</td>
@@ -9227,7 +9254,7 @@ function renderVoiceHistory(filtered){
   voiceHistoryRows=(D.voiceEvals||[]).filter(ve=>fIds.has(ve.user_id)).map(ve=>{
     const u=D.users.find(x=>x.id===ve.user_id);
     const product=(ve.result_data?.product)||'—';
-    return {date:ve.eval_date||ve.created_at?.slice(0,10)||'—',channel:u?.channel||'—',team:u?.team||'—',product,tone:ve.tone||'—',name:ve.user_name||u?.name||'—',score:ve.score||0,userId:ve.user_id,voiceId:ve.id,hireDate:u?.hireDate};
+    return {date:ve.eval_date||ve.created_at?.slice(0,10)||'—',channel:u?.channel||'—',eduType:ve.edu_type||ve.eduType||ve.result_data?.eduType||'—',team:u?.team||'—',product,tone:ve.tone||'—',name:ve.user_name||u?.name||'—',score:ve.score||0,userId:ve.user_id,voiceId:ve.id,hireDate:u?.hireDate};
   });
   voiceSortKey='date';voiceSortAsc=false;voiceShowAll=false;
   renderVoiceRows();
@@ -9277,7 +9304,7 @@ function renderVoiceRows(){
 
     return `<tr style="border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background=''" onclick="openVoiceResult(${r.voiceId})">
       <td style="padding:10px 12px">${r.date}</td>
-      <td style="padding:10px 12px"><span class="channel-chip ch-${r.channel}">${r.channel}</span></td>
+      <td style="padding:10px 12px">${r.eduType||'—'}</td>
       <td style="padding:10px 12px">${r.team}</td>
       <td style="padding:10px 12px">${r.product}</td>
       <td style="padding:10px 12px;font-size:12px;font-weight:600">${r.name}</td>
@@ -10478,6 +10505,10 @@ function openCompareModal(myId){
   [...new Set(D.users.filter(u=>!u.deleted).map(u=>u.team).filter(Boolean))].forEach(t=>{
     const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o);
   });
+  const cs=el('cmp-ch'); cs.innerHTML='<option value="">전체</option>';
+  [...new Set(D.users.filter(u=>!u.deleted).map(u=>u.orgName).filter(Boolean))].forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent=c; cs.appendChild(o);
+  });
   const ns=el('cmp-name'); ns.innerHTML='<option value="">전체</option>';
   D.users.filter(u=>!u.deleted&&u.id!==myId).forEach(u=>{
     const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o);
@@ -10494,7 +10525,7 @@ function renderCompareResults(myId){
   let list=D.users.filter(u=>{
     if(u.deleted) return false;
     if(u.id===myId) return false;
-    if(ch&&u.channel!==ch) return false;
+    if(ch&&u.orgName!==ch) return false;
     if(team&&u.team!==team) return false;
     if(name&&u.name!==name) return false;
     if(tenure){
@@ -11249,31 +11280,46 @@ function renderStatChart(){
     </div>`;
   }).join('');
 }
-function loadAdminDashboard(){
-  const area=el('admin-dashboard-area');
-  if(!area) return;
-  const src=document.querySelector('#page-dashboard main');
-  if(!src) return;
-  // 실제 DOM 노드를 이동 (이벤트 유지)
-  area.innerHTML='';
-  while(src.firstChild) area.appendChild(src.firstChild);
-  // 관리자 안에서는 평가결과 아이콘 제거
-  area.querySelectorAll('.page-title-icon').forEach(ic=>ic.style.display='none');
-  setTimeout(()=>{try{initDashboard();}catch(e){}},50);
-}
 function switchTab(name,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   el('tab-'+name)?.classList.add('active');
-  // 평가결과 탭에서 벗어나면 대시보드 노드 원복
-  if(name!=='평가결과'){
-    const area=el('admin-dashboard-area');
-    const dashMain=document.querySelector('#page-dashboard main');
-    if(area&&dashMain&&area.firstChild){
-      while(area.firstChild) dashMain.appendChild(area.firstChild);
-    }
+}
+
+/* 교육종류 관리 (관리자) */
+function renderEduTypeManage(){
+  const listEl=el('edu-type-list');
+  if(!listEl) return;
+  const types=getEduTypes();
+  if(!types.length){
+    listEl.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육종류가 없습니다. 상단 입력창으로 추가하세요.</div>';
+    return;
   }
+  listEl.innerHTML=types.map((t,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
+    <span style="font-size:13px;font-weight:600;color:var(--t1)">${t}</span>
+    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType(${i})">삭제</button>
+  </div>`).join('');
+  const inp=el('edu-type-input');if(inp) inp.focus();
+}
+function addEduType(){
+  const inp=el('edu-type-input');
+  const name=(inp?.value||'').trim();
+  if(!name){ inp?.focus(); return; }
+  const types=getEduTypes();
+  if(types.includes(name)){ alert('이미 등록된 교육종류입니다.'); return; }
+  types.push(name);
+  setEduTypes(types);
+  if(inp) inp.value='';
+  renderEduTypeManage();
+}
+function removeEduType(idx){
+  const types=getEduTypes();
+  if(!types[idx]) return;
+  if(!confirm(`"${types[idx]}" 교육종류를 삭제할까요?`)) return;
+  types.splice(idx,1);
+  setEduTypes(types);
+  renderEduTypeManage();
 }
 
 /* ════════════════════════════════
