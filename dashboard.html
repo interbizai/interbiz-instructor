@@ -7372,10 +7372,10 @@ function renderTsTable(timestamps,which){
       const _nTh=_maxForTh<=5?0.6:0.7;
       const scoreColor=isNA?'#94a3b8':scoreRatio>=_gTh?'#10b981':scoreRatio>=_nTh?'#f59e0b':'#ef4444';
       const rowBg=idx%2===0?'#ffffff':'#fafbfc';
-      // 점수 pill (가점 있는 항목)
-      const scorePill=`<span class="ts-score-edit" data-sub-idx="${ts._subIdx}" data-max="${ts.maxScore||5}" ${canEdit?'contenteditable="true" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onfocus="this.style.outline=\'2px dashed #0078C8\';this.style.outlineOffset=\'1px\'" onblur="this.style.outline=\'none\';saveSubScoreEdit(\''+srcWhich+'\','+ts._subIdx+',\'score\',this.textContent)"':''} style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT};${canEdit?'cursor:text;':''}">${ts.score}</span>`;
+      // 점수 pill (가점 있는 항목) — stopPropagation 제거, tbody 위임 핸들러가 contenteditable 감지 처리
+      const scorePill=`<span class="ts-score-edit" data-sub-idx="${ts._subIdx}" data-max="${ts.maxScore||5}" ${canEdit?'contenteditable="true" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onfocus="this.style.outline=\'2px dashed #0078C8\';this.style.outlineOffset=\'1px\'" onblur="this.style.outline=\'none\';saveSubScoreEdit(\''+srcWhich+'\','+ts._subIdx+',\'score\',this.textContent)"':''} style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT};${canEdit?'cursor:text;':''}">${ts.score}</span>`;
       // 해당없음 표기 — 모든 사용자에게 회색 '해당없음'. 관리자는 클릭 시 숫자 입력으로 전환 가능
-      const naEditable=`<span contenteditable="true" onclick="event.stopPropagation()" onfocus="if(this.textContent.trim()==='해당없음'){this.innerHTML='';}this.style.color='#000';this.style.outline='2px dashed #0078C8';this.style.outlineOffset='1px'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'score',this.textContent);if(!this.textContent.trim()){this.textContent='해당없음';}this.style.color='#94a3b8'" style="display:inline-block;padding:3px 10px;border-radius:999px;color:#94a3b8;font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;cursor:text">해당없음</span>`;
+      const naEditable=`<span contenteditable="true" onfocus="if(this.textContent.trim()==='해당없음'){this.innerHTML='';}this.style.color='#000';this.style.outline='2px dashed #0078C8';this.style.outlineOffset='1px'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'score',this.textContent);if(!this.textContent.trim()){this.textContent='해당없음';}this.style.color='#94a3b8'" style="display:inline-block;padding:3px 10px;border-radius:999px;color:#94a3b8;font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;cursor:text">해당없음</span>`;
       const naStatic=`<span style="color:#94a3b8;font-family:${FONT};font-size:${CELL_SIZE};font-weight:700">해당없음</span>`;
       const scoreDisplay=isNA?(canEdit?naEditable:naStatic):scorePill;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -7385,16 +7385,17 @@ function renderTsTable(timestamps,which){
         const inCat=srcRaw.sub_scores.filter(s=>(s.category||'').trim()===(ts.category||'').trim());
         subIdx=inCat.findIndex(s=>(s.sub_item||'').trim()===(ts.item||'').trim());
       }
-      const onClick=subIdx>=0?`openSubItemVideoModal('${srcWhich}','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
       // 분석 / 솔루션 셀 — 관리자 인라인 수정 (빈 값은 완전 공백)
       const escCell=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const mkEditable=(value,field)=>{
         const raw=escCell(value);
-        if(!canEdit) return raw; // 일반 사용자: 값 그대로 (없으면 공백)
-        // 관리자: editable, 빈 값도 click target 유지 (min-height 확보, placeholder 없음)
-        return `<span contenteditable="true" onclick="event.stopPropagation()" onfocus="this.style.background='#fffbeb';this.style.outline='1px dashed #f59e0b';this.style.outlineOffset='1px'" onblur="this.style.background='transparent';this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'${field}',this.textContent)" style="display:block;width:100%;min-height:1.4em;cursor:text;border-radius:4px;padding:2px 4px">${raw}</span>`;
+        if(!canEdit) return raw;
+        // contenteditable 자체는 stopPropagation 하지 않음.
+        // → tbody의 이벤트 위임(handleTsRowClick)에서 contenteditable 타겟일 때 modal open 건너뛰도록 처리
+        return `<span contenteditable="true" onfocus="this.style.background='#fffbeb';this.style.outline='1px dashed #f59e0b';this.style.outlineOffset='1px'" onblur="this.style.background='transparent';this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'${field}',this.textContent)" style="display:block;width:100%;min-height:1.4em;cursor:text;border-radius:4px;padding:2px 4px">${raw}</span>`;
       };
-      return `<tr style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'" onclick="${onClick}">
+      // data-* 속성으로 행 정보 전달 (onclick 문자열 escaping 이슈 제거)
+      return `<tr data-ts-which="${srcWhich}" data-ts-cat="${escCell(ts.category||'')}" data-ts-subidx="${subIdx}" data-ts-idx="${idx}" style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'">
         <td style="${tdNowrap}">${ts.category||''}</td>
         <td style="${tdNowrap}">${ts.item||''}</td>
         <td style="${tdWrap}">${ts.criteria||''}</td>
@@ -7425,10 +7426,27 @@ function renderTsTable(timestamps,which){
     <div style="overflow:auto;flex:1;min-height:0">
       <table style="${tableStyle}">
         ${colgroupHtml}
-        <tbody>${bodyRows}</tbody>
+        <tbody onclick="handleTsRowClick(event)">${bodyRows}</tbody>
       </table>
     </div>
   </div>`;
+}
+// 평가 항목별 피드백 — 행 클릭 위임 핸들러
+// (개별 행에 onclick 문자열 바인딩 대신 tbody에 하나만 걸어서 escaping 이슈 제거 + contenteditable 감지)
+function handleTsRowClick(event){
+  // 편집 가능 요소 클릭은 무시 (관리자 편집 중일 때 modal 열리지 않도록)
+  if(event.target.closest('[contenteditable="true"]')) return;
+  const tr=event.target.closest('tr[data-ts-which]');
+  if(!tr) return;
+  const which=tr.dataset.tsWhich;
+  const cat=tr.dataset.tsCat||'';
+  const subIdx=parseInt(tr.dataset.tsSubidx,10);
+  const idx=parseInt(tr.dataset.tsIdx,10);
+  if(!isNaN(subIdx)&&subIdx>=0){
+    if(typeof openSubItemVideoModal==='function') openSubItemVideoModal(which,cat,subIdx);
+  } else if(!isNaN(idx)){
+    if(typeof openTimestampModal2==='function') openTimestampModal2(idx);
+  }
 }
 
 // 레이더 차트 SVG 공통
