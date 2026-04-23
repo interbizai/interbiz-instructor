@@ -10675,11 +10675,11 @@ function openLecturer(id, fromPage){
             <div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>
           </div>
           <div style="text-align:center;padding:12px 8px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
-            <div style="font-size:22px;font-weight:900;color:var(--orange)">${u.satisfaction||'—'}<span style="font-size:10px;color:var(--t3)">/5.0</span></div>
-            <div style="font-size:9px;color:var(--t3);margin-top:3px">수강 만족도</div>
+            <div style="font-size:22px;font-weight:900;color:var(--t3)">—<span style="font-size:10px;color:var(--t3)">/5.0</span></div>
+            <div style="font-size:9px;color:var(--t3);margin-top:3px">개선 지수</div>
           </div>
           <div style="text-align:center;padding:12px 8px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
-            <div style="font-size:22px;font-weight:900;color:${lvData.color}">${lvData.grade}</div>
+            <div style="font-size:22px;font-weight:900;color:var(--t3)">—</div>
             <div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>
           </div>
         </div>
@@ -10898,19 +10898,94 @@ function _refreshLectStats(userId){
   window._lectAvgScore=avg;
   const u=D.users.find(x=>x.id===userId);
   const totalVids=(D.videos||[]).filter(v=>v.userId===userId).length;
-  const lvData=getLevelInfo(avg,cnt,totalVids);
-  // 관리자 지정 등급이 있으면 우선
-  const gradeOverride=u?.grade_override||'';
-  const satVal=u?.satisfaction||'—';
+
+  // ── 개선 지수 (/5.0) — 최근 평가 향상분 기반 자동 계산 ──
+  // latest를 날짜순으로 정렬 → 인접 평가 간 향상률(%) → 최근 3회 평균 → 3.0 ± (%/10) clamp[1,5]
+  const sortedEvals=[...latest].sort((a,b)=>{
+    const da=new Date(a.created_at||a.eval_date||0).getTime();
+    const db=new Date(b.created_at||b.eval_date||0).getTime();
+    return da-db;
+  });
+  const deltas=[];
+  for(let i=1;i<sortedEvals.length;i++){
+    const prev=Number(sortedEvals[i-1].overall_score||0);
+    const cur=Number(sortedEvals[i].overall_score||0);
+    if(prev>0) deltas.push((cur-prev)/prev*100);
+  }
+  const recentDeltas=deltas.slice(-3);
+  const avgDelta=recentDeltas.length?recentDeltas.reduce((a,b)=>a+b,0)/recentDeltas.length:null;
+  // 3.0 ± (avgDelta/10) — +20% 향상 → 5.0, 0% → 3.0, -20% → 1.0 (clamp 1~5)
+  const impIdx=avgDelta==null?null:Math.max(1,Math.min(5,3+avgDelta/10));
+  const impDisplay=impIdx==null?'—':impIdx.toFixed(1);
+  const impColor=impIdx==null?'var(--t3)':impIdx>=4?'#10b981':impIdx>=3?'#f59e0b':'#ef4444';
+  // 최근 평가 점수 추이 데이터 (차트용)
+  window._lectImpSeries=window._lectImpSeries||{};
+  window._lectImpSeries[userId]=sortedEvals.map(e=>({
+    date:(e.eval_date||e.created_at||'').slice(0,10),
+    score:Number(e.overall_score||0)
+  }));
+
+  // ── 종합 등급 — 평가 점수 기준 자동 매핑 (관리자 override 제거) ──
+  const autoGrade=cnt===0?'—':avg>=90?'S':avg>=80?'A':avg>=70?'B':avg>=60?'C':'D';
+  const gradeColorMap={'S':'#dc2626','A':'#2563eb','B':'#10b981','C':'#f59e0b','D':'#9ca3af','—':'var(--t3)'};
+  const gradeColor=gradeColorMap[autoGrade]||'var(--t3)';
+
   const cards=document.querySelectorAll('#lect-stat-cards > div');
   if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0.0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
   if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>`;
-  if(cards[2]) cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--orange)">${satVal}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">수강 만족도</div>${CU?.isAdmin?`<div style="margin-top:4px"><button class="btn btn-ghost" style="padding:2px 8px;font-size:9px" onclick="editSatisfaction(${userId})">수정</button></div>`:''}`;
-  if(cards[3]){
-    const grade=gradeOverride||lvData.grade;
-    const color=gradeOverride?({'S':'#dc2626','A':'#2563eb','B':'#10b981','C':'#f59e0b','D':'#9ca3af'}[gradeOverride[0]]||lvData.color):lvData.color;
-    cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${color}">${grade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>${CU?.isAdmin?`<div style="margin-top:4px"><button class="btn btn-ghost" style="padding:2px 8px;font-size:9px" onclick="editGrade(${userId})">수정</button></div>`:''}`;
+  if(cards[2]){
+    cards[2].style.cursor='pointer';
+    cards[2].title='클릭 시 평가 점수 추이 그래프';
+    cards[2].onclick=()=>openImprovementChart(userId);
+    cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:${impColor}">${impDisplay}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">개선 지수</div>${impIdx==null?'<div style="font-size:8px;color:var(--t3);margin-top:2px">평가 2회↑ 필요</div>':''}`;
   }
+  if(cards[3]) cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${gradeColor}">${autoGrade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
+}
+
+// 개선 지수 — 최근 평가 점수 추이 그래프 모달
+function openImprovementChart(userId){
+  const series=(window._lectImpSeries||{})[userId]||[];
+  if(series.length<2){ alert('평가가 2회 이상 쌓이면 추이 그래프가 생성됩니다.'); return; }
+  document.getElementById('imp-chart-overlay')?.remove();
+  // 간단한 SVG 라인 차트
+  const W=640,H=320,PAD_L=48,PAD_R=20,PAD_T=20,PAD_B=36;
+  const minS=Math.max(0,Math.min(...series.map(p=>p.score))-10);
+  const maxS=Math.min(100,Math.max(...series.map(p=>p.score))+5);
+  const xAt=i=>PAD_L+(W-PAD_L-PAD_R)*(series.length>1?i/(series.length-1):0);
+  const yAt=s=>PAD_T+(H-PAD_T-PAD_B)*(1-(s-minS)/Math.max(1,maxS-minS));
+  const gridLines=[0,25,50,75,100].filter(v=>v>=minS&&v<=maxS).map(v=>{
+    const y=yAt(v);
+    return `<line x1="${PAD_L}" y1="${y}" x2="${W-PAD_R}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/><text x="${PAD_L-6}" y="${y+4}" fill="#94a3b8" font-size="10" text-anchor="end">${v}</text>`;
+  }).join('');
+  const pts=series.map((p,i)=>`${xAt(i)},${yAt(p.score)}`).join(' ');
+  const dots=series.map((p,i)=>{
+    const cx=xAt(i),cy=yAt(p.score);
+    return `<circle cx="${cx}" cy="${cy}" r="5" fill="#0078C8" stroke="#fff" stroke-width="2"/><text x="${cx}" y="${cy-12}" fill="#0078C8" font-size="11" font-weight="800" text-anchor="middle">${p.score}</text>`;
+  }).join('');
+  const xLabels=series.map((p,i)=>{
+    const x=xAt(i);
+    return `<text x="${x}" y="${H-PAD_B+18}" fill="#64748b" font-size="10" text-anchor="middle">${p.date||'—'}</text>`;
+  }).join('');
+  const svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+    ${gridLines}
+    <polyline points="${pts}" fill="none" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}${xLabels}
+  </svg>`;
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='imp-chart-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:720px;width:92vw;padding:24px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:17px;font-weight:900;color:var(--t1)">평가 점수 추이</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px">개선 지수는 인접 평가 간 향상률(%)의 최근 3회 평균으로 산출됩니다.</div>
+      </div>
+      <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    ${svg}
+  </div>`;
+  document.body.appendChild(overlay);
 }
 
 // 관리자 수강 만족도 수정
