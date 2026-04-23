@@ -917,17 +917,20 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   .pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:36px}
 }
 
-/* ── 인터PICK 타이틀 별 아이콘 — 노란색 빛 애니메이션 ── */
+/* ── 인터PICK 타이틀 별 아이콘 — 노란색 빛 애니메이션 (별 자체에만 글로우) ── */
 .pick-star-glow{display:inline-flex;align-items:center;justify-content:center;animation:pickStarPulse 2.2s ease-in-out infinite}
-.pick-star-glow svg{filter:drop-shadow(0 0 6px rgba(251,191,36,.65)) drop-shadow(0 0 14px rgba(245,158,11,.45));transition:filter .3s ease}
+/* #page-pick 흑백 규칙 override — 별은 노랑으로 강제 */
+#page-pick .page-title-icon.pick-star-glow svg,
+.pick-star-glow svg{fill:#FBBF24!important;stroke:#F59E0B!important;transition:transform .3s ease}
+/* 글로우는 polygon(별 모양)에만 적용 — SVG drop-shadow가 path 경계를 따르므로 별 실루엣 주변에만 빛남 */
+.pick-star-glow svg polygon{filter:drop-shadow(0 0 5px rgba(251,191,36,.85)) drop-shadow(0 0 11px rgba(245,158,11,.55));animation:pickStarColor 3s ease-in-out infinite}
 @keyframes pickStarPulse{
-  0%,100%{filter:drop-shadow(0 0 6px rgba(251,191,36,.55)) drop-shadow(0 0 12px rgba(245,158,11,.35));transform:scale(1)}
-  50%{filter:drop-shadow(0 0 12px rgba(251,191,36,.95)) drop-shadow(0 0 24px rgba(245,158,11,.75));transform:scale(1.08)}
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.08)}
 }
-.pick-star-glow svg polygon{animation:pickStarColor 3s ease-in-out infinite}
 @keyframes pickStarColor{
-  0%,100%{fill:#FBBF24}
-  50%{fill:#FCD34D}
+  0%,100%{fill:#FBBF24;filter:drop-shadow(0 0 5px rgba(251,191,36,.75)) drop-shadow(0 0 10px rgba(245,158,11,.45))}
+  50%{fill:#FCD34D;filter:drop-shadow(0 0 8px rgba(251,191,36,1)) drop-shadow(0 0 16px rgba(245,158,11,.7))}
 }
 
 /* ── 인터PICK : MasterClass 오마주 · 흑백 전용 ── */
