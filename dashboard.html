@@ -7314,7 +7314,8 @@ function renderTsTable(timestamps,which){
       const naText=/(해당 ?없|평가하기 어렵|평가가 어렵|판단하기 어렵|평가 불가|판단 불가|확인 불가|녹화된 강의이므로|해당 항목을 평가할 수 없|평가 대상이 아님)/.test((ts.text||'')+(ts.solution||''));
       const isNA=ts.level==='na'||ts.type==='na'||(noTs&&naText);
       const scoreRatio=ts.maxScore?ts.score/ts.maxScore:0;
-      const scoreColor=isNA?'#94a3b8':scoreRatio>=0.8?'#10b981':scoreRatio>=0.5?'#f59e0b':'#ef4444';
+      // 색상 기준: 잘함 초록 ≥90%, 보통 주황 ≥70%, 못함 빨강 <70%
+      const scoreColor=isNA?'#94a3b8':scoreRatio>=0.9?'#10b981':scoreRatio>=0.7?'#f59e0b':'#ef4444';
       const rowBg=idx%2===0?'#ffffff':'#fafbfc';
       // 점수 셀 — 관리자는 인라인 수정 가능 (contenteditable + onblur 저장)
       const scorePill=`<span class="ts-score-edit" data-sub-idx="${ts._subIdx}" data-max="${ts.maxScore||5}" ${canEdit?'contenteditable="true" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onfocus="this.style.outline=\'2px dashed #0078C8\';this.style.outlineOffset=\'1px\'" onblur="this.style.outline=\'none\';saveSubScoreEdit(\''+srcWhich+'\','+ts._subIdx+',\'score\',this.textContent)"':''} style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT};${canEdit?'cursor:text;':''}">${ts.score}</span>`;
@@ -12040,11 +12041,11 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
       if(n>max) n=max;
       if(n===prev.score) return;
       subs[subIdx].score=n;
-      // level 자동 재지정 (score 변화에 맞춰)
-      if(n>=max) subs[subIdx].level='good';
-      else if(n>=Math.round(max*0.6)) subs[subIdx].level='normal';
-      else if(n<=0) subs[subIdx].level='bad';
-      else subs[subIdx].level='normal';
+      // level 자동 재지정 — 색상과 동일 기준 (잘함 ≥90%, 보통 ≥70%, 못함 <70%)
+      const ratio=max?n/max:0;
+      if(ratio>=0.9) subs[subIdx].level='good';
+      else if(ratio>=0.7) subs[subIdx].level='normal';
+      else subs[subIdx].level='bad';
     } else if(field==='analysis'){
       const val=String(newValue||'').trim();
       if(val===String(prev.analysis||'').trim()) return;
