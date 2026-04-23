@@ -11285,7 +11285,9 @@ function renderAdmin(){
       <td style="font-size:11px">${u.team||'—'}</td>
       <td style="font-size:11px">${u.office||'—'}</td>
       <td style="font-size:11px">${u.position||'—'}</td>
-      <td><strong style="${u.deleted?'color:var(--t3);text-decoration:line-through':''}">${u.name}</strong>${deletedBadge}</td>
+      <td>${u.deleted
+        ?`<strong style="color:var(--t3);text-decoration:line-through">${u.name}</strong>`
+        :`<strong style="color:var(--blue);cursor:pointer;text-decoration:underline;text-decoration-color:rgba(0,120,200,.3);text-underline-offset:3px" onclick="openLecturer(${u.id},'page-admin')" title="마이페이지로 이동">${u.name}</strong>`}${deletedBadge}</td>
       <td style="font-size:11px">${u.phone||'—'}</td>
       <td style="color:var(--t3);font-size:11px">${birthDisplay}</td>
       <td style="color:var(--t3);font-size:11px">${u.hireDate||'—'}</td>
