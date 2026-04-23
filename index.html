@@ -1662,8 +1662,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div style="flex:1"></div>
       <div id="an-result-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
       <div id="an-mood-badge" style="display:none;padding:6px 14px;border-radius:999px;background:transparent;font-size:12.5px;font-weight:700;color:#000;line-height:1.2"></div>
-      <button style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:none;border-radius:999px;background:transparent;color:#000;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2" onclick="document.getElementById('an-video-overlay').classList.add('show')">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
+      <button style="display:inline-flex;align-items:center;gap:6px;padding:0 4px;border:none;background:transparent;color:var(--t1);font-size:15px;font-weight:800;cursor:pointer;line-height:1.2" onclick="document.getElementById('an-video-overlay').classList.add('show')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>영상 보기
       </button>
     </div>
 
@@ -12155,10 +12155,10 @@ function setAnResultMeta(opts){
   const titleEl=el('an-result-title');
   if(titleEl) titleEl.textContent=(opts?.title||'—');
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  // 헤더 바 안쪽 (테두리 없는 pill) — 라벨 없이 값만
+  // 헤더 바 안쪽 (테두리 없음, 라벨 없음) — 위쪽 이름·팀·직군 chip과 동일한 글꼴/크기/굵기/색
   const chipInline=(label,val)=>{
     if(!val||String(val).trim()==='') return '';
-    return `<span style="display:inline-flex;align-items:center;padding:6px 14px;border-radius:999px;background:transparent;font-size:12.5px;font-weight:700;color:#000;white-space:nowrap;line-height:1.2">${esc(val)}</span>`;
+    return `<span style="display:inline-flex;align-items:center;padding:0 4px;background:transparent;font-size:15px;font-weight:800;color:var(--t1);white-space:nowrap;line-height:1.2">${esc(val)}</span>`;
   };
   // 헤더 바 위쪽 (검정 테두리 chip)
   const chipBordered=(label,val)=>{
