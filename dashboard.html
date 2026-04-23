@@ -7378,13 +7378,6 @@ function renderTsTable(timestamps,which){
       const naEditable=`<span contenteditable="true" onfocus="if(this.textContent.trim()==='해당없음'){this.innerHTML='';}this.style.color='#000';this.style.outline='2px dashed #0078C8';this.style.outlineOffset='1px'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'score',this.textContent);if(!this.textContent.trim()){this.textContent='해당없음';}this.style.color='#94a3b8'" style="display:inline-block;padding:3px 10px;border-radius:999px;color:#94a3b8;font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;cursor:text">해당없음</span>`;
       const naStatic=`<span style="color:#94a3b8;font-family:${FONT};font-size:${CELL_SIZE};font-weight:700">해당없음</span>`;
       const scoreDisplay=isNA?(canEdit?naEditable:naStatic):scorePill;
-      const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      const srcRaw=srcWhich==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
-      let subIdx=-1;
-      if(srcRaw?.sub_scores?.length){
-        const inCat=srcRaw.sub_scores.filter(s=>(s.category||'').trim()===(ts.category||'').trim());
-        subIdx=inCat.findIndex(s=>(s.sub_item||'').trim()===(ts.item||'').trim());
-      }
       // 분석 / 솔루션 셀 — 관리자 인라인 수정 (빈 값은 완전 공백)
       const escCell=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const mkEditable=(value,field)=>{
@@ -7394,8 +7387,8 @@ function renderTsTable(timestamps,which){
         // → tbody의 이벤트 위임(handleTsRowClick)에서 contenteditable 타겟일 때 modal open 건너뛰도록 처리
         return `<span contenteditable="true" onfocus="this.style.background='#fffbeb';this.style.outline='1px dashed #f59e0b';this.style.outlineOffset='1px'" onblur="this.style.background='transparent';this.style.outline='none';saveSubScoreEdit('${srcWhich}',${ts._subIdx},'${field}',this.textContent)" style="display:block;width:100%;min-height:1.4em;cursor:text;border-radius:4px;padding:2px 4px">${raw}</span>`;
       };
-      // data-* 속성으로 행 정보 전달 (onclick 문자열 escaping 이슈 제거)
-      return `<tr data-ts-which="${srcWhich}" data-ts-cat="${escCell(ts.category||'')}" data-ts-subidx="${subIdx}" data-ts-idx="${idx}" style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'">
+      // data-ts-globalidx = sub_scores 전역 인덱스 (카테고리 문자열 매칭 실패 문제 회피)
+      return `<tr data-ts-which="${srcWhich}" data-ts-globalidx="${ts._subIdx}" data-ts-idx="${idx}" style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'">
         <td style="${tdNowrap}">${ts.category||''}</td>
         <td style="${tdNowrap}">${ts.item||''}</td>
         <td style="${tdWrap}">${ts.criteria||''}</td>
@@ -7439,13 +7432,23 @@ function handleTsRowClick(event){
   const tr=event.target.closest('tr[data-ts-which]');
   if(!tr) return;
   const which=tr.dataset.tsWhich;
-  const cat=tr.dataset.tsCat||'';
-  const subIdx=parseInt(tr.dataset.tsSubidx,10);
+  const globalIdx=parseInt(tr.dataset.tsGlobalidx,10);
   const idx=parseInt(tr.dataset.tsIdx,10);
-  if(!isNaN(subIdx)&&subIdx>=0){
-    if(typeof openSubItemVideoModal==='function') openSubItemVideoModal(which,cat,subIdx);
-  } else if(!isNaN(idx)){
-    if(typeof openTimestampModal2==='function') openTimestampModal2(idx);
+  // 전역 인덱스로 sub_score 직접 조회 → 카테고리/세부항목 재계산 → modal 호출
+  const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
+  if(!isNaN(globalIdx)&&raw?.sub_scores?.[globalIdx]){
+    const active=raw.sub_scores[globalIdx];
+    const cat=active.category||'';
+    const itemsInCat=raw.sub_scores.filter(s=>(s.category||'')===cat);
+    const relIdx=itemsInCat.indexOf(active);
+    if(relIdx>=0 && typeof openSubItemVideoModal==='function'){
+      openSubItemVideoModal(which,cat,relIdx);
+      return;
+    }
+  }
+  // 폴백: 타임스탬프 모달
+  if(!isNaN(idx) && typeof openTimestampModal2==='function'){
+    openTimestampModal2(idx);
   }
 }
 
