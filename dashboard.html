@@ -1586,9 +1586,11 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <select class="form-input" id="an-cl-select" onchange="applyChecklistFromSelect('an')" style="margin-bottom:6px">
             <option value="">평가안 기준 — 선택</option>
           </select>
+          <div id="an-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 평가안 기준: <span id="an-cl-applied-name"></span></div>
           <select class="form-input" id="an-cl-ai-select" onchange="applyChecklistFromSelect('an','ai')">
             <option value="">AI 독자(표준) — 선택</option>
           </select>
+          <div id="an-cl-ai-applied" style="display:none;margin-top:4px;padding:4px 8px;background:rgba(0,120,200,.08);border-radius:6px;font-size:10px;color:var(--blue);font-weight:700">✓ AI 독자(표준): <span id="an-cl-ai-applied-name"></span></div>
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">제품</label>
@@ -2852,9 +2854,11 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <select class="form-input" id="st-cl-select" onchange="applyChecklistFromSelect('st')" style="margin-bottom:6px">
           <option value="">평가안 기준 — 선택</option>
         </select>
+        <div id="st-cl-applied" style="display:none;margin:-2px 0 6px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ 평가안 기준: <span id="st-cl-applied-name"></span></div>
         <select class="form-input" id="st-cl-ai-select" onchange="applyChecklistFromSelect('st','ai')">
           <option value="">AI 독자(표준) — 선택</option>
         </select>
+        <div id="st-cl-ai-applied" style="display:none;margin-top:4px;padding:4px 8px;background:rgba(0,120,200,.08);border-radius:6px;font-size:10px;color:var(--blue);font-weight:700">✓ AI 독자(표준): <span id="st-cl-ai-applied-name"></span></div>
       </div>
     </div>
     <!-- 교육자료 연동 파일 -->
@@ -3918,7 +3922,8 @@ function renderEduPage(){
   const isAdmin=CU?.isAdmin;
   const catsEdu=getEduCategories('edu');
   const catsCl=getEduCategories('cl');
-  const catsAll=[...new Set([...catsEdu,...catsCl])];
+  // 체크리스트는 항상 마지막 그룹으로 노출 (파일이 있을 때만 실제 표시됨)
+  const catsAll=[...new Set([...catsEdu,...catsCl,'체크리스트'])];
   let clHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
@@ -3956,7 +3961,7 @@ function renderEduPage(){
       </div>`;
     clHtml+=items.map(c=>{
       const isCl=(c.category||'')==='체크리스트';
-      const typeLbl=c.type==='standard'?'표준':c.type==='speech'?'스피치':'';
+      const typeLbl=c.type==='standard'?'표준':c.type==='speech'?'스피치':(c.type||'');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:6px">
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">${c.name}${typeLbl?` <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(0,0,0,.06);color:var(--t2);font-weight:600;margin-left:4px">${typeLbl}</span>`:''}</div>
@@ -6135,6 +6140,10 @@ function openAnalysis(){
   el('an-file-name').textContent='클릭하여 파일 선택 (mp4, mov, webm)';
   el('an-checklist-name').textContent='선택된 파일 없음';
   initAnProdSelect();
+  // 체크리스트 드롭다운 즉시 채움 (2개: 평가안 기준 + AI 독자 표준)
+  if(typeof populateChecklistSelects==='function') populateChecklistSelects();
+  // 적용 배지 초기화
+  ['an-cl-applied','an-cl-applied-name','an-cl-ai-applied','an-cl-ai-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='';e.textContent='';}});
   const eduWrap=document.getElementById('an-edu-files');if(eduWrap)eduWrap.style.display='none';
   showPage('page-analysis');
 }
@@ -6483,20 +6492,19 @@ function applyChecklistFromSelect(prefix,kind){
   let nh=document.getElementById(hidId+'-name');
   if(!nh){nh=document.createElement('input');nh.type='hidden';nh.id=hidId+'-name';document.body.appendChild(nh);}
   nh.value=name;
-  // 적용 배지 표시 (평가안 기준 dropdown만 기존 배지 갱신)
-  if(!kind){
-    const appEl=document.getElementById(prefix+'-cl-applied');
-    const appName=document.getElementById(prefix+'-cl-applied-name');
-    if(appEl){
-      if(url){
-        appEl.style.display='block';
-        if(appName) appName.textContent=name;
-        else appEl.textContent='✓ 체크리스트 적용: '+name;
-      } else {
-        appEl.style.display='none';
-        if(appName) appName.textContent='';
-        else appEl.textContent='';
-      }
+  // 적용 배지 표시 — 평가안 기준 / AI 독자 각각
+  const badgeId=kind==='ai'?prefix+'-cl-ai-applied':prefix+'-cl-applied';
+  const badgeNameId=badgeId+'-name';
+  const appEl=document.getElementById(badgeId);
+  const appName=document.getElementById(badgeNameId);
+  if(appEl){
+    if(url){
+      appEl.style.display='block';
+      if(appName) appName.textContent=name;
+      else appEl.textContent=(kind==='ai'?'✓ AI 독자(표준): ':'✓ 평가안 기준: ')+name;
+    } else {
+      appEl.style.display='none';
+      if(appName) appName.textContent='';
     }
   }
 }
