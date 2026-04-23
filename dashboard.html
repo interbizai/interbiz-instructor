@@ -10613,7 +10613,7 @@ function openLecturer(id, fromPage){
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
         if(!latestVidMood&&!latestVoiceMood) return '';
-        const moodChip=(label,val,color,bg,icon)=>val?`<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${bg};border:1px solid ${color}40;font-size:11.5px;font-weight:700;color:${color};white-space:nowrap"><span style="font-size:13px">${icon}</span><span style="font-weight:800">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
+        const moodChip=(label,val,color,bg,icon)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${bg};border:1px solid ${color}40;font-size:11.5px;font-weight:700;color:${color};white-space:nowrap;cursor:pointer;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 3px 10px rgba(0,0,0,.08)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'"><span style="font-size:13px">${icon}</span><span style="font-weight:800">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
         return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;z-index:2">
           ${moodChip('영상',latestVidMood,'#dc2626','rgba(220,38,38,.08)','🎬')}
           ${moodChip('스피치',latestVoiceMood,'#8b5cf6','rgba(139,92,246,.08)','🎤')}
@@ -10986,6 +10986,84 @@ function openGradeCriteria(userId,avg,currentGrade){
     ${rowHtml}
     <div style="margin-top:14px;padding:12px;background:rgba(0,120,200,.06);border-radius:10px;font-size:12px;color:var(--t2);line-height:1.6">
       <strong style="color:var(--blue)">현재 평가 점수:</strong> ${score?score.toFixed(1)+'점':'평가 기록 없음'}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// 분위기 통계 모달 — 영상(evaluations.mood) + 스피치(voice_evals.tone) 누적 집계
+function openMoodBreakdown(userId){
+  const u=(D.users||[]).find(x=>String(x.id)===String(userId));
+  if(!u) return;
+  document.getElementById('mood-breakdown-overlay')?.remove();
+
+  const userVids=(D.videos||[]).filter(v=>String(v.userId)===String(userId));
+  const vidIds=new Set(userVids.map(v=>v.id));
+  const vidEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id)&&e.mood);
+  const vidSorted=[...vidEvals].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  const vidLatest=vidSorted[0]?.mood||'';
+  const vidCounts={};
+  vidEvals.forEach(e=>{vidCounts[e.mood]=(vidCounts[e.mood]||0)+1});
+  const vidTotal=vidEvals.length;
+
+  const voiceEv=(D.voiceEvals||[]).filter(ve=>String(ve.user_id)===String(userId)&&ve.tone);
+  const voiceSorted=[...voiceEv].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0));
+  const voiceLatest=voiceSorted[0]?.tone||'';
+  const voiceCounts={};
+  voiceEv.forEach(ve=>{voiceCounts[ve.tone]=(voiceCounts[ve.tone]||0)+1});
+  const voiceTotal=voiceEv.length;
+
+  const buildRows=(counts,color,latest)=>{
+    const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length) return `<div style="padding:18px;text-align:center;color:var(--t3);font-size:12px;background:#f9fafb;border-radius:10px;border:1px dashed rgba(0,0,0,.08)">아직 기록이 없습니다</div>`;
+    const maxCnt=Math.max(...entries.map(e=>e[1]));
+    return entries.map(([mood,cnt])=>{
+      const pct=(cnt/maxCnt)*100;
+      const isLatest=mood===latest;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:${isLatest?color+'10':'#f9fafb'};border:1px solid ${isLatest?color+'55':'transparent'}">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:700;color:var(--t1)">${mood}</span>
+            ${isLatest?`<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;background:${color};color:#fff">최신</span>`:''}
+          </div>
+          <div style="height:6px;background:rgba(0,0,0,.05);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+          </div>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:${color};white-space:nowrap;min-width:42px;text-align:right">${cnt}건</div>
+      </div>`;
+    }).join('');
+  };
+
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='mood-breakdown-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:560px;width:92vw;max-height:85vh;overflow-y:auto;padding:24px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px">
+      <div style="min-width:0">
+        <div style="font-size:17px;font-weight:900;color:var(--t1)">${u.name||'—'} 강사 · 분위기 기록</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px">영상(교육맞춤/AI독자)·스피치 평가에서 누적된 분위기 태그</div>
+      </div>
+      <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(220,38,38,.15)">
+        <span style="font-size:16px">🎬</span>
+        <span style="font-size:14px;font-weight:800;color:#dc2626">영상 분위기</span>
+        <span style="font-size:11px;font-weight:700;color:var(--t3);margin-left:auto">총 ${vidTotal}건${vidTotal?` · ${Object.keys(vidCounts).length}종`:''}</span>
+      </div>
+      ${buildRows(vidCounts,'#dc2626',vidLatest)}
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(139,92,246,.15)">
+        <span style="font-size:16px">🎤</span>
+        <span style="font-size:14px;font-weight:800;color:#8b5cf6">스피치 분위기</span>
+        <span style="font-size:11px;font-weight:700;color:var(--t3);margin-left:auto">총 ${voiceTotal}건${voiceTotal?` · ${Object.keys(voiceCounts).length}종`:''}</span>
+      </div>
+      ${buildRows(voiceCounts,'#8b5cf6',voiceLatest)}
     </div>
   </div>`;
   document.body.appendChild(overlay);
