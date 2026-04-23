@@ -4372,7 +4372,9 @@ async function deleteChecklist(id){
     alert('삭제가 DB에서 반영되지 않았습니다. Supabase RLS 정책을 확인하세요:\n\nALTER TABLE checklist_files DISABLE ROW LEVEL SECURITY;\n또는\nCREATE POLICY "checklist_files_all" ON checklist_files FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);');
     return;
   }
-  await loadFromDB();renderEduPage();
+  await loadFromDB();
+  if(typeof renderEduPage==='function') renderEduPage();
+  if(typeof renderChecklists==='function') renderChecklists();
   showToast(`"${title}" 삭제되었습니다`,'#6b7280');
 }
 async function deleteLink(id){
@@ -7670,6 +7672,8 @@ function uploadChecklist(){
 }
 
 function renderChecklists(){
+  const listEl=el('cl-list');
+  if(!listEl) return; // 레거시 체크리스트 페이지가 DOM에 없으면 skip
   const all=(D.checklists||[]).map(c=>({id:c.id,name:c.name,year:c.year,month:c.month,category:c.category,fileName:c.file_name,fileType:c.file_type,fileData:c.file_data,fileSize:c.file_size,uploadedBy:c.uploaded_by,uploadedAt:c.created_at?.split('T')[0]||''}));
   const fy=v('cl-filter-year');
   const fc=v('cl-filter-cat');
@@ -7679,11 +7683,11 @@ function renderChecklists(){
   const typeIcons={'체크리스트':'📋','평가안':'📊','교안':'📑','기타':'📎'};
 
   if(!filtered.length){
-    el('cl-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:12px">등록된 파일이 없습니다.</div>';
+    listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:12px">등록된 파일이 없습니다.</div>';
     return;
   }
 
-  el('cl-list').innerHTML=filtered.map((c,i)=>{
+  listEl.innerHTML=filtered.map((c,i)=>{
     const color=catColors[c.category]||'#718096';
     const icon=typeIcons[c.category]||'📎';
     const sizeKB=c.fileSize?Math.round(c.fileSize/1024):0;
@@ -7715,12 +7719,7 @@ function downloadChecklist(id){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
-async function deleteChecklist(id){
-  if(!confirm('삭제하시겠습니까?'))return;
-  await sb.from('checklist_files').delete().eq('id',id);
-  await loadFromDB();
-  renderChecklists();
-}
+/* (중복 deleteChecklist 제거됨 — 앞쪽 edu-page 버전이 단일 정의. 레거시 페이지도 그 함수를 재사용) */
 
 /* ════════════════════════════════
    CALENDAR
