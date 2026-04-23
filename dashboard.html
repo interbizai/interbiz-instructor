@@ -5248,10 +5248,11 @@ function renderPickDetail(){
         </div>
         <!-- 텍스트 영역 (축약 배너 스타일) -->
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:5px">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:#dc2626;color:#fff;letter-spacing:.4px">선택 영상</span>
-            <span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(16,185,129,.14);color:#10b981;border:1px solid rgba(16,185,129,.35)">총점 ${score}점</span>
-            ${rubric!=null?`<span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(139,92,246,.12);color:#8b5cf6;border:1px solid rgba(139,92,246,.35)">교안/시나리오 이해도 ${rubric}%</span>`:''}
+          <div style="display:flex;align-items:center;flex-wrap:wrap;font-size:16.5px;font-weight:800;color:var(--t1);line-height:1.35">
+            <span>선택 영상</span>
+            <span style="margin:0 10px">·</span>
+            <span>총점 ${score}점</span>
+            ${rubric!=null?`<span style="margin:0 10px">·</span><span>교안/시나리오 이해도 ${rubric}%</span>`:''}
           </div>
           <div class="pick-hero-title" style="font-size:16.5px;font-weight:800;color:var(--t1);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${title}</div>
           ${(()=>{
