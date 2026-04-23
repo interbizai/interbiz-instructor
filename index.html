@@ -10614,10 +10614,10 @@ function openLecturer(id, fromPage){
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
         if(!latestVidMood&&!latestVoiceMood) return '';
-        const moodChip=(label,val,color,bg)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${bg};border:1px solid ${color}40;font-size:11.5px;font-weight:700;color:${color};white-space:nowrap;cursor:pointer;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 3px 10px rgba(0,0,0,.08)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'"><span style="font-weight:800">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
-        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;z-index:2">
-          ${moodChip('분위기',latestVidMood,'#dc2626','rgba(220,38,38,.08)')}
-          ${moodChip('스피치',latestVoiceMood,'#8b5cf6','rgba(139,92,246,.08)')}
+        const moodChip=(label,val)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:5px;padding:4px 2px;font-size:12px;color:#000;white-space:nowrap;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'"><span style="font-weight:700">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
+        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end;z-index:2">
+          ${moodChip('분위기',latestVidMood)}
+          ${moodChip('스피치',latestVoiceMood)}
         </div>`;
       })()}
       <!-- 사진 + Lv 뱃지 -->
