@@ -6184,54 +6184,80 @@ function switchAnalysisTab(paneId,btn){
 
 // 교육자료 선택 시 등록된 파일 로드
 function loadEduFilesForCategory(){
-  const cat=document.getElementById('an-product')?.value||'';
-  const wrap=document.getElementById('an-edu-files');
-  const list=document.getElementById('an-edu-file-list');
-  if(!wrap||!list) return;
-  // 교육자료 파일 + 관련 체크리스트 파일 모두 노출
-  const eduFiles=cat?(D.checklists||[]).filter(c=>(c.category||'')===cat):[];
-  const curEduType=document.getElementById('an-edu-type')?.value||'';
-  const allCl=(D.checklists||[]).filter(c=>(c.category||'')==='체크리스트');
-  const critCl=curEduType?allCl.filter(c=>c.type===curEduType):allCl.filter(c=>c.type&&c.type!=='standard'&&c.type!=='speech');
-  const stdCl=allCl.filter(c=>(c.type||'')==='standard'||!c.type);
-  if(!eduFiles.length&&!critCl.length&&!stdCl.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  const card=(f,tag,tagColor)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;background:#fff;border-radius:6px;margin-bottom:4px" onclick="${tag==='평가안 기준'?`applyChecklistByFile('an',${f.id},'${(f.name||'').replace(/'/g,"\\'")}','${f.file_url}')`:tag==='AI 독자'?`applyChecklistByFile('an',${f.id},'${(f.name||'').replace(/'/g,"\\'")}','${f.file_url}','ai')`:`applyEduFile('${f.file_url}','${(f.name||'').replace(/'/g,"\\'")}')`}">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:600">${tag?`<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:${tagColor};color:#fff;font-weight:700;margin-right:4px">${tag}</span>`:''}${f.name}</div>
-      <div style="font-size:10px;color:var(--t3)">${f.file_name||''} · ${f.created_at?.slice(0,10)||''}</div>
-    </div>
-    <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
-  </div>`;
-  let html='';
-  if(eduFiles.length){
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--t2);margin:4px 0 6px">📘 교육자료 (${eduFiles.length})</div>`;
-    html+=eduFiles.map(f=>card(f,null,null)).join('');
-  }
-  if(critCl.length){
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--green);margin:10px 0 6px">✓ 평가안 기준 체크리스트 (${critCl.length})</div>`;
-    html+=critCl.map(f=>card(f,'평가안 기준','#10b981')).join('');
-  }
-  if(stdCl.length){
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--blue);margin:10px 0 6px">🤖 AI 독자 체크리스트 (${stdCl.length})</div>`;
-    html+=stdCl.map(f=>card(f,'AI 독자','#0078C8')).join('');
-  }
-  list.innerHTML=html;
+  try{
+    const cat=document.getElementById('an-product')?.value||'';
+    const wrap=document.getElementById('an-edu-files');
+    const list=document.getElementById('an-edu-file-list');
+    if(!wrap||!list) return;
+    const eduFiles=cat?(D.checklists||[]).filter(c=>(c.category||'')===cat):[];
+    const curEduType=document.getElementById('an-edu-type')?.value||'';
+    const allCl=(D.checklists||[]).filter(c=>(c.category||'')==='체크리스트');
+    const critCl=curEduType?allCl.filter(c=>c.type===curEduType):allCl.filter(c=>c.type&&c.type!=='standard'&&c.type!=='speech');
+    const stdCl=allCl.filter(c=>(c.type||'')==='standard'||!c.type);
+    if(!eduFiles.length&&!critCl.length&&!stdCl.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const mkCard=(f,kind,tagColor)=>{
+      const tagHtml=kind?`<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:${tagColor};color:#fff;font-weight:700;margin-right:4px">${esc(kind==='ai'?'AI 독자':kind==='crit'?'평가안 기준':'')}</span>`:'';
+      return `<div class="edu-card-item" data-kind="${esc(kind||'')}" data-id="${esc(f.id)}" data-name="${esc(f.name)}" data-url="${esc(f.file_url)}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;background:#fff;border-radius:6px;margin-bottom:4px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600">${tagHtml}${esc(f.name)}</div>
+          <div style="font-size:10px;color:var(--t3)">${esc(f.file_name||'')} · ${esc((f.created_at||'').slice(0,10))}</div>
+        </div>
+        <span style="font-size:10px;color:var(--blue);font-weight:600">적용</span>
+      </div>`;
+    };
+    let html='';
+    if(eduFiles.length){
+      html+=`<div style="font-size:11px;font-weight:700;color:var(--t2);margin:4px 0 6px">📘 교육자료 (${eduFiles.length})</div>`;
+      html+=eduFiles.map(f=>mkCard(f,'edu',null)).join('');
+    }
+    if(critCl.length){
+      html+=`<div style="font-size:11px;font-weight:700;color:var(--green);margin:10px 0 6px">✓ 평가안 기준 체크리스트 (${critCl.length})</div>`;
+      html+=critCl.map(f=>mkCard(f,'crit','#10b981')).join('');
+    }
+    if(stdCl.length){
+      html+=`<div style="font-size:11px;font-weight:700;color:var(--blue);margin:10px 0 6px">🤖 AI 독자 체크리스트 (${stdCl.length})</div>`;
+      html+=stdCl.map(f=>mkCard(f,'ai','#0078C8')).join('');
+    }
+    list.innerHTML=html;
+    // 이벤트 위임 (한 번만 바인딩)
+    if(!list.dataset.bound){
+      list.dataset.bound='1';
+      list.addEventListener('click',e=>{
+        const card=e.target.closest('.edu-card-item');
+        if(!card) return;
+        const kind=card.dataset.kind;
+        const id=card.dataset.id;
+        const name=card.dataset.name;
+        const url=card.dataset.url;
+        if(kind==='edu'){
+          applyEduFile(url,name);
+          showToast(`교육자료 적용: ${name}`,'#0078C8');
+        } else if(kind==='crit'){
+          applyChecklistByFile('an',id,name,url);
+        } else if(kind==='ai'){
+          applyChecklistByFile('an',id,name,url,'ai');
+        }
+      });
+    }
+  }catch(e){ console.error('loadEduFilesForCategory error:',e); }
 }
 // 파일 리스트에서 체크리스트 클릭 → 해당 dropdown/hidden에 적용 + 배지 표시
 function applyChecklistByFile(prefix,id,name,url,kind){
   const selId=kind==='ai'?prefix+'-cl-ai-select':prefix+'-cl-select';
   const sel=document.getElementById(selId);
   if(sel){
-    sel.value=String(id);
-    // dropdown의 option이 없으면(아직 populate 전) 강제 추가
-    if(sel.value!==String(id)){
+    // dropdown에 해당 option이 이미 있으면 선택, 없으면 추가
+    let has=false;
+    for(const o of sel.options){ if(o.value===String(id)){ has=true; break; } }
+    if(!has){
       const o=document.createElement('option');
       o.value=String(id); o.textContent=name; o.dataset.url=url; o.dataset.name=name;
       sel.appendChild(o);
-      sel.value=String(id);
     }
+    sel.value=String(id);
   }
   applyChecklistFromSelect(prefix,kind);
   showToast(`${kind==='ai'?'AI 독자':'평가안 기준'}: ${name}`,'#0078C8');
