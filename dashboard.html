@@ -1580,6 +1580,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <div class="form-group" style="margin:0">
           <label class="form-lbl">교육자료</label>
           <select class="form-input" id="an-product" onchange="loadEduFilesForCategory()"></select>
+          <div id="an-edu-applied" style="display:none;margin-top:6px;padding:4px 8px;background:rgba(245,158,11,.08);border-radius:6px;font-size:10px;color:var(--orange,#f59e0b);font-weight:700">📘 교육자료: <span id="an-edu-applied-name"></span></div>
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-lbl">체크리스트</label>
@@ -2836,6 +2837,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div class="form-group" style="margin:0">
         <label class="form-lbl">교육자료</label>
         <select class="form-input" id="st-type" onchange="loadStreamEduFiles()"></select>
+        <div id="st-edu-applied" style="display:none;margin-top:6px;padding:4px 8px;background:rgba(245,158,11,.08);border-radius:6px;font-size:10px;color:var(--orange,#f59e0b);font-weight:700">📘 교육자료: <span id="st-edu-applied-name"></span></div>
       </div>
       <input type="hidden" id="st-channel" value="">
       <input type="hidden" id="st-count" value="20">
@@ -2866,8 +2868,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
       <div id="st-edu-file-list"></div>
     </div>
-    <div id="st-edu-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700"></div>
-    <div id="st-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700"></div>
+    <!-- (중복 st-edu-applied / st-cl-applied 제거됨 — 인라인 배지로 통합) -->
     <div class="auth-err" id="st-err" style="margin-top:10px"></div>
     <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="goStreamStep2()">녹화 시작 →</button>
     <div class="auth-footer" style="margin-top:12px"><a onclick="closeOverlay('stream-info-overlay')">취소</a></div>
@@ -6170,7 +6171,8 @@ function openAnalysis(){
   // 체크리스트 드롭다운 즉시 채움 (2개: 평가안 기준 + AI 독자 표준)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
   // 적용 배지 초기화
-  ['an-cl-applied','an-cl-applied-name','an-cl-ai-applied','an-cl-ai-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='';e.textContent='';}});
+  ['an-cl-applied','an-cl-ai-applied','an-edu-applied'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='none';}});
+  ['an-cl-applied-name','an-cl-ai-applied-name','an-edu-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
   const eduWrap=document.getElementById('an-edu-files');if(eduWrap)eduWrap.style.display='none';
   showPage('page-analysis');
 }
@@ -6604,6 +6606,13 @@ function applyEduFile(url,name){
   }
   document.getElementById('an-checklist-url').value=url;
   document.getElementById('an-edu-files').style.display='none';
+  // 드롭다운 바로 아래 배지 표시
+  const badge=document.getElementById('an-edu-applied');
+  const badgeName=document.getElementById('an-edu-applied-name');
+  if(badge){
+    badge.style.display='block';
+    if(badgeName) badgeName.textContent=name;
+  }
 }
 // 가전 제품 셀렉트 초기화
 function initAnProdSelect(){
@@ -9037,8 +9046,9 @@ function openStreamModal(){
     });
   }
   const stEdu=document.getElementById('st-edu-files');if(stEdu)stEdu.style.display='none';
-  const stApplied=document.getElementById('st-cl-applied');if(stApplied){stApplied.style.display='none';stApplied.textContent='';}
-  const stEduApplied=document.getElementById('st-edu-applied');if(stEduApplied){stEduApplied.style.display='none';stEduApplied.textContent='';}
+  // 배지 초기화 (display만 숨기고 inner span의 텍스트만 비우기 — outer HTML 유지)
+  ['st-cl-applied','st-cl-ai-applied','st-edu-applied'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+  ['st-cl-applied-name','st-cl-ai-applied-name','st-edu-applied-name'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
   el('stream-info-overlay').classList.add('show');
 }
 function loadStreamEduFiles(){
@@ -9062,8 +9072,14 @@ function applyStreamEduFile(url,name){
   }
   document.getElementById('st-checklist-url').value=url;
   document.getElementById('st-edu-files').style.display='none';
+  // 드롭다운 바로 아래 배지 (인라인)
   const badge=document.getElementById('st-edu-applied');
-  if(badge){badge.style.display='block';badge.textContent='✓ 교육자료 적용: '+name;}
+  const badgeName=document.getElementById('st-edu-applied-name');
+  if(badge){
+    badge.style.display='block';
+    if(badgeName) badgeName.textContent=name;
+    else badge.textContent='📘 교육자료: '+name;
+  }
 }
 
 let audioCtx=null, analyser=null, animFrameId=null;
