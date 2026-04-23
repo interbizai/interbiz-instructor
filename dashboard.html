@@ -3195,10 +3195,24 @@ async function loadFromDB(){
   // 교육자료 카테고리
   const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
   D.eduCategories=ec||[];
-  // 교육종류 (관리자 공유 목록)
+  // 교육종류 (관리자 공유 · Supabase 우선, localStorage 고아 항목 자동 마이그레이션)
   const et=await dbGetEduTypes();
-  if(et){ D.eduTypes=et.map(r=>({id:String(r.id),name:r.name})); try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){} }
-  else {
+  if(et!==null){
+    // Supabase 사용 가능 — localStorage에 있지만 DB에 없는 항목을 자동 이관
+    const supabaseNames=new Set(et.map(r=>r.name));
+    const localNames=(()=>{try{return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');}catch(e){return [];}})();
+    const orphans=localNames.filter(n=>n&&!supabaseNames.has(n));
+    if(orphans.length){
+      console.log(`교육종류 마이그레이션: ${orphans.length}건 Supabase로 이관`,orphans);
+      for(const name of orphans){
+        const row=await dbAddEduType(name);
+        if(row&&!row._error) et.push(row);
+      }
+    }
+    D.eduTypes=et.map(r=>({id:String(r.id),name:r.name}));
+    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
+  } else {
+    // Supabase 미가용 (테이블 없음 등) — localStorage 폴백
     const names=(()=>{try{return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');}catch(e){return [];}})();
     D.eduTypes=names.map((n,i)=>({id:'local-'+i,name:n}));
   }
