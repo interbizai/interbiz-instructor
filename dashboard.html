@@ -1652,11 +1652,13 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <!-- Step 2: 분석 결과 -->
   <div id="an-step2" style="display:none">
 
-    <!-- ⓪ 평가 제목 (영상 보기 위) -->
-    <div id="an-result-title-wrap" style="margin-bottom:14px;padding:14px 18px;background:#fff;border:1px solid var(--bdr);border-radius:12px;display:flex;align-items:center;gap:10px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      <span style="font-size:11px;font-weight:700;color:var(--t3)">평가 제목</span>
-      <span id="an-result-title" style="font-size:15px;font-weight:800;color:var(--t1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+    <!-- ⓪ 결과 헤더 (영상 보기 위) — AI 코칭 · 제목 · 교육종류/강사/팀/직군 메타 -->
+    <div id="an-result-title-wrap" style="margin-bottom:14px;padding:12px 18px;background:#fff;border:1px solid var(--bdr);border-radius:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" style="flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span style="font-size:11px;font-weight:700;color:var(--t3);flex-shrink:0">AI 코칭</span>
+      <span id="an-result-title" style="font-size:15px;font-weight:800;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:120px">—</span>
+      <div style="flex:1"></div>
+      <div id="an-result-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
     </div>
 
     <!-- ① 총점 배너: 평가안 (위, 주황) + 영상보기 (중간) + AI 독자 (아래, 로즈) -->
@@ -6696,7 +6698,8 @@ function runAnalysis(){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb=el('an-pdf-btn');if(apb)apb.style.display='';
-  var artEl=el('an-result-title');if(artEl) artEl.textContent=title||'—';
+  // 결과 헤더: 제목 + 교육종류/강사/팀/직군
+  setAnResultMeta({title:title, eduType:v('an-edu-type'), userName:CU?.name, team:CU?.team, position:CU?.position});
 
   // 로딩 표시
   el('an-ai-summary').textContent='AI 분석 중... 잠시만 기다려주세요';
@@ -7276,10 +7279,13 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps,which){
   const srcWhich=which||'crit';
-  // 공통 셀 스타일
-  const thStyle=(align)=>`padding:12px 10px;text-align:${align||'left'};font-size:12px;font-weight:800;color:#334155;letter-spacing:.2px;background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap`;
-  const tdBase='padding:12px 10px;font-size:12.5px;color:#334155;line-height:1.55;vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word';
-  return `<table style="width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;table-layout:fixed;background:#fff">
+  // 공통 스타일 — 점수 외 모든 셀: 검정색 · LG글씨 · 굵기/크기 동일
+  const FONT="'LG글씨','LG Smart',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  const CELL_SIZE='13px';
+  const CELL_WEIGHT='600';
+  const thStyle=(align)=>`padding:12px 10px;text-align:${align||'left'};font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;color:#000;letter-spacing:.2px;background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap`;
+  const tdBase=`padding:12px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:${CELL_WEIGHT};color:#000;line-height:1.55;vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word`;
+  return `<table style="width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;table-layout:fixed;background:#fff;font-family:${FONT}">
     <colgroup>
       <col style="width:110px"><col style="width:110px"><col style="width:240px">
       <col style="width:56px"><col style="width:56px"><col style="width:100px">
@@ -7304,7 +7310,7 @@ function renderTsTable(timestamps,which){
       const scoreRatio=ts.maxScore?ts.score/ts.maxScore:0;
       const scoreColor=isNA?'#94a3b8':scoreRatio>=0.8?'#10b981':scoreRatio>=0.5?'#f59e0b':'#ef4444';
       const rowBg=idx%2===0?'#ffffff':'#fafbfc';
-      const scoreDisplay=isNA?'<span style="color:#94a3b8;font-size:11px;font-weight:700">해당없음</span>':`<span style="display:inline-block;min-width:28px;padding:3px 8px;border-radius:999px;background:${scoreColor}15;color:${scoreColor};font-weight:800;font-size:12px">${ts.score}</span>`;
+      const scoreDisplay=isNA?`<span style="color:#94a3b8;font-family:${FONT};font-size:11.5px;font-weight:700">해당없음</span>`:`<span style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT}">${ts.score}</span>`;
       const cat=(ts.category||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
       const srcRaw=srcWhich==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
       let subIdx=-1;
@@ -7314,14 +7320,14 @@ function renderTsTable(timestamps,which){
       }
       const onClick=subIdx>=0?`openSubItemVideoModal('${srcWhich}','${cat}',${subIdx})`:`openTimestampModal2(${idx})`;
       return `<tr style="background:${rowBg};cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${rowBg}'" onclick="${onClick}">
-        <td style="${tdBase};font-weight:800;color:#0f172a">${ts.category||'—'}</td>
-        <td style="${tdBase};font-weight:700;color:#0078C8">${ts.item||'—'}</td>
+        <td style="${tdBase}">${ts.category||'—'}</td>
+        <td style="${tdBase}">${ts.item||'—'}</td>
         <td style="${tdBase}">${ts.criteria||'—'}</td>
-        <td style="${tdBase};text-align:center;font-weight:700;color:${isNA?'#94a3b8':'#334155'}">${isNA?'—':(ts.maxScore||5)}</td>
+        <td style="${tdBase};text-align:center">${isNA?'—':(ts.maxScore||5)}</td>
         <td style="${tdBase};text-align:center">${scoreDisplay}</td>
-        <td style="${tdBase};text-align:center;font-size:11.5px;color:#64748b;font-family:'SF Mono',Menlo,Consolas,monospace">${ts.t||'—'}</td>
+        <td style="${tdBase};text-align:center">${ts.t||'—'}</td>
         <td style="${tdBase}">${ts.text||''}</td>
-        <td style="${tdBase};color:#64748b">${ts.type==='good'?'<span style="color:#10b981;font-weight:700">—</span>':(ts.solution||'—')}</td>
+        <td style="${tdBase}">${ts.type==='good'?'—':(ts.solution||'—')}</td>
       </tr>`;}).join('')}
     </tbody></table>`;
 }
@@ -9310,7 +9316,8 @@ function finishStreamRecord(){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb2=el('an-pdf-btn');if(apb2)apb2.style.display='';
-  var artEl2=el('an-result-title');if(artEl2) artEl2.textContent=(v('an-title')||'').trim()||'—';
+  // 결과 헤더 (스트리밍): 제목 + 교육종류(st-edu-type) + 강사/팀/직군
+  setAnResultMeta({title:(v('st-title')||v('an-title')||'').trim(), eduType:(v('st-edu-type')||v('an-edu-type')), userName:CU?.name, team:CU?.team, position:CU?.position});
 
   // 영상 플레이어
   if(streamBlob){
@@ -11022,7 +11029,8 @@ function openVideo(id){
   el('an-step1').style.display='none';
   el('an-step2').style.display='';
   var apb3=el('an-pdf-btn');if(apb3)apb3.style.display='';
-  var artEl3=el('an-result-title');if(artEl3) artEl3.textContent=vid.title||'—';
+  // 결과 헤더 (과거 영상 보기): 제목 + 교육종류 + 해당 강사 이름/팀/직군
+  setAnResultMeta({title:vid.title, eduType:(vid.eduType||vid.edu_type), userName:u?.name, team:u?.team, position:u?.position});
 
   // 영상 플레이어
   window._anYtId=null;
@@ -11970,6 +11978,25 @@ async function saveProfile(){
 ════════════════════════════════ */
 function el(id){ return document.getElementById(id)||null; }
 function v(id){ const e=el(id); return e?(e.value||''):''; }
+// 분석 결과 상단 헤더 세팅: 제목 + 교육종류/강사/팀/직군 chip
+function setAnResultMeta(opts){
+  const titleEl=el('an-result-title');
+  if(titleEl) titleEl.textContent=(opts?.title||'—');
+  const metaEl=el('an-result-meta');
+  if(!metaEl) return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const chip=(label,val,accent)=>{
+    if(!val||String(val).trim()==='') return '';
+    const bg=accent||'#f1f5f9';
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:${bg};font-size:11px;font-weight:700;color:#334155;white-space:nowrap"><span style="color:#94a3b8;font-weight:600">${label}</span>${esc(val)}</span>`;
+  };
+  metaEl.innerHTML=[
+    chip('교육종류',opts?.eduType,'rgba(139,92,246,.08)'),
+    chip('강사',opts?.userName,'rgba(0,120,200,.08)'),
+    chip('팀',opts?.team,'rgba(16,185,129,.08)'),
+    chip('직군',opts?.position,'rgba(245,158,11,.08)')
+  ].filter(Boolean).join('');
+}
 
 /* ════════════════════════════════
    INIT
