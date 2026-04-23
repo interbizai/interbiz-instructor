@@ -224,7 +224,10 @@ ${JSON.stringify(checklistSpec, null, 2)}
 }
 
 # good/bad/upgrade 개수 규칙
-- good/bad/upgrade: 각 3개 (정확히)
+- good/bad/upgrade: 영상에서 실제로 관찰된 내용만 있는 만큼 유연하게 추출 (각각 최소 0개, 최대 8개 권장).
+  · 강점이 많이 관찰되면 good을 많이 쓰고, 약점이 적으면 bad를 1~2개만.
+  · 억지로 숫자 맞추기 금지 — 관찰된 근거 없는 항목을 채워 넣지 말 것.
+  · 최소 조건: 세 배열 합계가 1개 이상이어야 함 (전부 빈 배열이면 안 됨).
 - scenarios/level_tips/teaching_patterns: 각 3개 (정확히)
 - 각 문자열 필드는 간결하게 (분석/솔루션은 1~2문장, 40~80자 내외 권장)
 - sub_scores는 체크리스트의 모든 세부항목을 빠짐없이 포함

@@ -7127,9 +7127,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   window._anTimestamps=critTimestamps.length?critTimestamps:aiTimestamps;
   el('an-criteria-result').innerHTML=critTimestamps.length?renderTsTable(critTimestamps,'crit'):'<div style="padding:20px;text-align:center;color:var(--t3)">교육자료 첨부 시 교육맞춤평가 피드백이 생성됩니다</div>';
   // 교육맞춤평가 Good/Bad/Upgrade — Vertex raw 데이터 사용
-  const criGood=(critRaw?.good||r.good||[]).slice(0,5);
-  const criBad=(critRaw?.bad||r.bad||[]).slice(0,5);
-  const criUpgrade=(critRaw?.upgrade||r.upgrade||[]).slice(0,5);
+  // AI가 관찰한 만큼 유연하게 노출 (상한 12개 — 극단적 응답 대비 안전장치만)
+  const criGood=(critRaw?.good||r.good||[]).slice(0,12);
+  const criBad=(critRaw?.bad||r.bad||[]).slice(0,12);
+  const criUpgrade=(critRaw?.upgrade||r.upgrade||[]).slice(0,12);
   el('an-criteria-opinion').innerHTML=renderOpinionTabs('an-criteria-opinion',criGood,criBad,criUpgrade,'cop',r.criteriaSummary||'교육맞춤평가 종합 분석 결과입니다.');
 
   // ④ 추천 시나리오 / 레벨UP / 교육화법 — Vertex raw 데이터
@@ -7265,9 +7266,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ⑦ AI 독자 타임스탬프 (aiRaw 기반 — 평가안과 별도)
   el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps,'ai'):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
   // AI 독자 Good/Bad/Upgrade — Vertex raw 데이터 사용
-  const aiGoodItems=(aiRaw?.good||r.good||[]).slice(0,5);
-  const aiBadItems=(aiRaw?.bad||r.bad||[]).slice(0,5);
-  const aiUpgradeItems=(aiRaw?.upgrade||r.upgrade||[]).slice(0,5);
+  // AI가 관찰한 만큼 유연하게 노출 (상한 12개)
+  const aiGoodItems=(aiRaw?.good||r.good||[]).slice(0,12);
+  const aiBadItems=(aiRaw?.bad||r.bad||[]).slice(0,12);
+  const aiUpgradeItems=(aiRaw?.upgrade||r.upgrade||[]).slice(0,12);
   el('an-ai-result').innerHTML=renderOpinionTabs('an-ai-result',aiGoodItems,aiBadItems,aiUpgradeItems,'aop',r.overallComment||'AI가 분석한 종합 의견입니다.');
 }
 
