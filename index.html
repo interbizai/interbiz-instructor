@@ -3206,6 +3206,8 @@ async function loadFromDB(){
   // 교육자료 카테고리
   const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
   D.eduCategories=ec||[];
+  // 최초 1회 기본 카테고리 시드
+  await seedEduCategoriesIfEmpty();
   // 교육종류 (Supabase가 유일한 기준 · 자동 마이그레이션 없음)
   const et=await dbGetEduTypes();
   if(et!==null){
@@ -3856,23 +3858,38 @@ function doFindPw(){
 /* ════════════════════════════════
    ADMIN
 ════════════════════════════════ */
-const EDU_CAT_DEFAULTS={
-  edu:['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'],
-  cl:['체크리스트']
+// 첫 로그인 시 1회만 시드되는 기본 카테고리 (이후 관리자가 자유롭게 삭제/추가)
+const EDU_CAT_SEED={
+  edu:['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안']
 };
 function getEduCategories(type){
-  // type: 'edu' | 'cl' | undefined(=all)
+  // DB만 신뢰 (기본값은 시드 단계에서 DB에 들어감)
   const scope=type==='edu'||type==='cl'?[type]:['edu','cl'];
   let names=[];
   scope.forEach(t=>{
-    names.push(...(EDU_CAT_DEFAULTS[t]||[]));
     names.push(...(D.eduCategories||[]).filter(c=>(c.type||'edu')===t).map(c=>c.name));
   });
   return [...new Set(names)];
 }
-function isDefaultEduCategory(name,type){
-  if(type==='edu'||type==='cl') return (EDU_CAT_DEFAULTS[type]||[]).includes(name);
-  return EDU_CAT_DEFAULTS.edu.includes(name)||EDU_CAT_DEFAULTS.cl.includes(name);
+// 기본 카테고리 최초 1회 DB 시드 (중복 방지)
+async function seedEduCategoriesIfEmpty(){
+  try{
+    const eduRows=(D.eduCategories||[]).filter(c=>(c.type||'edu')==='edu');
+    if(eduRows.length) return; // 이미 항목 있으면 스킵
+    if(localStorage.getItem('edu_categories_seeded_v1')==='1') return;
+    const existingNames=new Set((D.eduCategories||[]).map(c=>c.name));
+    for(let i=0;i<EDU_CAT_SEED.edu.length;i++){
+      const name=EDU_CAT_SEED.edu[i];
+      if(existingNames.has(name)) continue;
+      let {error}=await sb.from('edu_categories').insert({name,sort_order:i+1,type:'edu'});
+      if(error && (error.message||'').toLowerCase().includes('column') && (error.message||'').toLowerCase().includes('type')){
+        ({error}=await sb.from('edu_categories').insert({name,sort_order:i+1}));
+      }
+    }
+    const {data:ec2}=await sb.from('edu_categories').select('*').order('sort_order');
+    D.eduCategories=ec2||[];
+    localStorage.setItem('edu_categories_seeded_v1','1');
+  }catch(e){ console.warn('seed edu categories failed:',e); }
 }
 // 교육종류 (Supabase가 유일 기준 · localStorage는 오프라인 캐시로만 사용)
 function getEduTypeRecords(){
@@ -3956,8 +3973,8 @@ function renderEduPage(){
   if(isAdmin){
     const renderCatBox=(title,subtitle,type,catList,inputId,btnFn)=>{
       const chips=catList.map(c=>{
-        const isDef=isDefaultEduCategory(c,type);
-        return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c.replace(/</g,'&lt;')}${isDef?'':`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c.replace(/'/g,"\\'")}','${type}')">×</button>`}</span>`;
+        const escN=String(c||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c.replace(/</g,'&lt;')}<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${escN}','${type}')">×</button></span>`;
       }).join('');
       return `<div style="margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
@@ -4301,10 +4318,13 @@ async function addEduCategory(type){
   await loadFromDB();renderEduPage();
 }
 async function deleteEduCategory(name,type){
-  if(isDefaultEduCategory(name,type)){alert('기본 카테고리는 삭제할 수 없습니다.');return;}
   if(!confirm(`"${name}" 카테고리를 삭제하시겠습니까?`))return;
-  const{error}=await sb.from('edu_categories').delete().eq('name',name);
+  const{error,data}=await sb.from('edu_categories').delete().eq('name',name).select();
   if(error){alert('삭제 실패: '+error.message);return;}
+  if(!data||!data.length){
+    alert('삭제되지 않았습니다. Supabase RLS 정책을 확인하세요.\n\nALTER TABLE edu_categories DISABLE ROW LEVEL SECURITY;\n또는\nCREATE POLICY ... FOR DELETE TO anon, authenticated USING (true);');
+    return;
+  }
   await loadFromDB();renderEduPage();
 }
 // 등록 폼의 카테고리 드롭다운: 체크리스트 타입 선택 시 숨김 (체크리스트로 자동 분류됨)
