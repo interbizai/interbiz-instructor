@@ -12042,11 +12042,26 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
     if(!subs[subIdx]){ if(typeof showToast==='function')showToast('항목 인덱스 오류','#ef4444'); return; }
     const prev={...subs[subIdx]};
     if(field==='score'){
-      let n=parseInt(String(newValue).replace(/[^0-9-]/g,''),10);
+      const rawInput=String(newValue||'').trim();
+      let n=parseInt(rawInput.replace(/[^0-9-]/g,''),10);
       if(isNaN(n)) n=0;
       const max=prev.max||5;
+      // 배점(max)을 초과할 수 없음 — 초과 입력 시 저장 중단 + 토스트 안내
+      if(n>max){
+        if(typeof showToast==='function') showToast(`배점 ${max}점을 초과할 수 없습니다 (입력: ${n})`,'#ef4444');
+        // 재렌더로 원래 값 복원
+        try{
+          const crit=window._lastVertexResult?.crit;
+          const ai=window._lastVertexResult?.ai;
+          if((crit||ai)&&typeof mapVertexToLegacy==='function'&&typeof renderAnalysisResult==='function'){
+            const mapped=mapVertexToLegacy(crit,ai);
+            const ctx=window._anRenderCtx||{hasChecklist:true,studentCount:20};
+            renderAnalysisResult(mapped,ctx.hasChecklist,ctx.studentCount);
+          }
+        }catch(rerr){}
+        return;
+      }
       if(n<0) n=0;
-      if(n>max) n=max;
       if(n===prev.score) return;
       subs[subIdx].score=n;
       // level 자동 재지정 — 렌더 색상과 동일 기준, max별 임계값 적용
