@@ -10514,23 +10514,26 @@ function openLecturer(id, fromPage){
 
     <!-- TAB: MY 역량 -->
     <div class="lect-tab-pane" id="lect-tab-역량">
-      <!-- 역량 분석: 레이더 위, 달성도 아래 (한 영역) · 우측 최종 의견은 필요 시 추후 배치 -->
+      <!-- 역량 분석: 제목 행 공유 + 카드 행 공유 (마이페이지는 원래 좌우 배치 유지) -->
       <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:12px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
-          <div style="display:flex;gap:6px">
-            <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-              <option value="">전체 교육종류</option>
-              ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
-            </select>
-            <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-              <option value="">전체 제품</option>
-              ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
-            </select>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
+            <div style="display:flex;gap:6px">
+              <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+                <option value="">전체 교육종류</option>
+                ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
+              </select>
+              <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
+                <option value="">전체 제품</option>
+                ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
+              </select>
+            </div>
           </div>
         </div>
-        <div id="lect-radar-wrap">
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:stretch" id="lect-radar-wrap">
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:380px">
             <div style="display:flex;align-items:center;justify-content:center">
               <svg id="radar-chart-${u.id}" viewBox="0 0 400 400" style="width:100%;max-width:480px;height:auto"></svg>
             </div>
@@ -10538,8 +10541,7 @@ function openLecturer(id, fromPage){
               <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dc2626"></div><span style="font-size:12px;font-weight:600;color:var(--t1)">현재 역량</span></div>
             </div>
           </div>
-          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">역량별 달성도</div>
-          <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="lect-skills-bars-${u.id}"></div>
+          <div style="border:1px solid var(--bdr);border-radius:14px;padding:24px;display:flex;flex-direction:column;min-height:380px" id="lect-skills-bars-${u.id}"></div>
         </div>
       </div>
 
