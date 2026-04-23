@@ -5290,7 +5290,7 @@ function renderPickDetail(){
         <div>
           ${sectionHead(icoSpeech,'강사 교육 화법')}
           <div style="display:flex;flex-direction:column;gap:10px">
-            ${teachingPatterns.length?teachingPatterns.slice(0,3).map(p=>`<div class="pick-shell-card" style="${cardStyle}">
+            ${teachingPatterns.length?teachingPatterns.slice(0,8).map(p=>`<div class="pick-shell-card" style="${cardStyle}">
               <div style="${titleStyle}">${p.alternative?`"${p.alternative}"`:(p.original||'화법')}</div>
               <div style="${subStyle}">${p.type?(p.type+' 화법'):''}</div>
             </div>`).join(''):`<div class="pick-shell-card" style="${cardStyle}"><div style="${titleStyle}">AI 평가 후 자동 생성</div><div style="${subStyle}">분석 결과에서 추출됩니다</div></div>`}
