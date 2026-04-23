@@ -1751,7 +1751,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <!-- 평가 항목별 피드백 (전체 폭) -->
       <div style="margin-bottom:28px">
         <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
-        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;max-height:520px;overflow:auto;background:#fff" id="an-criteria-result"></div>
+        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff" id="an-criteria-result"></div>
       </div>
       <!-- 추천 시나리오 / 레벨UP / 화법 -->
       <div style="margin-bottom:28px;background:rgba(159,18,57,.02);border-radius:14px;padding:20px">
@@ -1808,7 +1808,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <!-- 평가 항목별 피드백 (전체 폭) -->
       <div style="margin-bottom:28px">
         <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
-        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;max-height:520px;overflow:auto;background:#fff" id="an-ts-feed"></div>
+        <div class="an-feed-box" style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff" id="an-ts-feed"></div>
       </div>
     </div>
 
@@ -7285,25 +7285,14 @@ function renderTsTable(timestamps,which){
   const CELL_WEIGHT='600';
   const thStyle=(align)=>`padding:12px 10px;text-align:${align||'left'};font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;color:#000;letter-spacing:.2px;background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap`;
   const tdBase=`padding:12px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:${CELL_WEIGHT};color:#000;line-height:1.55;vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word`;
-  return `<table style="width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;table-layout:fixed;background:#fff;font-family:${FONT}">
-    <colgroup>
-      <col style="width:110px"><col style="width:110px"><col style="width:240px">
-      <col style="width:56px"><col style="width:56px"><col style="width:100px">
-      <col style="width:30%"><col style="width:22%">
-    </colgroup>
-    <thead>
-      <tr style="position:sticky;top:0;z-index:5">
-        <th style="${thStyle('left')}">대항목</th>
-        <th style="${thStyle('left')}">세부항목</th>
-        <th style="${thStyle('left')}">평가 기준</th>
-        <th style="${thStyle('center')}">배점</th>
-        <th style="${thStyle('center')}">점수</th>
-        <th style="${thStyle('center')}">시점</th>
-        <th style="${thStyle('left')}">분석</th>
-        <th style="${thStyle('left')}">솔루션</th>
-      </tr>
-    </thead>
-    <tbody>${timestamps.map((ts,idx)=>{
+  // 같은 colgroup 두 번 사용 (헤더용 / 본문용) — 컬럼 폭 정합성 유지
+  const colgroupHtml=`<colgroup>
+    <col style="width:110px"><col style="width:110px"><col style="width:240px">
+    <col style="width:56px"><col style="width:56px"><col style="width:100px">
+    <col style="width:30%"><col style="width:22%">
+  </colgroup>`;
+  const tableStyle=`width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;table-layout:fixed;background:#fff;font-family:${FONT}`;
+  const bodyRows=timestamps.map((ts,idx)=>{
       const noTs=!ts.t||ts.t==='—'||ts.t==='-'||/^\s*$/.test(ts.t);
       const naText=/(해당 ?없|평가하기 어렵|평가가 어렵|판단하기 어렵|평가 불가|판단 불가|확인 불가|녹화된 강의이므로|해당 항목을 평가할 수 없|평가 대상이 아님)/.test((ts.text||'')+(ts.solution||''));
       const isNA=ts.level==='na'||ts.type==='na'||(noTs&&naText);
@@ -7328,8 +7317,32 @@ function renderTsTable(timestamps,which){
         <td style="${tdBase};text-align:center">${ts.t||'—'}</td>
         <td style="${tdBase}">${ts.text||''}</td>
         <td style="${tdBase}">${ts.type==='good'?'—':(ts.solution||'—')}</td>
-      </tr>`;}).join('')}
-    </tbody></table>`;
+      </tr>`;}).join('');
+  // 헤더 테이블(스크롤 밖) + 본문 래퍼(스크롤 안) 분리
+  // → 스크롤바가 헤더 아래부터만 표시됨
+  return `<div style="display:flex;flex-direction:column;max-height:520px">
+    <table style="${tableStyle};flex-shrink:0">
+      ${colgroupHtml}
+      <thead>
+        <tr>
+          <th style="${thStyle('left')}">대항목</th>
+          <th style="${thStyle('left')}">세부항목</th>
+          <th style="${thStyle('left')}">평가 기준</th>
+          <th style="${thStyle('center')}">배점</th>
+          <th style="${thStyle('center')}">점수</th>
+          <th style="${thStyle('center')}">시점</th>
+          <th style="${thStyle('left')}">분석</th>
+          <th style="${thStyle('left')}">솔루션</th>
+        </tr>
+      </thead>
+    </table>
+    <div style="overflow:auto;flex:1;min-height:0">
+      <table style="${tableStyle}">
+        ${colgroupHtml}
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
 // 레이더 차트 SVG 공통
@@ -8632,7 +8645,7 @@ function renderVoiceResult(r,hasCL,count,tone){
       <!-- 평가 항목별 피드백 -->
       ${timestamps.length?`<div style="margin-bottom:20px">
         <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:12px">평가 항목별 피드백</div>
-        <div style="border:1px solid var(--bdr);border-radius:14px;max-height:520px;overflow:auto;background:#fff">${renderTsTable(timestamps,'ai')}</div>
+        <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff">${renderTsTable(timestamps,'ai')}</div>
       </div>`:''}
 
       <!-- 반복어 습관 + 환기 -->
