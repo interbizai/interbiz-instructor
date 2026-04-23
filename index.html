@@ -12103,11 +12103,13 @@ function setAnResultMeta(opts){
   }
   const topEl=el('an-result-meta-top');
   if(topEl){
-    topEl.innerHTML=[
-      chipBordered('강사',opts?.userName),
-      chipBordered('팀',opts?.team),
-      chipBordered('직군',opts?.position)
-    ].filter(Boolean).join('');
+    // 이름 · 팀 · 직군 (라벨 없이 가운뎃점 구분) — 검정 테두리 pill 하나
+    const parts=[opts?.userName,opts?.team,opts?.position].filter(v=>v&&String(v).trim()!=='').map(esc);
+    if(parts.length){
+      topEl.innerHTML=`<span style="display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border-radius:999px;background:transparent;border:1.5px solid #000;font-size:12.5px;font-weight:700;color:#000;white-space:nowrap;line-height:1.2">${parts.join('<span style="color:#000;font-weight:700">·</span>')}</span>`;
+    } else {
+      topEl.innerHTML='';
+    }
   }
 }
 
