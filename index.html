@@ -11435,31 +11435,51 @@ async function addEduType(){
 }
 async function removeEduType(id,name){
   if(!confirm(`"${name}" 교육종류를 삭제할까요?`)) return;
-  // 1) 즉시 UI 반영 (optimistic) — D.eduTypes와 localStorage 양쪽에서 제거
-  D.eduTypes=(Array.isArray(D.eduTypes)?D.eduTypes:[])
-    .filter(r=>String(r.id)!==String(id) && r.name!==name);
-  try{
-    const cur=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');
-    localStorage.setItem('interbiz_eduTypes',JSON.stringify(cur.filter(n=>n!==name)));
-  }catch(e){}
+  // 롤백용 스냅샷
+  const snapD=[...(Array.isArray(D.eduTypes)?D.eduTypes:[])];
+  let snapLocal=[];
+  try{ snapLocal=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
+  // 1) 즉시 UI 반영 (optimistic)
+  D.eduTypes=snapD.filter(r=>String(r.id)!==String(id) && r.name!==name);
+  try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.filter(n=>n!==name))); }catch(e){}
   renderEduTypeManage();
-  showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
-  // 2) 백그라운드 Supabase 삭제 — id 기준 + name 기준 fallback
+  // 2) Supabase 삭제 시도 — id 기준 + name 기준
   const isLocal=!id||String(id).startsWith('local-');
+  let dbDeleted=0;
   if(!isLocal){
     const numId=parseInt(id,10);
     const res=await dbRemoveEduType(isNaN(numId)?id:numId);
+    dbDeleted+=res?.deleted||0;
     console.log('DB delete by id:',res);
-    if(res?.deleted===0 || res?._error){
-      // id 매칭 실패 → name 기준 재시도
-      const byName=await dbRemoveEduTypeByName(name);
-      console.log('DB delete by name:',byName);
-    }
-  } else if(name){
-    // 이름 기준 한 번 시도 (DB에 있을 수도 있음)
-    const byName=await dbRemoveEduTypeByName(name);
-    console.log('DB delete by name (local id):',byName);
   }
+  const byName=await dbRemoveEduTypeByName(name);
+  dbDeleted+=byName?.deleted||0;
+  console.log('DB delete by name:',byName);
+  // 3) 검증 — DB에 여전히 남아있으면 RLS 차단 → 롤백
+  const verify=await dbGetEduTypes();
+  if(verify){
+    const stillExists=verify.find(r=>r.name===name);
+    if(stillExists){
+      // 롤백
+      D.eduTypes=snapD;
+      try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(e){}
+      renderEduTypeManage();
+      showEduTypeToast('❌ 삭제 실패: Supabase RLS가 차단 중','#ef4444');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error(`"${name}" (id:${stillExists.id}) 가 Supabase에 여전히 존재합니다.`);
+      console.error('원인: edu_types 테이블의 RLS 정책이 DELETE를 차단');
+      console.error('해결: Supabase SQL Editor에서 아래 중 하나 실행');
+      console.error('  ① ALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;');
+      console.error('  ② CREATE POLICY "edu_types_all" ON edu_types FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      alert(`삭제 실패: Supabase RLS가 DELETE를 차단하고 있습니다.\n\nSupabase SQL Editor에서 아래 명령 실행 후 다시 시도하세요:\n\nALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;`);
+      return;
+    }
+    // DB 기준으로 D.eduTypes 동기화
+    D.eduTypes=verify.map(r=>({id:String(r.id),name:r.name}));
+    renderEduTypeManage();
+  }
+  showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
 }
 
 /* ════════════════════════════════
