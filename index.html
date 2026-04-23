@@ -2546,7 +2546,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
   <!-- 교육종류 관리 -->
   <div class="tab-pane" id="tab-교육종류">
-    <div style="max-width:620px">
+    <div style="max-width:620px;position:relative">
+      <div id="edu-type-toast" style="position:absolute;top:-10px;right:0;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;color:#fff;background:#10b981;opacity:0;transform:translateY(-6px);transition:opacity .25s ease, transform .25s ease;pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
       <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육종류 관리</div>
       <div style="font-size:12px;color:var(--t3);margin-bottom:16px">강사가 영상 등록 · 녹화 시 선택할 교육종류 목록입니다. 텍스트로 자유롭게 추가/삭제하세요.</div>
       <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -3196,8 +3197,11 @@ async function loadFromDB(){
   D.eduCategories=ec||[];
   // 교육종류 (관리자 공유 목록)
   const et=await dbGetEduTypes();
-  if(et){ D.eduTypes=et; try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(et.map(x=>x.name)));}catch(e){} }
-  else { D.eduTypes=(getEduTypes()||[]).map(n=>({id:null,name:n})); }
+  if(et){ D.eduTypes=et.map(r=>({id:String(r.id),name:r.name})); try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){} }
+  else {
+    const names=(()=>{try{return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]');}catch(e){return [];}})();
+    D.eduTypes=names.map((n,i)=>({id:'local-'+i,name:n}));
+  }
   // 추천영상
   const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
   D.recVideos=rv||[];
@@ -11340,7 +11344,17 @@ function switchTab(name,btn){
   el('tab-'+name)?.classList.add('active');
 }
 
-/* 교육종류 관리 (관리자 · Supabase 공유) */
+/* 교육종류 관리 (관리자 · Supabase 공유, DB 미존재 시 localStorage 폴백) */
+function showEduTypeToast(msg,color){
+  const t=el('edu-type-toast');
+  if(!t) return;
+  t.textContent=msg;
+  t.style.background=color||'#10b981';
+  t.style.opacity='1';
+  t.style.transform='translateY(0)';
+  clearTimeout(window._eduTypeToastT);
+  window._eduTypeToastT=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-6px)';},1800);
+}
 function renderEduTypeManage(){
   const listEl=el('edu-type-list');
   if(!listEl) return;
@@ -11351,7 +11365,7 @@ function renderEduTypeManage(){
   }
   listEl.innerHTML=records.map((r)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
     <span style="font-size:13px;font-weight:600;color:var(--t1)">${(r.name||'').replace(/</g,'&lt;')}</span>
-    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType(${r.id||'null'},'${(r.name||'').replace(/'/g,"\\'")}')">삭제</button>
+    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType(${JSON.stringify(String(r.id||''))},${JSON.stringify(r.name||'')})">삭제</button>
   </div>`).join('');
   const inp=el('edu-type-input');if(inp) inp.focus();
 }
@@ -11360,27 +11374,43 @@ async function addEduType(){
   const name=(inp?.value||'').trim();
   if(!name){ inp?.focus(); return; }
   const existing=getEduTypeRecords().map(r=>r.name);
-  if(existing.includes(name)){ alert('이미 등록된 교육종류입니다.'); return; }
+  if(existing.includes(name)){ showEduTypeToast('이미 등록된 교육종류입니다','#f59e0b'); return; }
+  // 1) Supabase 시도
   const row=await dbAddEduType(name);
+  let newRecord;
   if(row?._error){
-    if((row._error||'').toLowerCase().includes('relation')){
-      alert('Supabase에 edu_types 테이블이 없습니다.\n관리자에게 DB 생성 SQL 실행을 요청하세요.');
-    } else alert('저장 실패: '+row._error);
-    return;
+    const msg=(row._error||'').toLowerCase();
+    const isTableMissing=msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache');
+    if(!isTableMissing){ showEduTypeToast('저장 실패: '+row._error,'#ef4444'); return; }
+    // 2) 테이블 미존재 → localStorage 폴백
+    newRecord={id:'local-'+Date.now(),name};
+    console.warn('edu_types 테이블 없음 → localStorage 저장');
+  } else {
+    newRecord={id:String(row.id),name:row.name};
   }
-  D.eduTypes=[...getEduTypeRecords(),{id:row.id,name:row.name}];
+  D.eduTypes=[...getEduTypeRecords(),newRecord];
   try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   if(inp) inp.value='';
   renderEduTypeManage();
+  showEduTypeToast(`"${name}" 추가되었습니다`);
 }
 async function removeEduType(id,name){
-  if(id===null||id==='null'){ alert('이 항목은 DB 동기화 이전 캐시 항목입니다. 새로고침 후 다시 시도해 주세요.'); return; }
   if(!confirm(`"${name}" 교육종류를 삭제할까요?`)) return;
-  const res=await dbRemoveEduType(id);
-  if(res?._error){ alert('삭제 실패: '+res._error); return; }
-  D.eduTypes=getEduTypeRecords().filter(r=>r.id!==id);
+  const isLocal=!id||String(id).startsWith('local-');
+  if(!isLocal){
+    const numId=parseInt(id,10);
+    const res=await dbRemoveEduType(isNaN(numId)?id:numId);
+    if(res?._error){
+      const msg=(res._error||'').toLowerCase();
+      if(!msg.includes('relation')&&!msg.includes('does not exist')){
+        showEduTypeToast('삭제 실패: '+res._error,'#ef4444'); return;
+      }
+    }
+  }
+  D.eduTypes=getEduTypeRecords().filter(r=>String(r.id||'')!==String(id));
   try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   renderEduTypeManage();
+  showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
 }
 
 /* ════════════════════════════════
