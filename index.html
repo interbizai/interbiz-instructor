@@ -7279,12 +7279,13 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps,which){
   const srcWhich=which||'crit';
-  // 공통 스타일 — 점수 외 모든 셀: 검정색 · LG글씨 · 굵기/크기 동일
+  // 공통 스타일 — 점수 외 모든 셀: 종합 의견과 동일 (회색 · 12px · LG글씨 · 기본 굵기)
   const FONT="'LG글씨','LG Smart',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
-  const CELL_SIZE='13px';
-  const CELL_WEIGHT='600';
-  const thStyle=(align)=>`padding:12px 10px;text-align:${align||'left'};font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;color:#000;letter-spacing:.2px;background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap`;
-  const tdBase=`padding:12px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:${CELL_WEIGHT};color:#000;line-height:1.55;vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word`;
+  const CELL_SIZE='12px';
+  const CELL_COLOR='#555555';       // var(--t2) — 종합의견 본문 색
+  const CELL_LINE='1.7';
+  const thStyle=(align)=>`padding:11px 10px;text-align:${align||'left'};font-family:${FONT};font-size:${CELL_SIZE};font-weight:700;color:${CELL_COLOR};background:#f1f5f9;border-bottom:2px solid #cbd5e1;white-space:nowrap;line-height:${CELL_LINE}`;
+  const tdBase=`padding:11px 10px;font-family:${FONT};font-size:${CELL_SIZE};font-weight:400;color:${CELL_COLOR};line-height:${CELL_LINE};vertical-align:top;border-bottom:1px solid #e5e7eb;word-break:break-word`;
   // 같은 colgroup 두 번 사용 (헤더용 / 본문용) — 컬럼 폭 정합성 유지
   const colgroupHtml=`<colgroup>
     <col style="width:110px"><col style="width:110px"><col style="width:240px">
