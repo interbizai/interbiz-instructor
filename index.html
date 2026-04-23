@@ -10609,14 +10609,15 @@ function openLecturer(id, fromPage){
         const userVids=(D.videos||[]).filter(v=>v.userId===u.id);
         const vidIds=new Set(userVids.map(v=>v.id));
         const vEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
-        const latestVidMood=[...vEvals].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).find(e=>e.mood)?.mood||'';
+        const latestEval=vEvals.length?[...vEvals].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))[0]:null;
+        const latestVidMood=latestEval?computeAiMood(latestEval.decibel,latestEval.tempo,latestEval.habits):'';
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
         if(!latestVidMood&&!latestVoiceMood) return '';
-        const moodChip=(label,val,color,bg,icon)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${bg};border:1px solid ${color}40;font-size:11.5px;font-weight:700;color:${color};white-space:nowrap;cursor:pointer;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 3px 10px rgba(0,0,0,.08)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'"><span style="font-size:13px">${icon}</span><span style="font-weight:800">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
+        const moodChip=(label,val,color,bg)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${bg};border:1px solid ${color}40;font-size:11.5px;font-weight:700;color:${color};white-space:nowrap;cursor:pointer;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 3px 10px rgba(0,0,0,.08)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'"><span style="font-weight:800">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
         return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;z-index:2">
-          ${moodChip('영상',latestVidMood,'#dc2626','rgba(220,38,38,.08)','🎬')}
-          ${moodChip('스피치',latestVoiceMood,'#8b5cf6','rgba(139,92,246,.08)','🎤')}
+          ${moodChip('분위기',latestVidMood,'#dc2626','rgba(220,38,38,.08)')}
+          ${moodChip('스피치',latestVoiceMood,'#8b5cf6','rgba(139,92,246,.08)')}
         </div>`;
       })()}
       <!-- 사진 + Lv 뱃지 -->
@@ -10991,7 +10992,21 @@ function openGradeCriteria(userId,avg,currentGrade){
   document.body.appendChild(overlay);
 }
 
-// 분위기 통계 모달 — 영상(evaluations.mood) + 스피치(voice_evals.tone) 누적 집계
+// 강의 분위기 AI 판정 — 영상 결과 헤더(an-mood-badge)와 동일 로직. 음성 데이터(dB+tempo+반복어) 기반.
+function computeAiMood(decibel, tempo, habits){
+  const db=Number(decibel)||0, tp=Number(tempo)||0;
+  const h=(habits||[]).reduce((a,x)=>a+(x.count||0),0);
+  let m='밝고 경쾌한';
+  if(db>=78&&tp>=155) m='열정적이고 에너지 넘치는';
+  else if(db>=70&&tp>=140&&h<10) m='밝고 경쾌한';
+  else if(db>=65&&tp>=130&&tp<=150) m='친근하고 편안한';
+  else if(db>=70&&tp<=135) m='전문적이고 진지한';
+  else if(db<=65&&tp<=130) m='차분하고 신뢰감 있는';
+  else if(tp>=150&&h>15) m='재미있고 유머러스한';
+  return m;
+}
+
+// 분위기 통계 모달 — 영상(aiMood 재계산) + 스피치(voice_evals.tone) 누적 집계
 function openMoodBreakdown(userId){
   const u=(D.users||[]).find(x=>String(x.id)===String(userId));
   if(!u) return;
@@ -10999,8 +11014,8 @@ function openMoodBreakdown(userId){
 
   const userVids=(D.videos||[]).filter(v=>String(v.userId)===String(userId));
   const vidIds=new Set(userVids.map(v=>v.id));
-  const rawVidEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id)&&e.mood);
-  // 영상 1개 = 1건 (동일 video_id 의 교육맞춤/AI독자 중복 제거 — 최신 평가의 mood 사용)
+  const rawVidEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
+  // 영상 1개 = 1건 (동일 video_id 의 교육맞춤/AI독자 중복 제거 — 최신 평가의 음성 데이터로 aiMood 재계산)
   const latestByVid={};
   rawVidEvals.forEach(e=>{
     const ex=latestByVid[e.video_id];
@@ -11008,8 +11023,11 @@ function openMoodBreakdown(userId){
   });
   const vidEvals=Object.values(latestByVid);
   const vidCounts={};
-  vidEvals.forEach(e=>{vidCounts[e.mood]=(vidCounts[e.mood]||0)+1});
-  const vidTotal=vidEvals.length;
+  vidEvals.forEach(e=>{
+    const m=computeAiMood(e.decibel,e.tempo,e.habits);
+    if(m) vidCounts[m]=(vidCounts[m]||0)+1;
+  });
+  const vidTotal=Object.values(vidCounts).reduce((a,b)=>a+b,0);
 
   const voiceEv=(D.voiceEvals||[]).filter(ve=>String(ve.user_id)===String(userId)&&ve.tone);
   const voiceCounts={};
