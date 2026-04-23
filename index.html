@@ -2035,6 +2035,12 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <input type="text" class="form-input" id="va-title" placeholder="강의 제목">
         </div>
         <div class="form-group">
+          <label class="form-lbl">교육종류</label>
+          <select class="form-input" id="va-edu-type">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-lbl">교육자료</label>
           <select class="form-input" id="va-product" onchange="loadVoiceEduFiles()"></select>
         </div>
@@ -2466,7 +2472,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center" id="pick-filter-row">
             <div style="position:relative" id="pick-cat-multi-wrap">
-              <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육자료</button>
+              <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육종류</button>
               <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
             </div>
             <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
@@ -2606,7 +2612,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <option value="">전체</option>
         </select>
       </div>
-      <div class="f-item"><label class="f-lbl">교육자료</label>
+      <div class="f-item"><label class="f-lbl">교육종류</label>
         <select id="admin-coach-cat" onchange="renderAdminCoaching()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
           <option value="">전체</option>
         </select>
@@ -3089,6 +3095,22 @@ async function dbUpdateUser(id,fields){
   const {error}=await sb.from('users').update(map).eq('id',id);
   if(error) console.error('dbUpdateUser:',error);
 }
+// 교육종류 목록 (공유 · Supabase)
+async function dbGetEduTypes(){
+  const {data,error}=await sb.from('edu_types').select('*').order('id');
+  if(error){ console.warn('dbGetEduTypes:',error.message); return null; }
+  return (data||[]).map(r=>({id:r.id,name:r.name}));
+}
+async function dbAddEduType(name){
+  const {data,error}=await sb.from('edu_types').insert({name}).select().single();
+  if(error){ console.error('dbAddEduType:',error); return {_error:error.message}; }
+  return data;
+}
+async function dbRemoveEduType(id){
+  const {error}=await sb.from('edu_types').delete().eq('id',id);
+  if(error){ console.error('dbRemoveEduType:',error); return {_error:error.message}; }
+  return {ok:true};
+}
 // 영상 생성
 async function dbCreateVideo(v){
   const full={
@@ -3172,6 +3194,10 @@ async function loadFromDB(){
   // 교육자료 카테고리
   const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
   D.eduCategories=ec||[];
+  // 교육종류 (관리자 공유 목록)
+  const et=await dbGetEduTypes();
+  if(et){ D.eduTypes=et; try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(et.map(x=>x.name)));}catch(e){} }
+  else { D.eduTypes=(getEduTypes()||[]).map(n=>({id:null,name:n})); }
   // 추천영상
   const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
   D.recVideos=rv||[];
@@ -3818,9 +3844,14 @@ function getEduCategories(){
   const db=(D.eduCategories||[]).map(c=>c.name);
   return [...new Set([...defaults,...db])];
 }
-// 교육종류 (관리자가 텍스트로 등록 · localStorage 저장)
+// 교육종류 (관리자 공유 · Supabase 우선, localStorage 캐시)
 function getEduTypes(){
+  const db=(window.D&&Array.isArray(D.eduTypes))?D.eduTypes.map(x=>x?.name||x).filter(Boolean):null;
+  if(db&&db.length) return db;
   try{ return JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){ return []; }
+}
+function getEduTypeRecords(){
+  return (window.D&&Array.isArray(D.eduTypes))?D.eduTypes:[];
 }
 function setEduTypes(list){
   try{ localStorage.setItem('interbiz_eduTypes', JSON.stringify(list||[])); }catch(e){}
@@ -4829,15 +4860,15 @@ function togglePickCatMulti(){
   const p=document.getElementById('pick-cat-multi-panel');
   if(!p) return;
   if(p.style.display==='none'){
-    const cats=getEduCategories();
+    const cats=getEduTypes();
     const sel=window._pickCatSel;
     p.innerHTML=`<div style="padding:8px 10px;border-bottom:1px solid var(--bdr);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:12px;font-weight:700;color:var(--t1)">교육자료 필터</span>
+      <span style="font-size:12px;font-weight:700;color:var(--t1)">교육종류 필터</span>
       <button style="font-size:11px;color:var(--blue);border:none;background:none;cursor:pointer;font-weight:600" onclick="clearPickCatFilter()">전체 해제</button>
-    </div>`+cats.map(c=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;font-size:12.5px;border-radius:6px;color:var(--t1);white-space:nowrap" onmouseover="this.style.background='rgba(0,120,200,.06)'" onmouseout="this.style.background=''">
+    </div>`+(cats.length?cats.map(c=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;font-size:12.5px;border-radius:6px;color:var(--t1);white-space:nowrap" onmouseover="this.style.background='rgba(0,120,200,.06)'" onmouseout="this.style.background=''">
       <input type="checkbox" value="${c.replace(/"/g,'&quot;')}" ${sel.has(c)?'checked':''} onchange="togglePickCat('${c.replace(/'/g,"\\'")}',this.checked)" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">
       <span style="flex:1;color:var(--t1);font-weight:500">${c}</span>
-    </label>`).join('');
+    </label>`).join(''):'<div style="padding:12px 10px;font-size:12px;color:var(--t3)">등록된 교육종류가 없습니다.<br>관리자 → 교육종류 탭에서 추가하세요.</div>');
     p.style.display='block';
     setTimeout(()=>{document.addEventListener('click',pickCatOutsideClose,{once:true});},10);
   }else{
@@ -4867,7 +4898,7 @@ function updatePickCatBtn(){
   const btn=document.getElementById('pick-cat-multi-btn');
   if(!btn) return;
   const sz=window._pickCatSel.size;
-  btn.textContent=sz===0?'전체 교육자료':sz===1?`${[...window._pickCatSel][0]}`:`${[...window._pickCatSel][0]} 외 ${sz-1}개`;
+  btn.textContent=sz===0?'전체 교육종류':sz===1?`${[...window._pickCatSel][0]}`:`${[...window._pickCatSel][0]} 외 ${sz-1}개`;
 }
 
 function renderPickVideos(){
@@ -4889,10 +4920,10 @@ function renderPickVideos(){
     // 평가받은 영상 우선 (없어도 표시 가능하지만 일관성 위해)
     return true;
   });
-  // 다중 카테고리 필터
+  // 다중 교육종류 필터
   if(catSel.size){
     pool=pool.filter(vd=>{
-      const vc=vd.videoType||vd.video_type||'';
+      const vc=vd.eduType||vd.edu_type||'';
       return catSel.has(vc);
     });
   }
@@ -5381,8 +5412,11 @@ function renderAdminCoaching(){
   if(tmSel&&tmSel.options.length<=1){
     [...new Set((D.users||[]).map(u=>u.team).filter(Boolean))].forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tmSel.appendChild(o);});
   }
-  if(catSel&&catSel.options.length<=1){
-    getEduCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+  if(catSel){
+    const want=getEduTypes();
+    const prev=catSel.value;
+    catSel.innerHTML='<option value="">전체</option>'+want.map(c=>`<option value="${c}">${c}</option>`).join('');
+    catSel.value=prev;
   }
   if(prodSel&&prodSel.options.length<=1){
     Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
@@ -5408,7 +5442,7 @@ function renderAdminCoaching(){
 
   // 영상 필터
   let vids=(D.videos||[]).filter(v=>uids.has(v.userId));
-  if(catV) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catV);
+  if(catV) vids=vids.filter(v=>(v.eduType||v.edu_type||'')===catV);
   if(prodV) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodV));
   if(period){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-parseInt(period));vids=vids.filter(v=>new Date(v.date||v.created_at)>=cutoff);}
   vids.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -5424,7 +5458,7 @@ function renderAdminCoaching(){
   if(vidCntEl) vidCntEl.textContent=vids.length+'건';
   if(vidListEl) vidListEl.innerHTML=vids.length?vids.map(vid=>{
     const u=D.users?.find(x=>x.id===vid.userId);
-    const vCat=vid.videoType||vid.video_type||'';
+    const vCat=vid.eduType||vid.edu_type||vid.videoType||vid.video_type||'';
     const vProd=vid.productName||vid.product_name||'';
     const title=(vid.title||'—').replace(/'/g,"\\'");
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04)">
@@ -7800,6 +7834,7 @@ function openVoiceAnalysis(){
   const pdfBtn=el('va-pdf-btn');if(pdfBtn)pdfBtn.style.display='none';
   el('va-title').value='';el('va-count').value='';
   const vaProd=el('va-product');if(vaProd){const cats=getEduCategories();vaProd.innerHTML='<option value="">선택</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
+  const vaEduType=el('va-edu-type');if(vaEduType){const types=getEduTypes();vaEduType.innerHTML='<option value="">선택</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');}
   el('va-file-name').textContent='음성/영상 파일 업로드 (mp3, wav, mp4)';
   el('va-cl-name').textContent='없음';
   // 제품 셀렉트 초기화
@@ -8088,11 +8123,17 @@ async function runVoiceAnalysis(){
     if(CU?.email==='admin'){alert('평가 업로드는 강사 본인 계정으로 진행해주세요.');return;}
     const userId=CU?.id||null;
     if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
+      const eduType=v('va-edu-type')||'';
       const insertData={user_name:CU?.name||'관리자', title, score:aiRes.overall_score||0,
         tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
-        result_data:{analysis:aiRes}};
+        result_data:{eduType,analysis:aiRes}};
       if(userId) insertData.user_id=userId;
-      const {data:vRow}=await sb.from('voice_evals').insert(insertData).select().single();
+      if(eduType) insertData.edu_type=eduType;
+      let {data:vRow,error:vErr}=await sb.from('voice_evals').insert(insertData).select().single();
+      if(vErr && (vErr.message||'').toLowerCase().includes('edu_type')){
+        delete insertData.edu_type;
+        ({data:vRow}=await sb.from('voice_evals').insert(insertData).select().single());
+      }
       voiceEvalId=vRow?.id||null;
     }catch(e){console.warn('voice_evals insert failed:',e);}
     await saveEvaluation({videoId:null,voiceEvalId,checklistId:checklistId||null,eduFileUrl:eduFileUrl||null,evalType:'AI독자',result:aiRes});
@@ -8617,11 +8658,17 @@ async function autoSaveVoice(resultJson,count,tone){
     if(CU?.email==='admin'){alert('평가 업로드는 강사 본인 계정으로 진행해주세요.');return;}
     const userId=CU?.id||null;
     if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
+    const eduType=v('va-edu-type')||'';
     const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
       tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
-      result_data:{product,analysis:resultJson}};
+      result_data:{product,eduType,analysis:resultJson}};
     if(userId) insertData.user_id=userId;
-    await sb.from('voice_evals').insert(insertData);
+    if(eduType) insertData.edu_type=eduType;
+    let {error:vErr}=await sb.from('voice_evals').insert(insertData);
+    if(vErr && (vErr.message||'').toLowerCase().includes('edu_type')){
+      delete insertData.edu_type;
+      await sb.from('voice_evals').insert(insertData);
+    }
     await loadFromDB();
   }catch(e){console.error('auto voice save error:',e);}
 }
@@ -8695,11 +8742,17 @@ async function saveVoiceAnalysis(){
   const count=parseInt(v('va-count'))||0;
   const userId=CU?.id||null;
   const product=v('va-product')||'';
+  const eduType=v('va-edu-type')||'';
   const insertData={user_name:CU?.name||'관리자', title, score:parseInt(score)||0,
     tone, student_count:count, eval_date:new Date().toISOString().split('T')[0],
-    result_data:{product}};
+    result_data:{product,eduType}};
   if(userId) insertData.user_id=userId;
-  const {error}=await sb.from('voice_evals').insert(insertData);
+  if(eduType) insertData.edu_type=eduType;
+  let {error}=await sb.from('voice_evals').insert(insertData);
+  if(error && (error.message||'').toLowerCase().includes('edu_type')){
+    delete insertData.edu_type;
+    ({error}=await sb.from('voice_evals').insert(insertData));
+  }
   if(error) console.error('voice save error:',error);
   await loadFromDB();
   alert('음성 분석 결과가 저장되었습니다!');
@@ -9746,12 +9799,12 @@ function filterCoachingList(userId){
   const catVal=document.getElementById('coaching-cat-filter')?.value||'';
   const prodVal=document.getElementById('coaching-prod-filter')?.value||'';
   let vids=(D.videos||[]).filter(v=>v.userId===userId);
-  if(catVal) vids=vids.filter(v=>(v.videoType||v.video_type||'')===catVal);
+  if(catVal) vids=vids.filter(v=>(v.eduType||v.edu_type||'')===catVal);
   if(prodVal) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodVal));
   const listEl=document.getElementById('coaching-vid-list-'+userId);
   if(!listEl) return;
   listEl.innerHTML=vids.length?vids.map(vid=>{
-    const vCat=vid.videoType||vid.video_type||'';
+    const vCat=vid.eduType||vid.edu_type||vid.videoType||vid.video_type||'';
     const vProd=vid.productName||vid.product_name||'';
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
       <div style="flex:1;min-width:0">
@@ -10147,8 +10200,8 @@ function openLecturer(id, fromPage){
         <!-- 교육자료 + 제품 필터 (pill) -->
         <div style="display:flex;gap:6px;margin-bottom:14px">
           <select id="lect-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-            <option value="">전체 교육자료</option>
-            ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+            <option value="">전체 교육종류</option>
+            ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
           </select>
           <select id="lect-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
             <option value="">전체 제품</option>
@@ -10195,8 +10248,8 @@ function openLecturer(id, fromPage){
             <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
             <div style="display:flex;gap:6px">
               <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-                <option value="">전체 교육자료</option>
-                ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+                <option value="">전체 교육종류</option>
+                ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
               </select>
               <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
                 <option value="">전체 제품</option>
@@ -10293,8 +10346,8 @@ function openLecturer(id, fromPage){
     <div class="lect-tab-pane" id="lect-tab-코칭" style="display:none">
       <div style="display:flex;gap:6px;margin-bottom:14px">
         <select id="coaching-cat-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-          <option value="">전체 교육자료</option>
-          ${getEduCategories().map(c=>`<option value="${c}">${c}</option>`).join('')}
+          <option value="">전체 교육종류</option>
+          ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
         </select>
         <select id="coaching-prod-filter" onchange="filterCoachingList(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
           <option value="">전체 제품</option>
@@ -10307,7 +10360,7 @@ function openLecturer(id, fromPage){
           <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)">${userVids.length}건</span></div>
           <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden" id="coaching-vid-list-${u.id}">
             ${userVids.length?userVids.map(vid=>{
-              const vCat=vid.videoType||vid.video_type||'';
+              const vCat=vid.eduType||vid.edu_type||vid.videoType||vid.video_type||'';
               const vProd=vid.productName||vid.product_name||'';
               return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
               <div style="flex:1;min-width:0">
@@ -10370,7 +10423,7 @@ function _refreshLectStats(userId){
   // 필터: 영상의 videoType/productName과 매칭
   if(catFilter||prodFilter){
     const vidIds=new Set((D.videos||[]).filter(v=>{
-      if(catFilter&&(v.videoType||v.video_type||'')!==catFilter) return false;
+      if(catFilter&&(v.eduType||v.edu_type||'')!==catFilter) return false;
       if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
       return true;
     }).map(v=>v.id));
@@ -10434,7 +10487,7 @@ function renderRadarChartFromEvals(userId){
   let evals=(window._lectEvals||[]);
   if(catFilter||prodFilter){
     const vidIds=new Set((D.videos||[]).filter(v=>{
-      if(catFilter&&(v.videoType||v.video_type||'')!==catFilter) return false;
+      if(catFilter&&(v.eduType||v.edu_type||'')!==catFilter) return false;
       if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
       return true;
     }).map(v=>v.id));
@@ -11287,38 +11340,46 @@ function switchTab(name,btn){
   el('tab-'+name)?.classList.add('active');
 }
 
-/* 교육종류 관리 (관리자) */
+/* 교육종류 관리 (관리자 · Supabase 공유) */
 function renderEduTypeManage(){
   const listEl=el('edu-type-list');
   if(!listEl) return;
-  const types=getEduTypes();
-  if(!types.length){
+  const records=getEduTypeRecords();
+  if(!records.length){
     listEl.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육종류가 없습니다. 상단 입력창으로 추가하세요.</div>';
     return;
   }
-  listEl.innerHTML=types.map((t,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
-    <span style="font-size:13px;font-weight:600;color:var(--t1)">${t}</span>
-    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType(${i})">삭제</button>
+  listEl.innerHTML=records.map((r)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
+    <span style="font-size:13px;font-weight:600;color:var(--t1)">${(r.name||'').replace(/</g,'&lt;')}</span>
+    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType(${r.id||'null'},'${(r.name||'').replace(/'/g,"\\'")}')">삭제</button>
   </div>`).join('');
   const inp=el('edu-type-input');if(inp) inp.focus();
 }
-function addEduType(){
+async function addEduType(){
   const inp=el('edu-type-input');
   const name=(inp?.value||'').trim();
   if(!name){ inp?.focus(); return; }
-  const types=getEduTypes();
-  if(types.includes(name)){ alert('이미 등록된 교육종류입니다.'); return; }
-  types.push(name);
-  setEduTypes(types);
+  const existing=getEduTypeRecords().map(r=>r.name);
+  if(existing.includes(name)){ alert('이미 등록된 교육종류입니다.'); return; }
+  const row=await dbAddEduType(name);
+  if(row?._error){
+    if((row._error||'').toLowerCase().includes('relation')){
+      alert('Supabase에 edu_types 테이블이 없습니다.\n관리자에게 DB 생성 SQL 실행을 요청하세요.');
+    } else alert('저장 실패: '+row._error);
+    return;
+  }
+  D.eduTypes=[...getEduTypeRecords(),{id:row.id,name:row.name}];
+  try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   if(inp) inp.value='';
   renderEduTypeManage();
 }
-function removeEduType(idx){
-  const types=getEduTypes();
-  if(!types[idx]) return;
-  if(!confirm(`"${types[idx]}" 교육종류를 삭제할까요?`)) return;
-  types.splice(idx,1);
-  setEduTypes(types);
+async function removeEduType(id,name){
+  if(id===null||id==='null'){ alert('이 항목은 DB 동기화 이전 캐시 항목입니다. 새로고침 후 다시 시도해 주세요.'); return; }
+  if(!confirm(`"${name}" 교육종류를 삭제할까요?`)) return;
+  const res=await dbRemoveEduType(id);
+  if(res?._error){ alert('삭제 실패: '+res._error); return; }
+  D.eduTypes=getEduTypeRecords().filter(r=>r.id!==id);
+  try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   renderEduTypeManage();
 }
 
