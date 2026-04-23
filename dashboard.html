@@ -3850,10 +3850,23 @@ function doFindPw(){
 /* ════════════════════════════════
    ADMIN
 ════════════════════════════════ */
-function getEduCategories(){
-  const defaults=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  const db=(D.eduCategories||[]).map(c=>c.name);
-  return [...new Set([...defaults,...db])];
+const EDU_CAT_DEFAULTS={
+  edu:['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'],
+  cl:['체크리스트']
+};
+function getEduCategories(type){
+  // type: 'edu' | 'cl' | undefined(=all)
+  const scope=type==='edu'||type==='cl'?[type]:['edu','cl'];
+  let names=[];
+  scope.forEach(t=>{
+    names.push(...(EDU_CAT_DEFAULTS[t]||[]));
+    names.push(...(D.eduCategories||[]).filter(c=>(c.type||'edu')===t).map(c=>c.name));
+  });
+  return [...new Set(names)];
+}
+function isDefaultEduCategory(name,type){
+  if(type==='edu'||type==='cl') return (EDU_CAT_DEFAULTS[type]||[]).includes(name);
+  return EDU_CAT_DEFAULTS.edu.includes(name)||EDU_CAT_DEFAULTS.cl.includes(name);
 }
 // 교육종류 (Supabase가 유일 기준 · localStorage는 오프라인 캐시로만 사용)
 function getEduTypeRecords(){
@@ -3880,9 +3893,9 @@ function renderEduPage(){
   if(!clArea||!lkArea) return;
   // 교육자료 (체크리스트)
   const isAdmin=CU?.isAdmin;
-  const defaultCatsInit=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  const dbCats=(D.eduCategories||[]).map(c=>c.name);
-  const catsForSelect=[...new Set([...defaultCatsInit,...dbCats])];
+  const catsEdu=getEduCategories('edu');
+  const catsCl=getEduCategories('cl');
+  const catsAll=[...new Set([...catsEdu,...catsCl])];
   let clHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="edu-cl-name" placeholder="자료명" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
@@ -3890,9 +3903,9 @@ function renderEduPage(){
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
       <select id="edu-cl-cat" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
-        ${catsForSelect.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        ${catsEdu.map(c=>`<option value="${c}">${c}</option>`).join('')}
       </select>
-      <select id="edu-cl-type" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
+      <select id="edu-cl-type" onchange="refreshEduCatDropdown()" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;width:auto">
         <option value="">체크리스트 타입 (해당 시)</option>
         <option value="standard">표준 (영상/스트리밍용)</option>
         <option value="speech">스피치 (스피치용)</option>
@@ -3905,13 +3918,8 @@ function renderEduPage(){
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
   // 카테고리별 그룹 + 최신순
-  const defaultCats2=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  const dbCats2=(D.eduCategories||[]).map(c=>c.name);
-  const cats=[...new Set([...defaultCats2,...dbCats2])];
+  const cats=catsAll;
   const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
-  // 카테고리 select 동적 생성
-  const catSel=document.getElementById('edu-cl-cat');
-  if(catSel){catSel.innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');}
   cats.forEach(cat=>{
     const items=sorted.filter(c=>(c.category||'체크리스트')===cat);
     if(!items.length) return;
@@ -3937,15 +3945,30 @@ function renderEduPage(){
     clHtml+='</div>';
   });
   if(!sorted.length) clHtml+='<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육자료가 없습니다</div>';
-  // 카테고리 관리 (관리자/부관리자만)
+  // 카테고리 관리 — 교육자료 / 체크리스트 2개 섹션으로 분리 (관리자/부관리자만)
   if(isAdmin){
-    clHtml+=`<div style="margin-top:16px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
-      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">카테고리 관리</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cats.map(c=>{const isDef=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'].includes(c);return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c}${isDef?'':`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c}')">×</button>`}</span>`;}).join('')}</div>
-      <div style="display:flex;gap:6px">
-        <input type="text" id="new-edu-cat" placeholder="새 카테고리명" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
-        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addEduCategory()">추가</button>
-      </div>
+    const renderCatBox=(title,subtitle,type,catList,inputId,btnFn)=>{
+      const chips=catList.map(c=>{
+        const isDef=isDefaultEduCategory(c,type);
+        return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t1)">${c.replace(/</g,'&lt;')}${isDef?'':`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px" onclick="deleteEduCategory('${c.replace(/'/g,"\\'")}','${type}')">×</button>`}</span>`;
+      }).join('');
+      return `<div style="margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:800;color:var(--t1)">${title}</div>
+          <div style="font-size:10px;color:var(--t3)">${subtitle}</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${chips||'<span style="font-size:11px;color:var(--t3)">기본 카테고리만 있음</span>'}</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="${inputId}" placeholder="새 카테고리명" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="${btnFn}">추가</button>
+        </div>
+      </div>`;
+    };
+    clHtml+=`<div style="margin-top:16px">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:4px">카테고리 관리</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">교육자료(교안·시나리오)와 체크리스트의 카테고리를 각각 관리합니다. 체크리스트 카테고리는 등록 폼에서 "체크리스트 타입"을 선택했을 때 노출됩니다.</div>
+      ${renderCatBox('교육자료 카테고리','교안·시나리오용 (평가안 기준 평가에 사용)','edu',catsEdu,'new-edu-cat-edu',"addEduCategory('edu')")}
+      ${renderCatBox('체크리스트 카테고리','표준·스피치 체크리스트용 (AI 독자 평가는 표준만)','cl',catsCl,'new-edu-cat-cl',"addEduCategory('cl')")}
     </div>`;
   }
   clArea.innerHTML=clHtml;
@@ -4240,21 +4263,47 @@ async function addEduLink(){
   if(lkErr){alert('등록 실패: '+lkErr.message);return;}
   await loadFromDB();renderEduPage();alert('등록 완료');
 }
-async function addEduCategory(){
-  const name=document.getElementById('new-edu-cat')?.value?.trim();
+async function addEduCategory(type){
+  type=(type==='cl'?'cl':'edu');
+  const inputId=type==='cl'?'new-edu-cat-cl':'new-edu-cat-edu';
+  const legacyInput=document.getElementById('new-edu-cat');
+  const input=document.getElementById(inputId)||legacyInput;
+  const name=input?.value?.trim();
   if(!name){alert('카테고리명을 입력하세요');return;}
+  // 기존 항목과 중복 체크
+  if(getEduCategories(type).includes(name)){alert('이미 존재하는 카테고리입니다.');return;}
   const order=(D.eduCategories||[]).length+1;
-  const{error}=await sb.from('edu_categories').insert({name,sort_order:order});
+  // 1차: type 포함 insert
+  let {error}=await sb.from('edu_categories').insert({name,sort_order:order,type});
+  if(error){
+    const msg=(error.message||'').toLowerCase();
+    // type 컬럼 없으면 제외 후 재시도 (ALTER 실행 전에도 동작)
+    if(msg.includes('column') && msg.includes('type')){
+      console.warn('edu_categories.type 컬럼 없음 — 제외 후 재시도');
+      ({error}=await sb.from('edu_categories').insert({name,sort_order:order}));
+    }
+  }
   if(error){alert('추가 실패: '+error.message);return;}
+  if(input) input.value='';
   await loadFromDB();renderEduPage();
 }
-async function deleteEduCategory(name){
-  const defaults=['거점집합교안','판경상 시나리오','판경상 교안','B2B교안','현장코칭교안','RP체크리스트','AI진단평가안'];
-  if(defaults.includes(name)){alert('기본 카테고리는 삭제할 수 없습니다.');return;}
+async function deleteEduCategory(name,type){
+  if(isDefaultEduCategory(name,type)){alert('기본 카테고리는 삭제할 수 없습니다.');return;}
   if(!confirm(`"${name}" 카테고리를 삭제하시겠습니까?`))return;
   const{error}=await sb.from('edu_categories').delete().eq('name',name);
   if(error){alert('삭제 실패: '+error.message);return;}
   await loadFromDB();renderEduPage();
+}
+// 등록 폼의 카테고리 드롭다운을 체크리스트 타입 선택에 따라 교체
+function refreshEduCatDropdown(){
+  const typeSel=document.getElementById('edu-cl-type');
+  const catSel=document.getElementById('edu-cl-cat');
+  if(!typeSel||!catSel) return;
+  const isCl=!!typeSel.value;
+  const cats=getEduCategories(isCl?'cl':'edu');
+  const prev=catSel.value;
+  catSel.innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if(cats.includes(prev)) catSel.value=prev;
 }
 async function deleteChecklist(id){
   if(!confirm('삭제하시겠습니까?'))return;
