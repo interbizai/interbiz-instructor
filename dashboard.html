@@ -1670,11 +1670,12 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900" id="an-score-pct">0%</div>
         </div>
-        <div style="display:flex;gap:18px;flex-shrink:0;min-width:280px">
+        <div style="display:flex;gap:16px;flex-shrink:0;min-width:280px">
           <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-total-score">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">총점(100)</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-rubric-quality">—</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가안 이해도%</div></div>
-          <div style="display:none" id="an-eval-cats"></div>
-          <div style="display:none" id="an-eval-items"></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-cats">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">대항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-items">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">세부항목</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-eval-criteria">0</div><div style="font-size:9px;color:rgba(255,255,255,.6)">평가기준</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:900" id="an-rubric-quality">—</div><div style="font-size:9px;color:rgba(255,255,255,.6)">교안/시나리오 이해도</div></div>
         </div>
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">교육맞춤평가 요약</div>
@@ -5237,7 +5238,7 @@ function renderPickDetail(){
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:#dc2626;color:#fff;letter-spacing:.4px">선택 영상</span>
             <span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(16,185,129,.14);color:#10b981;border:1px solid rgba(16,185,129,.35)">총점 ${score}점</span>
-            ${rubric!=null?`<span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(139,92,246,.12);color:#8b5cf6;border:1px solid rgba(139,92,246,.35)">평가안 이해도 ${rubric}%</span>`:''}
+            ${rubric!=null?`<span style="padding:3px 11px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(139,92,246,.12);color:#8b5cf6;border:1px solid rgba(139,92,246,.35)">교안/시나리오 이해도 ${rubric}%</span>`:''}
           </div>
           <div class="pick-hero-title" style="font-size:16.5px;font-weight:800;color:var(--t1);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${title}</div>
           <div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''} · ${product} · ${vid.date||''}</div>
@@ -7048,13 +7049,14 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const tsEl=el('an-total-score');if(tsEl) tsEl.textContent=total;
   const ecEl=el('an-eval-cats');if(ecEl) ecEl.textContent=catCount;
   const eiEl=el('an-eval-items');if(eiEl) eiEl.textContent=subCount;
+  const ecrEl=el('an-eval-criteria');if(ecrEl) ecrEl.textContent=subCount;
   const rqEl=el('an-rubric-quality');if(rqEl){rqEl.textContent=(rubricQ==null)?'—':(rubricQ+'%');rqEl.title=critRaw?.rubric_alignment_reason||'';}
   const rubricReason=critRaw?.rubric_alignment_reason||'';
   const gradeLabel=pctScore>=90?'우수':pctScore>=70?'양호':'개선 필요';
   const gradeColor=pctScore>=90?'#10b981':pctScore>=70?'#f59e0b':'#fecaca';
   const rubricRsnShort=rubricReason?` (${rubricReason})`:'';
   const critSummaryShort=critRaw?.summary_opinion?critRaw.summary_opinion.split('.').slice(0,2).join('.')+'.':'';
-  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong>으로 <span style="color:${gradeColor}">${gradeLabel}</span> 성과입니다.${rubricQ!=null?` 평가안 이해도 <strong>${rubricQ}%</strong>${rubricRsnShort}`:''} ${critSummaryShort}`;
+  const sumEl=el('an-ai-summary');if(sumEl) sumEl.innerHTML=`총점 <strong>${total}/100점(${pctScore}%)</strong>으로 <span style="color:${gradeColor}">${gradeLabel}</span> 성과입니다.${rubricQ!=null?` 교안/시나리오 이해도 <strong>${rubricQ}%</strong>${rubricRsnShort}`:''} ${critSummaryShort}`;
   // 뱃지 판별
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);
