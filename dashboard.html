@@ -10939,25 +10939,73 @@ function _refreshLectStats(userId){
     cards[2].onclick=()=>openImprovementChart(userId);
     cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:${impColor}">${impDisplay}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">개선 지수</div>${impIdx==null?'<div style="font-size:8px;color:var(--t3);margin-top:2px">평가 2회↑ 필요</div>':''}`;
   }
-  if(cards[3]) cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${gradeColor}">${autoGrade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
+  if(cards[3]){
+    cards[3].style.cursor='pointer';
+    cards[3].title='클릭 시 등급 기준 보기';
+    cards[3].onclick=()=>openGradeCriteria(userId,avg,autoGrade);
+    cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${gradeColor}">${autoGrade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
+  }
 }
 
-// 개선 지수 — 최근 평가 점수 추이 그래프 모달
+// 종합 등급 기준 모달
+function openGradeCriteria(userId,avg,currentGrade){
+  document.getElementById('grade-criteria-overlay')?.remove();
+  const rows=[
+    {g:'S',min:90,max:100,color:'#dc2626',desc:'탁월 — 현장 리더급 강의력'},
+    {g:'A',min:80,max:89, color:'#2563eb',desc:'우수 — 안정적 전달력과 전문성 갖춤'},
+    {g:'B',min:70,max:79, color:'#10b981',desc:'양호 — 기본기 탄탄, 일부 구간 보완 필요'},
+    {g:'C',min:60,max:69, color:'#f59e0b',desc:'보통 — 핵심은 전달되나 세부 개선 여지'},
+    {g:'D',min:0, max:59, color:'#9ca3af',desc:'개선 필요 — 주요 항목 집중 보완 권장'}
+  ];
+  const score=typeof avg==='number'?avg:0;
+  const isCurrent=g=>g===currentGrade;
+  const rowHtml=rows.map(r=>`<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid ${isCurrent(r.g)?r.color:'rgba(0,0,0,.08)'};background:${isCurrent(r.g)?r.color+'10':'#fff'};border-radius:12px;margin-bottom:8px">
+    <div style="width:44px;height:44px;border-radius:50%;background:${r.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;flex-shrink:0">${r.g}</div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+        <span style="font-size:14px;font-weight:800;color:${r.color}">${r.min}${r.max<100?'~'+r.max:'+'}점</span>
+        ${isCurrent(r.g)?`<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:${r.color};color:#fff">현재</span>`:''}
+      </div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.5">${r.desc}</div>
+    </div>
+  </div>`).join('');
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.id='grade-criteria-overlay';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:520px;width:92vw;padding:24px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:17px;font-weight:900;color:var(--t1)">종합 등급 기준</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px">평가 점수(교육맞춤평가 기반 평균)로 자동 산정됩니다.</div>
+      </div>
+      <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    ${rowHtml}
+    <div style="margin-top:14px;padding:12px;background:rgba(0,120,200,.06);border-radius:10px;font-size:12px;color:var(--t2);line-height:1.6">
+      <strong style="color:var(--blue)">현재 평가 점수:</strong> ${score?score.toFixed(1)+'점':'평가 기록 없음'}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// 개선 지수 — 최근 평가 점수 추이 그래프 모달 (평가 부족해도 레이아웃 확인용으로 열림)
 function openImprovementChart(userId){
   const series=(window._lectImpSeries||{})[userId]||[];
-  if(series.length<2){ alert('평가가 2회 이상 쌓이면 추이 그래프가 생성됩니다.'); return; }
   document.getElementById('imp-chart-overlay')?.remove();
-  // 간단한 SVG 라인 차트
+  // 간단한 SVG 라인 차트 (데이터 없어도 축·그리드 렌더)
   const W=640,H=320,PAD_L=48,PAD_R=20,PAD_T=20,PAD_B=36;
-  const minS=Math.max(0,Math.min(...series.map(p=>p.score))-10);
-  const maxS=Math.min(100,Math.max(...series.map(p=>p.score))+5);
-  const xAt=i=>PAD_L+(W-PAD_L-PAD_R)*(series.length>1?i/(series.length-1):0);
+  // 데이터 없을 때 기본 Y 범위 0~100
+  const hasData=series.length>0;
+  const minS=hasData?Math.max(0,Math.min(...series.map(p=>p.score))-10):0;
+  const maxS=hasData?Math.min(100,Math.max(...series.map(p=>p.score))+5):100;
+  const xAt=i=>PAD_L+(W-PAD_L-PAD_R)*(series.length>1?i/(series.length-1):0.5);
   const yAt=s=>PAD_T+(H-PAD_T-PAD_B)*(1-(s-minS)/Math.max(1,maxS-minS));
   const gridLines=[0,25,50,75,100].filter(v=>v>=minS&&v<=maxS).map(v=>{
     const y=yAt(v);
     return `<line x1="${PAD_L}" y1="${y}" x2="${W-PAD_R}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/><text x="${PAD_L-6}" y="${y+4}" fill="#94a3b8" font-size="10" text-anchor="end">${v}</text>`;
   }).join('');
-  const pts=series.map((p,i)=>`${xAt(i)},${yAt(p.score)}`).join(' ');
+  const pts=series.length>=2?series.map((p,i)=>`${xAt(i)},${yAt(p.score)}`).join(' '):'';
   const dots=series.map((p,i)=>{
     const cx=xAt(i),cy=yAt(p.score);
     return `<circle cx="${cx}" cy="${cy}" r="5" fill="#0078C8" stroke="#fff" stroke-width="2"/><text x="${cx}" y="${cy-12}" fill="#0078C8" font-size="11" font-weight="800" text-anchor="middle">${p.score}</text>`;
@@ -10966,10 +11014,12 @@ function openImprovementChart(userId){
     const x=xAt(i);
     return `<text x="${x}" y="${H-PAD_B+18}" fill="#64748b" font-size="10" text-anchor="middle">${p.date||'—'}</text>`;
   }).join('');
+  // 평가 부족 시 중앙 안내 텍스트
+  const placeholder=!hasData?`<text x="${W/2}" y="${H/2}" fill="#94a3b8" font-size="13" text-anchor="middle" font-weight="600">평가가 쌓이면 이곳에 점수 추이가 표시됩니다</text>`:series.length===1?`<text x="${W/2}" y="${PAD_T+16}" fill="#94a3b8" font-size="11" text-anchor="middle">평가 1회 기록 · 2회째부터 추이선이 그려집니다</text>`:'';
   const svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
     ${gridLines}
-    <polyline points="${pts}" fill="none" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    ${dots}${xLabels}
+    ${pts?`<polyline points="${pts}" fill="none" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`:''}
+    ${dots}${xLabels}${placeholder}
   </svg>`;
   const overlay=document.createElement('div');
   overlay.className='overlay show';
