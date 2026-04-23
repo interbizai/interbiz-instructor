@@ -6804,10 +6804,13 @@ function showAiLoading(show,expectedSec){
   }
 }
 
-async function generateAIAnalysis(title,studentCount,hasChecklist){
+async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
+  // srcPrefix: 'an' (영상 분석, 기본) | 'st' (스트리밍) — 체크리스트/교육자료 입력 소스 선택
+  const pfx=srcPrefix==='st'?'st':'an';
   const file=el('an-file').files?.[0];
-  const checklistId=parseInt(document.getElementById('an-cl-select')?.value||'0')||null;
-  const eduFileUrl=document.getElementById('an-checklist-url')?.value||'';
+  const critClId=parseInt(document.getElementById(pfx+'-cl-select')?.value||'0')||null;   // 교육맞춤평가용
+  const aiClId=parseInt(document.getElementById(pfx+'-cl-ai-select')?.value||'0')||null;  // AI 독자용
+  const eduFileUrl=document.getElementById(pfx+'-checklist-url')?.value||'';
   if(!file){
     alert('영상 파일이 없습니다.');
     return;
@@ -6827,16 +6830,22 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     const durationSec=tmpDur||await readVideoDuration(file);
     const fps=pickAdaptiveFps(durationSec);
     window._anFps=fps;
-    // 1) 체크리스트 항목 로드 (필수)
+    // 1) 체크리스트 항목 로드 — 교육맞춤평가 + AI 독자 각각 별도 로드
     setAiLoadingStep('체크리스트 로드 중...');
     setAiLoadingStage('checklist','active');
     el('an-ai-summary').textContent='체크리스트 로드 중...';
-    const checklistItems=await loadChecklistItemsForEval(checklistId);
-    if(!checklistItems.length){
+    const critItems=critClId?await loadChecklistItemsForEval(critClId):[];
+    const aiItems=aiClId?await loadChecklistItemsForEval(aiClId):[];
+    if(!critItems.length&&!aiItems.length){
       alert('체크리스트를 선택하세요. 교육콘텐츠에 체크리스트 등록 후 다시 시도해주세요.');
       showAiLoading(false);
       return;
     }
+    // AI 독자 체크리스트가 없으면 교육맞춤 체크리스트로 폴백 (기존 동작 호환)
+    const aiItemsEff=aiItems.length?aiItems:critItems;
+    // 기존 체크리스트 변수명 호환용 (없어진 참조 안전 처리)
+    const checklistItems=critItems.length?critItems:aiItems;
+    const checklistId=critClId||aiClId;
     setAiLoadingStage('checklist','done');
     // 2) 영상 GCS 업로드 (무제한 크기, gs:// URI 반환)
     const durMin=Math.round(durationSec/60);
@@ -6859,13 +6868,15 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
     const hasEdu=!!eduFileUrl;
     let critResult=null, aiResult=null;
     const errors=[];
-    if(hasEdu){
+    // 교육맞춤평가: 교육맞춤 체크리스트 + 교육자료(edu_file_url) 동시 전달
+    // critItems가 있어야 교육맞춤평가 시도 (없으면 skip)
+    if(hasEdu && critItems.length){
       setAiLoadingStep('AI 영상 분석 1/2 (교육맞춤평가)...');
       setAiLoadingStage('crit','active');
       try{
         critResult=normalizeVertexResult(await callVertexAnalyze({
           video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-          checklist_items:checklistItems, eval_type:'평가안기준',
+          checklist_items:critItems, eval_type:'평가안기준',
           edu_file_url:eduFileUrl,
           edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
         }));
@@ -6876,11 +6887,12 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       setAiLoadingStage('crit','done'); // skip
       setAiLoadingStep('AI 영상 분석 (AI 독자)...');
     }
+    // AI 독자: AI 독자 체크리스트만 사용 (교육자료 없음)
     setAiLoadingStage('ai','active');
     try{
       aiResult=normalizeVertexResult(await callVertexAnalyze({
         video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-        checklist_items:checklistItems, eval_type:'AI독자'
+        checklist_items:aiItemsEff, eval_type:'AI독자'
       }));
       setAiLoadingStage('ai','done');
     }catch(e){errors.push('AI 독자: '+e.message); console.error(e);}
@@ -6904,9 +6916,10 @@ async function generateAIAnalysis(title,studentCount,hasChecklist){
       eduFileUrl:eduFileUrl||'', productName:window._anProduct||''
     });
     const videoId=vidRow?.id||null;
-    // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장
-    const saveTasks=[saveEvaluation({videoId,checklistId,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
-    if(critResult) saveTasks.push(saveEvaluation({videoId,checklistId,eduFileUrl,evalType:'평가안기준',result:critResult}));
+    // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장 — 각 평가별 실제 사용 체크리스트 id 기록
+    const aiSaveCid=aiClId||critClId;  // AI 독자는 AI 체크리스트 id, 없으면 폴백
+    const saveTasks=[saveEvaluation({videoId,checklistId:aiSaveCid,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
+    if(critResult) saveTasks.push(saveEvaluation({videoId,checklistId:critClId,eduFileUrl,evalType:'평가안기준',result:critResult}));
     await Promise.all(saveTasks);
     await loadFromDB();
     // 6) 전역에 보관 + 렌더
@@ -9315,10 +9328,10 @@ function finishStreamRecord(){
 
   showPage('page-analysis');
 
-  // Gemini AI 분석
+  // Gemini AI 분석 — 스트리밍은 'st' 접두어로 체크리스트/교육자료 입력 읽기
   const title=v('st-title')||'녹화 영상';
   const count=parseInt(v('st-count'))||20;
-  generateAIAnalysis(title,count,hasCL);
+  generateAIAnalysis(title,count,hasCL,'st');
   streamHasChecklist=false;
 }
 
