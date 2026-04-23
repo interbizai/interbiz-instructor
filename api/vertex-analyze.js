@@ -144,11 +144,15 @@ rubric_alignment_score는 교육자료가 없으면 0, 있으면 50~90 사이로
 ${JSON.stringify(checklistSpec, null, 2)}
 
 # 채점 규칙
-- 각 세부항목은 4가지 level 중 하나: "good"(잘했다 = 배점 100%), "normal"(보통 = 배점 60%), "bad"(못했다 = 0점), "na"(해당없음/평가 불가)
+- 각 세부항목은 4가지 level 중 하나: "good"(잘함 · 배점의 80% 이상), "normal"(보통 · 50~79%), "bad"(못함 · 50% 미만), "na"(해당없음/평가 불가)
 - 중요: 영상에 해당 내용이 전혀 관찰되지 않거나 평가 불가한 경우 반드시 "na"로 분류. "평가하기 어렵다", "판단 불가", "관찰되지 않음" 같은 분석을 쓰면서 "bad"로 처리하지 말 것. na일 때 timestamp는 빈 문자열
-- 절대 1점/2점/4점 같은 중간값 금지. max=5일 때 score는 5, 3, 0만 허용
-- 애매하면 normal(3). 확실히 잘했으면 good(5), 확실히 못했으면 bad(0)
-- score 필드 값: 반드시 max(=good) 또는 round(max*0.6)(=normal) 또는 0(=bad) 중 하나
+- score는 0 ≤ score ≤ max 범위의 정수. 관찰된 수행 수준에 맞춰 세밀하게 부여 가능 (예: max=5 이면 0·1·2·3·4·5 모두 허용 / max=10이면 0~10 정수 / max=15면 0~15 정수)
+- level은 score/max 비율 기준으로 자동 일치시켜라:
+  · score/max ≥ 0.8  → "good"
+  · 0.5 ≤ score/max < 0.8 → "normal"
+  · score/max < 0.5  → "bad"
+  · 영상에 관찰 불가 → "na" (점수 합산 제외)
+- 애매하면 중간(normal) 쪽. 확실히 뛰어난 부분만 good, 명백한 문제만 bad.
 - overall_score는 전체 sub_scores의 score합/max합×100으로 정확히 계산. 0점 항목이 3개 이상이면 80점 이상 나올 수 없음
 - 판정 불가(해당없음)인 경우 "na"로 표기 — 점수 합산에서 제외
 - 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기
