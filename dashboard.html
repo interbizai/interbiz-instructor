@@ -4689,11 +4689,11 @@ function renderPick(){
   const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
 
   const vidScore=(v)=>{
-    // evaluations 테이블에 AI독자 점수 우선, 없으면 평가안기준, 없으면 타임스탬프 폴백
-    const aiSc=videoEvalMap[v.id+'_AI독자'];
-    if(aiSc) return aiSc;
+    // 교육맞춤평가 점수 우선, 없으면 AI독자, 없으면 타임스탬프 폴백
     const critSc=videoEvalMap[v.id+'_평가안기준'];
     if(critSc) return critSc;
+    const aiSc=videoEvalMap[v.id+'_AI독자'];
+    if(aiSc) return aiSc;
     const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
     return Math.min(100,g*10+(v.timestamps||[]).length*3);
   };
@@ -4719,7 +4719,14 @@ function renderPick(){
     const keywords=u.habits?.slice(0,3).map(h=>h.word)||[];
     const medalBgs=['rgba(255,215,0,.08)','rgba(192,192,192,.08)','rgba(205,127,50,.08)'];
     const medalBorder=['rgba(255,215,0,.25)','rgba(192,192,192,.25)','rgba(205,127,50,.25)'];
-    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner" style="background:${medalBgs[i]||'#fff'};border:1px solid ${medalBorder[i]||'var(--bdr)'}">
+    // 이달 평가받은 교육종류 — 가장 많이 등장한 값 (빈도순, 동률이면 최근)
+    const uMonthVids=monthVids.filter(v=>v.userId===u.id);
+    const eduTypeCount={};
+    uMonthVids.forEach(v=>{ const t=v.eduType||v.edu_type; if(t&&t.trim()) eduTypeCount[t]=(eduTypeCount[t]||0)+1; });
+    const topEduType=Object.entries(eduTypeCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+    const eduTypeChip=topEduType?`<span style="position:absolute;top:0;right:0;padding:4px 10px;border-radius:999px;background:#000;color:#fff;font-size:10.5px;font-weight:800;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis">${topEduType.replace(/</g,'&lt;')}</span>`:'';
+    return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner" style="background:${medalBgs[i]||'#fff'};border:1px solid ${medalBorder[i]||'var(--bdr)'};position:relative">
+      ${eduTypeChip}
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;min-width:0">
         <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
@@ -4728,11 +4735,11 @@ function renderPick(){
           <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
         </div>
       </div>
-      <!-- 점수 + 달성 바 -->
+      <!-- 점수 + 달성 바 (교육맞춤평가 우선, 폴백 AI독자) -->
       <div style="margin-bottom:12px">
         <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
           <span style="font-size:28px;font-weight:900;color:var(--t1)">${u.pickScore}</span>
-          <span style="font-size:12px;color:var(--t3)">/ 100 AI 점수</span>
+          <span style="font-size:12px;color:var(--t3)">/ 100 교육맞춤평가</span>
         </div>
         <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .8s ease"></div>
