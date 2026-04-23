@@ -11992,22 +11992,22 @@ async function saveProfile(){
 function el(id){ return document.getElementById(id)||null; }
 function v(id){ const e=el(id); return e?(e.value||''):''; }
 // 분석 결과 상단 헤더 세팅: 제목 + 교육종류/강사/팀/직군 chip
+// 스타일: 배경 검정 · 라벨은 각 색상 유지 · 값(이름/팀/직군)은 흰색
 function setAnResultMeta(opts){
   const titleEl=el('an-result-title');
   if(titleEl) titleEl.textContent=(opts?.title||'—');
   const metaEl=el('an-result-meta');
   if(!metaEl) return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const chip=(label,val,accent)=>{
+  const chip=(label,val,labelColor)=>{
     if(!val||String(val).trim()==='') return '';
-    const bg=accent||'#f1f5f9';
-    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:${bg};font-size:11px;font-weight:700;color:#334155;white-space:nowrap"><span style="color:#94a3b8;font-weight:600">${label}</span>${esc(val)}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:#000;font-size:11px;font-weight:700;white-space:nowrap"><span style="color:${labelColor};font-weight:800">${label}</span><span style="color:#fff;font-weight:700">${esc(val)}</span></span>`;
   };
   metaEl.innerHTML=[
-    chip('교육종류',opts?.eduType,'rgba(139,92,246,.08)'),
-    chip('강사',opts?.userName,'rgba(0,120,200,.08)'),
-    chip('팀',opts?.team,'rgba(16,185,129,.08)'),
-    chip('직군',opts?.position,'rgba(245,158,11,.08)')
+    chip('교육종류',opts?.eduType,'#c4b5fd'),   // 보라(라이트 퍼플) — 검정 배경 대비 가독성
+    chip('강사',opts?.userName,'#7dd3fc'),       // 블루(라이트)
+    chip('팀',opts?.team,'#86efac'),             // 초록(라이트)
+    chip('직군',opts?.position,'#fcd34d')        // 주황(라이트 앰버)
   ].filter(Boolean).join('');
 }
 
