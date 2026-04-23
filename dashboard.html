@@ -4724,7 +4724,7 @@ function renderPick(){
     const eduTypeCount={};
     uMonthVids.forEach(v=>{ const t=v.eduType||v.edu_type; if(t&&t.trim()) eduTypeCount[t]=(eduTypeCount[t]||0)+1; });
     const topEduType=Object.entries(eduTypeCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
-    const eduTypeChip=topEduType?`<span style="position:absolute;top:0;right:0;padding:4px 10px;border-radius:999px;background:#000;color:#fff;font-size:10.5px;font-weight:800;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis">${topEduType.replace(/</g,'&lt;')}</span>`:'';
+    const eduTypeChip=topEduType?`<span style="position:absolute;top:0;right:0;color:#000;font-size:11px;font-weight:800;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis">${topEduType.replace(/</g,'&lt;')}</span>`:'';
     return `<div class="pick-top-card" onclick="openLecturer(${u.id},'page-pick')"><div class="pick-top-card-inner" style="background:${medalBgs[i]||'#fff'};border:1px solid ${medalBorder[i]||'var(--bdr)'};position:relative">
       ${eduTypeChip}
       <!-- 상단: 사진 + 이름 -->
