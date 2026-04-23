@@ -1732,8 +1732,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-bottom:28px;align-items:start" id="an-edu-radar-wrap">
         <!-- 좌측: radar 위, 달성도 아래 -->
         <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">교육 분석</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;height:34px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1);line-height:34px">교육 분석</div>
             <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('crit')">전체 보기</button>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px;margin-bottom:14px">
@@ -1742,9 +1742,11 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">역량별 달성도</div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-edu-bars"></div>
         </div>
-        <!-- 우측: 최종 의견 (아이콘 방식) -->
+        <!-- 우측: 최종 의견 (아이콘 방식) — 제목 높이를 좌측과 동일하게 (34px) 컨테이너 경계 정렬 -->
         <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+          <div style="display:flex;align-items:center;margin-bottom:12px;height:34px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1);line-height:34px">최종 의견</div>
+          </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-criteria-opinion"></div>
         </div>
       </div>
@@ -1778,8 +1780,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-bottom:28px;align-items:start" id="an-ai-radar-wrap">
         <!-- 좌측: radar 위, 달성도 아래 -->
         <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 역량 분석</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;height:34px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1);line-height:34px">AI 역량 분석</div>
             <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid rgba(0,120,200,.2);border-radius:999px" onclick="openChecklistDetail('ai')">전체 보기</button>
           </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:340px;margin-bottom:14px">
@@ -1788,9 +1790,11 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">AI 역량별 달성도</div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px" id="an-ai-bars"></div>
         </div>
-        <!-- 우측: 최종 의견 (아이콘 방식) -->
+        <!-- 우측: 최종 의견 — 제목 높이를 좌측과 동일하게 (34px) 컨테이너 경계 정렬 -->
         <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">최종 의견</div>
+          <div style="display:flex;align-items:center;margin-bottom:12px;height:34px">
+            <div style="font-size:15px;font-weight:800;color:var(--t1);line-height:34px">최종 의견</div>
+          </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden" id="an-ai-result"></div>
         </div>
       </div>
@@ -11118,6 +11122,8 @@ function openVideo(id){
     const aiResult=normalizeVertexResult(toVertex(aiRow));
     window._lastVertexResult={crit:critResult,ai:aiResult};
     window._anVideoId=id;
+    window._anCritEvalId=critRow?.id||null;  // 관리자 수정용
+    window._anAiEvalId=aiRow?.id||null;      // 관리자 수정용
     const mapped=mapVertexToLegacy(critResult,aiResult);
     renderAnalysisResult(mapped,true,count);
   })();
