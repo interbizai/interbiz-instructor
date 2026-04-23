@@ -4362,15 +4362,32 @@ async function deleteChecklist(id){
   if(!confirm('삭제하시겠습니까?'))return;
   const target=(D.checklists||[]).find(c=>c.id===id);
   const title=target?.name||'항목';
+  // 1) FK 제약 회피: 이 체크리스트를 참조하는 evaluations.checklist_id 를 null 처리
+  try{
+    const {error:upErr,count}=await sb.from('evaluations').update({checklist_id:null}).eq('checklist_id',id);
+    if(upErr) console.warn('evaluations null 업데이트 경고:',upErr.message);
+  }catch(e){ console.warn('evaluations null 업데이트 예외:',e); }
+  // 2) checklist_items (세부 항목) 먼저 삭제
+  try{
+    const {error:itErr}=await sb.from('checklist_items').delete().eq('checklist_id',id);
+    if(itErr) console.warn('checklist_items 삭제 경고:',itErr.message);
+  }catch(e){ console.warn('checklist_items 삭제 예외:',e); }
+  // 3) checklist_files 본 레코드 삭제
   const {data,error}=await sb.from('checklist_files').delete().eq('id',id).select();
   if(error){
     showToast('삭제 실패: '+error.message,'#ef4444');
-    alert(`삭제 실패: ${error.message}\n\nSupabase RLS 확인 필요:\nCREATE POLICY "checklist_files_all" ON checklist_files FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);\nGRANT SELECT,INSERT,UPDATE,DELETE ON checklist_files TO anon,authenticated;`);
+    const msg=error.message||'';
+    // FK 에러면 수동 조치 안내 제공
+    if(msg.toLowerCase().includes('foreign key')){
+      alert(`삭제 실패 (외래키 제약):\n${msg}\n\n영구 해결을 원하시면 Supabase SQL Editor에서 아래 한 번 실행:\n\nALTER TABLE evaluations DROP CONSTRAINT IF EXISTS evaluations_checklist_id_fkey;\nALTER TABLE evaluations ADD CONSTRAINT evaluations_checklist_id_fkey\n  FOREIGN KEY (checklist_id) REFERENCES checklist_files(id) ON DELETE SET NULL;`);
+    } else {
+      alert(`삭제 실패: ${msg}\n\nSupabase RLS 확인 필요:\nCREATE POLICY "checklist_files_all" ON checklist_files FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);\nGRANT SELECT,INSERT,UPDATE,DELETE ON checklist_files TO anon,authenticated;`);
+    }
     return;
   }
   if(!data||!data.length){
     showToast('삭제되지 않았습니다 (RLS 차단)','#ef4444');
-    alert('삭제가 DB에서 반영되지 않았습니다. Supabase RLS 정책을 확인하세요:\n\nALTER TABLE checklist_files DISABLE ROW LEVEL SECURITY;\n또는\nCREATE POLICY "checklist_files_all" ON checklist_files FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);');
+    alert('삭제가 DB에서 반영되지 않았습니다. Supabase RLS 정책을 확인하세요:\n\nCREATE POLICY "checklist_files_all" ON checklist_files FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);');
     return;
   }
   await loadFromDB();
