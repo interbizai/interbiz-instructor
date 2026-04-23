@@ -5259,7 +5259,7 @@ function renderPickDetail(){
             const eduType=vid.eduType||vid.edu_type||'';
             return `<div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'}</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}${eduType?` · ${eduType}`:''}${vid.date?` · ${vid.date}`:''}</div>`;
           })()}
-          <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-top:4px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${comment}</div>
+          <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-top:6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${comment}</div>
           <div style="margin-top:8px">
             <button onclick="event.stopPropagation();openVideo(${vid.id})" style="padding:7px 18px;font-size:12px;font-weight:700;background:#dc2626;color:#fff;border:none;border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(220,38,38,.25)" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">평가 상세보기 →</button>
           </div>
