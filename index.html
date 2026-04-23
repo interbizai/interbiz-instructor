@@ -917,6 +917,19 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   .pick-photo-track > .pick-photo-card:nth-child(2n){margin-top:36px}
 }
 
+/* ── 인터PICK 타이틀 별 아이콘 — 노란색 빛 애니메이션 ── */
+.pick-star-glow{display:inline-flex;align-items:center;justify-content:center;animation:pickStarPulse 2.2s ease-in-out infinite}
+.pick-star-glow svg{filter:drop-shadow(0 0 6px rgba(251,191,36,.65)) drop-shadow(0 0 14px rgba(245,158,11,.45));transition:filter .3s ease}
+@keyframes pickStarPulse{
+  0%,100%{filter:drop-shadow(0 0 6px rgba(251,191,36,.55)) drop-shadow(0 0 12px rgba(245,158,11,.35));transform:scale(1)}
+  50%{filter:drop-shadow(0 0 12px rgba(251,191,36,.95)) drop-shadow(0 0 24px rgba(245,158,11,.75));transform:scale(1.08)}
+}
+.pick-star-glow svg polygon{animation:pickStarColor 3s ease-in-out infinite}
+@keyframes pickStarColor{
+  0%,100%{fill:#FBBF24}
+  50%{fill:#FCD34D}
+}
+
 /* ── 인터PICK : MasterClass 오마주 · 흑백 전용 ── */
 #page-pick{background:#fff!important}
 #page-pick > main{max-width:1280px!important;margin:0 auto!important;padding:24px 56px 64px!important;background:#fff!important}
@@ -2388,7 +2401,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 <div id="page-pick" class="page">
 <header class="hdr" style="display:none"></header>
 <main>
-  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#000" stroke="#000" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:#000"></span></div>
+  <div class="page-title"><div class="page-title-icon pick-star-glow"><svg width="22" height="22" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" stroke-width="1.2" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h2>인터 PICK</h2><span id="pick-title-ym" style="margin-left:10px;font-size:14px;font-weight:700;color:#000"></span></div>
 
   <!-- ══ 메인 분할: 좌측 히어로(세로 중앙) + 우측 사진 스크롤(축소) ══ -->
   <div class="pick-main-split">
