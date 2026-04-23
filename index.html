@@ -10695,23 +10695,11 @@ function openLecturer(id, fromPage){
 
     <!-- TAB: MY 역량 -->
     <div class="lect-tab-pane" id="lect-tab-역량">
-      <!-- 역량 분석: 제목 행 공유 + 카드 행 공유 (마이페이지는 원래 좌우 배치 유지) -->
+      <!-- 역량 분석 제목 (필터는 상단 프로필 영역의 lect-cat-filter / lect-prod-filter로 통합) -->
       <div style="margin-bottom:28px">
         <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:12px">
           <div style="font-size:15px;font-weight:800;color:var(--t1)">역량 분석</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
-            <div style="display:flex;gap:6px">
-              <select id="radar-cat-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-                <option value="">전체 교육종류</option>
-                ${getEduTypes().map(c=>`<option value="${c}">${c}</option>`).join('')}
-              </select>
-              <select id="radar-prod-filter" onchange="filterLectStats(${u.id})" style="padding:4px 24px 4px 10px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:130px">
-                <option value="">전체 제품</option>
-                ${Object.entries(PRODUCT_TREE).map(([g,items])=>`<optgroup label="${g}">${items.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`).join('')}
-              </select>
-            </div>
-          </div>
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">역량별 달성도</div>
         </div>
         <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:stretch" id="lect-radar-wrap">
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px;min-height:380px">
@@ -11062,8 +11050,9 @@ async function editGrade(userId){
 
 // evaluations의 categories를 집계하여 레이더 그리기
 function renderRadarChartFromEvals(userId){
-  const catFilter=document.getElementById('radar-cat-filter')?.value||'';
-  const prodFilter=document.getElementById('radar-prod-filter')?.value||'';
+  // 상단 프로필 영역 필터(lect-cat-filter / lect-prod-filter)로 통일
+  const catFilter=document.getElementById('lect-cat-filter')?.value||document.getElementById('radar-cat-filter')?.value||'';
+  const prodFilter=document.getElementById('lect-prod-filter')?.value||document.getElementById('radar-prod-filter')?.value||'';
   let evals=(window._lectEvals||[]);
   if(catFilter||prodFilter){
     const vidIds=new Set((D.videos||[]).filter(v=>{
