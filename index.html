@@ -3200,29 +3200,13 @@ async function loadFromDB(){
   // 교육자료 카테고리
   const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
   D.eduCategories=ec||[];
-  // 교육종류 (관리자 공유 · Supabase 우선, localStorage 고아 항목 자동 마이그레이션)
+  // 교육종류 (Supabase가 유일한 기준 · 자동 마이그레이션 없음)
   const et=await dbGetEduTypes();
   if(et!==null){
-    // Supabase 사용 가능 — localStorage에 있지만 DB에 없는 항목 자동 이관 시도
-    const supabaseNames=new Set(et.map(r=>r.name));
-    let localNames=[];
-    try{ localNames=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
-    const orphans=localNames.filter(n=>n&&!supabaseNames.has(n));
-    const failedOrphans=[];
-    if(orphans.length){
-      console.log(`교육종류 마이그레이션 시도: ${orphans.length}건`,orphans);
-      for(const name of orphans){
-        const row=await dbAddEduType(name);
-        if(row&&!row._error){ et.push(row); }
-        else { failedOrphans.push(name); console.warn('마이그레이션 실패:',name,row?._error); }
-      }
-    }
     D.eduTypes=et.map(r=>({id:String(r.id),name:r.name}));
-    // localStorage는 DB 이름 + 실패한 고아 이름만 유지 (실패 항목은 관리자 탭에서 수동 처리)
-    const keepNames=[...D.eduTypes.map(x=>x.name),...failedOrphans];
-    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(keepNames));}catch(e){}
+    // localStorage는 DB 이름으로 강제 동기화 (다른 컴에서 삭제한 항목이 부활하는 것을 차단)
+    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   } else {
-    // Supabase 미가용 (테이블 없음 등) — localStorage 폴백
     D.eduTypes=[];
   }
   // 추천영상
@@ -3871,18 +3855,17 @@ function getEduCategories(){
   const db=(D.eduCategories||[]).map(c=>c.name);
   return [...new Set([...defaults,...db])];
 }
-// 교육종류 (관리자 공유 · Supabase 우선, localStorage 고아 항목도 관리 가능하게 병합 노출)
+// 교육종류 (Supabase가 유일 기준 · localStorage는 오프라인 캐시로만 사용)
 function getEduTypeRecords(){
   const dbRecs=(window.D&&Array.isArray(D.eduTypes))?D.eduTypes:[];
+  if(dbRecs.length) return dbRecs;
+  // DB가 비어있고 앱 초기화 전이면 localStorage 캐시 사용
   let localNames=[];
   try{ localNames=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
-  const dbNameSet=new Set(dbRecs.map(r=>r.name));
-  const orphans=localNames.filter(n=>n&&!dbNameSet.has(n)).map((n,i)=>({id:'local-'+i,name:n}));
-  return [...dbRecs,...orphans];
+  return localNames.filter(Boolean).map((n,i)=>({id:'local-'+i,name:n}));
 }
 function getEduTypes(){
-  const recs=getEduTypeRecords();
-  return recs.map(r=>r?.name||r).filter(Boolean);
+  return getEduTypeRecords().map(r=>r?.name||r).filter(Boolean);
 }
 function setEduTypes(list){
   try{ localStorage.setItem('interbiz_eduTypes', JSON.stringify(list||[])); }catch(e){}
