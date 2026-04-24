@@ -6167,17 +6167,29 @@ async function callVertexAnalyze(payload){
 // evaluations 테이블 저장
 async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalType,result}){
   if(!result) return false;
+  // AI 응답에서 간혹 정수 컬럼에 이상치(예: 수십억)가 들어와 PostgreSQL integer 한계(2,147,483,647) 초과로 저장 실패하는 현상 방지
+  const clampInt=(v,min,max)=>{
+    if(v==null||v==='') return null;
+    const n=Math.round(Number(v));
+    if(!Number.isFinite(n)) return null;
+    return Math.max(min,Math.min(max,n));
+  };
+  // habits 배열 내부 count 도 안전 범위로
+  const safeHabits=(result.habits||[]).map(h=>({...h,count:Math.max(0,Math.min(100000,Math.round(Number(h.count)||0)))}));
+  const safeGaps=(result.engagement_gaps_minutes||[]).map(g=>Math.max(0,Math.min(1440,Math.round(Number(g)||0))));
   const payload={
     video_id:videoId||null, voice_eval_id:voiceEvalId||null, checklist_id:checklistId||null,
     edu_file_url:eduFileUrl||null, eval_type:evalType,
-    overall_score:result.overall_score||0,
+    overall_score:clampInt(result.overall_score,0,1000)||0,
     categories:result.categories||[], sub_scores:result.sub_scores||[],
     good:result.good||[], bad:result.bad||[], upgrade:result.upgrade||[],
     scenarios:result.scenarios||[], level_tips:result.level_tips||[],
     teaching_patterns:result.teaching_patterns||[],
     speech_report:{rubric_alignment_score:result.rubric_alignment_score,rubric_alignment_reason:result.rubric_alignment_reason,summary_opinion:result.summary_opinion||''},
-    mood:result.mood||null, decibel:result.decibel||null, tempo:result.tempo_wpm||null,
-    habits:result.habits||[], engagement_gaps:result.engagement_gaps_minutes||[]
+    mood:result.mood||null,
+    decibel:clampInt(result.decibel,0,200),
+    tempo:clampInt(result.tempo_wpm,0,1000),
+    habits:safeHabits, engagement_gaps:safeGaps
   };
   // 저장 실패 시 최대 3회 재시도 (2초 간격)
   let lastErrMsg='';
