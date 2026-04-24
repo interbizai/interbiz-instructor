@@ -2264,12 +2264,13 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육자료 첨부 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육자료 첨부 <span style="color:var(--t3);font-weight:500">(선택 · 여러 파일 가능)</span></div>
         <label class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px;cursor:pointer;width:100%;justify-content:center">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span id="sc-edu-file-label">파일 선택</span>
-          <input type="file" id="sc-edu-file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onchange="scOnEduFileChange(this)">
+          <span id="sc-edu-file-label">파일 추가 (PDF·PPT·엑셀·이미지)</span>
+          <input type="file" id="sc-edu-file" multiple style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,image/*" onchange="scOnEduFileChange(this)">
         </label>
+        <div id="sc-edu-file-list" style="margin-top:6px;display:flex;flex-direction:column;gap:3px"></div>
       </div>
     </div>
 
@@ -11016,7 +11017,7 @@ let scState=null;
 
 function scDefaultState(){return{
   step:0,eduType:'',product:'',phase:'',customer:'',store:'',
-  eduFileUrl:'',eduFileName:'',eduFileMime:'',
+  eduFiles:[],
   axes:JSON.parse(JSON.stringify(SC_DEFAULT_AXES)),
   draft:'',coaching:null,revised:'',history:[]
 };}
@@ -11028,7 +11029,8 @@ function scInit(){
   scFillEduTypes();scFillProducts();
   // 현재 값 복원
   ['eduType','product','phase','customer','store'].forEach(f=>{const el=document.getElementById('sc-'+({eduType:'edu-type',product:'product',phase:'phase',customer:'customer',store:'store'}[f]));if(el&&scState[f]!=null) el.value=scState[f];});
-  if(scState.eduFileName){const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent=scState.eduFileName;}
+  if(!Array.isArray(scState.eduFiles)) scState.eduFiles=[];
+  scRenderEduFiles();
   const ta=document.getElementById('sc-draft');if(ta) ta.value=scState.draft||'';
   scRenderAxes();scRender();
 }
@@ -11038,8 +11040,12 @@ function scSaveField(k,v){scState[k]=v;scSaveState();}
 
 function scFillEduTypes(){
   const sel=document.getElementById('sc-edu-type');if(!sel) return;
-  const types=(window.getEduTypes?getEduTypes():['판매경쟁력상황실','신입교육','심화교육','현장실습']);
-  sel.innerHTML='<option value="">전체 기준</option>'+types.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('');
+  let types=(window.getEduTypes?getEduTypes():[])||[];
+  if(!types.length) types=['판매경쟁력상황실','신입교육','심화교육','현장실습','판매자세교육','현장직무교육'];
+  const extra=['기타','상관없음'];
+  sel.innerHTML='<option value="">전체 기준</option>'+
+    types.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('')+
+    '<optgroup label="기타">'+extra.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('')+'</optgroup>';
 }
 function scFillProducts(){
   const sel=document.getElementById('sc-product');if(!sel) return;
@@ -11049,7 +11055,9 @@ function scFillProducts(){
       opts.push(`<optgroup label="${g}">`+items.map(p=>`<option${p===scState.product?' selected':''}>${p}</option>`).join('')+'</optgroup>');
     });
   }
-  sel.innerHTML='<option value="">전체 기준</option>'+opts.join('');
+  const extra=['기타','상관없음'];
+  sel.innerHTML='<option value="">전체 기준</option>'+opts.join('')+
+    '<optgroup label="기타">'+extra.map(t=>`<option${t===scState.product?' selected':''}>${t}</option>`).join('')+'</optgroup>';
 }
 
 function scRenderAxes(){
@@ -11064,9 +11072,48 @@ function scRenderAxes(){
     </span>
   </div>`).join('');
 }
-function scEditAxis(i){const a=scState.axes[i];const n=prompt('항목명',a.name);if(n==null) return;const h=prompt('설명(힌트) — 생략 가능',a.hint||'');if(h==null) return;a.name=n.trim()||a.name;a.hint=h.trim();scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scAxisModal(mode,i){
+  const isEdit=mode==='edit';
+  const a=isEdit?scState.axes[i]:{name:'',hint:''};
+  const existing=document.getElementById('sc-axis-modal');if(existing) existing.remove();
+  const dlg=document.createElement('div');
+  dlg.id='sc-axis-modal';
+  dlg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  dlg.innerHTML=`<div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:440px;padding:22px;font-family:inherit">
+    <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:4px">${isEdit?'요소 편집':'요소 추가'}</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:16px">시나리오에 포함할 요소의 이름과 힌트를 입력하세요.</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">항목명 <span style="color:#dc2626">*</span></div>
+      <input id="sc-ax-name" value="${(a.name||'').replace(/"/g,'&quot;')}" placeholder="예: 수치 근거" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">설명·힌트 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
+      <input id="sc-ax-hint" value="${(a.hint||'').replace(/"/g,'&quot;')}" placeholder="예: 구체 수치·단위 (예: 0.5℃, 5%)" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" onclick="scAxisModalClose()" style="padding:8px 16px;border:1px solid var(--bdr);background:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600">취소</button>
+      <button type="button" onclick="scAxisModalSave('${mode}',${isEdit?i:-1})" style="padding:8px 18px;border:none;background:var(--blue);color:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:700">${isEdit?'저장':'추가'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click',e=>{if(e.target===dlg) scAxisModalClose();});
+  setTimeout(()=>{const n=document.getElementById('sc-ax-name');if(n){n.focus();n.select();}},30);
+  const onKey=(e)=>{if(e.key==='Escape')scAxisModalClose();else if(e.key==='Enter'&&(e.target.id==='sc-ax-name'||e.target.id==='sc-ax-hint')){e.preventDefault();scAxisModalSave(mode,isEdit?i:-1);}};
+  dlg.addEventListener('keydown',onKey);
+}
+function scAxisModalClose(){const d=document.getElementById('sc-axis-modal');if(d) d.remove();}
+function scAxisModalSave(mode,i){
+  const nm=(document.getElementById('sc-ax-name')||{}).value||'';
+  const ht=(document.getElementById('sc-ax-hint')||{}).value||'';
+  const name=nm.trim();
+  if(!name){const inp=document.getElementById('sc-ax-name');if(inp){inp.style.borderColor='#dc2626';inp.focus();}return;}
+  if(mode==='edit'){const a=scState.axes[i];if(!a)return;a.name=name;a.hint=ht.trim();}
+  else{scState.axes.push({id:'custom_'+Date.now(),name,hint:ht.trim()});}
+  scSaveState();scRenderAxes();scUpdateDraftAxes();scAxisModalClose();
+}
+function scEditAxis(i){scAxisModal('edit',i);}
+function scAddAxis(){scAxisModal('add');}
 function scRemoveAxis(i){if(!confirm('삭제할까요?')) return;scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();}
-function scAddAxis(){const n=prompt('새 항목명');if(!n) return;const h=prompt('설명(힌트) — 생략 가능')||'';scState.axes.push({id:'custom_'+Date.now(),name:n.trim(),hint:h.trim()});scSaveState();scRenderAxes();scUpdateDraftAxes();}
 
 function scOnDraftInput(v){
   scState.draft=v;scSaveState();
@@ -11087,11 +11134,37 @@ function scUpdateDraftAxes(){
 }
 
 function scOnEduFileChange(inp){
-  const f=inp.files[0];if(!f) return;
-  const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent=f.name;
-  // 실제 업로드는 AI 호출 직전에 GCS 로 (또는 여기서 바로)
-  scState._eduFileObj=f;scState.eduFileName=f.name;scState.eduFileMime=f.type||'';
+  const files=Array.from(inp.files||[]);if(!files.length) return;
+  if(!Array.isArray(scState.eduFiles)) scState.eduFiles=[];
+  files.forEach(f=>{
+    scState.eduFiles.push({name:f.name,mime:f.type||'',size:f.size,_obj:f,url:''});
+  });
+  inp.value='';
   scSaveState();
+  scRenderEduFiles();
+}
+function scRemoveEduFile(i){
+  if(!Array.isArray(scState.eduFiles)) return;
+  scState.eduFiles.splice(i,1);
+  scSaveState();
+  scRenderEduFiles();
+}
+function scFmtSize(n){if(!n&&n!==0) return '';if(n<1024) return n+'B';if(n<1024*1024) return (n/1024).toFixed(1)+'KB';return (n/1024/1024).toFixed(1)+'MB';}
+function scRenderEduFiles(){
+  const box=document.getElementById('sc-edu-file-list');if(!box) return;
+  const list=Array.isArray(scState.eduFiles)?scState.eduFiles:[];
+  if(!list.length){box.innerHTML='';return;}
+  box.innerHTML=list.map((f,i)=>{
+    const ext=(f.name||'').split('.').pop().toLowerCase();
+    const ic=['jpg','jpeg','png','gif','webp','bmp'].includes(ext)?'🖼️':(ext==='pdf'?'📕':(['ppt','pptx'].includes(ext)?'📊':(['xls','xlsx'].includes(ext)?'📗':(['doc','docx'].includes(ext)?'📘':'📎'))));
+    const sz=scFmtSize(f.size);
+    return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid var(--bdr);border-radius:6px;background:#fff;font-size:11.5px">
+      <span style="font-size:12px">${ic}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      ${sz?`<span style="color:var(--t3);font-size:10.5px">${sz}</span>`:''}
+      <button type="button" onclick="scRemoveEduFile(${i})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;padding:0 4px;font-weight:700">×</button>
+    </div>`;
+  }).join('');
 }
 
 function scRender(){
@@ -11113,19 +11186,22 @@ async function scRunAI(){
   if((scState.draft||'').trim().length<30){alert('초안을 30자 이상 작성해주세요');return;}
   const btn=document.getElementById('sc-run-btn');if(btn){btn.disabled=true;btn.innerHTML='⏳ 분석 중...';}
   try{
-    let eduUrl='',eduMime='';
-    if(scState._eduFileObj){
-      // 기존 GCS 업로드 사용
-      const f=scState._eduFileObj;
+    const uploaded=[];
+    const files=Array.isArray(scState.eduFiles)?scState.eduFiles:[];
+    for(const item of files){
+      const f=item._obj;
+      if(!f){ if(item.url) uploaded.push({url:item.url,mime:item.mime||'',name:item.name||''}); continue; }
       try{
         const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
         const sData=await sRes.json();
         if(sData.signed_url){
           await fetch(sData.signed_url,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
-          eduUrl=sData.public_url||'';eduMime=f.type||'';
+          item.url=sData.public_url||'';item.mime=f.type||'';
+          uploaded.push({url:item.url,mime:item.mime,name:f.name});
         }
-      }catch(e){console.warn('edu upload skip',e);}
+      }catch(e){console.warn('edu upload skip',f.name,e);}
     }
+    const primary=uploaded[0]||{url:'',mime:''};
     const res=await fetch('/api/vertex-analyze',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
@@ -11134,7 +11210,8 @@ async function scRunAI(){
         customer:scState.customer,store:scState.store,
         axes:scState.axes.map(a=>({name:a.name,hint:a.hint||''})),
         draft:scState.draft,
-        edu_file_url:eduUrl,edu_file_mime:eduMime
+        edu_file_url:primary.url,edu_file_mime:primary.mime,
+        edu_files:uploaded
       })
     });
     const data=await res.json();
@@ -11326,8 +11403,8 @@ function scReset(){
   scState=scDefaultState();
   // 폼 필드 초기화
   ['sc-edu-type','sc-product','sc-phase','sc-customer','sc-store'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
-  const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent='파일 선택';
   const ef=document.getElementById('sc-edu-file');if(ef) ef.value='';
+  scRenderEduFiles();
   const ta=document.getElementById('sc-draft');if(ta) ta.value='';
   scRenderAxes();scRender();
 }
