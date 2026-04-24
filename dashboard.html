@@ -2683,7 +2683,12 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       </div>
       <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">분류</div>
         <select id="badge-add-cat" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
-          <option value="평가안">평가안</option><option value="AI독자">AI독자</option><option value="누적">누적</option>
+          <option value="교육맞춤">교육맞춤</option><option value="AI독자">AI독자</option><option value="누적">누적</option>
+        </select>
+      </div>
+      <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">등급</div>
+        <select id="badge-add-tier" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px">
+          <option value="silver">실버</option><option value="bronze">브론즈</option><option value="gold">골드</option><option value="platinum">플래티넘</option><option value="legend">레전드</option>
         </select>
       </div>
       <div style="flex:1"><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">달성 기준</div>
@@ -2694,7 +2699,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
     <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
       <table class="tbl" style="width:100%">
         <thead><tr>
-          <th style="width:40px">#</th><th>뱃지명</th><th>분류</th><th>달성 기준</th><th style="width:100px">관리</th>
+          <th style="width:40px">#</th><th>뱃지명</th><th style="width:90px">등급</th><th style="width:90px">분류</th><th>달성 기준</th><th style="width:100px">관리</th>
         </tr></thead>
         <tbody id="badge-criteria-tbody"></tbody>
       </table>
@@ -5306,59 +5311,93 @@ function renderPickDetail(){
 }
 
 /* ── 인터PICK 관리자 영상 관리 ── */
-// ── 뱃지 기준 50개 ──
+// ── 뱃지 기준 70개 (5등급 밸런스: 브론즈·실버·골드·플래티넘·레전드) ──
 const BADGE_CRITERIA=[
-  {id:1,name:'첫 평가 완료',cat:'평가안',desc:'첫 번째 영상 분석 완료'},
-  {id:2,name:'만점 항목 달성',cat:'평가안',desc:'하나의 평가 항목 100% 달성'},
-  {id:3,name:'전 항목 통과',cat:'평가안',desc:'모든 평가 항목 70% 이상'},
-  {id:4,name:'A등급 달성',cat:'평가안',desc:'총점 90% 이상'},
-  {id:5,name:'B등급 달성',cat:'평가안',desc:'총점 80% 이상'},
-  {id:6,name:'무결점 강의',cat:'평가안',desc:'bad 타임스탬프 0개'},
-  {id:7,name:'개선왕',cat:'평가안',desc:'이전 평가 대비 10점 이상 상승'},
-  {id:8,name:'발성 마스터',cat:'평가안',desc:'발성 항목 90% 이상'},
-  {id:9,name:'전문성 확인',cat:'평가안',desc:'전문성 항목 85% 이상'},
-  {id:10,name:'상호작용 달인',cat:'평가안',desc:'상호작용 항목 80% 이상'},
-  {id:11,name:'시간관리 철저',cat:'평가안',desc:'시간관리 항목 90% 이상'},
-  {id:12,name:'자료 활용왕',cat:'평가안',desc:'판서/자료 항목 85% 이상'},
-  {id:13,name:'마무리 장인',cat:'평가안',desc:'마무리 항목 90% 이상'},
-  {id:14,name:'균형잡힌 평가',cat:'평가안',desc:'모든 항목 편차 10% 이내'},
-  {id:15,name:'올 A 항목',cat:'평가안',desc:'전 항목 85% 이상'},
-  {id:16,name:'안정적 발성',cat:'AI독자',desc:'데시벨 60~80dB'},
-  {id:17,name:'파워 보이스',cat:'AI독자',desc:'데시벨 80dB 이상'},
-  {id:18,name:'적절한 템포',cat:'AI독자',desc:'130~160 WPM'},
-  {id:19,name:'빠른 전달력',cat:'AI독자',desc:'160 WPM 이상'},
-  {id:20,name:'깨끗한 화법',cat:'AI독자',desc:'반복어 총 5회 이하'},
-  {id:21,name:'반복어 개선',cat:'AI독자',desc:'이전 대비 반복어 50% 감소'},
-  {id:22,name:'꾸준한 환기',cat:'AI독자',desc:'환기 간격 전부 10분 이내'},
-  {id:23,name:'환기 마스터',cat:'AI독자',desc:'환기 간격 전부 8분 이내'},
-  {id:24,name:'높은 집중도',cat:'AI독자',desc:'집중도 80점 이상'},
-  {id:25,name:'완벽한 집중',cat:'AI독자',desc:'집중도 95점 이상'},
-  {id:26,name:'우수한 구성력',cat:'AI독자',desc:'구성력 85점 이상'},
-  {id:27,name:'탁월한 구성력',cat:'AI독자',desc:'구성력 95점 이상'},
-  {id:28,name:'강점 다수',cat:'AI독자',desc:'good 타임스탬프 8개 이상'},
-  {id:29,name:'약점 최소',cat:'AI독자',desc:'bad 타임스탬프 1개 이하'},
-  {id:30,name:'소통 전문가',cat:'AI독자',desc:'소통 역량 90% 이상'},
-  {id:31,name:'코칭 능력자',cat:'AI독자',desc:'코칭 역량 85% 이상'},
-  {id:32,name:'프레젠 달인',cat:'AI독자',desc:'프리젠테이션 역량 90% 이상'},
-  {id:33,name:'스피치 전문',cat:'AI독자',desc:'스피치 역량 90% 이상'},
-  {id:34,name:'균형 역량',cat:'AI독자',desc:'6대 역량 전부 60% 이상'},
-  {id:35,name:'6대 역량 마스터',cat:'AI독자',desc:'6대 역량 전부 80% 이상'},
-  {id:36,name:'꾸준한 참여',cat:'누적',desc:'누적 5회 이상 평가'},
-  {id:37,name:'열정 강사',cat:'누적',desc:'누적 10회 이상 평가'},
-  {id:38,name:'베테랑 강사',cat:'누적',desc:'누적 20회 이상 평가'},
-  {id:39,name:'마스터 강사',cat:'누적',desc:'누적 50회 이상 평가'},
-  {id:40,name:'연속 3회 우수',cat:'누적',desc:'3회 연속 80점 이상'},
-  {id:41,name:'연속 5회 우수',cat:'누적',desc:'5회 연속 80점 이상'},
-  {id:42,name:'연속 10회 우수',cat:'누적',desc:'10회 연속 80점 이상'},
-  {id:43,name:'성장 중',cat:'누적',desc:'최근 3회 평균 > 전체 평균'},
-  {id:44,name:'급성장',cat:'누적',desc:'최근 평가 이전 대비 20점 이상 상승'},
-  {id:45,name:'다양한 교육',cat:'누적',desc:'3개 이상 카테고리 평가'},
-  {id:46,name:'올라운더',cat:'누적',desc:'5개 이상 카테고리 평가'},
-  {id:47,name:'멀티 제품',cat:'누적',desc:'3개 이상 제품 평가'},
-  {id:48,name:'제품 전문가',cat:'누적',desc:'한 제품 5회 이상 평가'},
-  {id:49,name:'월간 MVP',cat:'누적',desc:'해당 월 최다 평가 횟수'},
-  {id:50,name:'스피치 도전',cat:'누적',desc:'스피치 분석 3회 이상 완료'}
+  // 🥉 브론즈 (입문, 1~10)
+  {id:1,name:'첫 평가 완료',cat:'교육맞춤',tier:'bronze',desc:'첫 번째 영상 분석 완료'},
+  {id:2,name:'평가안 경험',cat:'교육맞춤',tier:'bronze',desc:'교육맞춤평가 1회 수행'},
+  {id:3,name:'AI 분석 경험',cat:'AI독자',tier:'bronze',desc:'AI 독자 분석 1회 수행'},
+  {id:4,name:'첫 스피치',cat:'AI독자',tier:'bronze',desc:'첫 스피치 분석 완료'},
+  {id:5,name:'교안 업로드',cat:'교육맞춤',tier:'bronze',desc:'교안과 함께 평가 1회'},
+  {id:6,name:'타임스탬프 경험',cat:'AI독자',tier:'bronze',desc:'good+bad 합계 5개 이상'},
+  {id:7,name:'3회 완주',cat:'누적',tier:'bronze',desc:'누적 영상 3개 이상'},
+  {id:8,name:'2개 카테고리',cat:'누적',tier:'bronze',desc:'서로 다른 교육종류 2개 이상'},
+  {id:9,name:'2개 제품',cat:'누적',tier:'bronze',desc:'서로 다른 제품 2개 이상'},
+  {id:10,name:'영상 2개 분석',cat:'누적',tier:'bronze',desc:'분석 완료 영상 2개 이상'},
+  // 🥈 실버 (숙련, 11~25)
+  {id:11,name:'C등급 달성',cat:'교육맞춤',tier:'silver',desc:'총점 60% 이상'},
+  {id:12,name:'B등급 달성',cat:'교육맞춤',tier:'silver',desc:'총점 75% 이상'},
+  {id:13,name:'기본 통과',cat:'교육맞춤',tier:'silver',desc:'모든 항목 60% 이상'},
+  {id:14,name:'발성 OK',cat:'교육맞춤',tier:'silver',desc:'발성 항목 70% 이상'},
+  {id:15,name:'전문성 OK',cat:'교육맞춤',tier:'silver',desc:'전문성/내용 항목 70% 이상'},
+  {id:16,name:'상호작용 OK',cat:'교육맞춤',tier:'silver',desc:'상호작용 항목 70% 이상'},
+  {id:17,name:'시간관리 OK',cat:'교육맞춤',tier:'silver',desc:'시간관리 항목 70% 이상'},
+  {id:18,name:'자료활용 OK',cat:'교육맞춤',tier:'silver',desc:'판서/자료 항목 70% 이상'},
+  {id:19,name:'마무리 OK',cat:'교육맞춤',tier:'silver',desc:'마무리 항목 70% 이상'},
+  {id:20,name:'표준 발성',cat:'AI독자',tier:'silver',desc:'데시벨 60~75dB'},
+  {id:21,name:'표준 템포',cat:'AI독자',tier:'silver',desc:'120~160 WPM'},
+  {id:22,name:'반복어 절제',cat:'AI독자',tier:'silver',desc:'반복어 총 10회 이하'},
+  {id:23,name:'기본 집중도',cat:'AI독자',tier:'silver',desc:'집중도 70점 이상'},
+  {id:24,name:'꾸준한 참여',cat:'누적',tier:'silver',desc:'누적 5회 이상 평가'},
+  {id:25,name:'성장 출발',cat:'누적',tier:'silver',desc:'이전 대비 5점 이상 상승'},
+  // 🥇 골드 (우수, 26~45)
+  {id:26,name:'A등급 달성',cat:'교육맞춤',tier:'gold',desc:'총점 85% 이상'},
+  {id:27,name:'전항목 A',cat:'교육맞춤',tier:'gold',desc:'모든 항목 80% 이상'},
+  {id:28,name:'균형 강사',cat:'교육맞춤',tier:'gold',desc:'항목 편차 8%p 이내'},
+  {id:29,name:'발성 우수',cat:'교육맞춤',tier:'gold',desc:'발성 항목 85% 이상'},
+  {id:30,name:'전문성 우수',cat:'교육맞춤',tier:'gold',desc:'전문성/내용 항목 85% 이상'},
+  {id:31,name:'상호작용 우수',cat:'교육맞춤',tier:'gold',desc:'상호작용 항목 85% 이상'},
+  {id:32,name:'시간관리 우수',cat:'교육맞춤',tier:'gold',desc:'시간관리 항목 85% 이상'},
+  {id:33,name:'자료 우수',cat:'교육맞춤',tier:'gold',desc:'판서/자료 항목 85% 이상'},
+  {id:34,name:'마무리 우수',cat:'교육맞춤',tier:'gold',desc:'마무리 항목 85% 이상'},
+  {id:35,name:'안정 발성',cat:'AI독자',tier:'gold',desc:'데시벨 70~85dB'},
+  {id:36,name:'정확 템포',cat:'AI독자',tier:'gold',desc:'140~165 WPM'},
+  {id:37,name:'깨끗한 화법',cat:'AI독자',tier:'gold',desc:'반복어 5회 이하'},
+  {id:38,name:'고집중',cat:'AI독자',tier:'gold',desc:'집중도 85점 이상'},
+  {id:39,name:'우수 구성력',cat:'AI독자',tier:'gold',desc:'구성력 85점 이상'},
+  {id:40,name:'강점 다수',cat:'AI독자',tier:'gold',desc:'good 타임스탬프 8개 이상'},
+  {id:41,name:'약점 최소',cat:'AI독자',tier:'gold',desc:'bad 타임스탬프 1개 이하'},
+  {id:42,name:'6역량 우수',cat:'AI독자',tier:'gold',desc:'6대 역량 모두 75% 이상'},
+  {id:43,name:'열정 강사',cat:'누적',tier:'gold',desc:'누적 15회 이상 평가'},
+  {id:44,name:'3연속 우수',cat:'누적',tier:'gold',desc:'3회 연속 80점 이상'},
+  {id:45,name:'환기 꾸준',cat:'AI독자',tier:'gold',desc:'환기 간격 모두 10분 이내'},
+  // 💎 플래티넘 (탁월, 46~63)
+  {id:46,name:'S등급',cat:'교육맞춤',tier:'platinum',desc:'총점 95% 이상'},
+  {id:47,name:'퍼펙트 항목',cat:'교육맞춤',tier:'platinum',desc:'하나의 항목 100% 달성'},
+  {id:48,name:'전항목 90',cat:'교육맞춤',tier:'platinum',desc:'모든 항목 90% 이상'},
+  {id:49,name:'초균형',cat:'교육맞춤',tier:'platinum',desc:'항목 편차 5%p 이내'},
+  {id:50,name:'발성 마스터',cat:'교육맞춤',tier:'platinum',desc:'발성 항목 95% 이상'},
+  {id:51,name:'전문성 마스터',cat:'교육맞춤',tier:'platinum',desc:'전문성/내용 95% 이상'},
+  {id:52,name:'상호작용 마스터',cat:'교육맞춤',tier:'platinum',desc:'상호작용 95% 이상'},
+  {id:53,name:'시간관리 마스터',cat:'교육맞춤',tier:'platinum',desc:'시간관리 95% 이상'},
+  {id:54,name:'자료 마스터',cat:'교육맞춤',tier:'platinum',desc:'판서/자료 95% 이상'},
+  {id:55,name:'마무리 마스터',cat:'교육맞춤',tier:'platinum',desc:'마무리 항목 95% 이상'},
+  {id:56,name:'파워 보이스',cat:'AI독자',tier:'platinum',desc:'데시벨 85dB 이상'},
+  {id:57,name:'스피드 마스터',cat:'AI독자',tier:'platinum',desc:'템포 170 WPM 이상'},
+  {id:58,name:'극청결 화법',cat:'AI독자',tier:'platinum',desc:'반복어 2회 이하'},
+  {id:59,name:'완벽 환기',cat:'AI독자',tier:'platinum',desc:'환기 간격 모두 8분 이내'},
+  {id:60,name:'완벽 집중',cat:'AI독자',tier:'platinum',desc:'집중도 95점 이상'},
+  {id:61,name:'탁월 구성',cat:'AI독자',tier:'platinum',desc:'구성력 95점 이상'},
+  {id:62,name:'6역량 마스터',cat:'AI독자',tier:'platinum',desc:'6대 역량 모두 90% 이상'},
+  {id:63,name:'5연속 우수',cat:'누적',tier:'platinum',desc:'5회 연속 80점 이상'},
+  // 🌟 레전드 (전설, 64~70) — 매우 받기 힘듦
+  {id:64,name:'퍼펙트 강사',cat:'교육맞춤',tier:'legend',desc:'총점 100% 달성'},
+  {id:65,name:'올킬',cat:'교육맞춤',tier:'legend',desc:'한 영상 전 항목 100% 달성'},
+  {id:66,name:'무결점 장인',cat:'누적',tier:'legend',desc:'5회 연속 bad 타임스탬프 0건'},
+  {id:67,name:'그랜드마스터',cat:'누적',tier:'legend',desc:'10회 연속 90점 이상'},
+  {id:68,name:'레전드 강사',cat:'누적',tier:'legend',desc:'누적 100회 이상 평가'},
+  {id:69,name:'무소음 강사',cat:'AI독자',tier:'legend',desc:'반복어 0회 영상 3개 이상'},
+  {id:70,name:'월간 MVP',cat:'누적',tier:'legend',desc:'해당 월 최다 평가 1위'}
 ];
+
+// 뱃지 등급 스타일
+const TIER_STYLE={
+  bronze:{label:'브론즈',color:'#92400e',bg:'#fef3c7',border:'#fcd34d'},
+  silver:{label:'실버',color:'#475569',bg:'#e2e8f0',border:'#cbd5e1'},
+  gold:{label:'골드',color:'#b45309',bg:'#fde68a',border:'#f59e0b'},
+  platinum:{label:'플래티넘',color:'#0e7490',bg:'#cffafe',border:'#22d3ee'},
+  legend:{label:'레전드',color:'#6b21a8',bg:'#f3e8ff',border:'#a855f7'}
+};
 
 // 초기 시드
 async function seedBadgeCriteria(){
@@ -5372,11 +5411,20 @@ async function seedBadgeCriteria(){
 // 뱃지 CRUD
 async function addBadgeCriteria(){
   const name=document.getElementById('badge-add-name')?.value?.trim();
-  const cat=document.getElementById('badge-add-cat')?.value||'평가안';
+  const cat=document.getElementById('badge-add-cat')?.value||'교육맞춤';
+  const tier=document.getElementById('badge-add-tier')?.value||'silver';
   const desc=document.getElementById('badge-add-desc')?.value?.trim();
   if(!name||!desc){alert('뱃지명과 달성 기준을 입력하세요');return;}
-  const order=(D.badgeCriteria||[]).length+1;
-  const{error}=await sb.from('badge_criteria').insert({name,category:cat,description:desc,sort_order:order});
+  // 커스텀 뱃지는 71번부터 (기본 70개 보존)
+  const order=Math.max(71,(D.badgeCriteria||[]).reduce((m,x)=>Math.max(m,x.sort_order||0),70)+1);
+  const payload={name,category:cat,description:desc,sort_order:order};
+  // tier 컬럼이 DB에 없을 수 있으므로 시도 후 실패 시 재시도
+  let error=null;
+  const r1=await sb.from('badge_criteria').insert({...payload,tier});
+  if(r1.error){
+    const r2=await sb.from('badge_criteria').insert(payload);
+    error=r2.error;
+  }
   if(error){alert('등록 실패: '+error.message);return;}
   const {data}=await sb.from('badge_criteria').select('*').order('sort_order');
   D.badgeCriteria=data||[];
@@ -5403,23 +5451,34 @@ async function editBadgeCriteria(id){
   renderBadgeCriteria();
 }
 
-// 뱃지 기준 테이블 렌더
+// 뱃지 기준 테이블 렌더 (기본 70 + DB 커스텀)
 function renderBadgeCriteria(){
   const tbody=el('badge-criteria-tbody');
   if(!tbody) return;
-  const catColors={'평가안':'var(--blue)','AI독자':'var(--green)','누적':'var(--purple)'};
-  const list=D.badgeCriteria?.length?D.badgeCriteria:BADGE_CRITERIA.map(b=>({id:b.id,name:b.name,category:b.cat,description:b.desc}));
-  const countLabel=el('badge-count-label');if(countLabel) countLabel.textContent=`(${list.length}개)`;
-  tbody.innerHTML=list.map((b,i)=>`<tr>
-    <td style="text-align:center;font-weight:700;color:var(--t3)">${i+1}</td>
-    <td style="font-weight:700">${b.name}</td>
-    <td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${catColors[b.category]||'var(--t3)'}15;color:${catColors[b.category]||'var(--t3)'}">${b.category}</span></td>
-    <td style="font-size:12px;color:var(--t2)">${b.description}</td>
-    <td style="white-space:nowrap">
-      <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px" onclick="editBadgeCriteria(${b.id})">수정</button>
-      <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;color:var(--red)" onclick="deleteBadgeCriteria(${b.id})">삭제</button>
-    </td>
-  </tr>`).join('');
+  const catColors={'교육맞춤':'var(--blue)','평가안':'var(--blue)','AI독자':'var(--green)','누적':'var(--purple)'};
+  // 기본 70 (BADGE_CRITERIA 하드코딩) + DB 커스텀 (id>70 또는 sort_order>70)
+  const defaults=BADGE_CRITERIA.map(b=>({id:b.id,name:b.name,category:b.cat,description:b.desc,tier:b.tier,_default:true}));
+  const customs=(D.badgeCriteria||[]).filter(db=>(db.sort_order||0)>70||(db.id||0)>70).map(c=>({id:c.id,name:c.name,category:c.category,description:c.description,tier:c.tier||null,_default:false}));
+  const list=[...defaults,...customs];
+  const countLabel=el('badge-count-label');if(countLabel) countLabel.textContent=`(${list.length}개 · 기본 70 + 커스텀 ${customs.length})`;
+  tbody.innerHTML=list.map((b,i)=>{
+    const ts=TIER_STYLE[b.tier]||null;
+    const tierChip=ts?`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${ts.label}</span>`:`<span style="font-size:10px;color:var(--t3)">—</span>`;
+    const catC=catColors[b.category]||'var(--t3)';
+    const catChip=`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${catC}15;color:${catC}">${b.category}</span>`;
+    const manageBtns=b._default
+      ?`<span style="font-size:10px;color:var(--t3)">기본</span>`
+      :`<button class="btn btn-ghost" style="padding:3px 8px;font-size:10px" onclick="editBadgeCriteria(${b.id})">수정</button>
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;color:var(--red)" onclick="deleteBadgeCriteria(${b.id})">삭제</button>`;
+    return `<tr>
+      <td style="text-align:center;font-weight:700;color:var(--t3)">${i+1}</td>
+      <td style="font-weight:700">${b.name}</td>
+      <td>${tierChip}</td>
+      <td>${catChip}</td>
+      <td style="font-size:12px;color:var(--t2)">${b.description}</td>
+      <td style="white-space:nowrap">${manageBtns}</td>
+    </tr>`;
+  }).join('');
 }
 
 // 엑셀 다운로드
@@ -5444,140 +5503,188 @@ document.addEventListener('click',e=>{
   if(e.target.textContent?.includes('뱃지 기준')) setTimeout(renderBadgeCriteria,100);
 });
 
-// ── 뱃지 판별 로직 ──
+// ── 뱃지 판별 로직 (70개 · 5등급) ──
 function evaluateBadges(r, userId){
   const badges=[];
   const cs=r.criteriaScores||[];
+  // Guard — 평가 기록이 전혀 없는 사용자는 뱃지 없음
+  if(userId){
+    const userVids=(D.videos||[]).filter(v=>v.userId===userId);
+    const vidIdSet=new Set(userVids.map(v=>v.id));
+    const hasEval=(D.evaluations||[]).some(e=>e.video_id&&vidIdSet.has(e.video_id));
+    const hasVoice=(D.voiceEvals||[]).some(v=>v.user_id===userId);
+    const hasCurrentR=cs.length||r.overallScore>0||(r.categories&&r.categories.length);
+    if(!hasEval&&!hasVoice&&!hasCurrentR) return [];
+  }else if(!cs.length&&!r.overallScore&&!(r.categories&&r.categories.length)) return [];
   const ts=r.timestamps||[];
   const total=cs.reduce((a,b)=>a+b.score,0);
   const maxTotal=cs.reduce((a,b)=>a+b.max,0)||100;
-  const pct=Math.round(total/maxTotal*100);
+  const pct=maxTotal?Math.round(total/maxTotal*100):0;
   const goodTs=ts.filter(t=>t.type==='good').length;
   const badTs=ts.filter(t=>t.type==='bad').length;
+  const db=r.decibel||0, tp=r.tempo||0;
+  const habitTotal=(r.habits||[]).reduce((a,h)=>a+(h.count||0),0);
+  const gaps=r.engagementGaps||[];
+  const focus=r.focusScore||0;
+  const overall=r.overallScore||0;
 
-  // 교육맞춤평가 (1~15)
-  if(cs.length) badges.push(1); // 첫 평가 완료
-  if(cs.some(c=>c.score>=c.max)) badges.push(2); // 만점 항목
-  if(cs.length&&cs.every(c=>c.score/c.max>=.7)) badges.push(3); // 전 항목 통과
-  if(pct>=90) badges.push(4); // A등급
-  if(pct>=80) badges.push(5); // B등급
-  if(badTs===0&&ts.length>0) badges.push(6); // 무결점 강의
-  // 7(개선왕): 이전 대비 → 누적에서 처리
+  // 🥉 브론즈 (1~10)
+  if(cs.length||overall) badges.push(1); // 첫 평가 완료
+  if(cs.length) badges.push(2); // 평가안(교육맞춤평가) 경험
+  if(overall||r.categories?.length) badges.push(3); // AI 분석 경험
+  // 4 첫 스피치 → userId 블록
+  if(r.eduFileUrl||r.edu_file_url) badges.push(5); // 교안 업로드
+  if(goodTs+badTs>=5) badges.push(6); // 타임스탬프 경험
+  // 7,8,9,10 → userId 블록
+
+  // 🥈 실버 점수 (11~23)
+  if(pct>=60) badges.push(11); // C등급
+  if(pct>=75) badges.push(12); // B등급
+  if(cs.length&&cs.every(c=>c.max>0&&c.score/c.max>=.6)) badges.push(13); // 기본 통과
+
+  // 역량별 70/85/95 3단계 (14~19 silver, 29~34 gold, 50~55 platinum)
   cs.forEach(c=>{
-    const p=Math.round(c.score/c.max*100);
+    const p=c.max>0?(c.score/c.max*100):0;
     const nm=c.name||'';
-    if(nm.includes('발성')&&p>=90) badges.push(8);
-    if((nm.includes('전문')||nm.includes('내용'))&&p>=85) badges.push(9);
-    if(nm.includes('상호')&&p>=80) badges.push(10);
-    if(nm.includes('시간')&&p>=90) badges.push(11);
-    if((nm.includes('판서')||nm.includes('자료'))&&p>=85) badges.push(12);
-    if(nm.includes('마무리')&&p>=90) badges.push(13);
+    if(nm.includes('발성')){
+      if(p>=70) badges.push(14); if(p>=85) badges.push(29); if(p>=95) badges.push(50);
+    }
+    if(nm.includes('전문')||nm.includes('내용')){
+      if(p>=70) badges.push(15); if(p>=85) badges.push(30); if(p>=95) badges.push(51);
+    }
+    if(nm.includes('상호')){
+      if(p>=70) badges.push(16); if(p>=85) badges.push(31); if(p>=95) badges.push(52);
+    }
+    if(nm.includes('시간')){
+      if(p>=70) badges.push(17); if(p>=85) badges.push(32); if(p>=95) badges.push(53);
+    }
+    if(nm.includes('판서')||nm.includes('자료')){
+      if(p>=70) badges.push(18); if(p>=85) badges.push(33); if(p>=95) badges.push(54);
+    }
+    if(nm.includes('마무리')){
+      if(p>=70) badges.push(19); if(p>=85) badges.push(34); if(p>=95) badges.push(55);
+    }
   });
+  if(db>=60&&db<=75) badges.push(20); // 표준 발성
+  if(tp>=120&&tp<=160) badges.push(21); // 표준 템포
+  if(habitTotal<=10) badges.push(22); // 반복어 절제
+  if(focus>=70) badges.push(23); // 기본 집중도
+
+  // 🥇 골드 (26~45)
+  if(pct>=85) badges.push(26); // A등급
+  if(cs.length&&cs.every(c=>c.max>0&&c.score/c.max>=.8)) badges.push(27); // 전항목 A
   if(cs.length>=2){
     const pcts=cs.map(c=>c.score/c.max*100);
-    const avg=pcts.reduce((a,b)=>a+b,0)/pcts.length;
-    if(Math.max(...pcts)-Math.min(...pcts)<=10) badges.push(14); // 균형
-    if(pcts.every(p=>p>=85)) badges.push(15); // 올 A
+    const spread=Math.max(...pcts)-Math.min(...pcts);
+    if(spread<=8) badges.push(28); // 균형
+    if(spread<=5) badges.push(49); // 초균형 (platinum)
   }
-
-  // AI 독자 기준 (16~35)
-  const db=r.decibel||0, tp=r.tempo||0;
-  if(db>=60&&db<=80) badges.push(16);
-  if(db>80) badges.push(17);
-  if(tp>=130&&tp<=160) badges.push(18);
-  if(tp>160) badges.push(19);
-  const habitTotal=(r.habits||[]).reduce((a,h)=>a+h.count,0);
-  if(habitTotal<=5) badges.push(20);
-  // 21(반복어 개선): 누적에서 처리
-  const gaps=r.engagementGaps||[];
-  if(gaps.length&&gaps.every(g=>g<=10)) badges.push(22);
-  if(gaps.length&&gaps.every(g=>g<=8)) badges.push(23);
-  if((r.focusScore||0)>=80) badges.push(24);
-  if((r.focusScore||0)>=95) badges.push(25);
-  if((r.overallScore||0)>=85) badges.push(26);
-  if((r.overallScore||0)>=95) badges.push(27);
-  if(goodTs>=8) badges.push(28);
-  if(badTs<=1) badges.push(29);
-  // 6대 역량 점수 계산
+  if(db>=70&&db<=85) badges.push(35); // 안정 발성
+  if(tp>=140&&tp<=165) badges.push(36); // 정확 템포
+  if(habitTotal<=5) badges.push(37); // 깨끗한 화법
+  if(focus>=85) badges.push(38); // 고집중
+  if(overall>=85) badges.push(39); // 우수 구성력
+  if(goodTs>=8) badges.push(40); // 강점 다수
+  if(badTs<=1) badges.push(41); // 약점 최소
+  // 6대 역량
   const aiScores={
     소통:gaps.length?Math.max(0,100-Math.round((gaps.reduce((a,b)=>a+b,0)/gaps.length-8)*5)):0,
-    코칭:Math.round(((r.overallScore||0)+(r.focusScore||0))/2.2),
+    코칭:Math.round((overall+focus)/2.2),
     프리젠:db?Math.min(100,Math.round(db/75*100)):0,
     스피치:tp?Math.min(100,Math.round(tp/155*100)):0
   };
-  if(aiScores.소통>=90) badges.push(30);
-  if(aiScores.코칭>=85) badges.push(31);
-  if(aiScores.프리젠>=90) badges.push(32);
-  if(aiScores.스피치>=90) badges.push(33);
-  const all6=[r.overallScore||0,Math.min(100,Math.round((r.focusScore||0)*1.1)),aiScores.소통,aiScores.코칭,aiScores.프리젠,aiScores.스피치];
-  if(all6.every(s=>s>=60)) badges.push(34);
-  if(all6.every(s=>s>=80)) badges.push(35);
+  const all6=[overall,Math.min(100,Math.round(focus*1.1)),aiScores.소통,aiScores.코칭,aiScores.프리젠,aiScores.스피치];
+  if(all6.every(s=>s>=75)) badges.push(42); // 6역량 우수
+  if(all6.every(s=>s>=90)) badges.push(62); // 6역량 마스터 (platinum)
+  if(gaps.length&&gaps.every(g=>g<=10)) badges.push(45); // 환기 꾸준
+  if(gaps.length&&gaps.every(g=>g<=8)) badges.push(59); // 완벽 환기 (platinum)
 
-  // 누적/성장 뱃지 (36~50) — 사용자 전체 데이터 기반
+  // 💎 플래티넘 (46~63, 일부 위에서 처리)
+  if(pct>=95) badges.push(46); // S등급
+  if(cs.some(c=>c.max>0&&c.score>=c.max)) badges.push(47); // 퍼펙트 항목
+  if(cs.length&&cs.every(c=>c.max>0&&c.score/c.max>=.9)) badges.push(48); // 전항목 90
+  if(db>=85) badges.push(56); // 파워 보이스
+  if(tp>=170) badges.push(57); // 스피드 마스터
+  if(habitTotal<=2) badges.push(58); // 극청결 화법
+  if(focus>=95) badges.push(60); // 완벽 집중
+  if(overall>=95) badges.push(61); // 탁월 구성
+
+  // 🌟 레전드 (64~70, 일부 userId 블록)
+  if(pct>=100) badges.push(64); // 퍼펙트 강사
+  if(cs.length&&cs.every(c=>c.max>0&&c.score>=c.max)) badges.push(65); // 올킬
+
+  // ── 누적 뱃지 (userId 필요) ──
   if(userId){
     const userVids=(D.videos||[]).filter(v=>v.userId===userId);
     const analyzed=userVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
     const vidScores=analyzed.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);});
+    const vidBadTs=analyzed.map(v=>(v.timestamps||[]).filter(t=>t.type==='bad').length);
     const totalVids=userVids.length;
+    const voiceCount=(D.voiceEvals||[]).filter(v=>v.user_id===userId).length;
 
-    if(totalVids>=5) badges.push(36);
-    if(totalVids>=10) badges.push(37);
-    if(totalVids>=20) badges.push(38);
-    if(totalVids>=50) badges.push(39);
+    if(voiceCount>=1) badges.push(4); // 첫 스피치
+    if(totalVids>=3) badges.push(7); // 3회 완주
+    const cats=[...new Set(userVids.map(v=>v.videoType||v.video_type||v.eduType||v.edu_type||'').filter(Boolean))];
+    const prods=[...new Set(userVids.map(v=>v.productName||v.product_name||'').filter(Boolean))];
+    if(cats.length>=2) badges.push(8); // 2개 카테고리
+    if(prods.length>=2) badges.push(9); // 2개 제품
+    if(analyzed.length>=2) badges.push(10); // 영상 2개 분석
 
-    // 연속 N회 우수
-    let streak=0,maxStreak=0;
-    vidScores.forEach(s=>{if(s>=80){streak++;maxStreak=Math.max(maxStreak,streak);}else streak=0;});
-    if(maxStreak>=3) badges.push(40);
-    if(maxStreak>=5) badges.push(41);
-    if(maxStreak>=10) badges.push(42);
-
-    // 성장
-    if(vidScores.length>=3){
-      const recent3=vidScores.slice(-3);
-      const avgAll=vidScores.reduce((a,b)=>a+b,0)/vidScores.length;
-      const avgRecent=recent3.reduce((a,b)=>a+b,0)/3;
-      if(avgRecent>avgAll) badges.push(43);
-    }
+    // 성장 출발 (이전 대비 5점↑)
     if(vidScores.length>=2){
       const last=vidScores[vidScores.length-1], prev=vidScores[vidScores.length-2];
-      if(last-prev>=20) badges.push(44);
-      if(last-prev>=10) badges.push(7); // 개선왕
+      if(last-prev>=5) badges.push(25);
     }
 
-    // 카테고리/제품 다양성
-    const cats=[...new Set(userVids.map(v=>v.videoType||v.video_type||'').filter(Boolean))];
-    const prods=[...new Set(userVids.map(v=>v.productName||v.product_name||'').filter(Boolean))];
-    if(cats.length>=3) badges.push(45);
-    if(cats.length>=5) badges.push(46);
-    if(prods.length>=3) badges.push(47);
-    const prodCounts={};userVids.forEach(v=>{const p=v.productName||v.product_name||'';if(p)prodCounts[p]=(prodCounts[p]||0)+1;});
-    if(Object.values(prodCounts).some(c=>c>=5)) badges.push(48);
+    // 누적 회수
+    if(totalVids>=5) badges.push(24); // 꾸준한 참여
+    if(totalVids>=15) badges.push(43); // 열정 강사
+    if(totalVids>=100) badges.push(68); // 레전드 강사
 
-    // 월간 MVP (현재 월 기준)
+    // 연속 N회 80+
+    let streak=0,maxStreak=0;
+    vidScores.forEach(s=>{if(s>=80){streak++;maxStreak=Math.max(maxStreak,streak);}else streak=0;});
+    if(maxStreak>=3) badges.push(44); // 3연속 우수
+    if(maxStreak>=5) badges.push(63); // 5연속 우수
+
+    // 연속 N회 90+
+    let streak90=0,maxStreak90=0;
+    vidScores.forEach(s=>{if(s>=90){streak90++;maxStreak90=Math.max(maxStreak90,streak90);}else streak90=0;});
+    if(maxStreak90>=10) badges.push(67); // 그랜드마스터
+
+    // 무결점 장인 (5연속 bad 0)
+    let clean=0,maxClean=0;
+    vidBadTs.forEach(b=>{if(b===0){clean++;maxClean=Math.max(maxClean,clean);}else clean=0;});
+    if(maxClean>=5) badges.push(66);
+
+    // 무소음 강사 (반복어 0회 영상 3개↑)
+    const silentCount=(D.evaluations||[])
+      .filter(e=>e.video_id&&userVids.some(v=>v.id===e.video_id))
+      .filter(e=>(e.habits||[]).reduce((a,h)=>a+(h.count||0),0)===0).length;
+    if(silentCount>=3) badges.push(69);
+
+    // 월간 MVP
     const now=new Date();const thisM=now.getMonth(),thisY=now.getFullYear();
     const myMonthVids=userVids.filter(v=>{const d=new Date(v.date||v.created_at);return d.getMonth()===thisM&&d.getFullYear()===thisY;}).length;
-    const allUsersMonthMax=Math.max(...(D.users||[]).map(u=>(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at);return v.userId===u.id&&d.getMonth()===thisM&&d.getFullYear()===thisY;}).length));
-    if(myMonthVids>0&&myMonthVids>=allUsersMonthMax) badges.push(49);
-
-    // 스피치 도전
-    const voiceCount=(D.voiceEvals||[]).filter(v=>v.user_id===userId).length;
-    if(voiceCount>=3) badges.push(50);
+    const allUsersMonthMax=Math.max(0,...(D.users||[]).map(u=>(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at);return v.userId===u.id&&d.getMonth()===thisM&&d.getFullYear()===thisY;}).length));
+    if(myMonthVids>0&&myMonthVids>=allUsersMonthMax&&allUsersMonthMax>0) badges.push(70);
   }
 
   return [...new Set(badges)].sort((a,b)=>a-b);
 }
 
-// 뱃지 ID → 이름/분류 조회
-function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?'};}
+// 뱃지 ID → 이름/분류/등급 조회
+function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?',tier:'silver',desc:''};}
 
-// 뱃지 HTML 렌더 (pill 형태) — 밝은 회색 + 검정 글씨로 전 페이지 통일
+// 뱃지 HTML 렌더 (pill 형태) — 등급별 컬러 적용
 function renderBadgePills(badgeIds){
   return badgeIds.map(id=>{
     const b=getBadgeInfo(id);
+    const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;
+    const tipPrefix=ts?`[${ts.label}] `:'';
     return `<span class="eval-kw-wrap" style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
-      <span class="eval-kw-pill">${b.name}</span>
-      <span class="badge-tip">${b.desc}<span class="badge-tip-arrow"></span></span>
+      <span class="eval-kw-pill" style="background:${ts.bg};color:${ts.color};border-color:${ts.border}">${b.name}</span>
+      <span class="badge-tip">${tipPrefix}${b.desc||''}<span class="badge-tip-arrow"></span></span>
     </span>`;
   }).join('');
 }
