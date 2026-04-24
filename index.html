@@ -10667,13 +10667,22 @@ function openLecturer(id, fromPage){
   const isOwner=CU && (CU.id===u.id || CU.isAdmin);
 
   // ── 실 평가 데이터 로드 (evaluations 테이블) ──
-  // 동기 렌더링 후 비동기로 데이터 채움
   const totalVids=userVids.length;
-  // 초기값 — DB 로드 후 갱신
-  let userAvgScore=0, evalCount=0;
-  const lvData=getLevelInfo(0,0,totalVids);
+  // 초기 평균 즉시 계산 (교육맞춤평가 우선) — 첫 평가 대기 문구 잘못 뜨는 문제 방지
+  const _uvIds=new Set(userVids.map(v=>v.id));
+  const _initEvals=(D.evaluations||[]).filter(e=>e.video_id&&_uvIds.has(e.video_id));
+  const _initByVid={};
+  _initEvals.forEach(e=>{
+    const ex=_initByVid[e.video_id];
+    const isCrit=e.eval_type==='평가안기준';
+    if(!ex||(isCrit&&ex.eval_type!=='평가안기준')) _initByVid[e.video_id]=e;
+  });
+  const _initScores=Object.values(_initByVid).map(e=>Number(e.overall_score||0)).filter(s=>s>0);
+  let userAvgScore=_initScores.length?_initScores.reduce((a,b)=>a+b,0)/_initScores.length:0;
+  let evalCount=_initScores.length;
+  const lvData=getLevelInfo(userAvgScore,evalCount,totalVids);
   // 유저별 evaluations 캐시 (필터용)
-  window._lectEvals=[];
+  window._lectEvals=_initEvals;
   window._lectUserId=id;
 
   // AI 한줄평가 + 키워드
