@@ -13036,12 +13036,12 @@ window.showPage=function(id){
 </script>
 </div><!-- /g-main -->
 
-<!-- 전역 footer — 로그인 포함 모든 페이지 노출 -->
+<!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 -->
 <style>
-#global-footer{position:fixed;right:12px;bottom:6px;font-size:10.5px;color:#94a3b8;z-index:250;user-select:none;background:rgba(255,255,255,.88);padding:4px 12px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04)}
-#global-footer a{color:#475569;text-decoration:none;font-weight:600}
+#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:10000;user-select:none;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;pointer-events:auto}
+#global-footer a{color:#334155;text-decoration:none;font-weight:700}
 #global-footer a:hover{color:var(--blue);text-decoration:underline}
-@media (max-width:900px){#global-footer{bottom:68px}}
+@media (max-width:900px){#global-footer{bottom:70px}}
 @media print{#global-footer{display:none!important}}
 </style>
 <div id="global-footer">수정요청 <a href="mailto:sanggon.lee@interbiz.co.kr">sanggon.lee@interbiz.co.kr</a></div>
