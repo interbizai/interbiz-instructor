@@ -4772,7 +4772,7 @@ function renderPick(){
           const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
           const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
           const shown=sorted.slice(0,3);
-          const pills=shown.map(id=>{const b=getBadgeInfo(id);const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;return `<span style="padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${b.name}</span>`;}).join('');
+          const pills=shown.map(id=>{const b=getBadgeInfo(id);return `<span style="padding:4px 12px;border-radius:14px;font-size:10.5px;font-weight:600;background:#fff;color:#1a202c;border:1px solid rgba(0,0,0,.1);line-height:1.3">${b.name}</span>`;}).join('');
           const rest=allBadges.length-shown.length;
           const moreBtnHtml=rest>0?`<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer" onclick="event.stopPropagation();showAllBadges(${u.id},${u.pickScore})">+${rest}</span>`:'';
           return pills+moreBtnHtml;
@@ -5677,31 +5677,37 @@ function evaluateBadges(r, userId){
 function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?',tier:'silver',desc:''};}
 
 // 뱃지 HTML 렌더 (pill 형태) — 등급별 컬러 적용
+// 뱃지 pill — 모든 페이지 통일 스타일 (흰 bg · 동일 사이즈/굵기/폰트/테두리)
 function renderBadgePills(badgeIds){
   return badgeIds.map(id=>{
     const b=getBadgeInfo(id);
     const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;
     const tipPrefix=ts?`[${ts.label}] `:'';
     return `<span class="eval-kw-wrap" style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
-      <span class="eval-kw-pill" style="background:${ts.bg};color:${ts.color};border-color:${ts.border}">${b.name}</span>
+      <span class="eval-kw-pill" style="background:#fff;color:#1a202c;border:1px solid rgba(0,0,0,.1);padding:4px 12px;border-radius:14px;font-size:10.5px;font-weight:600;line-height:1.3">${b.name}</span>
       <span class="badge-tip">${tipPrefix}${b.desc||''}<span class="badge-tip-arrow"></span></span>
     </span>`;
   }).join('');
 }
 
-// 등급 우선 정렬 + 상위 3개만 노출, 나머지는 '+N' 버튼 토글 (AI 평가 배너 용)
-function renderBadgesCollapsed(badgeIds, key){
+// 등급 우선 정렬 + 상위 3개만 노출, 나머지는 '+N' 버튼 토글
+// theme: 'banner' (어두운 bg → 흰색 토글 버튼) | 'profile' (밝은 bg → 어두운 토글 버튼)
+function renderBadgesCollapsed(badgeIds, key, theme){
   if(!badgeIds||!badgeIds.length) return '';
   const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
   const sorted=[...badgeIds].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
   const MAX=3;
+  const isBanner=theme==='banner';
   if(sorted.length<=MAX) return renderBadgePills(sorted);
   const top=sorted.slice(0,MAX);
   const rest=sorted.slice(MAX);
   const restId='kw-rest-'+(key||'x')+'-'+Date.now().toString(36)+Math.floor(Math.random()*1000);
+  const btnStyle=isBanner
+    ?'padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none;margin-left:4px'
+    :'padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(0,0,0,.06);color:var(--t2);border:1px solid rgba(0,0,0,.1);cursor:pointer;user-select:none;margin-left:4px';
   return renderBadgePills(top)
     + `<span id="${restId}" style="display:none">${renderBadgePills(rest)}</span>`
-    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'inline':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none;margin-left:4px">+${rest.length}</span>`;
+    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'inline':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="${btnStyle}">+${rest.length}</span>`;
 }
 
 function resetAdminCoachFilters(){
@@ -7280,7 +7286,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
     const criteriaBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
-    kw1El.innerHTML=renderBadgesCollapsed(criteriaBadges,'crit');
+    kw1El.innerHTML=renderBadgesCollapsed(criteriaBadges,'crit','banner');
   }
 
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
@@ -7386,7 +7392,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
     const aiBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='AI독자'||c==='누적';});
-    kw2El.innerHTML=renderBadgesCollapsed(aiBadges,'ai');
+    kw2El.innerHTML=renderBadgesCollapsed(aiBadges,'ai','banner');
   }
 
   // AI 독자 레이더: Vertex 결과의 categories를 직접 사용 (체크리스트 대항목과 동일)
@@ -10551,14 +10557,8 @@ function renderMyBadges(userId,avgScore){
   const mockR={criteriaScores:[],timestamps:[],overallScore:avgScore,focusScore:avgScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
   const allBadges=evaluateBadges(mockR,userId);
   if(!allBadges.length){area.innerHTML='<span style="font-size:11px;color:var(--t3)">AI 분석 후 뱃지 생성</span>';return;}
-  // 등급 우선순위: 희귀(legend) → 흔함(bronze)
-  const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
-  const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
-  const shownMax=6;
-  const shown=sorted.slice(0,shownMax);
-  const rest=allBadges.length-shown.length;
-  area.innerHTML=renderBadgePills(shown)
-    +(rest>0?`<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer;margin-left:4px" onclick="event.stopPropagation();showAllBadges(${userId},${avgScore})">+${rest}</span>`:'');
+  // 상위 3개 + '+N' 접기 토글 (기본 접힘)
+  area.innerHTML=renderBadgesCollapsed(allBadges,'my-'+userId,'profile');
 }
 
 function openScenario(){ showPage('page-scenario'); }
@@ -10684,7 +10684,7 @@ function showAllBadges(userId,pickScore){
         <span style="font-size:11px;color:var(--t3);font-weight:700">${badges.length}개</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${badges.map(b=>`<span title="${(b.desc||'').replace(/"/g,'&quot;')}" style="padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border};cursor:help">${b.name}<span style="font-size:9.5px;font-weight:600;color:${ts.color}99;margin-left:5px">·${b.cat||''}</span></span>`).join('')}
+        ${badges.map(b=>`<span title="${(b.desc||'').replace(/"/g,'&quot;')}" style="padding:4px 12px;border-radius:14px;font-size:10.5px;font-weight:600;background:#fff;color:#1a202c;border:1px solid rgba(0,0,0,.1);cursor:help;line-height:1.3">${b.name}<span style="font-size:9.5px;font-weight:600;color:var(--t3);margin-left:5px">·${b.cat||''}</span></span>`).join('')}
       </div>
     </div>`;
   });
@@ -13036,14 +13036,13 @@ window.showPage=function(id){
 </script>
 </div><!-- /g-main -->
 
-<!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 -->
+<!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 (이메일 클릭 비활성) -->
 <style>
-#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:10000;user-select:none;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;pointer-events:auto}
-#global-footer a{color:#334155;text-decoration:none;font-weight:700}
-#global-footer a:hover{color:var(--blue);text-decoration:underline}
+#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:10000;user-select:none;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;pointer-events:none}
+#global-footer .email{color:#334155;font-weight:700}
 @media (max-width:900px){#global-footer{bottom:70px}}
 @media print{#global-footer{display:none!important}}
 </style>
-<div id="global-footer">수정요청 <a href="mailto:sanggon.lee@interbiz.co.kr">sanggon.lee@interbiz.co.kr</a></div>
+<div id="global-footer">수정요청 <span class="email">sanggon.lee@interbiz.co.kr</span></div>
 </body>
 </html>
