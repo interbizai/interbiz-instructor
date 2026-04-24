@@ -316,6 +316,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'POST only' });
   }
 
+  // AI 시나리오 코치 모드 분기
+  if (req.body && req.body.mode === 'scenario_coach') {
+    return await handleScenarioCoach(req, res);
+  }
+
   try {
     const {
       video_url,
@@ -471,6 +476,150 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ ok: true, eval_type, model, result: parsed });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message || String(e), stack: e.stack?.split('\n').slice(0, 5).join('\n') });
+  }
+}
+
+// ============================================================
+// AI 시나리오 코치 (Scenario Coach) — 매장 판매 시나리오 코칭 전용
+// ============================================================
+async function handleScenarioCoach(req, res) {
+  try {
+    const {
+      edu_type = '', product = '', phase = '',
+      customer = '', store = '',
+      axes = [], draft = '',
+      edu_file_url = '', edu_file_mime = '',
+      model = 'gemini-2.5-pro',
+    } = req.body || {};
+
+    if (!draft || draft.length < 20) {
+      return res.status(400).json({ ok: false, error: '시나리오 초안이 너무 짧습니다 (20자 이상)' });
+    }
+
+    const creds = getCredentials();
+    if (!creds.project_id || !creds.client_email || !creds.private_key)
+      return res.status(500).json({ ok: false, error: 'GCP credentials missing' });
+
+    const vertex = new VertexAI({
+      project: creds.project_id,
+      location: 'us-central1',
+      googleAuthOptions: {
+        projectId: creds.project_id,
+        credentials: {
+          type: 'service_account',
+          project_id: creds.project_id,
+          client_email: creds.client_email,
+          private_key: creds.private_key,
+        },
+        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      },
+    });
+
+    const gm = vertex.getGenerativeModel({
+      model,
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+    });
+
+    // 축 포매팅
+    const axesText = (axes || []).map((a, i) => {
+      const n = typeof a === 'string' ? a : a.name;
+      const hint = typeof a === 'object' && a.hint ? ` (${a.hint})` : '';
+      return `  ${i + 1}. ${n}${hint}`;
+    }).join('\n');
+
+    // 교육자료 처리
+    let eduPart = '';
+    const eduMat = edu_file_url ? await fetchEduMaterial(edu_file_url, edu_file_mime) : { kind: 'none' };
+    if (eduMat.kind === 'text') {
+      eduPart = `\n\n${eduMat.label}\n${eduMat.text.slice(0, 15000)}\n`;
+    }
+
+    const prompt = `당신은 **세계적인 가전 전문 강사**입니다.
+수십 년간 LG·삼성·해외 프리미엄 가전 판매 현장을 코칭해온 경험으로, 매장에서 바로 따라 말할 수 있는 **실전 대사 수준** 으로 시나리오를 코칭합니다.
+
+# 원칙
+- 개념·원론 금지. 구체 대사·수치·비유로만 피드백.
+- 가전은 **실물 시연·경쟁사 비교·수치 근거** 가 결정적이므로 이 3요소 점검 필수.
+- 고객 유형(${customer || '미지정'})·매장 환경(${store || '미지정'})에 맞춘 맞춤 코칭.
+- 응답 전체를 순수 한국어(한글)로만 작성. 한자 절대 금지.
+
+# 컨텍스트
+- 교육 유형: ${edu_type || '미지정'}
+- 교육 제품: ${product || '미지정'}
+- 시나리오 단계: ${phase || '미지정'}
+- 목표 고객: ${customer || '미지정'}
+- 매장 환경: ${store || '미지정'}
+${eduPart ? '\n# 첨부 교육자료 (비교 대조 대상)\n' + eduPart : ''}
+
+# 강사의 초안
+"""
+${draft}
+"""
+
+# 판단 축 (사용자 편집본)
+${axesText || '  (축 미지정 — 공통 7축으로 평가)'}
+
+# 분석 지시
+1. 초안을 한 줄 한 줄 세세히 읽고, 각 판단 축별로 반영 정도를 0~100 으로 채점.
+2. 가전 판매 현장 경험을 바탕으로 **살려야 할 요소**, **빼야 할 요소**, **보완 제안** 을 각각 구체 대사·표현 수준으로 제시.
+3. 필수 요소(경쟁사 비교·실물 시연·수치 근거) 중 누락이 있으면 반드시 지적.
+4. 제품별 실제 스펙(예: 에어컨 CMH·효율등급, 냉장고 L·에너지등급)을 언급하며 수치 근거 강조.
+5. 첨부 교육자료가 있으면 "교육자료에는 ○○이 있으나 초안에는 △△로 전달됨" 식으로 대조.
+6. 전문가 관점의 구간별 추천 대사(오프닝/Needs/FAB/경쟁사/시연/반론/클로징)를 제시.
+7. 마지막으로 위 피드백을 종합한 **수정판 시나리오 전문**을 작성 (그대로 매장에서 말할 수 있도록).
+
+# 응답 JSON 스키마
+{
+  "overall_score": 0~100,
+  "grade": "S|A|B|C|D",
+  "axis_scores": { "<축이름>": 0~100, ... },
+  "strengths": [{"title":"살릴 점 제목","detail":"구체 설명 + 대사 예"}],
+  "weaknesses": [{"title":"뺄 점 제목","detail":"구체 설명"}],
+  "additions": [{"title":"보완 제안 제목","detail":"구체 대사·수치·비유 제안"}],
+  "missing": ["누락 1","누락 2"],
+  "expert_scripts": {
+    "오프닝": "매장에서 바로 말할 수 있는 대사",
+    "Needs": "...",
+    "FAB": "...",
+    "경쟁사": "...",
+    "시연": "...",
+    "반론": "...",
+    "클로징": "..."
+  },
+  "revised_scenario": "섹션 구분된 수정판 시나리오 전문 (예: [오프닝]\\n...\\n\\n[Needs]\\n... 형태)",
+  "summary": "한 줄 총평 (25자 이내)",
+  "improvement_tip": "가장 임팩트 있는 개선 포인트 1개"
+}
+
+# 채점 기준
+- overall_score = axis_scores 가중 평균 (필수축 가중치 1.5배)
+- grade: S(95+) / A(85+) / B(75+) / C(60+) / D(그 외)
+- axis_scores 값은 초안에 해당 요소가 얼마나 구체적으로 녹아있는지 기준.`;
+
+    const request = {
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }],
+      }],
+    };
+
+    const result = await gm.generateContent(request);
+    const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      // Fallback: JSON 블록 추출
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) { parsed = null; } }
+    }
+    if (!parsed) {
+      return res.status(500).json({ ok: false, error: 'AI 응답 파싱 실패', raw: text.slice(0, 500) });
+    }
+
+    return res.status(200).json({ ok: true, mode: 'scenario_coach', model, result: parsed });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message || String(e), stack: e.stack?.split('\n').slice(0, 5).join('\n') });
   }

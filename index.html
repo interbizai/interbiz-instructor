@@ -2154,18 +2154,124 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
     </button>
     <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
   </div>
-</header>
-<main>
-  <div class="page-title"><div class="page-title-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><h2>시나리오</h2></div>
-  <div class="content-card">
-    <div style="text-align:center;padding:60px 20px">
-      <div style="font-size:48px;margin-bottom:16px">🚧</div>
-      <div style="font-size:18px;font-weight:800;color:var(--t1);margin-bottom:8px">준비 중입니다</div>
-      <div style="font-size:13px;color:var(--t3);line-height:1.6">시나리오 기능은 현재 개발 중입니다.<br>곧 업데이트될 예정입니다.</div>
+  <div class="hdr-right">
+    <span class="chip hdr-month"></span>
+    <div class="avatar-wrap">
+      <div class="avatar hdr-av">?</div>
+      <div class="avatar-dropdown">
+        <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
+        <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
+        <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
+      </div>
     </div>
   </div>
+</header>
+<main>
+  <div class="page-title">
+    <div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+    <h2>AI 시나리오 코치</h2>
+  </div>
+
+  <div class="content-card" style="margin-bottom:16px;padding:18px 24px">
+    <div id="sc-progress" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div class="sc-step-chip" data-step="0"><span class="sc-step-num">0</span><span class="sc-step-label">프레임 세팅</span></div>
+      <div class="sc-step-sep">—</div>
+      <div class="sc-step-chip" data-step="1"><span class="sc-step-num">1</span><span class="sc-step-label">초안 작성</span></div>
+      <div class="sc-step-sep">—</div>
+      <div class="sc-step-chip" data-step="2"><span class="sc-step-num">2</span><span class="sc-step-label">AI 코칭·수정</span></div>
+      <div class="sc-step-sep">—</div>
+      <div class="sc-step-chip" data-step="3"><span class="sc-step-num">✓</span><span class="sc-step-label">최종 완성</span></div>
+    </div>
+  </div>
+
+  <div id="sc-step-0" class="content-card sc-step-pane" style="margin-bottom:16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">시나리오 프레임 세팅</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:3px">공략 대상과 핵심 축을 먼저 잡아주세요. 가전 판매는 <b>실물 시연·경쟁사 비교·수치 근거</b> 가 결정적입니다.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 유형</div><select id="sc-edu-type" onchange="scSaveField('eduType',this.value);scRenderAxesFromPreset()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"><option value="">선택하세요</option></select></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 제품</div><select id="sc-product" onchange="scSaveField('product',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"><option value="">선택하세요</option></select></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">시나리오 단계</div><select id="sc-phase" onchange="scSaveField('phase',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"><option value="">선택하세요</option><option>오프닝·관심 유도</option><option>Needs 파악</option><option>전개·FAB 설명</option><option>경쟁사 비교</option><option>실물 시연</option><option>반론 대응</option><option>가격·가치 논리</option><option>클로징</option><option>전체 (통합 시나리오)</option></select></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">목표 고객 유형</div><select id="sc-customer" onchange="scSaveField('customer',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"><option value="">선택하세요</option><option>신혼부부</option><option>가족 (아이 있음)</option><option>가족 (일반)</option><option>1인가구</option><option>시니어</option><option>VIP/프리미엄</option></select></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">매장 환경</div><select id="sc-store" onchange="scSaveField('store',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"><option value="">선택하세요</option><option>LG 베스트샵</option><option>백화점</option><option>양판점 (하이마트·전자랜드)</option><option>프랜차이즈</option><option>온라인 라이브</option></select></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육자료 첨부 (선택)</div><label class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px;cursor:pointer;width:100%;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="sc-edu-file-label">파일 선택</span><input type="file" id="sc-edu-file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onchange="scOnEduFileChange(this)"></label></div>
+    </div>
+    <div style="padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:800;color:var(--t1)">필수 포함 요소 <span style="font-size:10.5px;color:var(--t3);font-weight:600;margin-left:4px">· 항목 편집·추가·삭제 가능</span></div>
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="scAddAxis()">+ 항목 추가</button>
+      </div>
+      <div id="sc-axes-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost" style="padding:8px 16px;font-size:12.5px" onclick="scReset()">초기화</button>
+      <button class="btn btn-blue" style="padding:8px 18px;font-size:12.5px" onclick="scGoStep1()">다음 → 초안 작성</button>
+    </div>
+  </div>
+
+  <div id="sc-step-1" class="content-card sc-step-pane" style="margin-bottom:16px;display:none">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">시나리오 초안 작성</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:3px">실제 매장에서 말할 대사 그대로 작성해주세요. 실시간 축 감지로 누락 항목을 알려드립니다.</div>
+      </div>
+      <div style="font-size:11px;color:var(--t3)"><span id="sc-draft-count">0자</span> · 권장 100자 이상</div>
+    </div>
+    <div style="padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:#f9fafb;margin-bottom:14px">
+      <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:8px">이 시나리오의 축 (초안에 들어가야 할 요소)</div>
+      <div id="sc-draft-axes-status" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <textarea id="sc-draft" rows="12" placeholder="예시:&#10;안녕하세요! 오늘은 LG 휘센 에어컨을 소개해드릴게요.&#10;혹시 집에서 주로 몇 시간 켜두세요?&#10;이 모델은 0.5℃ 단위로 제어되어서 체감 쾌적도는 높이고 전기료는 약 5% 절감돼요...&#10;(자유롭게 매장에서 말할 대사 그대로 작성)" oninput="scOnDraftInput(this.value)" style="width:100%;padding:14px;border:1px solid var(--bdr);border-radius:10px;font-size:13px;line-height:1.7;resize:vertical;font-family:inherit"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px">
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px" onclick="scGoStep0()">← 프레임 세팅</button>
+      <button class="btn btn-blue" id="sc-run-btn" style="padding:8px 18px;font-size:12.5px" onclick="scRunAI()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>AI 코칭 받기</button>
+    </div>
+  </div>
+
+  <div id="sc-step-2" class="content-card sc-step-pane" style="margin-bottom:16px;display:none">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">AI 코칭 결과 · 수정</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:3px">세계적 가전 판매 강사 시점 · 매장에서 바로 쓸 수 있는 대사로 코칭합니다.</div>
+      </div>
+    </div>
+    <div id="sc-coach-body"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:16px">
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px" onclick="scGoStep1()">← 초안으로</button>
+      <button class="btn btn-blue" style="padding:8px 18px;font-size:12.5px" onclick="scGoStep3()">최종 시나리오 완성 →</button>
+    </div>
+  </div>
+
+  <div id="sc-step-3" class="content-card sc-step-pane" style="margin-bottom:16px;display:none"><div id="sc-final-body"></div></div>
+
+  <div style="text-align:center;font-size:10.5px;color:var(--t3);padding:12px">※ 본 도구는 사전 시나리오 점검용 임시 작업입니다. 저장되지 않으며 브라우저 세션 단위로 유지됩니다. 완성 시 반드시 복사·엑셀 다운로드로 보관하세요.</div>
 </main>
 </div>
+
+<style>
+.sc-step-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--bdr);background:#fff;font-size:11.5px;font-weight:700;color:var(--t3);transition:all .2s}
+.sc-step-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sc-step-chip.done{background:#10b98115;color:#059669;border-color:#10b98140}
+.sc-step-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.08);font-size:10px;font-weight:800}
+.sc-step-chip.active .sc-step-num{background:rgba(255,255,255,.3)}
+.sc-step-chip.done .sc-step-num{background:#10b98130}
+.sc-step-sep{color:var(--t3);font-weight:700;opacity:.5}
+.sc-axis-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid var(--bdr);border-radius:8px}
+.sc-axis-item input[type=checkbox]{margin:0}
+.sc-axis-item .ax-name{flex:1;font-size:12px;font-weight:700;color:var(--t1)}
+.sc-axis-item .ax-hint{font-size:10.5px;color:var(--t3);font-weight:500}
+.sc-axis-item button{border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:11px;padding:2px 6px}
+.sc-axis-item button:hover{color:var(--t1)}
+.sc-axis-item.fixed .ax-name::after{content:' · 필수';color:#dc2626;font-size:9.5px;font-weight:800}
+.sc-kw-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:700;border:1px solid}
+.sc-kw-chip.miss{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.sc-kw-chip.partial{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.sc-kw-chip.hit{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+</style>
 
 <!-- ════════════════════════════════════
      PAGE: STREAMING (녹화 + AI 평가)
@@ -10764,7 +10870,328 @@ function renderMyBadges(userId,avgScore){
     +(rest>0?`<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer;margin-left:4px" onclick="event.stopPropagation();showAllBadges(${userId},${avgScore})">+${rest}</span>`:'');
 }
 
-function openScenario(){ showPage('page-scenario'); }
+function openScenario(){ showPage('page-scenario'); scInit(); }
+
+// ============================================================
+// AI 시나리오 코치 (세계적 가전 판매 강사 시점)
+// ============================================================
+const SC_DEFAULT_AXES=[
+  {id:'numeric',name:'수치 근거',hint:'구체 수치·단위 (예: 0.5℃, 5%, 월 1만원)',checked:true},
+  {id:'fab',name:'FAB 구조',hint:'특징·장점·이익 구분 설명',checked:true},
+  {id:'competitor',name:'경쟁사 비교',hint:'타사 대비 우위 시연',checked:true,fixed:true},
+  {id:'demo',name:'실물 시연',hint:'직접 체험·실물 확인 유도',checked:true,fixed:true},
+  {id:'metaphor',name:'비유·일상화',hint:'기술용어 → 쉬운 비유',checked:true},
+  {id:'objection',name:'반론 대응',hint:'고객 의문·거절 처리',checked:true},
+  {id:'addon',name:'부가 제안',hint:'설치·할부·보증·A/S',checked:true}
+];
+const SC_KEYWORDS={
+  numeric:['℃','도','%','원','kg','L','리터','dB','CMH','와트','W','배','시간','분','평','인치','단계','단위','절약','절감'],
+  fab:['특징','장점','이익','FAB','기능','효과','혜택','덕분'],
+  competitor:['타사','경쟁','비교','대비','A사','B사','vs','반면'],
+  demo:['직접','실물','보세요','만져','확인','시연','체험','해보세요','눌러','들어보세요'],
+  metaphor:['마치','같이','처럼','비유','이를테면','쉽게','일상','예를','상상'],
+  objection:['그런데','하지만','걱정','괜찮','걱정마','믿으셔도','문제없','그래도'],
+  addon:['설치','할부','보증','A/S','AS','무상','서비스','배송','무이자']
+};
+
+const SC_STATE_KEY='sc_coach_state_v1';
+let scState=null;
+
+function scDefaultState(){return{
+  step:0,eduType:'',product:'',phase:'',customer:'',store:'',
+  eduFileUrl:'',eduFileName:'',eduFileMime:'',
+  axes:JSON.parse(JSON.stringify(SC_DEFAULT_AXES)),
+  draft:'',coaching:null,revised:'',history:[]
+};}
+
+function scInit(){
+  try{const s=localStorage.getItem(SC_STATE_KEY);if(s)scState=JSON.parse(s);}catch(e){}
+  if(!scState) scState=scDefaultState();
+  scFillEduTypes();scFillProducts();
+  ['eduType','product','phase','customer','store'].forEach(f=>{const el=document.getElementById('sc-'+({eduType:'edu-type',product:'product',phase:'phase',customer:'customer',store:'store'}[f]));if(el&&scState[f]!=null) el.value=scState[f];});
+  if(scState.eduFileName){const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent=scState.eduFileName;}
+  const ta=document.getElementById('sc-draft');if(ta) ta.value=scState.draft||'';
+  scRenderAxes();scRender();
+}
+
+function scSaveState(){try{localStorage.setItem(SC_STATE_KEY,JSON.stringify(scState));}catch(e){}}
+function scSaveField(k,v){scState[k]=v;scSaveState();}
+
+function scFillEduTypes(){
+  const sel=document.getElementById('sc-edu-type');if(!sel) return;
+  const types=(window.getEduTypes?getEduTypes():['판매경쟁력상황실','신입교육','심화교육','현장실습']);
+  sel.innerHTML='<option value="">선택하세요</option>'+types.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('');
+}
+function scFillProducts(){
+  const sel=document.getElementById('sc-product');if(!sel) return;
+  const opts=[];
+  if(typeof PRODUCT_TREE!=='undefined'){
+    Object.entries(PRODUCT_TREE).forEach(([g,items])=>{
+      opts.push(`<optgroup label="${g}">`+items.map(p=>`<option${p===scState.product?' selected':''}>${p}</option>`).join('')+'</optgroup>');
+    });
+  }
+  sel.innerHTML='<option value="">선택하세요</option>'+opts.join('');
+}
+
+function scRenderAxesFromPreset(){}
+
+function scRenderAxes(){
+  const area=document.getElementById('sc-axes-list');if(!area) return;
+  area.innerHTML=scState.axes.map((a,i)=>`<div class="sc-axis-item${a.fixed?' fixed':''}">
+    <input type="checkbox" ${a.checked!==false?'checked':''} ${a.fixed?'disabled':''} onchange="scToggleAxis(${i},this.checked)">
+    <div style="flex:1;min-width:0">
+      <div class="ax-name">${a.name}</div>
+      <div class="ax-hint">${a.hint||''}</div>
+    </div>
+    <button onclick="scEditAxis(${i})">편집</button>
+    ${a.fixed?'':`<button onclick="scRemoveAxis(${i})" style="color:#dc2626">삭제</button>`}
+  </div>`).join('');
+}
+function scToggleAxis(i,v){scState.axes[i].checked=v;scSaveState();scUpdateDraftAxes();}
+function scEditAxis(i){const a=scState.axes[i];const n=prompt('항목명',a.name);if(n==null) return;const h=prompt('설명(힌트)',a.hint||'');if(h==null) return;a.name=n.trim()||a.name;a.hint=h.trim();scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scRemoveAxis(i){if(!confirm('삭제할까요?')) return;scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scAddAxis(){const n=prompt('새 항목명');if(!n) return;const h=prompt('설명(힌트) — 생략 가능')||'';scState.axes.push({id:'custom_'+Date.now(),name:n.trim(),hint:h.trim(),checked:true});scSaveState();scRenderAxes();scUpdateDraftAxes();}
+
+function scOnDraftInput(v){
+  scState.draft=v;scSaveState();
+  const cnt=document.getElementById('sc-draft-count');if(cnt) cnt.textContent=v.length+'자';
+  scUpdateDraftAxes();
+}
+function scUpdateDraftAxes(){
+  const box=document.getElementById('sc-draft-axes-status');if(!box) return;
+  const text=scState.draft||'';
+  const checked=scState.axes.filter(a=>a.checked!==false);
+  box.innerHTML=checked.map(a=>{
+    const kw=SC_KEYWORDS[a.id]||[];
+    const hits=kw.filter(k=>text.includes(k)).length;
+    const cls=hits>=2?'hit':hits===1?'partial':'miss';
+    const ic=hits>=2?'●':hits===1?'◐':'○';
+    return `<span class="sc-kw-chip ${cls}" title="${a.hint||''}">${ic} ${a.name}</span>`;
+  }).join('');
+}
+
+function scOnEduFileChange(inp){
+  const f=inp.files[0];if(!f) return;
+  const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent=f.name;
+  scState._eduFileObj=f;scState.eduFileName=f.name;scState.eduFileMime=f.type||'';
+  scSaveState();
+}
+
+function scRender(){
+  ['sc-step-0','sc-step-1','sc-step-2','sc-step-3'].forEach((id,i)=>{const el=document.getElementById(id);if(el) el.style.display=scState.step===i?'block':'none';});
+  document.querySelectorAll('.sc-step-chip').forEach(el=>{
+    const s=+el.dataset.step;el.classList.remove('active','done');
+    if(s===scState.step) el.classList.add('active');
+    else if(s<scState.step) el.classList.add('done');
+  });
+  if(scState.step===1) scUpdateDraftAxes();
+  if(scState.step===2) scRenderCoaching();
+  if(scState.step===3) scRenderFinal();
+}
+
+function scGoStep0(){scState.step=0;scSaveState();scRender();}
+function scGoStep1(){
+  if(!scState.eduType||!scState.product){alert('교육 유형·제품을 선택해주세요');return;}
+  scState.step=1;scSaveState();scRender();
+}
+
+async function scRunAI(){
+  if((scState.draft||'').trim().length<30){alert('초안을 30자 이상 작성해주세요');return;}
+  const btn=document.getElementById('sc-run-btn');if(btn){btn.disabled=true;btn.innerHTML='⏳ 분석 중...';}
+  try{
+    let eduUrl='',eduMime='';
+    if(scState._eduFileObj){
+      const f=scState._eduFileObj;
+      try{
+        const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
+        const sData=await sRes.json();
+        if(sData.signed_url){
+          await fetch(sData.signed_url,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
+          eduUrl=sData.public_url||'';eduMime=f.type||'';
+        }
+      }catch(e){console.warn('edu upload skip',e);}
+    }
+    const res=await fetch('/api/vertex-analyze',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        mode:'scenario_coach',
+        edu_type:scState.eduType,product:scState.product,phase:scState.phase,
+        customer:scState.customer,store:scState.store,
+        axes:scState.axes.filter(a=>a.checked!==false).map(a=>({name:a.name,hint:a.hint||''})),
+        draft:scState.draft,
+        edu_file_url:eduUrl,edu_file_mime:eduMime
+      })
+    });
+    const data=await res.json();
+    if(!data.ok){alert('AI 코칭 실패: '+(data.error||'알 수 없음'));return;}
+    scState.coaching=data.result;
+    scState.revised=data.result.revised_scenario||scState.draft;
+    scState.step=2;
+    scState.history=scState.history||[];
+    scState.history.push({at:new Date().toISOString(),score:data.result.overall_score,grade:data.result.grade});
+    scSaveState();scRender();
+  }catch(e){alert('AI 코칭 실패: '+e.message);}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>AI 코칭 받기';}}
+}
+
+function scRenderCoaching(){
+  const c=scState.coaching;if(!c) return;
+  const body=document.getElementById('sc-coach-body');if(!body) return;
+  const gradeColor={S:'#dc2626',A:'#2563eb',B:'#10b981',C:'#f59e0b',D:'#9ca3af'}[c.grade]||'var(--t3)';
+  const axisKeys=Object.keys(c.axis_scores||{});
+  const axisBars=axisKeys.map(k=>{
+    const v=c.axis_scores[k]||0;
+    const barC=v>=85?'#10b981':v>=70?'#f59e0b':'#ef4444';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="width:110px;font-size:12px;font-weight:700;color:var(--t1);flex-shrink:0">${k}</span><div style="flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden"><div style="height:100%;width:${v}%;background:${barC};border-radius:4px;transition:width .6s"></div></div><span style="min-width:38px;text-align:right;font-size:11.5px;font-weight:800;color:${barC}">${v}</span></div>`;
+  }).join('');
+  const mk=(arr,color,icon,emptyMsg)=>{
+    if(!arr||!arr.length) return `<div style="padding:12px;text-align:center;color:var(--t3);font-size:11px;background:#fafafa;border-radius:8px">${emptyMsg}</div>`;
+    return arr.map(x=>typeof x==='string'?x:`<div style="padding:10px 12px;border-radius:8px;background:${color}0d;border:1px solid ${color}30;margin-bottom:6px"><div style="font-size:12.5px;font-weight:800;color:${color};margin-bottom:3px">${icon} ${x.title||''}</div><div style="font-size:11.5px;color:var(--t1);line-height:1.6">${x.detail||''}</div></div>`).join('');
+  };
+  const missList=(c.missing||[]).map(m=>`<div style="padding:8px 12px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:700;margin-bottom:6px">⚠ ${m}</div>`).join('');
+  const scripts=c.expert_scripts||{};
+  const scriptHtml=Object.keys(scripts).length?`<div style="padding:14px;border-radius:10px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);margin-top:14px">
+    <div style="font-size:12.5px;font-weight:800;color:#8b5cf6;margin-bottom:8px">💡 전문가 추천 대사 (매장에서 바로 말할 수 있는 수준)</div>
+    ${Object.entries(scripts).map(([k,v])=>`<div style="padding:8px 12px;border-radius:8px;background:#fff;border:1px solid rgba(139,92,246,.15);margin-bottom:6px"><div style="font-size:10.5px;font-weight:800;color:#8b5cf6;margin-bottom:3px">[${k}]</div><div style="font-size:12px;color:var(--t1);line-height:1.7;white-space:pre-wrap">${v}</div></div>`).join('')}
+  </div>`:'';
+  body.innerHTML=`
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:16px;margin-bottom:14px">
+      <div style="padding:16px;border:1px solid ${gradeColor}40;border-radius:14px;background:${gradeColor}0d;text-align:center">
+        <div style="font-size:40px;font-weight:900;color:${gradeColor};line-height:1">${c.grade||'—'}</div>
+        <div style="font-size:22px;font-weight:800;color:var(--t1);margin-top:4px">${c.overall_score||0}<span style="font-size:11px;color:var(--t3)">/100</span></div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:3px">완성도</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
+        <div style="font-size:12.5px;font-weight:800;color:var(--t1);margin-bottom:4px">📋 총평</div>
+        <div style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px">${c.summary||''}</div>
+        ${c.improvement_tip?`<div style="padding:8px 10px;border-radius:8px;background:#f0f9ff;border:1px solid #bfdbfe;font-size:11.5px;color:#1e40af"><b>💎 최우선 개선:</b> ${c.improvement_tip}</div>`:''}
+      </div>
+    </div>
+    ${axisKeys.length?`<div style="padding:14px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:14px"><div style="font-size:12.5px;font-weight:800;color:var(--t1);margin-bottom:10px">📊 축별 점수</div>${axisBars}</div>`:''}
+    ${missList?`<div style="margin-bottom:14px">${missList}</div>`:''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:14px">
+      <div><div style="font-size:12px;font-weight:800;color:#059669;margin-bottom:6px">✅ 살릴 것</div>${mk(c.strengths,'#10b981','✅','칭찬할 점이 아직 없어요')}</div>
+      <div><div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:6px">❌ 뺄 것</div>${mk(c.weaknesses,'#ef4444','❌','제거할 부분 없음')}</div>
+      <div><div style="font-size:12px;font-weight:800;color:#d97706;margin-bottom:6px">➕ 보완 제안</div>${mk(c.additions,'#f59e0b','➕','추가 제안 없음')}</div>
+    </div>
+    ${scriptHtml}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <div>
+        <div style="font-size:11.5px;font-weight:800;color:var(--t3);margin-bottom:4px">📝 내 초안</div>
+        <textarea readonly style="width:100%;height:200px;padding:10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px;background:#f9fafb;resize:vertical;font-family:inherit">${(scState.draft||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:800;color:var(--blue);margin-bottom:4px">✨ 수정본 (AI 반영 · 직접 수정 가능)</div>
+        <textarea id="sc-revised" oninput="scState.revised=this.value;scSaveState()" style="width:100%;height:200px;padding:10px;border:1px solid var(--blue);border-radius:8px;font-size:12px;resize:vertical;font-family:inherit;line-height:1.7">${(scState.revised||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function scGoStep3(){
+  if(!scState.coaching){alert('먼저 AI 코칭을 받으세요');return;}
+  scState.step=3;scSaveState();scRender();
+}
+
+function scRenderFinal(){
+  const c=scState.coaching;
+  const body=document.getElementById('sc-final-body');if(!body) return;
+  const scenario=scState.revised||scState.draft||'';
+  const gradeColor={S:'#dc2626',A:'#2563eb',B:'#10b981',C:'#f59e0b',D:'#9ca3af'}[c?.grade]||'var(--t3)';
+  body.innerHTML=`
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1)">최종 시나리오 완성</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:3px">${scState.product||''} · ${scState.phase||''} · ${scState.customer||''}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" onclick="scCopy()">📋 복사</button>
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" onclick="scDownloadExcel()">📥 엑셀 다운로드</button>
+        <button class="btn btn-blue" style="padding:7px 14px;font-size:12px" onclick="scReset()">🔄 새로 시작</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:180px 1fr;gap:14px;margin-bottom:16px">
+      <div style="padding:14px;border:1px solid ${gradeColor}40;border-radius:14px;background:${gradeColor}0d;text-align:center">
+        <div style="font-size:36px;font-weight:900;color:${gradeColor};line-height:1">${c?.grade||'—'}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--t1);margin-top:4px">${c?.overall_score||0}점</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">완성 등급</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--bdr);border-radius:12px">
+        <div style="font-size:12.5px;font-weight:800;color:var(--t1);margin-bottom:6px">3단계 완성 여정</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:11.5px;color:var(--t2)">
+          <div><b>① 초안</b><br><span style="color:var(--t3)">${(scState.draft||'').length}자</span></div>
+          <div><b>② AI 코칭</b><br><span style="color:var(--t3)">${c?.overall_score||0}점 · 피드백 반영</span></div>
+          <div><b>③ 최종</b><br><span style="color:var(--t3)">${scenario.length}자 · 완성</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:18px;border:1px solid var(--bdr);border-radius:12px;background:#fff">
+      <div style="font-size:12.5px;font-weight:800;color:var(--t1);margin-bottom:10px">✨ 최종 완성 시나리오</div>
+      <pre style="font-size:13px;line-height:1.9;color:var(--t1);white-space:pre-wrap;font-family:inherit;margin:0">${scenario.replace(/</g,'&lt;')}</pre>
+    </div>
+    <div style="padding:14px;border-radius:10px;background:#f0f9ff;border:1px solid #bfdbfe;margin-top:14px">
+      <div style="font-size:12px;font-weight:800;color:#1e40af;margin-bottom:6px">💡 활용 팁</div>
+      <ul style="margin:0;padding-left:18px;font-size:11.5px;color:var(--t2);line-height:1.8">
+        <li>소리 내어 2~3회 반복 연습 (실제 매장 환경에서)</li>
+        <li>동료·선배 강사와 롤플레이 후 추가 피드백</li>
+        <li>실전 후 자체 녹음/녹화 → AI 평가로 연계 활용</li>
+        <li>복사 또는 엑셀 다운로드로 보관 (브라우저 닫으면 사라짐)</li>
+      </ul>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:flex-start">
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" onclick="scGoStep2Edit()">← 수정으로 돌아가기</button>
+    </div>
+  `;
+}
+
+function scGoStep2Edit(){scState.step=2;scSaveState();scRender();}
+
+function scCopy(){
+  const text=scState.revised||scState.draft||'';
+  if(!text){alert('복사할 내용이 없습니다');return;}
+  navigator.clipboard.writeText(text).then(()=>{const t=document.createElement('div');t.textContent='✓ 복사되었습니다';t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:10px 20px;border-radius:999px;font-size:12.5px;font-weight:700;z-index:10001;box-shadow:0 4px 20px rgba(0,0,0,.2)';document.body.appendChild(t);setTimeout(()=>t.remove(),1800);}).catch(()=>{alert('복사 실패 — 수동으로 복사해주세요');});
+}
+
+function scDownloadExcel(){
+  const c=scState.coaching||{};
+  const sep='\t';
+  let out='﻿';
+  out+='AI 시나리오 코치 — 최종 완성 리포트\n\n';
+  out+=`교육 유형${sep}${scState.eduType}\n`;
+  out+=`교육 제품${sep}${scState.product}\n`;
+  out+=`시나리오 단계${sep}${scState.phase}\n`;
+  out+=`목표 고객${sep}${scState.customer}\n`;
+  out+=`매장 환경${sep}${scState.store}\n`;
+  out+=`완성 등급${sep}${c.grade||''}\n`;
+  out+=`완성 점수${sep}${c.overall_score||0}\n`;
+  out+=`총평${sep}${(c.summary||'').replace(/\n/g,' ')}\n\n`;
+  out+='── 축별 점수 ──\n';
+  Object.entries(c.axis_scores||{}).forEach(([k,v])=>{out+=`${k}${sep}${v}\n`;});
+  out+='\n── 살릴 것 ──\n';(c.strengths||[]).forEach(x=>{const s=typeof x==='string'?x:`${x.title||''} — ${x.detail||''}`;out+=s.replace(/\n/g,' ')+'\n';});
+  out+='\n── 뺄 것 ──\n';(c.weaknesses||[]).forEach(x=>{const s=typeof x==='string'?x:`${x.title||''} — ${x.detail||''}`;out+=s.replace(/\n/g,' ')+'\n';});
+  out+='\n── 보완 제안 ──\n';(c.additions||[]).forEach(x=>{const s=typeof x==='string'?x:`${x.title||''} — ${x.detail||''}`;out+=s.replace(/\n/g,' ')+'\n';});
+  out+='\n── 필수 누락 ──\n';(c.missing||[]).forEach(m=>{out+=m.replace(/\n/g,' ')+'\n';});
+  out+='\n── 전문가 추천 대사 ──\n';
+  Object.entries(c.expert_scripts||{}).forEach(([k,v])=>{out+=`[${k}]\n${v}\n\n`;});
+  out+='\n── 최종 시나리오 전문 ──\n';
+  out+=(scState.revised||scState.draft||'')+'\n';
+  const blob=new Blob([out],{type:'text/tab-separated-values;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`시나리오_코치_${scState.product||'시나리오'}_${new Date().toISOString().slice(0,10)}.xls`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function scReset(){
+  if(!confirm('새로 시작하면 현재 작업 내용이 사라집니다. 계속할까요?')) return;
+  try{localStorage.removeItem(SC_STATE_KEY);}catch(e){}
+  scState=scDefaultState();
+  ['sc-edu-type','sc-product','sc-phase','sc-customer','sc-store'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
+  const lbl=document.getElementById('sc-edu-file-label');if(lbl) lbl.textContent='파일 선택';
+  const ef=document.getElementById('sc-edu-file');if(ef) ef.value='';
+  const ta=document.getElementById('sc-draft');if(ta) ta.value='';
+  scRenderAxes();scRender();
+}
 
 // Good/Bad/Upgrade 최종 의견 — 아이콘 3개 (클릭 시 아래에 해당 내용 펼침)
 function renderOpinionTabs(containerId,goodItems,badItems,upgradeItems,prefix,summary){
