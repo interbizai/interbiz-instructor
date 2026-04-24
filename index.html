@@ -10609,7 +10609,11 @@ function openLecturer(id, fromPage){
         const userVids=(D.videos||[]).filter(v=>v.userId===u.id);
         const vidIds=new Set(userVids.map(v=>v.id));
         const vEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
-        const latestEval=vEvals.length?[...vEvals].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))[0]:null;
+        // 영상별 AI독자 우선 dedupe → 그 중 최신 하나 선택 (AI 평가 페이지 mood badge 와 소스 일치)
+        const byVidChip={};
+        vEvals.forEach(e=>{const ex=byVidChip[e.video_id];const isAi=e.eval_type==='AI독자';if(!ex||(isAi&&ex.eval_type!=='AI독자')) byVidChip[e.video_id]=e;});
+        const dedupedVEvals=Object.values(byVidChip);
+        const latestEval=dedupedVEvals.length?[...dedupedVEvals].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))[0]:null;
         const latestVidMood=latestEval?computeAiMood(latestEval.decibel,latestEval.tempo,latestEval.habits):'';
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
@@ -11026,13 +11030,14 @@ function openMoodBreakdown(userId){
   const userVids=(D.videos||[]).filter(v=>String(v.userId)===String(userId));
   const vidIds=new Set(userVids.map(v=>v.id));
   const rawVidEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
-  // 영상 1개 = 1건 (동일 video_id 의 교육맞춤/AI독자 중복 제거 — 최신 평가의 음성 데이터로 aiMood 재계산)
-  const latestByVid={};
+  // 영상 1개 = 1건. 같은 video_id 안에서 AI독자 우선 (AI 평가 페이지 mood badge 와 소스 일치)
+  const byVid={};
   rawVidEvals.forEach(e=>{
-    const ex=latestByVid[e.video_id];
-    if(!ex||new Date(e.created_at||0)>new Date(ex.created_at||0)) latestByVid[e.video_id]=e;
+    const ex=byVid[e.video_id];
+    const isAi=e.eval_type==='AI독자';
+    if(!ex || (isAi && ex.eval_type!=='AI독자')) byVid[e.video_id]=e;
   });
-  const vidEvals=Object.values(latestByVid);
+  const vidEvals=Object.values(byVid);
   const vidCounts={};
   vidEvals.forEach(e=>{
     const m=computeAiMood(e.decibel,e.tempo,e.habits);
