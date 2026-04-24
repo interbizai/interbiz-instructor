@@ -11089,16 +11089,16 @@ function openMoodBreakdown(userId){
         <span style="font-size:14px;font-weight:800;color:var(--t1)">분위기 판정 기준</span>
       </div>
       <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.6">
-        4가지 포인트로 판정합니다 — <b style="color:var(--t1)">성량</b>(데시벨) · <b style="color:var(--t1)">템포</b>(말속도) · <b style="color:var(--t1)">언어 신중도</b>(반복어 적을수록 신중) · <b style="color:var(--t1)">장난기</b>(빠른 템포 + 반복어 조합)
-        <br><span style="color:var(--t2)">※ 아래 엄격 조건에 해당하지 않으면 가장 가까운 분위기로 AI가 자동 매칭합니다.</span>
+        4가지 포인트로 판정합니다 — <b style="color:var(--t1)">성량</b> · <b style="color:var(--t1)">템포</b> · <b style="color:var(--t1)">언어 신중도</b> · <b style="color:var(--t1)">장난기</b>
+        <br><span style="color:var(--t2)">※ 아래 조건에 해당하지 않으면 가장 가까운 분위기로 AI가 자동 매칭합니다.</span>
       </div>
       ${[
-        {name:'열정적이고 에너지 넘치는',tags:[['성량','높음 (78dB↑)'],['템포','빠름 (155 WPM↑)']]},
-        {name:'밝고 경쾌한',tags:[['성량','적정 (70dB↑)'],['템포','빠름 (140 WPM↑)'],['언어 신중도','높음 (반복어 10회 미만)']]},
-        {name:'친근하고 편안한',tags:[['성량','중간 (65dB↑)'],['템포','중간 (125~150 WPM)']]},
-        {name:'전문적이고 진지한',tags:[['성량','안정 (70dB↑)'],['템포','차분 (135 WPM 이하)'],['언어 신중도','매우 높음 (반복어 5회 이하)']]},
-        {name:'차분하고 신뢰감 있는',tags:[['성량','낮음 (65dB 이하)'],['템포','느림 (130 WPM 이하)']]},
-        {name:'재미있고 유머러스한',tags:[['템포','빠름 (150 WPM↑)'],['장난기','있음 (반복어 15회 이상)']]}
+        {name:'열정적이고 에너지 넘치는',tags:[['성량','높음'],['템포','빠름']]},
+        {name:'밝고 경쾌한',tags:[['성량','적정'],['템포','빠름'],['언어 신중도','높음']]},
+        {name:'친근하고 편안한',tags:[['성량','중간'],['템포','중간']]},
+        {name:'전문적이고 진지한',tags:[['성량','안정'],['템포','차분'],['언어 신중도','매우 높음']]},
+        {name:'차분하고 신뢰감 있는',tags:[['성량','낮음'],['템포','느림']]},
+        {name:'재미있고 유머러스한',tags:[['템포','빠름'],['장난기','있음']]}
       ].map(c=>`<div style="padding:10px 12px;border-radius:10px;background:#f9fafb;border:1px solid rgba(0,0,0,.06);margin-bottom:6px">
         <div style="font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:6px">${c.name}</div>
         <div style="display:flex;gap:5px;flex-wrap:wrap">
