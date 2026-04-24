@@ -5689,7 +5689,7 @@ function renderBadgesCollapsed(badgeIds, key){
   const restId='kw-rest-'+(key||'x')+'-'+Date.now().toString(36)+Math.floor(Math.random()*1000);
   return renderBadgePills(top)
     + `<span id="${restId}" style="display:none">${renderBadgePills(rest)}</span>`
-    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'inline':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none;margin-left:4px">+${rest.length}</span>`;
+    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'contents':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none">+${rest.length}</span>`;
 }
 
 function resetAdminCoachFilters(){

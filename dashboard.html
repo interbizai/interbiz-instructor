@@ -5357,7 +5357,7 @@ const BADGE_CRITERIA=[
   {id:39,name:'우수 구성력',cat:'AI독자',tier:'gold',desc:'구성력 85점 이상'},
   {id:40,name:'강점 다수',cat:'AI독자',tier:'gold',desc:'good 타임스탬프 8개 이상'},
   {id:41,name:'약점 최소',cat:'AI독자',tier:'gold',desc:'bad 타임스탬프 1개 이하'},
-  {id:42,name:'6역량 우수',cat:'AI독자',tier:'gold',desc:'6대 역량 모두 75% 이상'},
+  {id:42,name:'전 역량 우수',cat:'AI독자',tier:'gold',desc:'AI 독자 분석 전 역량 모두 75% 이상'},
   {id:43,name:'열정 강사',cat:'누적',tier:'gold',desc:'누적 15회 이상 평가'},
   {id:44,name:'3연속 우수',cat:'누적',tier:'gold',desc:'3회 연속 80점 이상'},
   {id:45,name:'환기 꾸준',cat:'AI독자',tier:'gold',desc:'환기 간격 모두 10분 이내'},
@@ -5701,7 +5701,7 @@ function renderBadgesCollapsed(badgeIds, key){
   const restId='kw-rest-'+(key||'x')+'-'+Date.now().toString(36)+Math.floor(Math.random()*1000);
   return renderBadgePills(top)
     + `<span id="${restId}" style="display:none">${renderBadgePills(rest)}</span>`
-    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'inline':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none;margin-left:4px">+${rest.length}</span>`;
+    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'contents':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none">+${rest.length}</span>`;
 }
 
 function resetAdminCoachFilters(){
