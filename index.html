@@ -1688,7 +1688,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">교육맞춤평가 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary">분석 중...</div>
-          <div id="an-banner-keywords1" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
+          <div id="an-banner-keywords1" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
       </div>
       <!-- AI 독자 분석 -->
@@ -1709,7 +1709,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <div style="flex:1;min-width:180px">
           <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px">AI 독자 분석 요약</div>
           <div style="font-size:12px;line-height:1.6" id="an-ai-summary2">AI 분석 중...</div>
-          <div id="an-banner-keywords2" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
+          <div id="an-banner-keywords2" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
       </div>
       <!-- (과거: 두 배너 사이 겹침 — 헤더 바로 이동됨) -->
@@ -4764,7 +4764,7 @@ function renderPick(){
         </div>`;
       })()}
       <!-- 뱃지 (상위 등급 우선 + 더보기) -->
-      <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${(()=>{
           const mockR={criteriaScores:[],timestamps:[],overallScore:u.pickScore,focusScore:u.pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
           const allBadges=evaluateBadges(mockR,u.id);
@@ -10968,7 +10968,7 @@ function openLecturer(id, fromPage){
         <!-- 한줄 평가 -->
         <div style="font-size:15px;font-weight:700;color:var(--t1);font-style:italic;margin-bottom:12px;line-height:1.5">"${oneLineEval}"</div>
         <!-- 뱃지 (분류별 3개씩 + 더보기) -->
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px;align-items:center" id="my-badge-area-${u.id}"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center" id="my-badge-area-${u.id}"></div>
 
         <!-- 교육자료 + 제품 필터 (pill) -->
         <div style="display:flex;gap:6px;margin-bottom:14px">
