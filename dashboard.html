@@ -13035,5 +13035,15 @@ window.showPage=function(id){
 };
 </script>
 </div><!-- /g-main -->
+
+<!-- 전역 footer — 로그인 포함 모든 페이지 노출 -->
+<style>
+#global-footer{position:fixed;right:12px;bottom:6px;font-size:10.5px;color:#94a3b8;z-index:250;user-select:none;background:rgba(255,255,255,.88);padding:4px 12px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+#global-footer a{color:#475569;text-decoration:none;font-weight:600}
+#global-footer a:hover{color:var(--blue);text-decoration:underline}
+@media (max-width:900px){#global-footer{bottom:68px}}
+@media print{#global-footer{display:none!important}}
+</style>
+<div id="global-footer">수정요청 <a href="mailto:sanggon.lee@interbiz.co.kr">sanggon.lee@interbiz.co.kr</a></div>
 </body>
 </html>
