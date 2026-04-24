@@ -6471,6 +6471,9 @@ function mapVertexToLegacy(critRes,aiRes){
     good:main.good||[], bad:main.bad||[], upgrade:main.upgrade||[],
     solution:(main.bad||[]).map((b,i)=>`${i+1}. ${b.title}: ${b.solution}`).join('<br>'),
     scenario:(c.scenarios||[]).map(s=>`${s.situation}: ${s.suggested_line}`).join('<br>'),
+    // 시나리오/교안 뱃지 판정에 필요한 필드 (mapVertexToLegacy 기본 누락 방지)
+    eduFileUrl:c.edu_file_url||a.edu_file_url||'',
+    rubric_alignment_score:c.rubric_alignment_score||a.rubric_alignment_score||0,
     _critRaw:c, _aiRaw:a
   };
 }
@@ -9309,7 +9312,8 @@ function openVoiceResult(vaId){
       mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo,
       rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
       rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
-      summary_opinion:row.speech_report?.summary_opinion||''
+      summary_opinion:row.speech_report?.summary_opinion||'',
+      edu_file_url:row.edu_file_url||''
     }:null;
     const aiRes=normalizeVertexResult(toVertex(aiRow));
     if(aiRes){
@@ -12192,7 +12196,8 @@ function openVideo(id){
       mood:row.mood, decibel:row.decibel, tempo_wpm:row.tempo,
       rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
       rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
-      summary_opinion:row.speech_report?.summary_opinion||''
+      summary_opinion:row.speech_report?.summary_opinion||'',
+      edu_file_url:row.edu_file_url||''
     }:null;
     const critResult=normalizeVertexResult(toVertex(critRow));
     const aiResult=normalizeVertexResult(toVertex(aiRow));
