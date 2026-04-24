@@ -10614,10 +10614,10 @@ function openLecturer(id, fromPage){
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
         if(!latestVidMood&&!latestVoiceMood) return '';
-        const moodChip=(label,val)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;gap:5px;padding:4px 2px;font-size:12px;color:#000;white-space:nowrap;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'"><span style="font-weight:700">${label}</span><span style="font-weight:600">${val}</span></span>`:'';
-        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end;z-index:2">
-          ${moodChip('분위기',latestVidMood)}
-          ${moodChip('스피치',latestVoiceMood)}
+        const moodChip=(val)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;padding:4px 2px;font-size:12px;color:#000;white-space:nowrap;cursor:pointer;font-weight:700;transition:opacity .15s" onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'">${val}</span>`:'';
+        const sep=(latestVidMood&&latestVoiceMood)?`<span style="color:#94a3b8;font-size:12px">·</span>`:'';
+        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;z-index:2">
+          ${moodChip(latestVidMood)}${sep}${moodChip(latestVoiceMood)}
         </div>`;
       })()}
       <!-- 사진 + Lv 뱃지 -->
@@ -10992,18 +10992,19 @@ function openGradeCriteria(userId,avg,currentGrade){
   document.body.appendChild(overlay);
 }
 
-// 강의 분위기 AI 판정 — 영상 결과 헤더(an-mood-badge)와 동일 로직. 음성 데이터(dB+tempo+반복어) 기반.
+// 강의 분위기 AI 판정 — 4차원(성량·템포·언어 신중도·장난기) 기반. 영상 결과 헤더(an-mood-badge)와 동일 로직.
+// 성량 = 데시벨 / 템포 = WPM / 언어 신중도 = 반복어 적을수록 높음 / 장난기 = 반복어 많음 + 빠른 템포 조합
 function computeAiMood(decibel, tempo, habits){
   const db=Number(decibel)||0, tp=Number(tempo)||0;
   const h=(habits||[]).reduce((a,x)=>a+(x.count||0),0);
-  let m='밝고 경쾌한';
-  if(db>=78&&tp>=155) m='열정적이고 에너지 넘치는';
-  else if(db>=70&&tp>=140&&h<10) m='밝고 경쾌한';
-  else if(db>=65&&tp>=130&&tp<=150) m='친근하고 편안한';
-  else if(db>=70&&tp<=135) m='전문적이고 진지한';
-  else if(db<=65&&tp<=130) m='차분하고 신뢰감 있는';
-  else if(tp>=150&&h>15) m='재미있고 유머러스한';
-  return m;
+  // 우선순위 판정 (먼저 매칭되는 분위기 반환)
+  if(tp>=150 && h>=15) return '재미있고 유머러스한';          // 장난기 높음 (빠른 템포 + 많은 반복어)
+  if(db>=78 && tp>=155) return '열정적이고 에너지 넘치는';       // 에너지 폭발 (큰 성량 + 빠른 템포)
+  if(db>=70 && tp<=135 && h<=5) return '전문적이고 진지한';     // 안정 성량 + 차분 템포 + 언어 매우 신중
+  if(db>=70 && tp>=140 && h<10) return '밝고 경쾌한';           // 적정 성량 + 빠른 템포 + 언어 신중
+  if(db<=65 && tp<=130) return '차분하고 신뢰감 있는';           // 낮은 성량 + 느린 템포
+  if(db>=65 && tp>=125 && tp<=150) return '친근하고 편안한';     // 중간 성량 + 중간 템포
+  return '밝고 경쾌한'; // 기본값
 }
 
 // 분위기 통계 모달 — 영상(aiMood 재계산) + 스피치(voice_evals.tone) 누적 집계
@@ -11065,12 +11066,34 @@ function openMoodBreakdown(userId){
       ${buildGrid(vidCounts,'#dc2626')}
     </div>
 
-    <div>
+    <div style="margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(139,92,246,.15)">
         <span style="font-size:14px;font-weight:800;color:#8b5cf6">스피치 분위기</span>
         <span style="font-size:11px;font-weight:700;color:var(--t3);margin-left:auto">총 ${voiceTotal}건</span>
       </div>
       ${buildGrid(voiceCounts,'#8b5cf6')}
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+        <span style="font-size:14px;font-weight:800;color:var(--t1)">분위기 판정 기준</span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.6">
+        4가지 포인트로 판정합니다 — <b style="color:var(--t1)">성량</b>(데시벨) · <b style="color:var(--t1)">템포</b>(말속도) · <b style="color:var(--t1)">언어 신중도</b>(반복어 적을수록 신중) · <b style="color:var(--t1)">장난기</b>(빠른 템포 + 반복어 조합)
+      </div>
+      ${[
+        {name:'열정적이고 에너지 넘치는',tags:[['성량','높음 (78dB↑)'],['템포','빠름 (155 WPM↑)']]},
+        {name:'밝고 경쾌한',tags:[['성량','적정 (70dB↑)'],['템포','빠름 (140 WPM↑)'],['언어 신중도','높음 (반복어 10회 미만)']]},
+        {name:'친근하고 편안한',tags:[['성량','중간 (65dB↑)'],['템포','중간 (125~150 WPM)']]},
+        {name:'전문적이고 진지한',tags:[['성량','안정 (70dB↑)'],['템포','차분 (135 WPM 이하)'],['언어 신중도','매우 높음 (반복어 5회 이하)']]},
+        {name:'차분하고 신뢰감 있는',tags:[['성량','낮음 (65dB 이하)'],['템포','느림 (130 WPM 이하)']]},
+        {name:'재미있고 유머러스한',tags:[['템포','빠름 (150 WPM↑)'],['장난기','있음 (반복어 15회 이상)']]}
+      ].map(c=>`<div style="padding:10px 12px;border-radius:10px;background:#f9fafb;border:1px solid rgba(0,0,0,.06);margin-bottom:6px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:6px">${c.name}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${c.tags.map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:#fff;border:1px solid rgba(0,0,0,.08);font-size:10.5px"><span style="color:var(--t3);font-weight:700">${k}</span><span style="color:var(--t1);font-weight:600">${v}</span></span>`).join('')}
+        </div>
+      </div>`).join('')}
     </div>
   </div>`;
   document.body.appendChild(overlay);
