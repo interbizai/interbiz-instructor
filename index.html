@@ -2674,7 +2674,6 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <div class="tab-pane" id="tab-뱃지기준">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div style="font-size:15px;font-weight:800;color:var(--t1)">뱃지 기준 <span style="font-size:12px;color:var(--t3)" id="badge-count-label"></span></div>
-      <button class="btn btn-blue" style="padding:8px 16px;font-size:12px" onclick="downloadBadgeCriteria()">엑셀 다운로드</button>
     </div>
     <!-- 트랙 요약 카드 -->
     <div id="badge-track-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
@@ -4768,8 +4767,7 @@ function renderPick(){
       <!-- 뱃지 (상위 등급 우선 + 더보기) -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${(()=>{
-          const mockR={criteriaScores:[],timestamps:[],overallScore:u.pickScore,focusScore:u.pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
-          const allBadges=evaluateBadges(mockR,u.id);
+          const allBadges=getAccumulatedBadges(u.id);
           if(!allBadges.length) return '<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 뱃지 생성</span>';
           const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
           const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
@@ -5821,6 +5819,38 @@ function evaluateBadges(r, userId){
 
 // 뱃지 ID → 이름/분류/등급 조회
 function getBadgeInfo(id){return BADGE_CRITERIA.find(b=>b.id===id)||{name:'?',cat:'?',tier:'silver',desc:''};}
+
+// 유저의 모든 평가에서 획득한 뱃지 합집합 — MY 프로필·인터PICK·전체 모달 공통 사용
+function getAccumulatedBadges(userId){
+  if(!userId) return [];
+  const uVids=(D.videos||[]).filter(v=>v.userId===userId);
+  const vidIds=new Set(uVids.map(v=>v.id));
+  const evals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
+  if(!evals.length){
+    const u=(D.users||[]).find(x=>x.id===userId);
+    const mock={criteriaScores:[],timestamps:[],overallScore:u?.pickScore||0,focusScore:(u?.pickScore||0)*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[],good:[],bad:[],upgrade:[]};
+    return evaluateBadges(mock,userId);
+  }
+  const all=new Set();
+  evals.forEach(e=>{
+    const r={
+      criteriaScores:(e.categories||[]).map(x=>({name:x.name,score:x.score||0,max:x.max||0})),
+      timestamps:(e.sub_scores||[]).map(s=>({
+        category:s.category||'',item:s.sub_item||'',criteria:s.criterion||'',
+        type:s.level==='good'?'good':s.level==='bad'?'bad':s.level==='na'?'na':'tip',
+        score:s.score||0,maxScore:s.max||0,text:s.analysis||''
+      })),
+      good:e.good||[],bad:e.bad||[],upgrade:e.upgrade||[],
+      overallScore:e.overall_score||0,focusScore:e.overall_score||0,
+      decibel:e.decibel||0,tempo:e.tempo||0,
+      habits:e.habits||[],engagementGaps:e.engagement_gaps||[],
+      rubric_alignment_score:(e.speech_report&&e.speech_report.rubric_alignment_score)||0,
+      eduFileUrl:e.edu_file_url||''
+    };
+    evaluateBadges(r,userId).forEach(id=>all.add(id));
+  });
+  return [...all].sort((a,b)=>a-b);
+}
 
 // 뱃지 HTML 렌더 (pill 형태) — 등급별 컬러 적용
 function renderBadgePills(badgeIds){
@@ -10695,10 +10725,8 @@ function pauseAnVideo(){
 function renderMyBadges(userId,avgScore){
   const area=document.getElementById('my-badge-area-'+userId);
   if(!area) return;
-  const mockR={criteriaScores:[],timestamps:[],overallScore:avgScore,focusScore:avgScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
-  const allBadges=evaluateBadges(mockR,userId);
+  const allBadges=getAccumulatedBadges(userId);
   if(!allBadges.length){area.innerHTML='<span style="font-size:11px;color:var(--t3)">AI 분석 후 뱃지 생성</span>';return;}
-  // 등급 우선순위: 희귀(legend) → 흔함(bronze)
   const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
   const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
   const shownMax=6;
@@ -10786,8 +10814,7 @@ function _switchOpTab_old(prefix,tab,btn){
 }
 
 function showAllBadges(userId,pickScore){
-  const mockR={criteriaScores:[],timestamps:[],overallScore:pickScore,focusScore:pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
-  const allBadges=evaluateBadges(mockR,userId);
+  const allBadges=getAccumulatedBadges(userId);
   const u=D.users?.find(x=>x.id===userId);
   const overlay=document.createElement('div');
   overlay.className='overlay show';
