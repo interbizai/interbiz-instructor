@@ -5480,8 +5480,9 @@ async function addBadgeCriteria(){
   const tier=document.getElementById('badge-add-tier')?.value||'silver';
   const desc=document.getElementById('badge-add-desc')?.value?.trim();
   if(!name||!desc){alert('뱃지명과 달성 기준을 입력하세요');return;}
-  // 커스텀 뱃지는 71번부터 (기본 70개 보존)
-  const order=Math.max(71,(D.badgeCriteria||[]).reduce((m,x)=>Math.max(m,x.sort_order||0),70)+1);
+  // 커스텀 뱃지는 기본 뱃지 개수+1번부터 (기본 BADGE_CRITERIA.length 개 보존)
+  const _base=BADGE_CRITERIA.length;
+  const order=Math.max(_base+1,(D.badgeCriteria||[]).reduce((m,x)=>Math.max(m,x.sort_order||0),_base)+1);
   const payload={name,category:cat,description:desc,sort_order:order};
   // tier 컬럼이 DB에 없을 수 있으므로 시도 후 실패 시 재시도
   let error=null;
@@ -5516,16 +5517,17 @@ async function editBadgeCriteria(id){
   renderBadgeCriteria();
 }
 
-// 뱃지 기준 테이블 렌더 (기본 70 + DB 커스텀)
+// 뱃지 기준 테이블 렌더 (기본 BADGE_CRITERIA + DB 커스텀)
 function renderBadgeCriteria(){
   const tbody=el('badge-criteria-tbody');
   if(!tbody) return;
   const catColors={'교육맞춤':'var(--blue)','평가안':'var(--blue)','AI독자':'var(--green)','누적':'var(--purple)'};
-  // 기본 70 (BADGE_CRITERIA 하드코딩) + DB 커스텀 (id>70 또는 sort_order>70)
+  // 기본 (BADGE_CRITERIA 하드코딩) + DB 커스텀 (id/sort_order 가 기본 개수 초과)
+  const _base=BADGE_CRITERIA.length;
   const defaults=BADGE_CRITERIA.map(b=>({id:b.id,name:b.name,category:b.cat,description:b.desc,tier:b.tier,_default:true}));
-  const customs=(D.badgeCriteria||[]).filter(db=>(db.sort_order||0)>70||(db.id||0)>70).map(c=>({id:c.id,name:c.name,category:c.category,description:c.description,tier:c.tier||null,_default:false}));
+  const customs=(D.badgeCriteria||[]).filter(db=>(db.sort_order||0)>_base||(db.id||0)>_base).map(c=>({id:c.id,name:c.name,category:c.category,description:c.description,tier:c.tier||null,_default:false}));
   const list=[...defaults,...customs];
-  const countLabel=el('badge-count-label');if(countLabel) countLabel.textContent=`(${list.length}개 · 기본 70 + 커스텀 ${customs.length})`;
+  const countLabel=el('badge-count-label');if(countLabel) countLabel.textContent=`(${list.length}개 · 기본 ${_base} + 커스텀 ${customs.length})`;
   tbody.innerHTML=list.map((b,i)=>{
     const ts=TIER_STYLE[b.tier]||null;
     const tierChip=ts?`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${ts.label}</span>`:`<span style="font-size:10px;color:var(--t3)">—</span>`;
