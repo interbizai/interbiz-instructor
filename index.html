@@ -2646,7 +2646,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
               <button id="pick-cat-multi-btn" onclick="togglePickCatMulti()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">전체 교육종류</button>
               <div id="pick-cat-multi-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;width:280px;z-index:100;max-height:380px;overflow-y:auto;color:var(--t1);word-break:keep-all"></div>
             </div>
-            <select id="pick-prod-filter" onchange="renderPickVideos()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
+            <select id="pick-prod-filter" onchange="refreshPickAll()" style="padding:4px 24px 4px 12px;border:1px solid #e5e7eb;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--t2);background:#fff;cursor:pointer;max-width:140px">
               <option value="">전체 제품</option>
             </select>
           </div>
@@ -4780,6 +4780,21 @@ function togglePhotoScroll(){
   if(playIco) playIco.style.display=paused?'':'none';
 }
 
+function pickActiveFilter(){
+  const cats=window._pickCatSel||new Set();
+  const prodEl=document.getElementById('pick-prod-filter');
+  const prod=prodEl?prodEl.value:'';
+  return {cats,prod,active:cats.size>0||!!prod};
+}
+function applyPickFilter(vids,f){
+  if(!f||!f.active) return vids;
+  return vids.filter(vd=>{
+    if(f.cats.size){const vc=vd.eduType||vd.edu_type||'';if(!f.cats.has(vc)) return false;}
+    if(f.prod){const vp=vd.productName||vd.product_name||vd.videoType||vd.video_type||'';if(!vp.includes(f.prod)) return false;}
+    return true;
+  });
+}
+
 function renderPick(){
   const now=new Date();
   const monthLabel=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
@@ -4787,40 +4802,43 @@ function renderPick(){
   renderPickPhotoCollage();
   loadHeroText();
 
-  // 당월 기준 데이터 — 영상 평가만
+  // 현재 필터 (교육종류 다중 + 제품)
+  const f=pickActiveFilter();
+
+  // 당월 기준 데이터 — 영상 평가만 (+ 필터 적용)
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
   const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
-  const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthVids=applyPickFilter(monthVidsRaw,f);
   const totalEvals=monthVids.length;
 
-  // 당월 영상 평가 받은 고유 강사 수 (evaluations 기반)
+  // 당월 영상 평가 받은 고유 강사 수 (+ 필터 적용)
   const monthVidIds=new Set(monthVids.map(v=>v.id));
   const monthEvaledVidIds=new Set((D.evaluations||[]).filter(e=>e.video_id&&e.overall_score>0&&monthVidIds.has(e.video_id)).map(e=>e.video_id));
   const evaledUserIdsThisMonth=new Set(monthVids.filter(v=>monthEvaledVidIds.has(v.id)).map(v=>v.userId));
   const cumUsers=evaledUserIdsThisMonth.size;
 
-  // 전체 평균 AI 점수 — 영상 평가만 (evaluations 테이블 overall_score 우선, 없으면 타임스탬프 기반)
+  // 전체 평균 AI 점수 — 영상 평가만 (+ 필터 적용)
   const videoEvalMap={};
   (D.evaluations||[]).forEach(e=>{if(e.video_id&&e.overall_score>0){const k=e.video_id+'_'+e.eval_type;videoEvalMap[k]=e.overall_score;}});
-  const allVidScores=(D.videos||[]).map(v=>{
-    // evaluations 테이블의 AI독자 점수 우선
+  const scopedVids=applyPickFilter(D.videos||[],f);
+  const allVidScores=scopedVids.map(v=>{
     const aiSc=videoEvalMap[v.id+'_AI독자'];
     if(aiSc) return aiSc;
     const critSc=videoEvalMap[v.id+'_평가안기준'];
     if(critSc) return critSc;
-    // 폴백: 타임스탬프 기반 추정
     const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
     return Math.min(100,g*10+(v.timestamps||[]).length*3);
   });
   const allScoresAll=allVidScores.filter(s=>s>0);
   const avgAll=allScoresAll.length?(allScoresAll.reduce((a,b)=>a+b,0)/allScoresAll.length).toFixed(1):'0.0';
 
-  // 이번 주 신규 콘텐츠 (월~일) — 영상 평가 받은 것만 기준
+  // 이번 주 신규 콘텐츠 (+ 필터 적용)
   const todayDow=now.getDay();
   const daysSinceMon=todayDow===0?6:todayDow-1;
   const weekStart=new Date(thisYear,thisMonth,now.getDate()-daysSinceMon,0,0,0);
   const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
-  const weekNew=(D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}).length;
+  const weekNew=applyPickFilter((D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}),f).length;
 
   // 통계 카드
   const statsEl=el('pick-stats');
@@ -4837,7 +4855,7 @@ function renderPick(){
   // TOP 3 강사 (당월 영상평가만)
   const prevMonth=now.getMonth()===0?11:now.getMonth()-1;
   const prevYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
-  const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  const prevVids=applyPickFilter((D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;}),f);
 
   const vidScore=(v)=>{
     // 교육맞춤평가 점수 우선, 없으면 AI독자, 없으면 타임스탬프 폴백
@@ -5213,17 +5231,18 @@ function pickCatOutsideClose(e){
     if(p) p.style.display='none';
   }
 }
+function refreshPickAll(){ renderPick(); renderPickVideos(); }
 function togglePickCat(cat,checked){
   if(checked) window._pickCatSel.add(cat); else window._pickCatSel.delete(cat);
   updatePickCatBtn();
-  renderPickVideos();
+  refreshPickAll();
 }
 function clearPickCatFilter(){
   window._pickCatSel=new Set();
   const p=document.getElementById('pick-cat-multi-panel');
   if(p) p.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
   updatePickCatBtn();
-  renderPickVideos();
+  refreshPickAll();
 }
 function updatePickCatBtn(){
   const btn=document.getElementById('pick-cat-multi-btn');
