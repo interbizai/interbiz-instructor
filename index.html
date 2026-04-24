@@ -4767,7 +4767,8 @@ function renderPick(){
       <!-- 뱃지 (상위 등급 우선 + 더보기) -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${(()=>{
-          const allBadges=getAccumulatedBadges(u.id);
+          // 교육맞춤평가 카테고리만 (AI독자·누적 제외)
+          const allBadges=getAccumulatedBadges(u.id).filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
           if(!allBadges.length) return '<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 뱃지 생성</span>';
           const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
           const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
@@ -10747,7 +10748,8 @@ function pauseAnVideo(){
 function renderMyBadges(userId,avgScore){
   const area=document.getElementById('my-badge-area-'+userId);
   if(!area) return;
-  const allBadges=getAccumulatedBadges(userId);
+  // 교육맞춤평가 카테고리만 (AI독자·누적 제외)
+  const allBadges=getAccumulatedBadges(userId).filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
   if(!allBadges.length){area.innerHTML='<span style="font-size:11px;color:var(--t3)">AI 분석 후 뱃지 생성</span>';return;}
   const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
   const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
@@ -10836,7 +10838,8 @@ function _switchOpTab_old(prefix,tab,btn){
 }
 
 function showAllBadges(userId,pickScore){
-  const allBadges=getAccumulatedBadges(userId);
+  // 교육맞춤평가 카테고리만 (AI독자·누적 제외)
+  const allBadges=getAccumulatedBadges(userId).filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
   const u=D.users?.find(x=>x.id===userId);
   const overlay=document.createElement('div');
   overlay.className='overlay show';
