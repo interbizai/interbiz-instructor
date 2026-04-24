@@ -2203,24 +2203,24 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       </div>
     </div>
 
-    <!-- 교육 설정 -->
+    <!-- 교육 설정 (전부 선택 사항 — 비워두면 '전체 기준'으로 AI 판단) -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 유형</div>
-        <select id="sc-edu-type" onchange="scSaveField('eduType',this.value);scRenderAxesFromPreset()" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
-          <option value="">선택하세요</option>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 유형 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
+        <select id="sc-edu-type" onchange="scSaveField('eduType',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
+          <option value="">전체 기준</option>
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 제품</div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육 제품 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <select id="sc-product" onchange="scSaveField('product',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
-          <option value="">선택하세요</option>
+          <option value="">전체 기준</option>
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">시나리오 단계</div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">시나리오 단계 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <select id="sc-phase" onchange="scSaveField('phase',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
-          <option value="">선택하세요</option>
+          <option value="">전체 기준</option>
           <option>오프닝·관심 유도</option>
           <option>Needs 파악</option>
           <option>전개·FAB 설명</option>
@@ -2233,21 +2233,29 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">목표 고객 유형</div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">목표 고객 유형 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <select id="sc-customer" onchange="scSaveField('customer',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
-          <option value="">선택하세요</option>
-          <option>신혼부부</option>
-          <option>가족 (아이 있음)</option>
-          <option>가족 (일반)</option>
-          <option>1인가구</option>
-          <option>시니어</option>
-          <option>VIP/프리미엄</option>
+          <option value="">전체 기준</option>
+          <optgroup label="일반 고객">
+            <option>신혼부부</option>
+            <option>가족 (아이 있음)</option>
+            <option>가족 (일반)</option>
+            <option>1인가구</option>
+            <option>시니어</option>
+            <option>VIP/프리미엄</option>
+          </optgroup>
+          <optgroup label="내부 대상">
+            <option>강사</option>
+            <option>관리자</option>
+            <option>매니저</option>
+          </optgroup>
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">매장 환경</div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">매장 환경 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <select id="sc-store" onchange="scSaveField('store',this.value)" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px">
-          <option value="">선택하세요</option>
+          <option value="">전체 기준</option>
+          <option>강의실</option>
           <option>LG 베스트샵</option>
           <option>백화점</option>
           <option>양판점 (하이마트·전자랜드)</option>
@@ -2256,7 +2264,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         </select>
       </div>
       <div>
-        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육자료 첨부 (선택)</div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">교육자료 첨부 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <label class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px;cursor:pointer;width:100%;justify-content:center">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span id="sc-edu-file-label">파일 선택</span>
@@ -2265,13 +2273,13 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       </div>
     </div>
 
-    <!-- 필수 포함 요소 -->
+    <!-- 시나리오에 포함할 요소 (선택) -->
     <div style="padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:800;color:var(--t1)">필수 포함 요소 <span style="font-size:10.5px;color:var(--t3);font-weight:600;margin-left:4px">· 항목 편집·추가·삭제 가능</span></div>
+        <div style="font-size:13px;font-weight:800;color:var(--t1)">시나리오에 포함할 요소 <span style="font-size:10.5px;color:var(--t3);font-weight:500;margin-left:4px">· 기본값 제공 · 자유 편집·추가·삭제</span></div>
         <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="scAddAxis()">+ 항목 추가</button>
       </div>
-      <div id="sc-axes-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px"></div>
+      <div id="sc-axes-list" style="display:flex;flex-direction:column;gap:3px"></div>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:8px">
@@ -10985,13 +10993,13 @@ function openScenario(){ showPage('page-scenario'); scInit(); }
 // AI 시나리오 코치 (세계적 가전 판매 강사 시점)
 // ============================================================
 const SC_DEFAULT_AXES=[
-  {id:'numeric',name:'수치 근거',hint:'구체 수치·단위 (예: 0.5℃, 5%, 월 1만원)',checked:true},
-  {id:'fab',name:'FAB 구조',hint:'특징·장점·이익 구분 설명',checked:true},
-  {id:'competitor',name:'경쟁사 비교',hint:'타사 대비 우위 시연',checked:true,fixed:true},
-  {id:'demo',name:'실물 시연',hint:'직접 체험·실물 확인 유도',checked:true,fixed:true},
-  {id:'metaphor',name:'비유·일상화',hint:'기술용어 → 쉬운 비유',checked:true},
-  {id:'objection',name:'반론 대응',hint:'고객 의문·거절 처리',checked:true},
-  {id:'addon',name:'부가 제안',hint:'설치·할부·보증·A/S',checked:true}
+  {id:'numeric',name:'수치 근거',hint:'구체 수치·단위 (예: 0.5℃, 5%, 월 1만원)'},
+  {id:'fab',name:'FAB 구조',hint:'특징·장점·이익 구분 설명'},
+  {id:'competitor',name:'경쟁사 비교',hint:'타사 대비 우위 시연'},
+  {id:'demo',name:'실물 시연',hint:'직접 체험·실물 확인 유도'},
+  {id:'metaphor',name:'비유·일상화',hint:'기술용어 → 쉬운 비유'},
+  {id:'objection',name:'반론 대응',hint:'고객 의문·거절 처리'},
+  {id:'addon',name:'부가 제안',hint:'설치·할부·보증·A/S'}
 ];
 const SC_KEYWORDS={
   numeric:['℃','도','%','원','kg','L','리터','dB','CMH','와트','W','배','시간','분','평','인치','단계','단위','절약','절감'],
@@ -11031,7 +11039,7 @@ function scSaveField(k,v){scState[k]=v;scSaveState();}
 function scFillEduTypes(){
   const sel=document.getElementById('sc-edu-type');if(!sel) return;
   const types=(window.getEduTypes?getEduTypes():['판매경쟁력상황실','신입교육','심화교육','현장실습']);
-  sel.innerHTML='<option value="">선택하세요</option>'+types.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('');
+  sel.innerHTML='<option value="">전체 기준</option>'+types.map(t=>`<option${t===scState.eduType?' selected':''}>${t}</option>`).join('');
 }
 function scFillProducts(){
   const sel=document.getElementById('sc-product');if(!sel) return;
@@ -11041,27 +11049,24 @@ function scFillProducts(){
       opts.push(`<optgroup label="${g}">`+items.map(p=>`<option${p===scState.product?' selected':''}>${p}</option>`).join('')+'</optgroup>');
     });
   }
-  sel.innerHTML='<option value="">선택하세요</option>'+opts.join('');
+  sel.innerHTML='<option value="">전체 기준</option>'+opts.join('');
 }
-
-function scRenderAxesFromPreset(){/* 차후 프리셋 확장: 현재는 기본 axes 유지 */}
 
 function scRenderAxes(){
   const area=document.getElementById('sc-axes-list');if(!area) return;
-  area.innerHTML=scState.axes.map((a,i)=>`<div class="sc-axis-item${a.fixed?' fixed':''}">
-    <input type="checkbox" ${a.checked!==false?'checked':''} ${a.fixed?'disabled':''} onchange="scToggleAxis(${i},this.checked)">
-    <div style="flex:1;min-width:0">
-      <div class="ax-name">${a.name}</div>
-      <div class="ax-hint">${a.hint||''}</div>
-    </div>
-    <button onclick="scEditAxis(${i})">편집</button>
-    ${a.fixed?'':`<button onclick="scRemoveAxis(${i})" style="color:#dc2626">삭제</button>`}
+  if(!scState.axes.length){area.innerHTML='<div style="padding:10px;text-align:center;font-size:11.5px;color:var(--t3)">포함 요소가 없습니다. 필요 시 "+ 항목 추가"로 넣어주세요.</div>';return;}
+  area.innerHTML=scState.axes.map((a,i)=>`<div style="display:flex;align-items:baseline;gap:8px;padding:6px 10px;border-radius:6px;font-size:12.5px;line-height:1.6" onmouseover="this.style.background='rgba(0,0,0,.03)'" onmouseout="this.style.background='transparent'">
+    <span style="color:var(--t3);font-weight:700;min-width:18px">${i+1}.</span>
+    <span style="flex:1"><b style="color:var(--t1)">${a.name}</b>${a.hint?` <span style="color:var(--t3);font-size:11.5px">— ${a.hint}</span>`:''}</span>
+    <span style="display:flex;gap:8px;font-size:10.5px;flex-shrink:0">
+      <a style="color:var(--blue);cursor:pointer;font-weight:700" onclick="scEditAxis(${i})">편집</a>
+      <a style="color:#dc2626;cursor:pointer;font-weight:700" onclick="scRemoveAxis(${i})">삭제</a>
+    </span>
   </div>`).join('');
 }
-function scToggleAxis(i,v){scState.axes[i].checked=v;scSaveState();scUpdateDraftAxes();}
-function scEditAxis(i){const a=scState.axes[i];const n=prompt('항목명',a.name);if(n==null) return;const h=prompt('설명(힌트)',a.hint||'');if(h==null) return;a.name=n.trim()||a.name;a.hint=h.trim();scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scEditAxis(i){const a=scState.axes[i];const n=prompt('항목명',a.name);if(n==null) return;const h=prompt('설명(힌트) — 생략 가능',a.hint||'');if(h==null) return;a.name=n.trim()||a.name;a.hint=h.trim();scSaveState();scRenderAxes();scUpdateDraftAxes();}
 function scRemoveAxis(i){if(!confirm('삭제할까요?')) return;scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();}
-function scAddAxis(){const n=prompt('새 항목명');if(!n) return;const h=prompt('설명(힌트) — 생략 가능')||'';scState.axes.push({id:'custom_'+Date.now(),name:n.trim(),hint:h.trim(),checked:true});scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scAddAxis(){const n=prompt('새 항목명');if(!n) return;const h=prompt('설명(힌트) — 생략 가능')||'';scState.axes.push({id:'custom_'+Date.now(),name:n.trim(),hint:h.trim()});scSaveState();scRenderAxes();scUpdateDraftAxes();}
 
 function scOnDraftInput(v){
   scState.draft=v;scSaveState();
@@ -11071,10 +11076,10 @@ function scOnDraftInput(v){
 function scUpdateDraftAxes(){
   const box=document.getElementById('sc-draft-axes-status');if(!box) return;
   const text=scState.draft||'';
-  const checked=scState.axes.filter(a=>a.checked!==false);
-  box.innerHTML=checked.map(a=>{
+  if(!scState.axes.length){box.innerHTML='<span style="font-size:11px;color:var(--t3)">포함 요소가 설정되지 않음 — 자유 작성</span>';return;}
+  box.innerHTML=scState.axes.map(a=>{
     const kw=SC_KEYWORDS[a.id]||[];
-    const hits=kw.filter(k=>text.includes(k)).length;
+    const hits=kw.length?kw.filter(k=>text.includes(k)).length:0;
     const cls=hits>=2?'hit':hits===1?'partial':'miss';
     const ic=hits>=2?'●':hits===1?'◐':'○';
     return `<span class="sc-kw-chip ${cls}" title="${a.hint||''}">${ic} ${a.name}</span>`;
@@ -11102,10 +11107,7 @@ function scRender(){
 }
 
 function scGoStep0(){scState.step=0;scSaveState();scRender();}
-function scGoStep1(){
-  if(!scState.eduType||!scState.product){alert('교육 유형·제품을 선택해주세요');return;}
-  scState.step=1;scSaveState();scRender();
-}
+function scGoStep1(){scState.step=1;scSaveState();scRender();}
 
 async function scRunAI(){
   if((scState.draft||'').trim().length<30){alert('초안을 30자 이상 작성해주세요');return;}
@@ -11130,7 +11132,7 @@ async function scRunAI(){
         mode:'scenario_coach',
         edu_type:scState.eduType,product:scState.product,phase:scState.phase,
         customer:scState.customer,store:scState.store,
-        axes:scState.axes.filter(a=>a.checked!==false).map(a=>({name:a.name,hint:a.hint||''})),
+        axes:scState.axes.map(a=>({name:a.name,hint:a.hint||''})),
         draft:scState.draft,
         edu_file_url:eduUrl,edu_file_mime:eduMime
       })
