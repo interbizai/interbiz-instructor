@@ -4772,7 +4772,7 @@ function renderPick(){
           const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
           const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
           const shown=sorted.slice(0,3);
-          const pills=shown.map(id=>{const b=getBadgeInfo(id);const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;return `<span style="padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${b.name}</span>`;}).join('');
+          const pills=shown.map(id=>{const b=getBadgeInfo(id);const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;return `<span style="padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:${ts.bg};color:#1a202c;border:1px solid ${ts.border}">${b.name}</span>`;}).join('');
           const rest=allBadges.length-shown.length;
           const moreBtnHtml=rest>0?`<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer" onclick="event.stopPropagation();showAllBadges(${u.id},${u.pickScore})">+${rest}</span>`:'';
           return pills+moreBtnHtml;
@@ -5670,8 +5670,9 @@ function renderBadgePills(badgeIds){
     const b=getBadgeInfo(id);
     const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;
     const tipPrefix=ts?`[${ts.label}] `:'';
+    // 글씨는 검정 고정, 배경·테두리만 등급 컬러
     return `<span class="eval-kw-wrap" style="position:relative;display:inline-block" onmouseenter="this.querySelector('.badge-tip').style.display='block'" onmouseleave="this.querySelector('.badge-tip').style.display='none'" onclick="var t=this.querySelector('.badge-tip');t.style.display=t.style.display==='block'?'none':'block'">
-      <span class="eval-kw-pill" style="background:${ts.bg};color:${ts.color};border-color:${ts.border}">${b.name}</span>
+      <span class="eval-kw-pill" style="background:${ts.bg};color:#1a202c;border-color:${ts.border}">${b.name}</span>
       <span class="badge-tip">${tipPrefix}${b.desc||''}<span class="badge-tip-arrow"></span></span>
     </span>`;
   }).join('');
@@ -10672,7 +10673,7 @@ function showAllBadges(userId,pickScore){
         <span style="font-size:11px;color:var(--t3);font-weight:700">${badges.length}개</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${badges.map(b=>`<span title="${(b.desc||'').replace(/"/g,'&quot;')}" style="padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border};cursor:help">${b.name}<span style="font-size:9.5px;font-weight:600;color:${ts.color}99;margin-left:5px">·${b.cat||''}</span></span>`).join('')}
+        ${badges.map(b=>`<span title="${(b.desc||'').replace(/"/g,'&quot;')}" style="padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;background:${ts.bg};color:#1a202c;border:1px solid ${ts.border};cursor:help">${b.name}<span style="font-size:9.5px;font-weight:600;color:var(--t3);margin-left:5px">·${b.cat||''}</span></span>`).join('')}
       </div>
     </div>`;
   });
@@ -13023,6 +13024,33 @@ window.showPage=function(id){
 };
 </script>
 </div><!-- /g-main -->
+
+<!-- 영상 다운로드 방지 — 모든 video 태그에 controlslist='nodownload' + 우클릭 방지 (동적 추가된 영상도 감시) -->
+<script>
+(function(){
+  const applyVideoProtect=v=>{
+    try{
+      v.setAttribute('controlslist','nodownload noremoteplayback');
+      v.setAttribute('disablepictureinpicture','true');
+      v.disablePictureInPicture=true;
+      v.oncontextmenu=()=>false;
+    }catch(e){}
+  };
+  const applyAll=root=>{
+    if(!root) return;
+    if(root.tagName==='VIDEO') applyVideoProtect(root);
+    else if(root.querySelectorAll) root.querySelectorAll('video').forEach(applyVideoProtect);
+  };
+  const init=()=>{
+    applyAll(document);
+    new MutationObserver(muts=>{
+      muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1) applyAll(n);}));
+    }).observe(document.body,{childList:true,subtree:true});
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
 
 <!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 -->
 <style>
