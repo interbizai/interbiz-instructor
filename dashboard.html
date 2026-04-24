@@ -10614,10 +10614,10 @@ function openLecturer(id, fromPage){
         const vEvalsOnly=(D.voiceEvals||[]).filter(ve=>ve.user_id===u.id);
         const latestVoiceMood=[...vEvalsOnly].sort((a,b)=>new Date(b.created_at||b.eval_date||0)-new Date(a.created_at||a.eval_date||0)).find(ve=>ve.tone)?.tone||'';
         if(!latestVidMood&&!latestVoiceMood) return '';
-        const moodChip=(val)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="분위기 통계 보기" style="display:inline-flex;align-items:center;padding:4px 2px;font-size:12px;color:#000;white-space:nowrap;cursor:pointer;font-weight:700;transition:opacity .15s" onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'">${val}</span>`:'';
-        const sep=(latestVidMood&&latestVoiceMood)?`<span style="color:#94a3b8;font-size:12px">·</span>`:'';
-        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;z-index:2">
-          ${moodChip(latestVidMood)}${sep}${moodChip(latestVoiceMood)}
+        const moodChip=(label,val)=>val?`<span onclick="openMoodBreakdown('${u.id}')" title="클릭 시 ${label} 기록 보기" style="display:inline-flex;align-items:center;padding:4px 2px;font-size:12px;color:#000;white-space:nowrap;cursor:pointer;font-weight:700;transition:opacity .15s" onmouseover="this.style.opacity='.55'" onmouseout="this.style.opacity='1'">${label}</span>`:'';
+        return `<div style="position:absolute;top:16px;right:20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end;z-index:2">
+          ${moodChip('분위기',latestVidMood)}
+          ${moodChip('스피치',latestVoiceMood)}
         </div>`;
       })()}
       <!-- 사진 + Lv 뱃지 -->
@@ -10997,14 +10997,24 @@ function openGradeCriteria(userId,avg,currentGrade){
 function computeAiMood(decibel, tempo, habits){
   const db=Number(decibel)||0, tp=Number(tempo)||0;
   const h=(habits||[]).reduce((a,x)=>a+(x.count||0),0);
-  // 우선순위 판정 (먼저 매칭되는 분위기 반환)
+  // 1단계: 엄격 규칙 우선 매칭 (먼저 매칭되는 분위기 반환)
   if(tp>=150 && h>=15) return '재미있고 유머러스한';          // 장난기 높음 (빠른 템포 + 많은 반복어)
   if(db>=78 && tp>=155) return '열정적이고 에너지 넘치는';       // 에너지 폭발 (큰 성량 + 빠른 템포)
   if(db>=70 && tp<=135 && h<=5) return '전문적이고 진지한';     // 안정 성량 + 차분 템포 + 언어 매우 신중
   if(db>=70 && tp>=140 && h<10) return '밝고 경쾌한';           // 적정 성량 + 빠른 템포 + 언어 신중
   if(db<=65 && tp<=130) return '차분하고 신뢰감 있는';           // 낮은 성량 + 느린 템포
   if(db>=65 && tp>=125 && tp<=150) return '친근하고 편안한';     // 중간 성량 + 중간 템포
-  return '밝고 경쾌한'; // 기본값
+  // 2단계: 엄격 규칙에 걸리지 않으면 각 분위기의 '프로토타입' 과 거리(정규화 Manhattan) 계산해 가장 가까운 것 반환
+  const prototypes=[
+    {name:'열정적이고 에너지 넘치는',db:82,tp:165,h:8},
+    {name:'밝고 경쾌한',db:75,tp:150,h:5},
+    {name:'친근하고 편안한',db:70,tp:138,h:8},
+    {name:'전문적이고 진지한',db:75,tp:125,h:3},
+    {name:'차분하고 신뢰감 있는',db:60,tp:115,h:6},
+    {name:'재미있고 유머러스한',db:70,tp:160,h:20}
+  ];
+  const dist=p=>Math.abs(db-p.db)/10 + Math.abs(tp-p.tp)/20 + Math.abs(h-p.h)/5;
+  return prototypes.reduce((best,p)=>dist(p)<dist(best)?p:best).name;
 }
 
 // 분위기 통계 모달 — 영상(aiMood 재계산) + 스피치(voice_evals.tone) 누적 집계
@@ -11080,6 +11090,7 @@ function openMoodBreakdown(userId){
       </div>
       <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.6">
         4가지 포인트로 판정합니다 — <b style="color:var(--t1)">성량</b>(데시벨) · <b style="color:var(--t1)">템포</b>(말속도) · <b style="color:var(--t1)">언어 신중도</b>(반복어 적을수록 신중) · <b style="color:var(--t1)">장난기</b>(빠른 템포 + 반복어 조합)
+        <br><span style="color:var(--t2)">※ 아래 엄격 조건에 해당하지 않으면 가장 가까운 분위기로 AI가 자동 매칭합니다.</span>
       </div>
       ${[
         {name:'열정적이고 에너지 넘치는',tags:[['성량','높음 (78dB↑)'],['템포','빠름 (155 WPM↑)']]},
