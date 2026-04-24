@@ -7261,10 +7261,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);
   window._lastBadges=earnedBadges;
-  // 평가안 뱃지 (1~15)
+  // 교육맞춤 배너 뱃지 — cat='교육맞춤' 만 (구버전 '평가안' 도 포함)
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
-    const criteriaBadges=earnedBadges.filter(id=>id<=15);
+    const criteriaBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
     kw1El.innerHTML=renderBadgePills(criteriaBadges);
   }
 
@@ -7367,10 +7367,10 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiGradeColor=aiScore>=90?'#10b981':aiScore>=70?'#f59e0b':'#fecaca';
   const aiSummaryShort=aiRaw?.summary_opinion?aiRaw.summary_opinion.split('.').slice(0,2).join('.')+'.':'';
   const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.innerHTML=`총점 <strong>${aiScore}/100점(${aiScore}%)</strong>으로 <span style="color:${aiGradeColor}">${aiGradeLabel}</span> 성과입니다. ${aiSummaryShort}`;
-  // AI 독자 + 누적 뱃지 (16~50)
+  // AI 독자 배너 뱃지 — cat='AI독자' + '누적' (교육맞춤 외 전부)
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
-    const aiBadges=earnedBadges.filter(id=>id>=16);
+    const aiBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='AI독자'||c==='누적';});
     kw2El.innerHTML=renderBadgePills(aiBadges);
   }
 
