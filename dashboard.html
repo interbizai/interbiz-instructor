@@ -2676,6 +2676,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       <div style="font-size:15px;font-weight:800;color:var(--t1)">뱃지 기준 <span style="font-size:12px;color:var(--t3)" id="badge-count-label"></span></div>
       <button class="btn btn-blue" style="padding:8px 16px;font-size:12px" onclick="downloadBadgeCriteria()">엑셀 다운로드</button>
     </div>
+    <!-- 트랙 요약 카드 -->
+    <div id="badge-track-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
     <!-- 추가 폼 -->
     <div style="display:flex;gap:8px;margin-bottom:16px;align-items:end">
       <div><div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px">뱃지명</div>
@@ -2699,7 +2701,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
     <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden">
       <table class="tbl" style="width:100%">
         <thead><tr>
-          <th style="width:40px">#</th><th>뱃지명</th><th style="width:90px">등급</th><th style="width:90px">분류</th><th>달성 기준</th><th style="width:100px">관리</th>
+          <th style="width:40px">#</th><th style="width:130px">트랙</th><th>뱃지명</th><th style="width:90px">등급</th><th style="width:90px">분류</th><th>달성 기준</th><th style="width:100px">관리</th>
         </tr></thead>
         <tbody id="badge-criteria-tbody"></tbody>
       </table>
@@ -5517,28 +5519,72 @@ async function editBadgeCriteria(id){
   renderBadgeCriteria();
 }
 
+// 뱃지 ID → 트랙 정보 (BADGE_CRITERIA 정의 기준 id 범위 매핑)
+function getBadgeTrack(id){
+  if(id>=1&&id<=16) return {name:'제품 장악력',icon:'📦',color:'#3b82f6',range:'1~16'};
+  if(id>=17&&id<=30) return {name:'세일즈 스킬',icon:'💼',color:'#ef4444',range:'17~30'};
+  if(id>=31&&id<=44) return {name:'고객 상호작용',icon:'🤝',color:'#10b981',range:'31~44'};
+  if(id>=45&&id<=61) return {name:'전달 기술',icon:'🎤',color:'#8b5cf6',range:'45~61'};
+  if(id>=62&&id<=71) return {name:'상황·시나리오',icon:'🎬',color:'#f59e0b',range:'62~71'};
+  if(id>=72&&id<=85) return {name:'성장·누적',icon:'📈',color:'#06b6d4',range:'72~85'};
+  if(id>=86&&id<=91) return {name:'레전드',icon:'🌟',color:'#d946ef',range:'86~91'};
+  return {name:'커스텀',icon:'✨',color:'#6b7280',range:'92+'};
+}
+
 // 뱃지 기준 테이블 렌더 (기본 BADGE_CRITERIA + DB 커스텀)
 function renderBadgeCriteria(){
   const tbody=el('badge-criteria-tbody');
   if(!tbody) return;
   const catColors={'교육맞춤':'var(--blue)','평가안':'var(--blue)','AI독자':'var(--green)','누적':'var(--purple)'};
-  // 기본 (BADGE_CRITERIA 하드코딩) + DB 커스텀 (id/sort_order 가 기본 개수 초과)
   const _base=BADGE_CRITERIA.length;
   const defaults=BADGE_CRITERIA.map(b=>({id:b.id,name:b.name,category:b.cat,description:b.desc,tier:b.tier,_default:true}));
   const customs=(D.badgeCriteria||[]).filter(db=>(db.sort_order||0)>_base||(db.id||0)>_base).map(c=>({id:c.id,name:c.name,category:c.category,description:c.description,tier:c.tier||null,_default:false}));
   const list=[...defaults,...customs];
   const countLabel=el('badge-count-label');if(countLabel) countLabel.textContent=`(${list.length}개 · 기본 ${_base} + 커스텀 ${customs.length})`;
+
+  // 트랙 요약 카드
+  const sumEl=el('badge-track-summary');
+  if(sumEl){
+    const tracks=['제품 장악력','세일즈 스킬','고객 상호작용','전달 기술','상황·시나리오','성장·누적','레전드'];
+    const trackStats={};
+    tracks.forEach(t=>{trackStats[t]={count:0,ids:[]};});
+    let customCount=0;
+    list.forEach(b=>{
+      const tk=getBadgeTrack(b.id);
+      if(trackStats[tk.name]){trackStats[tk.name].count++;trackStats[tk.name].ids.push(b.id);}
+      else customCount++;
+    });
+    sumEl.innerHTML=tracks.map(name=>{
+      const s=trackStats[name];
+      if(!s.count) return '';
+      const tk=getBadgeTrack(s.ids[0]);
+      return `<div style="padding:10px 14px;border:1px solid ${tk.color}30;border-radius:10px;background:${tk.color}0d;display:flex;align-items:center;gap:8px;min-width:150px">
+        <span style="font-size:18px">${tk.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:800;color:${tk.color};white-space:nowrap">${tk.name}</div>
+          <div style="font-size:10.5px;color:var(--t3);font-weight:600;margin-top:1px">${s.count}개 · ${tk.range}</div>
+        </div>
+      </div>`;
+    }).join('')+(customCount?`<div style="padding:10px 14px;border:1px solid rgba(107,114,128,.3);border-radius:10px;background:rgba(107,114,128,.06);display:flex;align-items:center;gap:8px;min-width:150px">
+      <span style="font-size:18px">✨</span>
+      <div style="flex:1"><div style="font-size:12px;font-weight:800;color:#6b7280">커스텀</div><div style="font-size:10.5px;color:var(--t3);font-weight:600;margin-top:1px">${customCount}개 · 92+</div></div>
+    </div>`:'');
+  }
+
   tbody.innerHTML=list.map((b,i)=>{
     const ts=TIER_STYLE[b.tier]||null;
+    const tk=getBadgeTrack(b.id);
     const tierChip=ts?`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${ts.label}</span>`:`<span style="font-size:10px;color:var(--t3)">—</span>`;
     const catC=catColors[b.category]||'var(--t3)';
     const catChip=`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${catC}15;color:${catC}">${b.category}</span>`;
+    const trackChip=`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${tk.color}15;color:${tk.color};border:1px solid ${tk.color}30;white-space:nowrap"><span>${tk.icon}</span><span>${tk.name}</span></span>`;
     const manageBtns=b._default
       ?`<span style="font-size:10px;color:var(--t3)">기본</span>`
       :`<button class="btn btn-ghost" style="padding:3px 8px;font-size:10px" onclick="editBadgeCriteria(${b.id})">수정</button>
         <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;color:var(--red)" onclick="deleteBadgeCriteria(${b.id})">삭제</button>`;
     return `<tr>
       <td style="text-align:center;font-weight:700;color:var(--t3)">${i+1}</td>
+      <td>${trackChip}</td>
       <td style="font-weight:700">${b.name}</td>
       <td>${tierChip}</td>
       <td>${catChip}</td>
