@@ -5677,6 +5677,21 @@ function renderBadgePills(badgeIds){
   }).join('');
 }
 
+// 등급 우선 정렬 + 상위 3개만 노출, 나머지는 '+N' 버튼 토글 (AI 평가 배너 용)
+function renderBadgesCollapsed(badgeIds, key){
+  if(!badgeIds||!badgeIds.length) return '';
+  const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
+  const sorted=[...badgeIds].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
+  const MAX=3;
+  if(sorted.length<=MAX) return renderBadgePills(sorted);
+  const top=sorted.slice(0,MAX);
+  const rest=sorted.slice(MAX);
+  const restId='kw-rest-'+(key||'x')+'-'+Date.now().toString(36)+Math.floor(Math.random()*1000);
+  return renderBadgePills(top)
+    + `<span id="${restId}" style="display:none">${renderBadgePills(rest)}</span>`
+    + `<span onclick="(function(b){var r=document.getElementById('${restId}');var hidden=r.style.display==='none';r.style.display=hidden?'inline':'none';b.textContent=hidden?'− 접기':'+${rest.length}';})(this)" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:800;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35);cursor:pointer;user-select:none;margin-left:4px">+${rest.length}</span>`;
+}
+
 function resetAdminCoachFilters(){
   ['admin-coach-period','admin-coach-channel','admin-coach-team','admin-coach-cat','admin-coach-prod'].forEach(id=>{const s=document.getElementById(id);if(s)s.value='';});
   const nameEl=document.getElementById('admin-coach-name');if(nameEl)nameEl.value='';
@@ -7249,11 +7264,11 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const userId=CU?.id||null;
   const earnedBadges=evaluateBadges(r,userId);
   window._lastBadges=earnedBadges;
-  // 교육맞춤 배너 뱃지 — cat='교육맞춤' 만 (구버전 '평가안' 도 포함)
+  // 교육맞춤 배너 뱃지 — cat='교육맞춤' (구버전 '평가안' 하위호환), 상위 3개 + 접기 토글
   const kw1El=el('an-banner-keywords1');
   if(kw1El){
     const criteriaBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='교육맞춤'||c==='평가안';});
-    kw1El.innerHTML=renderBadgePills(criteriaBadges);
+    kw1El.innerHTML=renderBadgesCollapsed(criteriaBadges,'crit');
   }
 
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
@@ -7355,11 +7370,11 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiGradeColor=aiScore>=90?'#10b981':aiScore>=70?'#f59e0b':'#fecaca';
   const aiSummaryShort=aiRaw?.summary_opinion?aiRaw.summary_opinion.split('.').slice(0,2).join('.')+'.':'';
   const aiSum2=el('an-ai-summary2');if(aiSum2) aiSum2.innerHTML=`총점 <strong>${aiScore}/100점(${aiScore}%)</strong>으로 <span style="color:${aiGradeColor}">${aiGradeLabel}</span> 성과입니다. ${aiSummaryShort}`;
-  // AI 독자 배너 뱃지 — cat='AI독자' + '누적' (교육맞춤 외 전부)
+  // AI 독자 배너 뱃지 — cat='AI독자' + '누적', 상위 3개 + 접기 토글
   const kw2El=el('an-banner-keywords2');
   if(kw2El){
     const aiBadges=earnedBadges.filter(id=>{const c=getBadgeInfo(id).cat;return c==='AI독자'||c==='누적';});
-    kw2El.innerHTML=renderBadgePills(aiBadges);
+    kw2El.innerHTML=renderBadgesCollapsed(aiBadges,'ai');
   }
 
   // AI 독자 레이더: Vertex 결과의 categories를 직접 사용 (체크리스트 대항목과 동일)
