@@ -2146,6 +2146,43 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 <!-- ════════════════════════════════════
      PAGE: SCENARIO (시나리오)
 ════════════════════════════════════ -->
+
+<!-- AI 시나리오 코치 전용 로딩 오버레이 (AI 영상평가와 동일 스타일) -->
+<div id="sc-loading-overlay" style="position:fixed;inset:0;background:rgba(255,255,255,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div class="ai-loading-box" style="max-width:460px">
+    <div class="ai-loading-ring"></div>
+    <div class="ai-loading-title">AI 시나리오 코칭 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
+    <div class="ai-loading-step" id="sc-loading-step">준비 중...</div>
+    <div style="margin-top:18px;padding:14px;background:#f8f9fa;border-radius:10px;text-align:center">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px">경과 시간</div>
+      <div id="sc-loading-elapsed" style="font-size:22px;font-weight:900;color:var(--t1)">00:00</div>
+    </div>
+    <div id="sc-loading-steps" style="margin-top:16px;text-align:left">
+      <div class="scstep" data-step="upload" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="scstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>교육자료 업로드</span>
+      </div>
+      <div class="scstep" data-step="context" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="scstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>시나리오 컨텍스트 준비 (교육·제품·고객·매장)</span>
+      </div>
+      <div class="scstep" data-step="coach" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="scstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>AI 코칭 분석 (세계적 가전 전문 강사 시점)</span>
+      </div>
+      <div class="scstep" data-step="refine" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="scstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>수정 시나리오·포함 요소 점검</span>
+      </div>
+      <div class="scstep" data-step="render" style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;color:var(--t3)">
+        <span class="scstep-icon" style="width:20px;height:20px;border-radius:50%;border:2px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        <span>결과 정리·렌더</span>
+      </div>
+    </div>
+    <div id="sc-loading-tip" class="ai-loading-sub" style="margin-top:14px;font-style:italic;min-height:28px"></div>
+  </div>
+</div>
+
 <div id="page-scenario" class="page">
 <header class="hdr">
   <div class="hdr-logo">
@@ -11062,16 +11099,59 @@ function scRender(){
 function scGoStep0(){scState.step=0;scSaveState();scRender();}
 function scGoStep1(){scState.step=1;scSaveState();scRender();}
 
+// 시나리오 코치 전용 로딩 UI 헬퍼
+const SC_LOADING_TIPS=[
+  '세계적 가전 전문 강사 시점으로 초안을 검토 중입니다.',
+  '수치 근거·FAB·경쟁사 비교 포인트를 점검 중입니다.',
+  '고객 유형·매장 환경에 맞춘 실전 대사를 구성 중입니다.',
+  '첨부하신 교육자료와 초안을 대조 중입니다.',
+  '반론 대응·부가 제안을 실전 수준으로 다듬는 중입니다.',
+  '수정 시나리오를 완성 중입니다.',
+];
+let _scLoadingTimer=null, _scLoadingStart=0;
+function setScLoadingStep(msg){const el=document.getElementById('sc-loading-step');if(el) el.textContent=msg;}
+function setScLoadingStage(step,state){
+  const node=document.querySelector(`.scstep[data-step="${step}"]`);if(!node) return;
+  const icon=node.querySelector('.scstep-icon');
+  if(state==='done'){node.style.color='#10b981';if(icon){icon.style.background='#10b981';icon.style.borderColor='#10b981';icon.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="5 12 10 17 19 6"/></svg>';}}
+  else if(state==='active'){node.style.color='var(--blue)';node.style.fontWeight='700';if(icon){icon.style.background='var(--blue)';icon.style.borderColor='var(--blue)';icon.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:ringPulse 1s infinite"></span>';}}
+  else {node.style.color='var(--t3)';node.style.fontWeight='';if(icon){icon.style.background='';icon.style.borderColor='#e5e7eb';icon.innerHTML='';}}
+}
+function _updateScLoadingTimer(){
+  const elapsed=Math.floor((Date.now()-_scLoadingStart)/1000);
+  const mm=String(Math.floor(elapsed/60)).padStart(2,'0');
+  const ss=String(elapsed%60).padStart(2,'0');
+  const el1=document.getElementById('sc-loading-elapsed');if(el1) el1.textContent=mm+':'+ss;
+  const tip=document.getElementById('sc-loading-tip');if(tip){const idx=Math.floor(elapsed/7)%SC_LOADING_TIPS.length;tip.textContent=SC_LOADING_TIPS[idx];}
+}
+function showScLoading(show){
+  const ov=document.getElementById('sc-loading-overlay');if(!ov) return;
+  if(show){
+    ov.style.display='flex';_scLoadingStart=Date.now();
+    ['upload','context','coach','refine','render'].forEach(s=>setScLoadingStage(s,'pending'));
+    _updateScLoadingTimer();
+    if(_scLoadingTimer) clearInterval(_scLoadingTimer);
+    _scLoadingTimer=setInterval(_updateScLoadingTimer,1000);
+  } else {
+    ov.style.display='none';
+    if(_scLoadingTimer){clearInterval(_scLoadingTimer);_scLoadingTimer=null;}
+  }
+}
+
 async function scRunAI(){
   if((scState.draft||'').trim().length<30){alert('초안을 30자 이상 작성해주세요');return;}
-  const btn=document.getElementById('sc-run-btn');if(btn){btn.disabled=true;btn.innerHTML='⏳ 분석 중...';}
+  const btn=document.getElementById('sc-run-btn');if(btn){btn.disabled=true;}
+  showScLoading(true);
   try{
     const uploaded=[];
     const files=Array.isArray(scState.eduFiles)?scState.eduFiles:[];
+    if(files.length){setScLoadingStage('upload','active');setScLoadingStep(`교육자료 업로드 중 (${files.length}개)...`);}
+    else {setScLoadingStage('upload','done');}
     for(const item of files){
       const f=item._obj;
       if(!f){ if(item.url) uploaded.push({url:item.url,mime:item.mime||'',name:item.name||''}); continue; }
       try{
+        setScLoadingStep(`교육자료 업로드 중: ${f.name}`);
         const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
         const sData=await sRes.json();
         if(sData.signed_url){
@@ -11081,6 +11161,11 @@ async function scRunAI(){
         }
       }catch(e){console.warn('edu upload skip',f.name,e);}
     }
+    if(files.length) setScLoadingStage('upload','done');
+    setScLoadingStage('context','active');setScLoadingStep('시나리오 컨텍스트 준비 중...');
+    await new Promise(r=>setTimeout(r,350));
+    setScLoadingStage('context','done');
+    setScLoadingStage('coach','active');setScLoadingStep('AI 코칭 분석 중 (세계적 가전 전문 강사 시점)...');
     const primary=uploaded[0]||{url:'',mime:''};
     const res=await fetch('/api/vertex-analyze',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -11096,14 +11181,22 @@ async function scRunAI(){
     });
     const data=await res.json();
     if(!data.ok){alert('AI 코칭 실패: '+(data.error||'알 수 없음'));return;}
+    setScLoadingStage('coach','done');
+    setScLoadingStage('refine','active');setScLoadingStep('수정 시나리오·포함 요소 점검 중...');
     scState.coaching=data.result;
     scState.revised=data.result.revised_scenario||scState.draft;
     scState.step=2;
     scState.history=scState.history||[];
     scState.history.push({at:new Date().toISOString(),score:data.result.overall_score,grade:data.result.grade});
-    scSaveState();scRender();
-  }catch(e){alert('AI 코칭 실패: '+e.message);}
-  finally{if(btn){btn.disabled=false;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>AI 코칭 받기';}}
+    scSaveState();
+    await new Promise(r=>setTimeout(r,250));
+    setScLoadingStage('refine','done');
+    setScLoadingStage('render','active');setScLoadingStep('결과 정리 중...');
+    scRender();
+    setScLoadingStage('render','done');
+    setTimeout(()=>showScLoading(false),400);
+  }catch(e){showScLoading(false);alert('AI 코칭 실패: '+e.message);}
+  finally{if(btn){btn.disabled=false;}}
 }
 
 function scRenderCoaching(){
