@@ -10172,12 +10172,146 @@ function getAIKeywords(u,vids){
   return kw.slice(0,5);
 }
 
+// 한줄 시그니처 — 다축(등급·강점·성장·다양성·시그니처 패턴·페르소나) 조합 생성기
+// 100명 강사 중복 최소화 위해 유저별 해시로 같은 사람은 항상 같은 문구
 function getOneLineEval(u,keywords,avgScore){
-  if(avgScore>=90) return `${u.name} 강사는 탁월한 강의력의 소유자입니다`;
-  if(avgScore>=70) return `현장의 열정을 전달하는 ${u.name} 강사입니다`;
-  if(avgScore>=50) return `꾸준히 성장하고 있는 ${u.name} 강사입니다`;
-  if(avgScore>0) return `도전과 성장의 여정을 시작한 ${u.name} 강사입니다`;
-  return `${u.name} 강사의 첫 평가를 기다리고 있습니다`;
+  const userId=u?.id;
+  if(!userId) return `${u?.name||'—'} 강사`;
+  const userVids=(D.videos||[]).filter(v=>v.userId===userId);
+  const vidIdSet=new Set(userVids.map(v=>v.id));
+  const evalsRaw=(D.evaluations||[]).filter(e=>e.video_id&&vidIdSet.has(e.video_id));
+  // 평가안기준 우선 dedupe (점수/역량)
+  const byVid={};
+  evalsRaw.forEach(e=>{const ex=byVid[e.video_id];const isCrit=e.eval_type==='평가안기준';if(!ex||(isCrit&&ex.eval_type!=='평가안기준')) byVid[e.video_id]=e;});
+  const evals=Object.values(byVid).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+  const scores=evals.map(e=>Number(e.overall_score||0)).filter(s=>s>0);
+  if(!scores.length) return `${u.name} 강사의 첫 평가를 기다리고 있습니다`;
+  const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+
+  // 역량별 평균
+  const catMap={};
+  evals.forEach(e=>{(e.categories||[]).forEach(c=>{const k=c.name||'';if(!k) return;if(!catMap[k]) catMap[k]={s:0,m:0};catMap[k].s+=Number(c.score||0);catMap[k].m+=Number(c.max||0);});});
+  const catAvgs=Object.entries(catMap).map(([n,v])=>({name:n,pct:v.m?v.s/v.m*100:0})).sort((a,b)=>b.pct-a.pct);
+  const topCat=catAvgs[0];
+
+  // 음성 (AI독자 우선)
+  const voiceByVid={};
+  evalsRaw.forEach(e=>{const ex=voiceByVid[e.video_id];const isAi=e.eval_type==='AI독자';if(!ex||(isAi&&ex.eval_type!=='AI독자')) voiceByVid[e.video_id]=e;});
+  const voiceEvals=Object.values(voiceByVid);
+  const dbs=voiceEvals.map(e=>Number(e.decibel||0)).filter(x=>x>0);
+  const tps=voiceEvals.map(e=>Number(e.tempo||0)).filter(x=>x>0);
+  const habitSum=voiceEvals.reduce((a,e)=>a+(e.habits||[]).reduce((s,h)=>s+(h.count||0),0),0);
+  const avgDb=dbs.length?dbs.reduce((a,b)=>a+b,0)/dbs.length:0;
+  const avgTp=tps.length?tps.reduce((a,b)=>a+b,0)/tps.length:0;
+  const avgHabit=voiceEvals.length?habitSum/voiceEvals.length:0;
+
+  // 다양성
+  const cats=[...new Set(userVids.map(v=>v.eduType||v.edu_type||v.videoType||v.video_type||'').filter(Boolean))];
+
+  // 연속 90+
+  let streak90=0;for(let i=scores.length-1;i>=0;i--){if(scores[i]>=90) streak90++;else break;}
+  // bad 0 연속 (영상 날짜순 최근부터)
+  const sortedVids=[...userVids].sort((a,b)=>new Date(a.date||a.created_at||0)-new Date(b.date||b.created_at||0));
+  let cleanStreak=0;for(let i=sortedVids.length-1;i>=0;i--){const bad=(sortedVids[i].timestamps||[]).filter(t=>t.type==='bad').length;if(bad===0)cleanStreak++;else break;}
+  // 반복어 0회 영상 개수
+  const silentCount=voiceEvals.filter(e=>(e.habits||[]).reduce((a,h)=>a+(h.count||0),0)===0).length;
+
+  // ── 최우선 희귀 시그니처 (하나라도 맞으면 단독 반환) ──
+  if(scores.some(s=>s>=100)) return `퍼펙트 스코어의 레전드, ${u.name} 강사`;
+  if(streak90>=10) return `그랜드마스터 ${u.name} 강사`;
+  if(streak90>=5) return `연속 우수의 핵심, ${u.name} 강사`;
+  if(catAvgs.length>=5&&catAvgs.every(c=>c.pct>=90)) return `6역량 마스터, ${u.name} 강사`;
+  if(cats.length>=5&&avg>=85) return `올라운더 정상권, ${u.name} 강사`;
+  if(silentCount>=3) return `무소음 마스터, ${u.name} 강사`;
+  if(cleanStreak>=5) return `무결점 장인, ${u.name} 강사`;
+  if(catAvgs.length>=5&&catAvgs.every(c=>c.pct>=85)) return `만능형 강사, ${u.name}`;
+
+  // ── 일반 조합 ──
+  // 해시 (stable) — userId 문자·숫자 모두 대응
+  const strHash=s=>{s=String(s||'');let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h);};
+  const hash=strHash(userId)+scores.length*7+Math.round(avg*3);
+  const pick=arr=>arr[hash%arr.length];
+
+  // 축1: 등급 타이틀
+  const tierKey=avg>=95?'S':avg>=85?'A':avg>=75?'B':avg>=65?'C':'D';
+  const tierPools={
+    S:['핵심 에이스','탑티어','리더급','정상권','슈퍼스타','전설급','최고의 실력자','선두주자'],
+    A:['안정된 베테랑','검증된 실력자','신뢰받는 고수','고정밀','탄탄한 엔진','든든한 기둥','현장의 에이스','믿고 맡기는'],
+    B:['믿음직한 실무자','검증된 숙련자','성장 완료된','안정권','실력 탄탄한','자리 잡은','경력 무르익은','꾸준히 해내는'],
+    C:['발전 중인 실무자','기본기 탄탄한','성장 가능성 가진','학습 중인','무럭무럭 크는','잠재력 펼치는','한걸음씩 나아가는','기초가 단단한'],
+    D:['잠재력 있는 신규','도전 중인 루키','성장 초입의','첫 발을 뗀','씨앗을 심은','출발선에 선','배움 한창인','새내기']
+  };
+  const tierTitle=pick(tierPools[tierKey]);
+
+  // 축2: 강점 어드젝티브
+  const catAdj={
+    '발성':['목소리가 또렷한','보이스가 살아있는','전달력이 살아있는','귀에 쏙 박히는'],
+    '전문':['지식이 탄탄한','내용 깊이가 있는','전문성이 돋보이는','근거가 명확한'],
+    '내용':['지식이 탄탄한','내용 깊이가 있는','전문성이 돋보이는','근거가 명확한'],
+    '상호':['소통이 자연스러운','참여를 잘 끌어내는','현장 감각이 있는','분위기를 잘 읽는'],
+    '시간':['진행이 매끄러운','시간 운영이 정확한','흐름이 깔끔한','템포 조절이 능숙한'],
+    '판서':['자료 활용이 돋보이는','시각 전달이 뛰어난','판서가 깔끔한','보조자료를 잘 쓰는'],
+    '자료':['자료 활용이 돋보이는','시각 전달이 뛰어난','판서가 깔끔한','보조자료를 잘 쓰는'],
+    '마무리':['마무리가 인상 깊은','정리가 깔끔한','끝맺음이 강력한','핵심 요약이 뚜렷한']
+  };
+  let strengthTag='';
+  if(topCat&&topCat.pct>=70){
+    const key=Object.keys(catAdj).find(k=>topCat.name.includes(k));
+    if(key) strengthTag=pick(catAdj[key]);
+  }
+  if(!strengthTag){
+    if(avgDb>=78&&avgTp>=150) strengthTag=pick(['에너지 넘치는','현장을 장악하는','몰입감이 폭발하는']);
+    else if(avgHabit<=3&&voiceEvals.length>=2) strengthTag=pick(['깔끔한 화법의','단어 선택이 신중한','언어가 정제된']);
+    else if(avgTp>=150) strengthTag=pick(['재치 있게 풀어가는','장난기 섞인','친근한 분위기로 이끄는']);
+    else if(avgTp>0&&avgTp<=125) strengthTag=pick(['차분하고 또렷한','신뢰감 주는','조곤조곤 설득하는']);
+    else if(avgTp>0) strengthTag=pick(['안정된 리듬으로 전달하는','균형 잡힌','편안하게 끌고 가는']);
+  }
+
+  // 축3: 성장 상태
+  let growthTag='';
+  if(scores.length>=3){
+    const recent3=scores.slice(-3);
+    const prior=scores.slice(0,-3);
+    const recentAvg=recent3.reduce((a,b)=>a+b,0)/3;
+    const priorAvg=prior.length?prior.reduce((a,b)=>a+b,0)/prior.length:avg;
+    const delta=recentAvg-priorAvg;
+    if(delta>=8) growthTag=pick(['급상승 중인','눈에 띄게 오르는','폭발적 성장세의']);
+    else if(delta>=3) growthTag=pick(['꾸준히 성장하는','우상향 궤도의','계속 나아가는']);
+    else if(delta<=-5) growthTag=pick(['기본기를 다지는','호흡을 가다듬는','다음 도약을 준비 중인']);
+    else if(hash%3===0) growthTag=pick(['일관성 있는','안정적 궤도의']);
+  }
+
+  // 축4: 다양성 (평가 횟수 제외)
+  let diversityTag='';
+  if(cats.length>=5) diversityTag=pick(['올라운더','다분야 소화형','멀티 필드']);
+  else if(cats.length>=3) diversityTag=pick(['여러 분야 소화형','폭넓은 커버리지']);
+  else if(cats.length===2) diversityTag='복수 영역에서 활동하는';
+  else if(cats.length===1) diversityTag=pick(['특정 분야 집중','스페셜리스트','분야 파고드는']);
+
+  // 축5: 시그니처 패턴 (드물게 가산)
+  let sigTag='';
+  if(avgHabit<=2&&voiceEvals.length>=5) sigTag='무결점 화법의';
+  else if(catAvgs.length>=6&&catAvgs.every(c=>c.pct>=75)) sigTag='균형 잡힌 육각형의';
+  else if(scores.length>=3){
+    const spread=Math.max(...scores)-Math.min(...scores);
+    if(spread<=5) sigTag='일관성 탑의';
+  }
+
+  // 축6: 페르소나 (강점 + 스타일 조합)
+  let personaTag='';
+  const topName=topCat?.name||'';
+  if(topCat&&topCat.pct>=80){
+    if(topName.includes('상호')&&avgDb>=75) personaTag='현장 열정가';
+    else if((topName.includes('전문')||topName.includes('내용'))&&avgTp>0&&avgTp<=135) personaTag='학구파';
+    else if(topName.includes('발성')&&avgTp>=150) personaTag='열혈 강사';
+    else if(topName.includes('마무리')) personaTag='정리의 달인';
+  }
+
+  // 최종 조합 — 길어지지 않게 최대 3개 태그
+  const allTags=[strengthTag,growthTag,sigTag,personaTag,diversityTag].filter(Boolean);
+  const finalTags=allTags.slice(0,3);
+  const prefix=finalTags.join(' · ');
+  return prefix?`${prefix} ${tierTitle} ${u.name} 강사`:`${tierTitle} ${u.name} 강사`;
 }
 
 // 6대 역량 레이더 차트 렌더링
