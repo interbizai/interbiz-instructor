@@ -4763,16 +4763,16 @@ function renderPick(){
           <div style="text-align:center"><div style="font-size:11px;font-weight:700;color:var(--t2)">${u.teachCareerStart?calcCareer(u.teachCareerStart):'—'}</div><div style="font-size:9px;color:var(--t3)">강의경력</div></div>
         </div>`;
       })()}
-      <!-- 뱃지 (분류별 1개씩 + 더보기) -->
+      <!-- 뱃지 (상위 등급 우선 + 더보기) -->
       <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
         ${(()=>{
           const mockR={criteriaScores:[],timestamps:[],overallScore:u.pickScore,focusScore:u.pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
           const allBadges=evaluateBadges(mockR,u.id);
           if(!allBadges.length) return '<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(0,0,0,.05);color:var(--t3)">AI 분석 후 뱃지 생성</span>';
-          const shown=[];
-          const byCat={};
-          allBadges.forEach(id=>{const b=getBadgeInfo(id);if(!byCat[b.cat]){byCat[b.cat]=b;shown.push(id);}});
-          const pills=shown.map(id=>{const b=getBadgeInfo(id);return `<span class="eval-kw-pill">${b.name}</span>`;}).join('');
+          const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
+          const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
+          const shown=sorted.slice(0,3);
+          const pills=shown.map(id=>{const b=getBadgeInfo(id);const ts=TIER_STYLE[b.tier]||TIER_STYLE.silver;return `<span style="padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}">${b.name}</span>`;}).join('');
           const rest=allBadges.length-shown.length;
           const moreBtnHtml=rest>0?`<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer" onclick="event.stopPropagation();showAllBadges(${u.id},${u.pickScore})">+${rest}</span>`:'';
           return pills+moreBtnHtml;
@@ -10524,14 +10524,14 @@ function renderMyBadges(userId,avgScore){
   const mockR={criteriaScores:[],timestamps:[],overallScore:avgScore,focusScore:avgScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
   const allBadges=evaluateBadges(mockR,userId);
   if(!allBadges.length){area.innerHTML='<span style="font-size:11px;color:var(--t3)">AI 분석 후 뱃지 생성</span>';return;}
-  const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};
-  const byCat={};
-  allBadges.forEach(id=>{const b=getBadgeInfo(id);if(!byCat[b.cat])byCat[b.cat]=[];byCat[b.cat].push(b);});
-  const shown=[];
-  Object.entries(byCat).forEach(([cat,badges])=>{shown.push(...badges.slice(0,3));});
+  // 등급 우선순위: 희귀(legend) → 흔함(bronze)
+  const tierRank={legend:0,platinum:1,gold:2,silver:3,bronze:4};
+  const sorted=[...allBadges].sort((a,b)=>(tierRank[getBadgeInfo(a).tier||'silver'])-(tierRank[getBadgeInfo(b).tier||'silver']));
+  const shownMax=6;
+  const shown=sorted.slice(0,shownMax);
   const rest=allBadges.length-shown.length;
-  area.innerHTML=renderBadgePills(shown.map(b=>allBadges.find(id=>getBadgeInfo(id).name===b.name)).filter(Boolean))
-    +(rest>0?`<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer" onclick="event.stopPropagation();showAllBadges(${userId},${avgScore})">+${rest}</span>`:'');
+  area.innerHTML=renderBadgePills(shown)
+    +(rest>0?`<span style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:700;background:rgba(0,0,0,.06);color:var(--t2);cursor:pointer;margin-left:4px" onclick="event.stopPropagation();showAllBadges(${userId},${avgScore})">+${rest}</span>`:'');
 }
 
 function openScenario(){ showPage('page-scenario'); }
@@ -10615,21 +10615,63 @@ function showAllBadges(userId,pickScore){
   const mockR={criteriaScores:[],timestamps:[],overallScore:pickScore,focusScore:pickScore*0.9,decibel:0,tempo:0,habits:[],engagementGaps:[]};
   const allBadges=evaluateBadges(mockR,userId);
   const u=D.users?.find(x=>x.id===userId);
-  const catColors={'평가안':'#0078C8','AI독자':'#10b981','누적':'#8b5cf6'};
-  const grouped={};
-  allBadges.forEach(id=>{const b=getBadgeInfo(id);if(!grouped[b.cat])grouped[b.cat]=[];grouped[b.cat].push(b);});
-  let html=`<div style="font-size:16px;font-weight:900;margin-bottom:16px">${u?.name||''} 뱃지 (${allBadges.length}개)</div>`;
-  Object.entries(grouped).forEach(([cat,badges])=>{
-    const c=catColors[cat]||'var(--t3)';
-    html+=`<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:${c};margin-bottom:8px">${cat} (${badges.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${badges.map(b=>`<span onclick="alert('${b.desc}')" style="padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;background:${c}10;color:${c};border:1px solid ${c}20;cursor:pointer">${b.name}</span>`).join('')}</div></div>`;
-  });
-  // 모달로 표시
   const overlay=document.createElement('div');
   overlay.className='overlay show';
   overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
-  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:28px;max-width:500px;width:90vw;max-height:80vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:16px;font-weight:900">${u?.name||''} 뱃지</div><button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button></div>
-    ${html}
+
+  if(!allBadges.length){
+    overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:28px;max-width:500px;width:92vw;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:900">${u?.name||''} 뱃지</div>
+        <button style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+      </div>
+      <div style="padding:30px;text-align:center;color:var(--t3);font-size:13px;line-height:1.8">아직 획득한 뱃지가 없어요.<br>첫 평가가 완료되면 뱃지가 쌓입니다.</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  // 등급별 그룹 (희귀 → 흔함 순)
+  const tierOrder=['legend','platinum','gold','silver','bronze'];
+  const byTier={};
+  allBadges.forEach(id=>{
+    const b=getBadgeInfo(id);
+    const t=b.tier||'silver';
+    if(!byTier[t]) byTier[t]=[];
+    byTier[t].push({id,...b});
+  });
+  // 등급별 카운트 요약
+  const summary=tierOrder.filter(t=>byTier[t]?.length).map(t=>{
+    const ts=TIER_STYLE[t];
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border};font-size:10.5px;font-weight:800">${ts.label} ${byTier[t].length}</span>`;
+  }).join('');
+
+  let tierSections='';
+  tierOrder.forEach(tier=>{
+    const badges=byTier[tier];
+    if(!badges||!badges.length) return;
+    const ts=TIER_STYLE[tier];
+    tierSections+=`<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid ${ts.border}40">
+        <span style="font-size:13px;font-weight:800;color:${ts.color}">${ts.label}</span>
+        <span style="font-size:11px;color:var(--t3);font-weight:700">${badges.length}개</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${badges.map(b=>`<span title="${(b.desc||'').replace(/"/g,'&quot;')}" style="padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;background:${ts.bg};color:${ts.color};border:1px solid ${ts.border};cursor:help">${b.name}<span style="font-size:9.5px;font-weight:600;color:${ts.color}99;margin-left:5px">·${b.cat||''}</span></span>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:560px;width:92vw;max-height:85vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px">
+      <div style="min-width:0">
+        <div style="font-size:16px;font-weight:900;color:var(--t1)">${u?.name||''} 뱃지 <span style="color:var(--t3);font-weight:700">· ${allBadges.length}개</span></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">획득한 등급별 뱃지 모음 — 마우스 올리면 달성 기준이 나와요</div>
+      </div>
+      <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(0,0,0,.08)">${summary}</div>
+    ${tierSections}
   </div>`;
   document.body.appendChild(overlay);
 }
