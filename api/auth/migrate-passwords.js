@@ -15,7 +15,10 @@ function isBcryptHash(s) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
-  if (!sbAdmin) return res.status(500).json({ ok: false, error: 'Supabase service 키 미설정' });
+  if (!sbAdmin) {
+    console.error('[migrate-passwords] sbAdmin not initialized');
+    return res.status(500).json({ ok: false, error: '서버 설정 오류' });
+  }
 
   const token = req.headers['x-admin-token'] || (req.body && req.body.admin_token) || '';
   if (!ADMIN_PIN || token !== ADMIN_PIN) {
@@ -26,7 +29,10 @@ export default async function handler(req, res) {
 
   try {
     const { data: users, error } = await sbAdmin.from('users').select('id, email, pw');
-    if (error) return res.status(500).json({ ok: false, error: 'users 조회 실패: ' + error.message });
+    if (error) {
+      console.error('[migrate-passwords] users select error:', error);
+      return res.status(500).json({ ok: false, error: '사용자 조회 실패' });
+    }
 
     const report = { total: users.length, already_hashed: 0, hashed_now: 0, skipped_empty: 0, failed: [] };
 
@@ -46,6 +52,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, dry_run: dryRun, report });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: e.message || String(e) });
+    console.error('[migrate-passwords] unexpected error:', e);
+    return res.status(500).json({ ok: false, error: '마이그레이션 처리 중 오류' });
   }
 }

@@ -53,10 +53,15 @@ function stripSensitive(user) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
-  if (!JWT_SECRET) return res.status(500).json({ ok: false, error: 'JWT_SECRET 미설정' });
-  if (!sbAdmin) return res.status(500).json({ ok: false, error: 'Supabase service 키 미설정' });
+  if (!JWT_SECRET || !sbAdmin) {
+    console.error('[login] env missing — JWT_SECRET=' + !!JWT_SECRET + ' sbAdmin=' + !!sbAdmin);
+    return res.status(500).json({ ok: false, error: '서버 설정 오류' });
+  }
   const envBad = envHealthCheck();
-  if (envBad) return res.status(500).json({ ok: false, error: envBad });
+  if (envBad) {
+    console.error('[login] env health check failed:', envBad);
+    return res.status(500).json({ ok: false, error: '서버 설정 오류' });
+  }
 
   try {
     const { email = '', password = '' } = req.body || {};
@@ -71,7 +76,10 @@ export default async function handler(req, res) {
     }
 
     const { data: user, error } = await sbAdmin.from('users').select('*').eq('email', em).maybeSingle();
-    if (error) return res.status(500).json({ ok: false, error: 'DB 조회 실패: ' + (error.message || 'unknown'), code: error.code || null, hint: error.hint || null });
+    if (error) {
+      console.error('[login] DB query error:', error);
+      return res.status(500).json({ ok: false, error: '로그인 처리 중 오류' });
+    }
     if (!user) return res.status(401).json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
     if (user.deleted_at) return res.status(403).json({ ok: false, error: '삭제된 계정입니다. 관리자에게 문의하세요.' });
 
@@ -93,6 +101,7 @@ export default async function handler(req, res) {
     const token = signToken({ sub: user.id, email: user.email, isAdmin: !!user.isSubAdmin });
     return res.status(200).json({ ok: true, token, user: stripSensitive(user) });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: e.message || String(e) });
+    console.error('[login] unexpected error:', e);
+    return res.status(500).json({ ok: false, error: '로그인 처리 중 오류' });
   }
 }
