@@ -2,8 +2,23 @@ import { VertexAI } from '@google-cloud/vertexai';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
+import jwt from 'jsonwebtoken';
 
 export const config = { maxDuration: 300 };
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+function verifyAuth(req) {
+  if (!JWT_SECRET) return { ok: false, error: '서버 설정 오류' };
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return { ok: false, error: '인증이 필요합니다. 다시 로그인해주세요.' };
+  try {
+    return { ok: true, decoded: jwt.verify(token, JWT_SECRET) };
+  } catch (e) {
+    return { ok: false, error: '인증 만료. 다시 로그인해주세요.' };
+  }
+}
 
 // ── 교육자료 파일 타입별 처리 ──────────────
 // Gemini가 직접 처리 가능: PDF, 이미지, 텍스트 → fileData로 전달
@@ -315,6 +330,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'POST only' });
   }
+
+  const auth = verifyAuth(req);
+  if (!auth.ok) return res.status(401).json({ ok: false, error: auth.error });
 
   // AI 시나리오 코치 모드 분기
   if (req.body && req.body.mode === 'scenario_coach') {

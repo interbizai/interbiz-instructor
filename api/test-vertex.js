@@ -1,8 +1,20 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import jwt from 'jsonwebtoken';
 
 export const config = { maxDuration: 30 };
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
 export default async function handler(req, res) {
+  // JWT 검증 — 관리자만 진단 가능
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!JWT_SECRET || !token) return res.status(401).json({ ok: false, error: '인증 필요' });
+  let decoded;
+  try { decoded = jwt.verify(token, JWT_SECRET); }
+  catch(e) { return res.status(401).json({ ok: false, error: '인증 만료' }); }
+  if (!decoded.isAdmin) return res.status(403).json({ ok: false, error: '관리자만 가능' });
+
   const mode = (req.query.mode || '').toString();
 
   let projectId = process.env.GCP_PROJECT_ID;

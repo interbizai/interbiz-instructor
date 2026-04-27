@@ -6460,7 +6460,7 @@ let streamStream=null, streamRecorder=null, streamChunks=[], streamTimerID=null,
 async function uploadAnalysisVideo(file){
   // 1) 서버에서 V4 Signed URL 발급
   const sigResp=await fetch('/api/gcs-upload-url',{
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
     body:JSON.stringify({filename:file.name||'video.mp4', content_type:file.type||'video/mp4', folder:'videos/analysis'})
   });
   const sigRaw=await sigResp.text();
@@ -6565,7 +6565,7 @@ async function callVertexAnalyze(payload){
   for(let i=0;i<delays.length;i++){
     if(delays[i]>0) await new Promise(r=>setTimeout(r,delays[i]));
     const resp=await fetch('/api/vertex-analyze',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
       body:JSON.stringify(payload)
     });
     const raw=await resp.text();
@@ -11197,7 +11197,7 @@ async function scRunAI(){
       if(!f){ if(item.url) uploaded.push({url:item.url,mime:item.mime||'',name:item.name||''}); continue; }
       try{
         setScLoadingStep(`교육자료 업로드 중: ${f.name}`);
-        const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
+        const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
         const sData=await sRes.json();
         if(sData.signed_url){
           await fetch(sData.signed_url,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
@@ -11213,7 +11213,7 @@ async function scRunAI(){
     setScLoadingStage('coach','active');setScLoadingStep('AI 코칭 분석 중 (세계적 가전 전문 강사 시점)...');
     const primary=uploaded[0]||{url:'',mime:''};
     const res=await fetch('/api/vertex-analyze',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
       body:JSON.stringify({
         mode:'scenario_coach',
         edu_type:scState.eduType,product:scState.product,phase:scState.phase,
