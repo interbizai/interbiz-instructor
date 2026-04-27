@@ -3431,6 +3431,8 @@ async function loadFromDB(){
   }
   // 관리자 조직 드롭다운 갱신
   if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
+  // 관리자 메뉴 표시/숨김
+  if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
   const {data:cri}=await sb.from('criteria').select('*').order('sort_order');
   if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description}));
   const {data:ref}=await sb.from('ref_videos').select('*');
@@ -6309,13 +6311,21 @@ async function movePickFeatured(rowId,dir){
 }
 
 function openAdminWithAuth(){
-  if(CU?.isAdmin){ renderAdmin(); showPage('page-admin'); return; }
-  openAdmin();
+  if(!CU?.isAdmin){ alert('관리자 또는 부관리자만 접근 가능합니다.'); return; }
+  renderAdmin(); showPage('page-admin');
 }
-function openAdmin(){ el('admin-pw').value=''; el('admin-err').textContent=''; el('admin-overlay').classList.add('show'); setTimeout(()=>el('admin-pw').focus(),100); }
+function openAdmin(){
+  if(!CU?.isAdmin){ alert('관리자 또는 부관리자만 접근 가능합니다.'); return; }
+  renderAdmin(); showPage('page-admin');
+}
 function checkAdmin(){
-  if(v('admin-pw')==='7152'){ closeOverlay('admin-overlay'); renderAdmin(); showPage('page-admin'); }
-  else{ el('admin-err').textContent='비밀번호가 올바르지 않습니다.'; el('admin-pw').value=''; }
+  if(!CU?.isAdmin){ el('admin-err').textContent='관리자 또는 부관리자만 접근 가능합니다.'; return; }
+  closeOverlay('admin-overlay'); renderAdmin(); showPage('page-admin');
+}
+function refreshAdminVisibility(){
+  const isAdm = !!CU?.isAdmin;
+  document.querySelectorAll('[data-page="page-admin"]').forEach(el=>{ el.style.display = isAdm ? '' : 'none'; });
+  document.querySelectorAll('.mobile-nav-item[onclick*="openAdminWithAuth"]').forEach(el=>{ el.style.display = isAdm ? '' : 'none'; });
 }
 function closeOverlay(id){ el(id).classList.remove('show'); }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('show'); }));
