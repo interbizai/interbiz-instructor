@@ -3199,7 +3199,7 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 ════════════════════════════════ */
 // DB에서 모든 유저 가져오기
 async function dbGetUsers(){
-  const {data,error}=await sb.from('users').select('*').order('id');
+  const {data,error}=await sb.from('users_safe').select('*').order('id');
   if(error){ console.error('dbGetUsers:',error); return []; }
   return data.map(r=>({
     id:r.id, name:r.name, email:r.email, channel:r.channel, team:r.team,
