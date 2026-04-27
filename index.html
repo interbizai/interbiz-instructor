@@ -3198,10 +3198,8 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
    SUPABASE HELPER FUNCTIONS
 ════════════════════════════════ */
 // DB에서 모든 유저 가져오기
-async function dbGetUsers(){
-  const {data,error}=await sb.from('users_safe').select('*').order('id');
-  if(error){ console.error('dbGetUsers:',error); return []; }
-  return data.map(r=>({
+function mapUsersFromRows(rows){
+  return (rows||[]).map(r=>({
     id:r.id, name:r.name, email:r.email, channel:r.channel, team:r.team,
     position:r.position||'현장강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
     photo:r.photo, memo:r.memo||'', score:r.score||0, grade:r.grade||'—',
@@ -3220,6 +3218,24 @@ async function dbGetUsers(){
     birthDate:r.birth_date||'',
     status:r.status||'근무'
   }));
+}
+function mapVideosFromRows(rows, allTimestamps){
+  const ts=allTimestamps||[];
+  return (rows||[]).map(r=>({
+    id:r.id, userId:r.user_id, title:r.title, youtube:r.youtube||'', filePath:r.file_path||'',
+    date:r.video_date, duration:r.duration||'', studentCount:r.student_count||0,
+    status:r.status||'등록완료', videoType:r.video_type||'', channel:r.channel||'',
+    eduType:r.edu_type||'',
+    checklist:r.checklist, solution:r.solution||'', eduFileUrl:r.edu_file_url||'', productName:r.product_name||'',
+    timestamps: ts.filter(t=>t.video_id===r.id).map(t=>({
+      id:t.id, t:t.time_mark, type:t.type, text:t.text, tags:t.tags||[]
+    }))
+  }));
+}
+async function dbGetUsers(){
+  const {data,error}=await sb.from('users_safe').select('*').order('id');
+  if(error){ console.error('dbGetUsers:',error); return []; }
+  return mapUsersFromRows(data);
 }
 // DB에서 모든 영상 가져오기
 async function dbGetVideos(){
@@ -3359,15 +3375,30 @@ async function dbRestoreUser(id){
 }
 // DB에서 전체 데이터 로드 → D에 저장
 async function loadFromDB(){
-  D.users = await dbGetUsers();
-  D.videos = await dbGetVideos();
+  // 조직 필터 적용된 핵심 데이터 한 번에 받기
+  const token=localStorage.getItem('ib_token')||'';
+  let serverData=null;
+  try {
+    const r=await fetch('/api/db/load',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({org:D.activeOrg||null})});
+    const j=await r.json();
+    if(j.ok) serverData=j; else console.error('loadFromDB:',j.error);
+  } catch(e){ console.warn('loadFromDB fetch:',e); }
+  if(serverData){
+    D.users=mapUsersFromRows(serverData.users);
+    D.videos=mapVideosFromRows(serverData.videos, serverData.timestamps);
+    D.evaluations=serverData.evaluations||[];
+    D.voiceEvals=serverData.voice_evals||[];
+    D.activeOrg=serverData.meta?.active_org||null;
+    D.isRealAdmin=!!serverData.meta?.is_real_admin;
+  } else {
+    D.users=[]; D.videos=[]; D.evaluations=[]; D.voiceEvals=[];
+    D.activeOrg=null; D.isRealAdmin=false;
+  }
   const {data:cri}=await sb.from('criteria').select('*').order('sort_order');
   if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description}));
   const {data:ref}=await sb.from('ref_videos').select('*');
   if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
-  // 음성평가
-  const {data:ve}=await sb.from('voice_evals').select('*').order('created_at',{ascending:false});
-  D.voiceEvals=ve||[];
+  // (voice_evals는 /api/db/load에서 받음)
   // 학습링크
   const {data:ll}=await sb.from('learning_links').select('*').order('created_at',{ascending:false});
   D.learningLinks=ll||[];
@@ -3416,12 +3447,7 @@ async function loadFromDB(){
   // 달력 이벤트
   const {data:ce}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
   D.calendarEvents=(ce||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
-  // evaluations 테이블 (AI 평가 결과) — 실패해도 나머지 로드는 계속 진행
-  try {
-    const {data:evs, error:evErr}=await sb.from('evaluations').select('*').order('created_at',{ascending:false});
-    if(evErr) { console.warn('evaluations 로드 실패:', evErr.message); D.evaluations=[]; }
-    else D.evaluations=evs||[];
-  } catch(e){ console.warn('evaluations exception:',e); D.evaluations=[]; }
+  // (evaluations는 /api/db/load에서 받음)
   // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
   // 세션 가드: 로그인 중인 강사가 삭제됐으면 강제 로그아웃
