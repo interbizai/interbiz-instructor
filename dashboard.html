@@ -4104,7 +4104,8 @@ async function doLogin(){
     localStorage.setItem('ib_user',JSON.stringify(CU));
   }
   initHome(); showPage('page-pick');
-  hideLoginLoading();
+  // 데이터 로드 흐름 깔끔히 — 페이지 새로고침으로 일관된 init 진입
+  setTimeout(()=>location.reload(), 50);
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
 /* ── Home Search ── */
