@@ -3910,7 +3910,7 @@ async function saveRecVideo(){
     const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
     fileUrl=publicUrl;
   }
-  await sb.from('recommended_videos').insert({title,url:url||null,file_url:fileUrl||null,created_by:CU?.name||'관리자'});
+  await sb.from('recommended_videos').insert({title,url:url||null,file_url:fileUrl||null,created_by:CU?.name||'관리자',org_name:D.activeOrg||null});
   await loadFromDB();
   closeOverlay('rec-video-overlay');
   renderRecommendedVideos();
@@ -4587,7 +4587,7 @@ async function uploadEduChecklist(){
   const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
   const insertPayload={name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'};
   if(type) insertPayload.type=type;
-  const{data:inserted,error:dbErr}=await sb.from('checklist_files').insert(insertPayload).select().single();
+  const{data:inserted,error:dbErr}=await sb.from('checklist_files').insert({...insertPayload,org_name:D.activeOrg||null}).select().single();
   if(dbErr){alert('DB 저장 실패: '+dbErr.message);return;}
   // 체크리스트 세부 항목 저장
   if(cat==='체크리스트' && items?.length && inserted?.id){
@@ -4614,7 +4614,7 @@ async function addEduLink(){
   const name=document.getElementById('edu-lk-name')?.value?.trim();
   const url=document.getElementById('edu-lk-url')?.value?.trim();
   if(!name||!url){showToast('링크명과 URL을 입력하세요','#f59e0b');return;}
-  const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습'});
+  const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습',org_name:D.activeOrg||null});
   if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
 }
@@ -5266,7 +5266,7 @@ async function addPickContent(){
     fileUrl=publicUrl;fileName=file.name;
   }
   const row={title,url:url||null,file_url:fileUrl||null,file_name:fileName||null,created_by:CU?.name||'관리자'};
-  const{error}=await sb.from('pick_contents').insert(row);
+  const{error}=await sb.from('pick_contents').insert({...row,org_name:D.activeOrg||null});
   if(error){alert('등록 실패: '+error.message);return;}
   await loadFromDB();renderPick();
 }
@@ -5281,7 +5281,7 @@ async function addPickNotice(){
   if(!title){alert('제목을 입력하세요');return;}
   const content=document.getElementById('pick-add-notice-content')?.value?.trim()||null;
   const url=document.getElementById('pick-add-notice-url')?.value?.trim()||null;
-  const{error}=await sb.from('pick_notices').insert({title,content,url,created_by:CU?.name||'관리자'});
+  const{error}=await sb.from('pick_notices').insert({title,content,url,created_by:CU?.name||'관리자',org_name:D.activeOrg||null});
   if(error){alert('등록 실패: '+error.message);return;}
   await loadFromDB();renderPick();
 }
@@ -5306,7 +5306,7 @@ async function addPickFeaturedVideo(){
   if(!vidId){alert('영상을 선택하세요');return;}
   if((D.pickFeaturedVideos||[]).find(f=>f.video_id===vidId)){alert('이미 추가된 영상입니다');return;}
   const order=(D.pickFeaturedVideos||[]).length;
-  const{error}=await sb.from('pick_featured_videos').insert({video_id:vidId,order_index:order});
+  const{error}=await sb.from('pick_featured_videos').insert({video_id:vidId,order_index:order,org_name:D.activeOrg||null});
   if(error){alert('추가 실패: '+error.message);return;}
   await loadFromDB();renderPick();
 }
@@ -6375,7 +6375,7 @@ async function addPickFeatured(){
   const sel=el('pick-admin-select');if(!sel) return;
   const vidId=parseInt(sel.value);if(!vidId){alert('영상을 선택하세요');return;}
   const order=(D.pickFeaturedVideos||[]).length;
-  const {error}=await sb.from('pick_featured_videos').insert({video_id:vidId,order_index:order});
+  const {error}=await sb.from('pick_featured_videos').insert({video_id:vidId,order_index:order,org_name:D.activeOrg||null});
   if(error){alert('등록 실패: '+error.message);return;}
   await loadFromDB();renderPickAdmin();
 }
@@ -8515,7 +8515,8 @@ function uploadChecklist(){
     await sb.from('checklist_files').insert({
       name, year:v('cl-year'), month:v('cl-month'), category:v('cl-category'),
       file_name:file.name, file_type:file.type, file_data:e.target.result,
-      file_size:file.size, uploaded_by:CU?.name||'관리자'
+      file_size:file.size, uploaded_by:CU?.name||'관리자',
+      org_name:D.activeOrg||null
     });
     await loadFromDB();
     el('cl-name').value='';fileInput.value='';
@@ -8742,7 +8743,7 @@ async function saveCalEvent(){
   if(calEditId){
     await sb.from('calendar_events').update(data).eq('id',calEditId);
   } else {
-    await sb.from('calendar_events').insert(data);
+    await sb.from('calendar_events').insert({...data,org_name:D.activeOrg||null});
   }
   closeOverlay('cal-event-overlay');
   await loadCalEvents();
@@ -8891,7 +8892,7 @@ function renderLinks(){
 async function addLearningLink(){
   const name=v('link-name').trim(), url=v('link-url').trim(), desc=v('link-desc')?.trim()||'';
   if(!name||!url){alert('이름과 URL을 입력하세요.');return;}
-  await sb.from('learning_links').insert({name,description:desc,url:url.startsWith('http')?url:'https://'+url});
+  await sb.from('learning_links').insert({name,description:desc,url:url.startsWith('http')?url:'https://'+url,org_name:D.activeOrg||null});
   await loadFromDB();
   el('link-name').value='';el('link-url').value='';if(el('link-desc'))el('link-desc').value='';
   renderLinks();
