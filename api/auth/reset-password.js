@@ -26,11 +26,13 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: '인증 만료. 다시 로그인해주세요.' });
   }
 
-  if (!decoded.isAdmin) return res.status(403).json({ ok: false, error: '관리자만 가능합니다.' });
-
   try {
     const { userId, newPassword = '0000' } = req.body || {};
     if (!userId) return res.status(400).json({ ok: false, error: 'userId 필요' });
+
+    if (!decoded.isAdmin && decoded.sub !== userId) {
+      return res.status(403).json({ ok: false, error: '관리자 또는 본인만 가능합니다.' });
+    }
 
     const newPwStr = String(newPassword);
     const hash = await bcrypt.hash(newPwStr, 10);
