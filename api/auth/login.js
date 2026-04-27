@@ -16,6 +16,31 @@ function isBcryptHash(s) {
   return typeof s === 'string' && /^\$2[aby]?\$/.test(s);
 }
 
+function findNonAscii(s) {
+  if (!s) return null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 127) return { index: i, char: s[i], code: c };
+  }
+  return null;
+}
+
+function envHealthCheck() {
+  const checks = [
+    ['SUPABASE_URL', SB_URL],
+    ['SUPABASE_SERVICE_ROLE_KEY', SB_SERVICE_KEY],
+    ['JWT_SECRET', JWT_SECRET],
+    ['ADMIN_PIN', ADMIN_PIN],
+  ];
+  for (const [name, val] of checks) {
+    const bad = findNonAscii(val);
+    if (bad) {
+      return `환경변수 ${name} 의 ${bad.index}번째 글자가 비영문(코드 ${bad.code}, 글자 "${bad.char}") — Vercel에서 재등록 필요. 길이=${val.length}`;
+    }
+  }
+  return null;
+}
+
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
@@ -30,6 +55,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
   if (!JWT_SECRET) return res.status(500).json({ ok: false, error: 'JWT_SECRET 미설정' });
   if (!sbAdmin) return res.status(500).json({ ok: false, error: 'Supabase service 키 미설정' });
+  const envBad = envHealthCheck();
+  if (envBad) return res.status(500).json({ ok: false, error: envBad });
 
   try {
     const { email = '', password = '' } = req.body || {};
