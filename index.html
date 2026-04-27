@@ -8472,10 +8472,8 @@ function openCalendar(){
 }
 
 async function loadCalEvents(){
-  // 전체 일정 로드
-  const {data,error}=await sb.from('calendar_events').select('*').order('start_time');
-  if(error) console.error('loadCalEvents error:',error);
-  const all=data||[];
+  // /api/db/load에서 이미 받은 데이터 사용 (조직 필터 적용됨)
+  const all=D.calendarEvents||[];
   // 관리자: 전체 / 일반: pick_visible + 본인
   calEvents=all.filter(e=>{
     if(CU?.isAdmin) return true;
@@ -8628,19 +8626,16 @@ async function saveCalEvent(){
     await sb.from('calendar_events').insert({...data,org_name:D.activeOrg||null});
   }
   closeOverlay('cal-event-overlay');
+  await loadFromDB(); // D.calendarEvents 갱신 (조직 필터 적용)
   await loadCalEvents();
-  // 인터PICK 이번주 일정도 갱신
-  const {data:ce2}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
-  D.calendarEvents=(ce2||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
 }
 
 async function deleteCalEvent(){
   if(!calEditId||!confirm('삭제하시겠습니까?')) return;
   await sb.from('calendar_events').delete().eq('id',calEditId);
   closeOverlay('cal-event-overlay');
+  await loadFromDB(); // D.calendarEvents 갱신
   await loadCalEvents();
-  const {data:ce3}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
-  D.calendarEvents=(ce3||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
 }
 
 /* ════════════════════════════════
