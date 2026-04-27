@@ -13188,7 +13188,8 @@ function renderAdmin(){
       <td>${isSubAdmin?'<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(0,120,200,.1);color:var(--blue);font-weight:700">부관리자</span>':''}</td>
       <td style="white-space:nowrap">
         ${u.deleted
-          ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--green)" onclick="restoreUser(${u.id})">복구</button>`
+          ?`<button class="btn" style="padding:4px 8px;font-size:10px;color:var(--green)" onclick="restoreUser(${u.id})">복구</button>
+            <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="permaDeleteUser(${u.id})">영구삭제</button>`
           :`<button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="openEditUserModal(${u.id})">수정</button>
             <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px" onclick="resetPw(${u.id})">PW초기화</button>
             <button class="btn" style="padding:4px 8px;font-size:10px;color:var(--red)" onclick="deleteUser(${u.id})">삭제</button>
@@ -13470,6 +13471,29 @@ async function deleteUser(id){
   const u=D.users.find(x=>x.id===id);
   if(u){ u.deleted=true; u.deletedAt=new Date().toISOString(); }
   renderAdmin();
+}
+// 단일 강사 영구 삭제 (2단계 확인)
+async function permaDeleteUser(id){
+  if(CU?.isSubAdmin){alert('영구 삭제는 관리자만 가능합니다.');return;}
+  const u=D.users.find(x=>x.id===id);
+  const name=u?.name||'';
+  if(!confirm(`⚠️ ${name} 강사를 영구 삭제합니다.\n\n관련 영상·평가 등 연결 데이터도 함께 삭제될 수 있습니다.\n이 작업은 되돌릴 수 없습니다.\n\n계속하시겠습니까?`)) return;
+  const typed=prompt(`정말 영구 삭제하시려면 강사 이름을 정확히 입력하세요:\n\n${name}`);
+  if(typed!==name){alert('입력 이름이 일치하지 않아 취소되었습니다.');return;}
+  const {error}=await sb.from('users').delete().eq('id',id);
+  if(error){
+    alert('❌ 삭제 실패: '+error.message+'\n\n연관 데이터(videos·evaluations 등)의 외래키 제약 때문일 수 있습니다.');
+    console.error('permaDeleteUser:',error);
+    return;
+  }
+  if(CU && CU.id===id){
+    alert(`✅ ${name} 영구 삭제 완료\n\n본인 계정이라 로그아웃됩니다.`);
+    doLogout();
+    return;
+  }
+  await loadFromDB();
+  renderAdmin();
+  alert(`✅ ${name} 강사 영구 삭제 완료`);
 }
 async function restoreUser(id){
   if(!confirm('삭제된 강사를 복구하시겠습니까?')) return;
