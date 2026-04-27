@@ -3388,10 +3388,19 @@ async function loadFromDB(){
     D.videos=mapVideosFromRows(serverData.videos, serverData.timestamps);
     D.evaluations=serverData.evaluations||[];
     D.voiceEvals=serverData.voice_evals||[];
+    D.calendarEvents=(serverData.calendar_events||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
+    D.learningLinks=serverData.learning_links||[];
+    D.recVideos=serverData.recommended_videos||[];
+    D.pickContents=serverData.pick_contents||[];
+    D.pickNotices=serverData.pick_notices||[];
+    D.pickFeaturedVideos=serverData.pick_featured_videos||[];
+    D.checklists=serverData.checklist_files||[];
     D.activeOrg=serverData.meta?.active_org||null;
     D.isRealAdmin=!!serverData.meta?.is_real_admin;
   } else {
     D.users=[]; D.videos=[]; D.evaluations=[]; D.voiceEvals=[];
+    D.calendarEvents=[]; D.learningLinks=[]; D.recVideos=[];
+    D.pickContents=[]; D.pickNotices=[]; D.pickFeaturedVideos=[]; D.checklists=[];
     D.activeOrg=null; D.isRealAdmin=false;
   }
   const {data:cri}=await sb.from('criteria').select('*').order('sort_order');
@@ -3399,12 +3408,7 @@ async function loadFromDB(){
   const {data:ref}=await sb.from('ref_videos').select('*');
   if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
   // (voice_evals는 /api/db/load에서 받음)
-  // 학습링크
-  const {data:ll}=await sb.from('learning_links').select('*').order('created_at',{ascending:false});
-  D.learningLinks=ll||[];
-  // 체크리스트
-  const {data:cl}=await sb.from('checklist_files').select('*').order('created_at',{ascending:false});
-  D.checklists=cl||[];
+  // (learning_links, checklist_files는 /api/db/load에서 받음)
   // 삭제 요청
   const {data:dr}=await sb.from('delete_requests').select('*').order('created_at',{ascending:false});
   D.deleteRequests=dr||[];
@@ -3422,12 +3426,7 @@ async function loadFromDB(){
   } else {
     D.eduTypes=[];
   }
-  // 추천영상
-  const {data:rv}=await sb.from('recommended_videos').select('*').order('created_at',{ascending:false});
-  D.recVideos=rv||[];
-  // 인터PICK 관리자 등록 영상
-  const {data:pfv}=await sb.from('pick_featured_videos').select('*').order('order_index',{ascending:true});
-  D.pickFeaturedVideos=pfv||[];
+  // (recommended_videos, pick_featured_videos는 /api/db/load에서 받음)
   // 경력/포트폴리오
   const {data:ch}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
   D.careerHistory=ch||[];
@@ -3438,15 +3437,7 @@ async function loadFromDB(){
   D.badgeCriteria=bc||[];
   // 초기 시드 (DB 비어있으면 50개 삽입)
   if(!D.badgeCriteria.length) await seedBadgeCriteria();
-  // 인터PICK 추천 학습 콘텐츠
-  const {data:pc}=await sb.from('pick_contents').select('*').order('created_at',{ascending:false});
-  D.pickContents=pc||[];
-  // 인터PICK 공지
-  const {data:pn}=await sb.from('pick_notices').select('*').order('created_at',{ascending:false});
-  D.pickNotices=pn||[];
-  // 달력 이벤트
-  const {data:ce}=await sb.from('calendar_events').select('*').order('start_time',{ascending:true});
-  D.calendarEvents=(ce||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
+  // (pick_contents, pick_notices, calendar_events는 /api/db/load에서 받음)
   // (evaluations는 /api/db/load에서 받음)
   // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
   if(typeof populateChecklistSelects==='function') populateChecklistSelects();
