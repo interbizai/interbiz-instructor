@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     }
 
     const { data: user, error } = await sbAdmin.from('users').select('*').eq('email', em).maybeSingle();
-    if (error) return res.status(500).json({ ok: false, error: 'DB 조회 실패' });
+    if (error) return res.status(500).json({ ok: false, error: 'DB 조회 실패: ' + (error.message || 'unknown'), code: error.code || null, hint: error.hint || null });
     if (!user) return res.status(401).json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
     if (user.deleted_at) return res.status(403).json({ ok: false, error: '삭제된 계정입니다. 관리자에게 문의하세요.' });
 
