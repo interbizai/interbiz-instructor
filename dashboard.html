@@ -12862,6 +12862,7 @@ async function saveEditProfile(){
   if(CU&&CU.id===editProfileId){ CU.name=u.name; CU.channel=u.channel; localStorage.setItem('ib_user',JSON.stringify(CU)); }
   closeOverlay('edit-profile-overlay');
   openLecturer(editProfileId, lectFromPage);
+  alert(pw ? '✅ 정보 및 비밀번호가 저장되었습니다.' : '✅ 저장되었습니다.');
 }
 
 function buildEngagementTimeline(gaps){
