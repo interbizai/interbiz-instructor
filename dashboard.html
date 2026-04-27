@@ -3299,7 +3299,7 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 ════════════════════════════════ */
 // DB에서 모든 유저 가져오기
 async function dbGetUsers(){
-  const {data,error}=await sb.from('users').select('id,name,email,channel,team,position,birth_year,hire_date,phone,photo,memo,score,grade,lg_career_start,teach_career_start,scores,maxes,habits,habit_counts,engagement_gaps,decibel,tempo,student_count,created_at,is_sub_admin,satisfaction,grade_override,deleted_at,org_name,office,birth_date,status').order('id');
+  const {data,error}=await sb.from('users').select('*').order('id');
   if(error){ console.error('dbGetUsers:',error); return []; }
   return data.map(r=>({
     id:r.id, name:r.name, email:r.email, channel:r.channel, team:r.team,
