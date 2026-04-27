@@ -3329,28 +3329,15 @@ async function dbGetVideos(){
 }
 // 유저 생성
 async function dbCreateUser(u){
-  // 1차 시도: 모든 필드 포함
-  const full={
-    name:u.name, email:u.email, pw:u.pw||'1234', channel:u.channel||'', team:u.team||'',
-    birth_year:u.birthYear||null, hire_date:u.hireDate||null, phone:u.phone||'',
-    photo:u.photo||null, memo:'', score:0, grade:'—',
-    scores:{}, maxes:{발성:20,전문성:25,판서:15,상호작용:20,시간관리:10,마무리:10},
-    habits:[], habit_counts:[], engagement_gaps:[], decibel:0, tempo:0, student_count:0,
-    org_name:u.orgName||null, office:u.office||null, birth_date:u.birthDate||null,
-    status:u.status||'근무', position:u.position||'현장강사'
-  };
-  let {data,error}=await sb.from('users').insert(full).select().single();
-  if(!error) return data;
-  const msg=(error.message||'').toLowerCase();
-  // position 컬럼이 없으면 제외하고 재시도
-  if(msg.includes('column') && msg.includes('position')){
-    console.warn('position 컬럼 없음 — 제외 후 재시도');
-    const {position,...noPos}=full;
-    ({data,error}=await sb.from('users').insert(noPos).select().single());
-    if(!error) return data;
+  try{
+    const r=await fetch('/api/auth/create-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)});
+    const j=await r.json().catch(()=>({}));
+    if(!j.ok) return {_error:j.error||'강사 추가 실패'};
+    return j.user;
+  }catch(e){
+    console.error('dbCreateUser error:',e);
+    return {_error:'네트워크 오류'};
   }
-  console.error('dbCreateUser error:',error,'payload:',full);
-  return {_error:error.message||'unknown'};
 }
 // 유저 업데이트
 async function dbUpdateUser(id,fields){
@@ -3361,7 +3348,7 @@ async function dbUpdateUser(id,fields){
   if('birthYear' in fields) map.birth_year=fields.birthYear;
   if('hireDate' in fields) map.hire_date=fields.hireDate;
   if('phone' in fields) map.phone=fields.phone;
-  if('pw' in fields) map.pw=fields.pw;
+  if('pw' in fields) console.warn('dbUpdateUser: pw 변경 차단됨. /api/auth/change-password 또는 /api/auth/reset-password 사용');
   if('photo' in fields) map.photo=fields.photo;
   if('memo' in fields) map.memo=fields.memo;
   if('score' in fields) map.score=fields.score;
@@ -13459,7 +13446,16 @@ async function toggleSubAdmin(id,grant){
   alert(grant?`${u?.name||''} 님에게 부관리자 권한을 부여했습니다.`:`${u?.name||''} 님의 부관리자 권한을 취소했습니다.`);
   renderAdmin();
 }
-async function resetPw(id){ await dbUpdateUser(id,{pw:'0000'}); const u=D.users.find(x=>x.id===id); if(u) u.pw='0000'; alert(`${u?.name||''} 님의 비밀번호가 0000으로 초기화되었습니다.`); }
+async function resetPw(id){
+  const token=localStorage.getItem('ib_token')||'';
+  try{
+    const r=await fetch('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({userId:id,newPassword:'0000'})});
+    const j=await r.json().catch(()=>({}));
+    if(!j.ok){ alert('실패: '+(j.error||'알 수 없는 오류')); return; }
+    const u=D.users.find(x=>x.id===id);
+    alert(`${u?.name||''} 님의 비밀번호가 0000으로 초기화되었습니다.`);
+  }catch(e){ alert('네트워크 오류'); }
+}
 async function deleteUser(id){
   if(!confirm('강사를 삭제하시겠습니까?\n\n삭제 시:\n- 해당 강사는 바로 로그아웃되며 재로그인 불가\n- 인터픽·홈 검색에서 제외\n- 관리자 페이지에는 영상·평가 기록이 그대로 보존됩니다')) return;
   await dbDeleteUser(id);
@@ -13819,18 +13815,19 @@ function renderMyProfile(){
 }
 async function changeMyPassword(){
   if(!CU||!CU.id) return;
-  const u=D.users.find(x=>x.id===CU.id);
-  if(!u) return;
   const oldPw=v('mp-pw-old'), newPw=v('mp-pw-new'), newPw2=v('mp-pw-new2');
   if(!oldPw){alert('현재 비밀번호를 입력하세요.');return;}
-  if(u.pw!==oldPw){alert('현재 비밀번호가 일치하지 않습니다.');return;}
   if(!newPw||newPw.length<4){alert('새 비밀번호는 4자 이상이어야 합니다.');return;}
   if(newPw!==newPw2){alert('새 비밀번호 확인이 일치하지 않습니다.');return;}
   if(newPw===oldPw){alert('새 비밀번호가 기존과 동일합니다.');return;}
-  await dbUpdateUser(u.id,{pw:newPw});
-  u.pw=newPw;CU=u;localStorage.setItem('ib_user',JSON.stringify(CU));
-  el('mp-pw-old').value='';el('mp-pw-new').value='';el('mp-pw-new2').value='';
-  alert('✅ 비밀번호가 변경되었습니다.');
+  const token=localStorage.getItem('ib_token')||'';
+  try{
+    const r=await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({oldPassword:oldPw,newPassword:newPw})});
+    const j=await r.json().catch(()=>({}));
+    if(!j.ok){ alert('❌ '+(j.error||'비밀번호 변경 실패')); return; }
+    el('mp-pw-old').value='';el('mp-pw-new').value='';el('mp-pw-new2').value='';
+    alert('✅ 비밀번호가 변경되었습니다.');
+  }catch(e){ alert('네트워크 오류'); }
 }
 async function saveProfile(){
   if(!CU||!CU.id) return;
