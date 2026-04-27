@@ -3710,7 +3710,7 @@ function updateTopNav(activePage){
   const isRealAdmin=CU?.isAdmin&&!CU?.isSubAdmin;
   if(nEl) nEl.textContent=isRealAdmin?'관리자':(CU?.name||'—');
   const sEl=document.getElementById('tn-profile-sub');
-  if(sEl) sEl.textContent=isRealAdmin?'interbiz':(u?[u.channel,u.team,u.position].filter(Boolean).join(' · '):'—');
+  if(sEl) sEl.textContent=isRealAdmin?'interbiz':(u?[u.office,u.team,u.position].filter(Boolean).join(' · '):'—');
 }
 // 검색
 function toggleTopSearch(){
@@ -3747,7 +3747,7 @@ function topSearchHandler(q){
     html+=`<div style="padding:6px 14px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">강사 (${users.length})</div>`;
     html+=users.slice(0,5).map((u,i)=>`<div class="tn-dd-item" onclick="openLecturer(${u.id},'page-pick');toggleTopSearch()">
       <div style="width:28px;height:28px;border-radius:50%;background:${colors[i%6]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
-      <div><div style="font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')}</div></div>
+      <div><div style="font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${[u.office,u.team,u.position].filter(Boolean).join(' · ')}</div></div>
     </div>`).join('');
   }
 
@@ -3924,7 +3924,7 @@ function updateHeaderUI(){
   const u=D.users.find(x=>x.id===CU?.id);
   const isRA=CU?.isAdmin&&!CU?.isSubAdmin;
   const userName=isRA?'관리자':(CU?.name||'—');
-  const userSub=isRA?'interbiz':(u?[u.channel,u.team,u.position].filter(Boolean).join(' · '):(CU?.email||'—'));
+  const userSub=isRA?'interbiz':(u?[u.office,u.team,u.position].filter(Boolean).join(' · '):(CU?.email||'—'));
   document.querySelectorAll('.hdr-user-name').forEach(e=>e.textContent=userName);
   document.querySelectorAll('.hdr-user-sub').forEach(e=>e.textContent=userSub);
   // 관리자 버튼: 관리자 로그인일 때만 표시
@@ -4044,19 +4044,28 @@ window.addEventListener('resize',()=>{
 
 async function doLogin(){
   const em=v('li-email').trim(), pw=v('li-pw').trim();
-  if(em==='admin' && pw==='7152'){ CU={id:0,name:'관리자',email:'admin',grade:'A',channel:'',isAdmin:true}; localStorage.setItem('ib_user',JSON.stringify(CU)); await loadFromDB(); initHome(); showPage('page-pick'); return; }
-  // DB에서 확인
-  const {data,error}=await sb.from('users').select('*').eq('email',em).eq('pw',pw).single();
-  if(error||!data){ el('li-err').textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
-  if(data.deleted_at){ el('li-err').textContent='삭제된 계정입니다. 관리자에게 문의하세요.'; return; }
+  if(!em||!pw){ el('li-err').textContent='이메일과 비밀번호를 입력해주세요.'; return; }
+  let r;
+  try{
+    r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
+  }catch(e){ el('li-err').textContent='네트워크 오류'; return; }
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok){ el('li-err').textContent=j.error||'로그인 실패'; return; }
   el('li-err').textContent='';
-  await loadFromDB();
-  CU=D.users.find(x=>x.id===data.id);
-  if(CU?.isSubAdmin) CU.isAdmin=true;
-  localStorage.setItem('ib_user',JSON.stringify(CU));
+  localStorage.setItem('ib_token',j.token);
+  if(j.user.isAdmin){
+    CU=j.user;
+    localStorage.setItem('ib_user',JSON.stringify(CU));
+    await loadFromDB();
+  } else {
+    await loadFromDB();
+    CU=D.users.find(x=>x.id===j.user.id)||j.user;
+    if(CU?.isSubAdmin) CU.isAdmin=true;
+    localStorage.setItem('ib_user',JSON.stringify(CU));
+  }
   initHome(); showPage('page-pick');
 }
-function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
+function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
 /* ── Home Search ── */
 (function(){
   const inp=()=>document.getElementById('home-search-input');
@@ -4073,7 +4082,7 @@ function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.r
       const bg=colors[(u.id-1)%6];
       return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-home');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
         <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
-        <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.channel||''}</span></div><div class="hs-meta">${[u.team,u.position].filter(Boolean).join(' · ')}</div></div>
+        <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.office||''}</span></div><div class="hs-meta">${[u.team,u.position].filter(Boolean).join(' · ')}</div></div>
         <svg class="hs-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
       </div>`;
     }).join('');
@@ -5001,7 +5010,7 @@ function renderPick(){
         <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
         <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</span><span style="font-size:14px;flex-shrink:0">${medals2[i]}</span></div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.office,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
         </div>
       </div>
       <!-- 점수 + 달성 바 (교육맞춤평가 우선, 폴백 AI독자) -->
@@ -5195,7 +5204,7 @@ function openPickRankingModal(){
         <div style="font-size:18px;font-weight:900;color:var(--t3);width:30px;text-align:center">${i<3?medals[i]:(i+1)}</div>
         <div style="width:44px;height:44px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:800">${u.name} <span style="font-size:11px;color:var(--t3);font-weight:500">${[u.channel,u.team,u.position].filter(Boolean).join(' · ')}</span></div>
+          <div style="font-size:14px;font-weight:800">${u.name} <span style="font-size:11px;color:var(--t3);font-weight:500">${[u.office,u.team,u.position].filter(Boolean).join(' · ')}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px">평가 ${u.evalCount}건 · AI ${u.pickScore}점 · 성장 <span style="color:${growthColor}">${growthTxt}</span></div>
         </div>
       </div>
@@ -5431,7 +5440,7 @@ function renderPickVideos(){
       </div>
       <div style="padding:14px 16px">
         <div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:39px">${vid.title||'—'}</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:7px"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:7px"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'} 강사</strong>${u?.office?` · ${u.office}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}</div>
       </div>
     </div>`;
   }).join(''):'<div style="grid-column:1/-1;padding:30px;text-align:center;font-size:13px;color:var(--t3)">당월 영상이 없습니다</div>';
@@ -5527,7 +5536,7 @@ function renderPickDetail(){
           <div class="pick-hero-title" style="font-size:16.5px;font-weight:800;color:var(--t1)!important;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;border-bottom:none!important;padding-bottom:0!important;margin-bottom:0!important;text-transform:none!important;letter-spacing:0!important">${title}</div>
           ${(()=>{
             const eduType=vid.eduType||vid.edu_type||'';
-            return `<div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'}</strong>${u?.channel?` · ${u.channel}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}${eduType?` · ${eduType}`:''}${vid.date?` · ${vid.date}`:''}</div>`;
+            return `<div style="font-size:12.5px;color:var(--t3)"><strong style="color:var(--t1);font-weight:700">${u?.name||'—'}</strong>${u?.office?` · ${u.office}`:''}${u?.team?` · ${u.team}`:''}${u?.position?` · ${u.position}`:''}${eduType?` · ${eduType}`:''}${vid.date?` · ${vid.date}`:''}</div>`;
           })()}
           <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-top:6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${comment}</div>
           <div style="margin-top:8px">
@@ -10581,7 +10590,7 @@ function renderRanking(filtered){
   const videoRank=fVids.map(v=>{
     const u=filtered.find(x=>x.id===v.userId);
     const goodCount=(v.timestamps||[]).filter(t=>t.type==='good').length;
-    return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id,channel:u?.channel||'',team:u?.team||'',product:v.videoType||v.video_type||''};
+    return {name:u?.name||'—',title:v.title,score:goodCount*10+(v.timestamps||[]).length*3,videoId:v.id,office:u?.office||'',team:u?.team||'',product:v.videoType||v.video_type||''};
   }).sort((a,b)=>b.score-a.score).slice(0,5);
 
   // 3. 음성 랭킹
@@ -10612,9 +10621,9 @@ function renderRanking(filtered){
     </div>`;
   }
 
-  const personalItems=personalRank.map(u=>({name:u.name,sub:u.channel+' · '+u.team,score:u.avgScore,userId:u.id,extra:u.vidCount?u.vidCount+'건':''}));
-  const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.channel} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,videoId:v.videoId}));
-  const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.channel||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,voiceId:v.id};});
+  const personalItems=personalRank.map(u=>({name:u.name,sub:u.office+' · '+u.team,score:u.avgScore,userId:u.id,extra:u.vidCount?u.vidCount+'건':''}));
+  const videoItems=videoRank.map(v=>({name:v.name,sub:`${v.office} · ${v.team}${v.product?' · '+v.product:''} · ${v.title}`,score:v.score,videoId:v.videoId}));
+  const voiceItems=voiceRank.map(v=>{const u=D.users.find(x=>x.id===v.user_id);return{name:v.user_name||'—',sub:`${u?.office||''} · ${u?.team||''}${v.tone?' · '+v.tone:''}`,score:v.score,voiceId:v.id};});
 
   rankArea.innerHTML=
     buildRankCard('개인 종합 랭킹','영상 평균 점수',personalItems,'#0078C8')+
@@ -10638,7 +10647,7 @@ function renderGrid(users){
         <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
         <div class="lect-info">
           <span class="lect-name">${u.name}</span>
-          <div class="lect-meta">${u.channel}<span style="margin-left:4px;color:var(--t3)">${u.team}</span></div>
+          <div class="lect-meta">${u.office}<span style="margin-left:4px;color:var(--t3)">${u.team}</span></div>
         </div>
       </div>
     </div>`;
@@ -11905,7 +11914,7 @@ function openLecturer(id, fromPage){
           <div style="font-size:22px;font-weight:900;color:var(--t1)">${u.name}</div>
           ${(()=>{const st=u.status||'근무';const stColor=st==='근무'?'#10b981':(st==='육아휴직'||st==='휴직')?'#f59e0b':(st==='퇴사')?'#9ca3af':'#6b7280';return `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${stColor}22;color:${stColor};font-weight:800">${st}</span>`;})()}
         </div>
-        <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5">${[u.orgName,u.team,u.position,u.office].filter(Boolean).join(' · ')||(u.channel+' · '+u.team)}
+        <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5">${[u.orgName,u.team,u.position,u.office].filter(Boolean).join(' · ')||(u.office+' · '+u.team)}
           <span style="cursor:pointer;color:var(--blue);margin-left:4px;font-size:10px" onclick="document.getElementById('prof-info-toggle').style.display=document.getElementById('prof-info-toggle').style.display==='none'?'block':'none'">ⓘ 정보</span>
         </div>
         <div style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:16px;background:${lvData.color};color:#fff;font-size:10px;font-weight:800;margin-top:6px;cursor:pointer" onclick="openLevelDetail(${userAvgScore},${evalCount},${totalVids})">
@@ -12781,7 +12790,7 @@ function renderCompareResults(myId){
     const bg=colors[i%6];
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='#f8f8f8'" onmouseout="this.style.background=''" onclick="doCompare(${myId},${u.id})">
       <div style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${u.channel} · ${u.team} · ${u.score}점</div></div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${u.office} · ${u.team} · ${u.score}점</div></div>
       <span class="grade-badge g-${u.grade}" style="display:inline-flex">${u.grade}</span>
       <span style="font-size:11px;color:var(--blue);font-weight:700">비교 →</span>
     </div>`;
