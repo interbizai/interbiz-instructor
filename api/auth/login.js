@@ -99,7 +99,9 @@ export default async function handler(req, res) {
     if (!ok) return res.status(401).json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
     const token = signToken({ sub: user.id, email: user.email, isAdmin: !!user.isSubAdmin });
-    return res.status(200).json({ ok: true, token, user: stripSensitive(user) });
+    const safeUser = stripSensitive(user);
+    if (user.isSubAdmin) safeUser.isAdmin = true;
+    return res.status(200).json({ ok: true, token, user: safeUser });
   } catch (e) {
     console.error('[login] unexpected error:', e);
     return res.status(500).json({ ok: false, error: '로그인 처리 중 오류' });

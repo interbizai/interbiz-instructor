@@ -3656,6 +3656,8 @@ const SEED = {
 ════════════════════════════════ */
 let D = { users:[], videos:[], criteria:[], refVideos:{} };
 let CU = JSON.parse(localStorage.getItem('ib_user')||'null');
+// 부관리자는 관리자 메뉴 접근 가능 — 페이지 reload 시에도 보장
+if(CU?.isSubAdmin && !CU.isAdmin) CU.isAdmin=true;
 let curLectId = null;
 let curVidId = null;
 function save(){ /* DB 저장은 각 함수에서 직접 처리 */ }
