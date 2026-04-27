@@ -4991,15 +4991,15 @@ function renderPick(){
   const evaledUserIdsThisMonth=new Set(monthVids.filter(v=>monthEvaledVidIds.has(v.id)).map(v=>v.userId));
   const cumUsers=evaledUserIdsThisMonth.size;
 
-  // 전체 평균 AI 점수 — 영상 평가만 (+ 필터 적용)
+  // 전체 평균 AI 점수 — 당월 영상 평가만 (인터픽 강사 카드와 동일 범위/우선순위)
+  // 우선순위: 교육맞춤평가(평가안기준) > AI독자 > 타임스탬프 폴백
   const videoEvalMap={};
   (D.evaluations||[]).forEach(e=>{if(e.video_id&&e.overall_score>0){const k=e.video_id+'_'+e.eval_type;videoEvalMap[k]=e.overall_score;}});
-  const scopedVids=applyPickFilter(D.videos||[],f);
-  const allVidScores=scopedVids.map(v=>{
-    const aiSc=videoEvalMap[v.id+'_AI독자'];
-    if(aiSc) return aiSc;
+  const allVidScores=monthVids.map(v=>{
     const critSc=videoEvalMap[v.id+'_평가안기준'];
     if(critSc) return critSc;
+    const aiSc=videoEvalMap[v.id+'_AI독자'];
+    if(aiSc) return aiSc;
     const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
     return Math.min(100,g*10+(v.timestamps||[]).length*3);
   });
