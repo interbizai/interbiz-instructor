@@ -43,13 +43,23 @@ export default async function handler(req, res) {
     const filterOrg = (req.body && req.body.org) || null;
     const targetOrg = isRealAdmin ? filterOrg : viewerOrg;
 
+    // 핵심 데이터 (users/videos/evaluations/voice_evals)는 강제 조직 매칭
     const orgEq = (q) => targetOrg ? q.eq('org_name', targetOrg) : q;
+    // 콘텐츠/공지/달력 등은 NULL(공통 자료) + 본인 조직 모두 보이게
+    const orgOrNull = (q) => targetOrg ? q.or(`org_name.eq.${targetOrg},org_name.is.null`) : q;
 
-    const [usersR, videosR, evalR, voiceR] = await Promise.all([
+    const [usersR, videosR, evalR, voiceR, calR, linkR, recR, contR, noticeR, featR, checkR] = await Promise.all([
       orgEq(sbAdmin.from('users_safe').select('*').order('id')),
       orgEq(sbAdmin.from('videos').select('*').order('id')),
       orgEq(sbAdmin.from('evaluations').select('*').order('created_at', { ascending: false })),
       orgEq(sbAdmin.from('voice_evals').select('*').order('created_at', { ascending: false })),
+      orgOrNull(sbAdmin.from('calendar_events').select('*').order('start_time', { ascending: true })),
+      orgOrNull(sbAdmin.from('learning_links').select('*').order('created_at', { ascending: false })),
+      orgOrNull(sbAdmin.from('recommended_videos').select('*').order('created_at', { ascending: false })),
+      orgOrNull(sbAdmin.from('pick_contents').select('*').order('created_at', { ascending: false })),
+      orgOrNull(sbAdmin.from('pick_notices').select('*').order('created_at', { ascending: false })),
+      orgOrNull(sbAdmin.from('pick_featured_videos').select('*').order('order_index', { ascending: true })),
+      orgOrNull(sbAdmin.from('checklist_files').select('*').order('created_at', { ascending: false })),
     ]);
 
     const videos = videosR.data || [];
@@ -67,6 +77,13 @@ export default async function handler(req, res) {
       timestamps,
       evaluations: evalR.data || [],
       voice_evals: voiceR.data || [],
+      calendar_events: calR.data || [],
+      learning_links: linkR.data || [],
+      recommended_videos: recR.data || [],
+      pick_contents: contR.data || [],
+      pick_notices: noticeR.data || [],
+      pick_featured_videos: featR.data || [],
+      checklist_files: checkR.data || [],
       meta: {
         viewer_org: viewerOrg,
         is_real_admin: isRealAdmin,
