@@ -3382,10 +3382,10 @@ function refreshOrgSwitch(){
   if(!sel) return;
   if(!D.isRealAdmin){ sel.style.display='none'; return; }
   sel.style.display='inline-block';
-  const orgs=new Set();
-  (D.users||[]).forEach(u=>{ if(u.orgName) orgs.add(u.orgName); });
+  // 서버가 제공한 전체 조직 목록 사용 (조직 필터와 무관하게 항상 모든 옵션)
+  const orgs=Array.isArray(D.orgList)?D.orgList:[];
   const opts=['<option value="">📂 전체 조직</option>'];
-  Array.from(orgs).sort().forEach(o=>{
+  orgs.forEach(o=>{
     opts.push(`<option value="${o}"${D.activeOrg===o?' selected':''}>${o}</option>`);
   });
   sel.innerHTML=opts.join('');
@@ -3422,6 +3422,7 @@ async function loadFromDB(){
     D.checklists=serverData.checklist_files||[];
     D.activeOrg=serverData.meta?.active_org||null;
     D.isRealAdmin=!!serverData.meta?.is_real_admin;
+    D.orgList=serverData.meta?.org_list||[];
   } else {
     D.users=[]; D.videos=[]; D.evaluations=[]; D.voiceEvals=[];
     D.calendarEvents=[]; D.learningLinks=[]; D.recVideos=[];

@@ -70,6 +70,13 @@ export default async function handler(req, res) {
       timestamps = ts || [];
     }
 
+    // 진짜 관리자에게는 전체 조직 목록 제공 (드롭다운용)
+    let orgList = [];
+    if (isRealAdmin) {
+      const { data: distinctOrgs } = await sbAdmin.from('users').select('org_name').not('org_name', 'is', null);
+      orgList = [...new Set((distinctOrgs || []).map(u => u.org_name).filter(Boolean))].sort();
+    }
+
     return res.status(200).json({
       ok: true,
       users: usersR.data || [],
@@ -88,6 +95,7 @@ export default async function handler(req, res) {
         viewer_org: viewerOrg,
         is_real_admin: isRealAdmin,
         active_org: targetOrg,
+        org_list: orgList,
       }
     });
   } catch (e) {
