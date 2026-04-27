@@ -12849,9 +12849,16 @@ async function saveEditProfile(){
   const pw=v('ep-pw').trim();
   if(pw && pw.length!==4){ el('ep-err').textContent='비밀번호는 4자리입니다.'; return; }
   const fields={name,birthYear:parseInt(v('ep-year'))||u.birthYear,channel:v('ep-channel'),team:v('ep-team'),hireDate:v('ep-hire'),phone:v('ep-phone')};
-  if(pw) fields.pw=pw;
   await dbUpdateUser(editProfileId,fields);
   Object.assign(u,fields);
+  if(pw){
+    const token=localStorage.getItem('ib_token')||'';
+    try{
+      const r=await fetch('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({userId:editProfileId,newPassword:pw})});
+      const j=await r.json().catch(()=>({}));
+      if(!j.ok){ el('ep-err').textContent='비밀번호 변경 실패: '+(j.error||''); return; }
+    }catch(e){ el('ep-err').textContent='네트워크 오류'; return; }
+  }
   if(CU&&CU.id===editProfileId){ CU.name=u.name; CU.channel=u.channel; localStorage.setItem('ib_user',JSON.stringify(CU)); }
   closeOverlay('edit-profile-overlay');
   openLecturer(editProfileId, lectFromPage);
