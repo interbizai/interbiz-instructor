@@ -412,6 +412,17 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .pw-wrap input{padding-right:40px}
 .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t3);padding:0}
 .pw-toggle:hover{color:var(--t1)}
+.login-loading{position:fixed;inset:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9999;display:none;align-items:center;justify-content:center}
+.login-loading.show{display:flex}
+.login-loading-card{text-align:center}
+.login-loading-logo{width:64px;height:64px;animation:loginPulse 1.5s ease-in-out infinite;margin-bottom:14px;display:inline-block;border-radius:50%;overflow:hidden}
+.login-loading-logo img{width:100%;height:100%;object-fit:contain}
+.login-loading-text{font-size:15px;font-weight:700;color:var(--t1);letter-spacing:.5px}
+.login-loading-text .dot{display:inline-block;animation:loginBlink 1.4s infinite;opacity:0}
+.login-loading-text .dot:nth-child(2){animation-delay:.2s}
+.login-loading-text .dot:nth-child(3){animation-delay:.4s}
+@keyframes loginPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.65}}
+@keyframes loginBlink{0%,80%,100%{opacity:0}40%{opacity:1}}
 /* register card wider */
 .auth-card-wide{width:520px}
 .reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -3188,10 +3199,10 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 ════════════════════════════════ */
 // DB에서 모든 유저 가져오기
 async function dbGetUsers(){
-  const {data,error}=await sb.from('users').select('*').order('id');
+  const {data,error}=await sb.from('users').select('id,name,email,channel,team,position,birth_year,hire_date,phone,photo,memo,score,grade,lg_career_start,teach_career_start,scores,maxes,habits,habit_counts,engagement_gaps,decibel,tempo,student_count,created_at,is_sub_admin,satisfaction,grade_override,deleted_at,org_name,office,birth_date,status').order('id');
   if(error){ console.error('dbGetUsers:',error); return []; }
   return data.map(r=>({
-    id:r.id, name:r.name, email:r.email, pw:r.pw, channel:r.channel, team:r.team,
+    id:r.id, name:r.name, email:r.email, channel:r.channel, team:r.team,
     position:r.position||'현장강사', birthYear:r.birth_year, hireDate:r.hire_date, phone:r.phone,
     photo:r.photo, memo:r.memo||'', score:r.score||0, grade:r.grade||'—',
     lgCareerStart:r.lg_career_start||'', teachCareerStart:r.teach_career_start||'',
@@ -3929,15 +3940,31 @@ window.addEventListener('resize',()=>{
   if(loginGrid) loginGrid.style.gridTemplateColumns=window.innerWidth<900?'1fr':'1fr 1fr';
 });
 
+function showLoginLoading(){
+  let lo=document.getElementById('login-loading');
+  if(!lo){
+    lo=document.createElement('div');
+    lo.id='login-loading';
+    lo.className='login-loading';
+    lo.innerHTML=`<div class="login-loading-card"><div class="login-loading-logo"><img src="assets/logo/파비콘/1-Photoroom.ico" alt="interbiz" onerror="this.parentElement.innerHTML='<div style=&quot;font-weight:900;font-size:28px;color:var(--blue)&quot;>ii</div>'"></div><div class="login-loading-text">로그인 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div></div>`;
+    document.body.appendChild(lo);
+  }
+  lo.classList.add('show');
+}
+function hideLoginLoading(){
+  const lo=document.getElementById('login-loading');
+  if(lo) lo.classList.remove('show');
+}
 async function doLogin(){
   const em=v('li-email').trim(), pw=v('li-pw').trim();
   if(!em||!pw){ el('li-err').textContent='이메일과 비밀번호를 입력해주세요.'; return; }
+  showLoginLoading();
   let r;
   try{
     r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
-  }catch(e){ el('li-err').textContent='네트워크 오류'; return; }
+  }catch(e){ hideLoginLoading(); el('li-err').textContent='네트워크 오류'; return; }
   const j=await r.json().catch(()=>({}));
-  if(!r.ok||!j.ok){ el('li-err').textContent=j.error||'로그인 실패'; return; }
+  if(!r.ok||!j.ok){ hideLoginLoading(); el('li-err').textContent=j.error||'로그인 실패'; return; }
   el('li-err').textContent='';
   localStorage.setItem('ib_token',j.token);
   if(j.user.isAdmin){
@@ -3951,6 +3978,7 @@ async function doLogin(){
     localStorage.setItem('ib_user',JSON.stringify(CU));
   }
   initHome(); showPage('page-pick');
+  hideLoginLoading();
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); hideGlobalSidebar(); showPage('page-login'); }
 /* ── Home Search ── */
