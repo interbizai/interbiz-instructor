@@ -1121,6 +1121,21 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 </head>
 <body>
 
+<!-- 조직 변경 시 즉시 로딩 오버레이 노출 (sessionStorage 플래그 기반) -->
+<script>
+(function(){
+  try{
+    const target=sessionStorage.getItem('ib_org_switching');
+    if(!target) return;
+    const lo=document.createElement('div');
+    lo.id='login-loading';
+    lo.className='login-loading show';
+    lo.innerHTML=`<div class="login-loading-card"><div class="login-loading-logo"><img src="assets/logo/파비콘/1-Photoroom.ico" alt="interbiz" onerror="this.parentElement.innerHTML='<div style=&quot;font-weight:900;font-size:28px;color:var(--blue)&quot;>ii</div>'"></div><div class="login-loading-text">${target==='전체 조직'?'전체 조직으로 전환 중':target+' 으로 전환 중'}<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div></div>`;
+    document.body.appendChild(lo);
+  }catch(e){}
+})();
+</script>
+
 <!-- ── Top Navigation Bar ── -->
 <nav class="topnav" id="topnav">
   <!-- Left: favicon + logo -->
@@ -3513,6 +3528,8 @@ function refreshOrgSwitch(){
 async function switchOrg(value){
   D.activeOrg=value||null;
   try{ localStorage.setItem('ib_active_org', D.activeOrg||''); }catch(e){}
+  try{ sessionStorage.setItem('ib_org_switching', value||'전체 조직'); }catch(e){}
+  showLoginLoading('조직 변경 중');
   location.reload();
 }
 async function loadFromDB(){
@@ -3599,6 +3616,13 @@ async function loadFromDB(){
       doLogout();
     }
   }
+  // 조직 변경 로딩 오버레이 — loadFromDB 완료 후 한 번 닫고 플래그 정리
+  try{
+    if(sessionStorage.getItem('ib_org_switching')){
+      sessionStorage.removeItem('ib_org_switching');
+      hideLoginLoading();
+    }
+  }catch(e){}
 }
 
 /* ════════════════════════════════
@@ -4109,15 +4133,16 @@ window.addEventListener('resize',()=>{
   if(loginGrid) loginGrid.style.gridTemplateColumns=window.innerWidth<900?'1fr':'1fr 1fr';
 });
 
-function showLoginLoading(){
+function showLoginLoading(textOverride){
+  const text=textOverride||'로그인 중';
   let lo=document.getElementById('login-loading');
   if(!lo){
     lo=document.createElement('div');
     lo.id='login-loading';
     lo.className='login-loading';
-    lo.innerHTML=`<div class="login-loading-card"><div class="login-loading-logo"><img src="assets/logo/파비콘/1-Photoroom.ico" alt="interbiz" onerror="this.parentElement.innerHTML='<div style=&quot;font-weight:900;font-size:28px;color:var(--blue)&quot;>ii</div>'"></div><div class="login-loading-text">로그인 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div></div>`;
     document.body.appendChild(lo);
   }
+  lo.innerHTML=`<div class="login-loading-card"><div class="login-loading-logo"><img src="assets/logo/파비콘/1-Photoroom.ico" alt="interbiz" onerror="this.parentElement.innerHTML='<div style=&quot;font-weight:900;font-size:28px;color:var(--blue)&quot;>ii</div>'"></div><div class="login-loading-text">${text}<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div></div>`;
   lo.classList.add('show');
 }
 function hideLoginLoading(){
@@ -5120,8 +5145,12 @@ function renderPick(){
       <!-- 건수 / LV / 경력 -->
       ${(()=>{
         const uAllVids=(D.videos||[]).filter(v=>v.userId===u.id);
-        const uAnalyzed=uAllVids.filter(v=>v.status==='분석완료'&&(v.timestamps||[]).length>0);
-        const uAvg=uAnalyzed.length?(uAnalyzed.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return Math.min(100,g*10+(v.timestamps||[]).length*3);}).reduce((a,b)=>a+b,0)/uAnalyzed.length):0;
+        const uAnalyzed=uAllVids.filter(v=>{
+          const c=videoEvalMap[v.id+'_평가안기준'];
+          const a=videoEvalMap[v.id+'_AI독자'];
+          return c||a||(v.status==='분석완료'&&(v.timestamps||[]).length>0);
+        });
+        const uAvg=uAnalyzed.length?(uAnalyzed.map(vidScore).reduce((a,b)=>a+b,0)/uAnalyzed.length):0;
         const uLv=getLevelInfo(uAvg,uAnalyzed.length,uAllVids.length);
         return `<div style="display:flex;gap:14px;margin-bottom:12px;align-items:baseline">
           <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--t1)">${uAllVids.length}</div><div style="font-size:9px;color:var(--t3)">건수</div></div>
