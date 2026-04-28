@@ -670,6 +670,22 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .tn-item:hover .tn-item-icon{transform:scale(1.2);transition:transform .2s}
 /* Admin notification dot */
 .tn-notif-dot{position:absolute;top:10px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid #fff}
+/* Avatar 알림 빨간 점 (안 읽은 알림 있을 때) */
+.avatar-wrap{position:relative}
+.avatar-wrap.has-notif::after{content:'';position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #fff;pointer-events:none}
+/* 알림 패널 배지 */
+.hdr-notif-badge.show{display:inline-flex!important}
+/* 알림 항목 */
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:14px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s}
+.notif-item:hover{background:#fafafa}
+.notif-item.unread{background:#fef9c3}
+.notif-item.unread:hover{background:#fef08a}
+.notif-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.notif-desc{font-size:12px;color:var(--t3);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.notif-time{font-size:10px;color:var(--t3);margin-top:4px}
+.notif-empty{padding:40px 20px;text-align:center;color:var(--t3);font-size:13px}
 .tn-logo{height:26px;cursor:pointer;flex-shrink:0}
 /* Center: menu items */
 .tn-menu{display:flex;align-items:center;gap:4px;flex:1;justify-content:center}
@@ -2551,6 +2567,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -2604,6 +2622,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -2796,6 +2816,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3084,6 +3106,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3139,6 +3163,24 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <button class="ts-modal-close" onclick="closeOverlay('notif-overlay')">✕</button>
     </div>
     <div id="notif-list" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- 통합 알림 패널 (NEW) -->
+<div class="overlay" id="notif-panel-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div style="background:#fff;border-radius:16px;width:min(480px,94vw);max-height:80vh;overflow:hidden;display:flex;flex-direction:column;animation:scaleIn .25s cubic-bezier(.22,1,.36,1);box-shadow:var(--sh-lg)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--bdr)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span style="font-size:16px;font-weight:800;color:var(--t1)">알림</span>
+        <span id="notif-panel-unread" style="display:none;padding:1px 8px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:999px"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-ghost" id="notif-mark-all-btn" onclick="markAllNotifRead()" style="padding:5px 10px;font-size:11px;font-weight:700;color:var(--t3);display:none">모두 읽음</button>
+        <button onclick="document.getElementById('notif-panel-overlay').classList.remove('show')" style="border:none;background:none;cursor:pointer;font-size:18px;color:var(--t3);padding:4px 8px">✕</button>
+      </div>
+    </div>
+    <div id="notif-panel-list" style="flex:1;overflow-y:auto;padding:6px 0"></div>
   </div>
 </div>
 
@@ -3239,6 +3281,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3434,6 +3478,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3567,6 +3613,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3727,6 +3775,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3754,6 +3804,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -3782,6 +3834,8 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <div class="avatar-dropdown">
         <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
         <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
+        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
+        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
         <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
         <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
       </div>
@@ -5401,8 +5455,133 @@ async function doLogin(){
   }
   initHome(); showPage('page-pick');
   hideLoginLoading();
+  startNotifPolling();
 }
-function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); }
+function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } }
+
+/* ════════════════════════════════
+   통합 알림 시스템 (notifications)
+════════════════════════════════ */
+async function dbCreateNotification({userId, type, title, body, link, orgName}){
+  if(!userId) return null;
+  try{
+    const {data,error}=await sb.from('notifications').insert({
+      user_id:userId, type:type||'info', title:title||'',
+      body:body||null, link:link||null, org_name:orgName||null
+    }).select().single();
+    if(error){ console.warn('createNotification:',error.message); return null; }
+    return data;
+  }catch(e){ console.warn('createNotification:',e); return null; }
+}
+async function dbCreateNotificationsForOrg({orgName, type, title, body, link, excludeUserId}){
+  // 같은 조직 모든 강사에게 알림 생성 (excludeUserId는 발신자 본인 제외)
+  if(!orgName) return 0;
+  const targets=(D.users||[]).filter(u=>!u.deleted && u.orgName===orgName && u.id!==excludeUserId && !u.isAdmin);
+  if(!targets.length) return 0;
+  const rows=targets.map(u=>({
+    user_id:u.id, type:type||'notice', title:title||'', body:body||null, link:link||null, org_name:orgName
+  }));
+  try{
+    const {error}=await sb.from('notifications').insert(rows);
+    if(error){ console.warn('createOrgNotifications:',error.message); return 0; }
+    return rows.length;
+  }catch(e){ console.warn('createOrgNotifications:',e); return 0; }
+}
+async function loadNotifications(){
+  if(!CU?.id) return [];
+  try{
+    const {data}=await sb.from('notifications').select('*').eq('user_id',CU.id).order('created_at',{ascending:false}).limit(50);
+    return data||[];
+  }catch(e){ return []; }
+}
+async function refreshNotifBadge(){
+  if(!CU?.id || CU.email==='admin'){
+    document.querySelector('.avatar-wrap')?.classList.remove('has-notif');
+    document.querySelectorAll('.hdr-notif-badge').forEach(b=>{b.style.display='none';b.classList.remove('show');});
+    return;
+  }
+  try{
+    const {count}=await sb.from('notifications').select('*',{count:'exact',head:true}).eq('user_id',CU.id).is('read_at',null);
+    const n=count||0;
+    document.querySelectorAll('.avatar-wrap').forEach(w=>w.classList.toggle('has-notif',n>0));
+    document.querySelectorAll('.hdr-notif-badge').forEach(b=>{
+      if(n>0){ b.textContent=n>99?'99+':String(n); b.style.display='inline-flex'; b.classList.add('show'); }
+      else { b.style.display='none'; b.classList.remove('show'); }
+    });
+  }catch(e){}
+}
+function _notifIcon(type){
+  const m={
+    eval_complete:{bg:'#dbeafe',color:'#0078C8',icon:'✓'},
+    new_notice:{bg:'#fef3c7',color:'#d97706',icon:'📢'},
+    delete_request:{bg:'#fee2e2',color:'#dc2626',icon:'🗑'},
+    permission:{bg:'#d1fae5',color:'#10b981',icon:'🔑'},
+    chat_reply:{bg:'#ede9fe',color:'#8b5cf6',icon:'💬'},
+  };
+  return m[type]||{bg:'#f1f5f9',color:'#475569',icon:'🔔'};
+}
+function _notifTimeAgo(ts){
+  const d=new Date(ts), now=new Date();
+  const diff=Math.floor((now-d)/1000);
+  if(diff<60) return '방금';
+  if(diff<3600) return Math.floor(diff/60)+'분 전';
+  if(diff<86400) return Math.floor(diff/3600)+'시간 전';
+  if(diff<604800) return Math.floor(diff/86400)+'일 전';
+  return d.toLocaleDateString('ko-KR',{month:'short',day:'numeric'});
+}
+async function openNotifPanel(){
+  document.getElementById('notif-panel-overlay').classList.add('show');
+  const list=document.getElementById('notif-panel-list');
+  list.innerHTML='<div class="notif-empty">불러오는 중...</div>';
+  const items=await loadNotifications();
+  const unreadCount=items.filter(x=>!x.read_at).length;
+  const unreadEl=document.getElementById('notif-panel-unread');
+  const markBtn=document.getElementById('notif-mark-all-btn');
+  if(unreadCount>0){ unreadEl.style.display='inline-block'; unreadEl.textContent=unreadCount; markBtn.style.display=''; }
+  else { unreadEl.style.display='none'; markBtn.style.display='none'; }
+  if(!items.length){
+    list.innerHTML='<div class="notif-empty"><div style="font-size:32px;margin-bottom:8px">🔕</div><div>받은 알림이 없습니다.</div></div>';
+    return;
+  }
+  list.innerHTML=items.map(n=>{
+    const ico=_notifIcon(n.type);
+    const desc=(n.body||'').replace(/</g,'&lt;');
+    const onclick=n.link?`onclick="handleNotifClick(${n.id},'${(n.link||'').replace(/'/g,"\\\\'")}')"`:`onclick="markNotifRead(${n.id});this.classList.remove('unread')"`;
+    return `<div class="notif-item ${n.read_at?'':'unread'}" ${onclick}>
+      <div class="notif-icon" style="background:${ico.bg};color:${ico.color}">${ico.icon}</div>
+      <div class="notif-body">
+        <div class="notif-title">${(n.title||'').replace(/</g,'&lt;')}</div>
+        ${desc?`<div class="notif-desc">${desc}</div>`:''}
+        <div class="notif-time">${_notifTimeAgo(n.created_at)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function markNotifRead(id){
+  try{ await sb.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id); }catch(e){}
+  refreshNotifBadge();
+}
+async function markAllNotifRead(){
+  if(!CU?.id) return;
+  try{ await sb.from('notifications').update({read_at:new Date().toISOString()}).eq('user_id',CU.id).is('read_at',null); }catch(e){}
+  document.querySelectorAll('#notif-panel-list .notif-item.unread').forEach(el=>el.classList.remove('unread'));
+  document.getElementById('notif-panel-unread').style.display='none';
+  document.getElementById('notif-mark-all-btn').style.display='none';
+  refreshNotifBadge();
+}
+async function handleNotifClick(id,link){
+  await markNotifRead(id);
+  document.getElementById('notif-panel-overlay').classList.remove('show');
+  if(link && link.startsWith('page-')) showPage(link);
+  else if(link) window.location.href=link;
+}
+// 30초마다 배지 갱신
+if(typeof window._notifBadgeTimer==='undefined') window._notifBadgeTimer=null;
+function startNotifPolling(){
+  if(window._notifBadgeTimer) clearInterval(window._notifBadgeTimer);
+  refreshNotifBadge();
+  window._notifBadgeTimer=setInterval(refreshNotifBadge,30000);
+}
 
 /* ════════════════════════════════
    PWA 설치 / Service Worker
@@ -6775,8 +6954,19 @@ async function addPickNotice(){
   if(!title){alert('제목을 입력하세요');return;}
   const content=document.getElementById('pick-add-notice-content')?.value?.trim()||null;
   const url=document.getElementById('pick-add-notice-url')?.value?.trim()||null;
-  const{error}=await sb.from('pick_notices').insert({title,content,url,created_by:CU?.name||'관리자',org_name:D.activeOrg||null});
+  const orgName=D.activeOrg||CU?.orgName||null;
+  const{error}=await sb.from('pick_notices').insert({title,content,url,created_by:CU?.name||'관리자',org_name:orgName});
   if(error){alert('등록 실패: '+error.message);return;}
+  // 같은 조직 강사 전체에게 알림 생성
+  if(orgName){
+    dbCreateNotificationsForOrg({
+      orgName, type:'new_notice',
+      title:'📢 새 공지: '+title,
+      body:content||'관리자가 새 공지를 등록했습니다.',
+      link:'page-pick',
+      excludeUserId:CU?.id
+    });
+  }
   await loadFromDB();renderPick();
 }
 async function deletePickNotice(id){
@@ -8270,7 +8460,34 @@ async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalTy
   let triedDropOrg=false;
   for(let i=0;i<3;i++){
     const{error}=await sb.from('evaluations').insert(payload);
-    if(!error) return true;
+    if(!error){
+      // 평가 완료 알림 — 영상 소유자(강사 본인) 에게
+      try{
+        if(videoId){
+          const vid=(D.videos||[]).find(x=>String(x.id)===String(videoId));
+          if(vid?.userId){
+            dbCreateNotification({
+              userId:vid.userId,
+              type:'eval_complete',
+              title:`✓ ${evalType} 평가 완료`,
+              body:`"${vid.title||'영상'}" 평가 결과가 도착했습니다. 점수: ${payload.overall_score}점`,
+              link:'page-lecturer',
+              orgName:vid.org_name||evalOrg
+            });
+          }
+        } else if(voiceEvalId && CU?.id){
+          dbCreateNotification({
+            userId:CU.id,
+            type:'eval_complete',
+            title:`✓ 스피치 평가 완료`,
+            body:`스피치 분석이 완료되었습니다. 점수: ${payload.overall_score}점`,
+            link:'page-lecturer',
+            orgName:evalOrg
+          });
+        }
+      }catch(e){ console.warn('eval notif failed:',e); }
+      return true;
+    }
     lastErrMsg=error.message||String(error);
     console.warn(`evaluations 저장 실패(${evalType}, 시도 ${i+1}/3):`,lastErrMsg,error);
     // org_name 컬럼이 없을 경우 한 번만 제거하고 재시도
@@ -13444,9 +13661,9 @@ function switchLectTab(name,btn){
 }
 
 /* ════════════════════════════════
-   개선 포인트 — 강사 약점 도출 + 학습 추천
+   개선 포인트 — (롤백, 미사용)
 ════════════════════════════════ */
-function renderImprovePoints(userId){
+function _renderImprovePoints_disabled(userId){
   const container=document.getElementById('improve-points-content-'+userId);
   if(!container) return;
   const userVids=(D.videos||[]).filter(v=>v.userId===userId);
@@ -13718,10 +13935,9 @@ function openLecturer(id, fromPage){
       </div>
     </div>
 
-    <!-- ▶ 탭: MY 역량 | 개선 포인트 | AI 코칭 목록 | MY 메모 -->
+    <!-- ▶ 탭: MY 역량 | AI 코칭 목록 | MY 메모 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchLectTab('역량',this)">MY 역량</button>
-      <button class="tab-btn" onclick="switchLectTab('개선',this);renderImprovePoints(${u.id})">개선 포인트</button>
       <button class="tab-btn" onclick="switchLectTab('코칭',this)">AI 코칭 목록</button>
       <button class="tab-btn" onclick="switchLectTab('메모',this)">MY 메모</button>
     </div>
@@ -13798,11 +14014,6 @@ function openLecturer(id, fromPage){
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- TAB: 개선 포인트 -->
-    <div class="lect-tab-pane" id="lect-tab-개선" style="display:none">
-      <div id="improve-points-content-${u.id}" style="min-height:200px"></div>
     </div>
 
     <!-- TAB: AI 코칭 목록 -->
