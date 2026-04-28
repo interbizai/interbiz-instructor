@@ -5517,7 +5517,6 @@ function _notifIcon(type){
     new_notice:{bg:'#fef3c7',color:'#d97706',icon:'📢'},
     delete_request:{bg:'#fee2e2',color:'#dc2626',icon:'🗑'},
     permission:{bg:'#d1fae5',color:'#10b981',icon:'🔑'},
-    chat_reply:{bg:'#ede9fe',color:'#8b5cf6',icon:'💬'},
   };
   return m[type]||{bg:'#f1f5f9',color:'#475569',icon:'🔔'};
 }
@@ -10606,14 +10605,24 @@ function openDeleteRequest(videoId,videoTitle){
 async function submitDeleteRequest(){
   const reason=v('delreq-reason').trim();
   if(!reason){el('delreq-err').textContent='사유를 입력하세요.';return;}
+  const orgName=D.activeOrg || CU?.orgName || CU?.channel || null;
   await sb.from('delete_requests').insert({
     user_id:CU?.id||null,
     user_name:CU?.name||'',
     video_id:_delReqVideoId,
     reason,
     status:'pending',
-    org_name: D.activeOrg || CU?.orgName || CU?.channel || null
+    org_name:orgName
   });
+  // 알림 — 자기 조직 부관리자 + 진짜 관리자(id=0)
+  try{
+    const vid=(D.videos||[]).find(x=>String(x.id)===String(_delReqVideoId));
+    const title='🗑 영상 삭제 요청';
+    const body=`${CU?.name||'강사'} — ${vid?.title||'영상'}`;
+    const subAdmins=(D.users||[]).filter(u=>!u.deleted && u.isSubAdmin && u.orgName===orgName);
+    subAdmins.forEach(u=>{ dbCreateNotification({userId:u.id,type:'delete_request',title,body,link:'page-admin',orgName}); });
+    dbCreateNotification({userId:0,type:'delete_request',title,body,link:'page-admin',orgName});
+  }catch(e){ console.warn('delete_request notif:',e); }
   await loadFromDB();
   closeOverlay('delreq-overlay');
   alert('삭제 요청이 접수되었습니다. 관리자 승인 후 삭제됩니다.');
@@ -15432,6 +15441,17 @@ async function toggleSubAdmin(id,grant){
   }
   const u=D.users.find(x=>x.id===id);
   if(u) u.isSubAdmin=grant;
+  // 알림 — 승격/취소 대상 본인에게
+  try{
+    dbCreateNotification({
+      userId:id,
+      type:'permission',
+      title:grant?'🔑 부관리자 권한 부여':'🔑 부관리자 권한 취소',
+      body:grant?'관리자에게 부관리자 권한을 부여받았습니다. 새로고침 후 관리자 메뉴를 확인하세요.':'부관리자 권한이 취소되었습니다.',
+      link:'page-myprofile',
+      orgName:u?.orgName||null
+    });
+  }catch(e){ console.warn('permission notif:',e); }
   alert(grant?`${u?.name||''} 님에게 부관리자 권한을 부여했습니다.`:`${u?.name||''} 님의 부관리자 권한을 취소했습니다.`);
   renderAdmin();
 }
