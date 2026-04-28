@@ -1225,8 +1225,25 @@ html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing
   .pick-hero-title{font-size:24px!important;letter-spacing:-1px!important}
   /* 추천학습/이번주일정/공지 — 1열 */
   #pick-3card-row{grid-template-columns:1fr!important;gap:12px!important}
-  /* 사진 컬라주 — 더 짧게 */
-  #pick-photo-track,.pick-photo-aside{min-height:280px!important;max-height:280px!important}
+  /* 사진 컬라주 — 매우 컴팩트 (≤480px) */
+  #pick-photo-track,.pick-photo-aside{
+    min-height:160px!important;
+    max-height:160px!important;
+    overflow:hidden!important;
+  }
+  #page-pick .pick-photo-aside{min-height:160px!important;max-height:160px!important}
+  /* 카드 자체를 작게 — 가로형 비율로 변경 */
+  .pick-photo-card{
+    aspect-ratio:4/3!important;
+    max-height:75px!important;
+    border-radius:8px!important;
+    box-shadow:0 2px 6px rgba(0,0,0,.3)!important;
+  }
+  /* 컬럼 간격도 좁게 */
+  .pick-photo-track{gap:6px!important}
+  .pick-photo-col > .pick-photo-card{margin-bottom:6px!important}
+  /* 두번째 컬럼 offset 도 비례 축소 */
+  .pick-photo-col.offset{margin-top:calc(-33.333% - 3px)!important}
   /* AI 코칭 — 영상 정보 그리드 1열 */
   #page-analysis .content-card>div:first-child>div[style*="repeat(5"]{grid-template-columns:1fr!important;gap:10px!important}
   /* 영상 등록 — 평가안 영역 wrap */
@@ -1264,6 +1281,15 @@ html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing
   #pick-stats{grid-template-columns:repeat(2,1fr)!important}
   #pick-top3{grid-template-columns:repeat(2,1fr)!important}
   #pick-top3 .pick-top-card:nth-child(3){grid-column:span 2}
+  /* 사진 컬라주 — 적당한 높이 */
+  #pick-photo-track,.pick-photo-aside{
+    min-height:220px!important;
+    max-height:220px!important;
+    overflow:hidden!important;
+  }
+  #page-pick .pick-photo-aside{min-height:220px!important;max-height:220px!important}
+  .pick-photo-card{aspect-ratio:4/3!important;max-height:100px!important}
+  .pick-photo-col.offset{margin-top:calc(-50% - 4px)!important}
 }
 
 /* ═══ PWA 설치 안내 배너 (모바일 첫 진입 시 1회) ═══ */
