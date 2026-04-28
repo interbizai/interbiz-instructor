@@ -13,3 +13,8 @@ key*.json
 
 # Vercel
 .vercel/
+
+# Claude Code (개인 설정 / 락 파일)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/projects/
