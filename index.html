@@ -1895,6 +1895,119 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   .an-feed-box{border-radius:12px!important}
 }
 
+/* ═══════════════════════════════════════════════════
+   체크리스트 전체보기 모달 (cl-detail-overlay) — 모바일 카드 변환
+   각 대항목 블록 안의 6칸 테이블 (세부/평가기준/점수/판정/시점/분석솔루션)
+   ═══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* 모달 외곽 풀스크린 */
+  #cl-detail-overlay > div{
+    max-width:100vw!important;
+    width:100vw!important;
+    border-radius:0!important;
+    max-height:100vh!important;
+  }
+  /* 헤더/스티키 */
+  #cl-detail-overlay > div > div:first-child{padding:14px 14px 10px!important}
+  #cl-detail-overlay > div > div:first-child div[style*="font-size:18px"]{font-size:15px!important;line-height:1.3!important}
+  /* 본문 padding */
+  #cl-detail-overlay > div > div:nth-child(2){padding:10px 12px 24px!important}
+  /* 각 대항목 카드 padding */
+  #cl-detail-overlay div[style*="margin-bottom:22px"][style*="border:1px solid"]{
+    margin-bottom:14px!important;
+    border-radius:12px!important;
+  }
+  /* 카드 헤더 (대항목 + 점수) */
+  #cl-detail-overlay div[style*="background:#f8f9fa"][style*="display:flex"][style*="justify-content:space-between"]{
+    padding:10px 12px!important;
+  }
+  #cl-detail-overlay div[style*="background:#f8f9fa"][style*="justify-content:space-between"] > div:first-child{font-size:13px!important}
+  /* 레이더 + 바 영역 (이미 1열로 변경됨) */
+  #cl-detail-overlay div[style*="grid-template-columns:440px"]{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    padding:10px!important;
+  }
+  #cl-detail-overlay div[style*="grid-template-columns:440px"] > div{
+    min-height:auto!important;
+    padding:10px!important;
+  }
+  /* 바 그래프 — 라벨 폭 좁게 */
+  #cl-detail-overlay div[style*="display:flex;align-items:center;gap:12px"][style*="max-width:540px"]{
+    gap:8px!important;
+    max-width:100%!important;
+  }
+  #cl-detail-overlay div[style*="display:flex;align-items:center;gap:12px"][style*="max-width:540px"] > span:first-child{
+    width:auto!important;
+    flex:0 0 100px!important;
+    font-size:11px!important;
+  }
+  /* 6칸 테이블 → 카드 변환 */
+  #cl-detail-overlay table{
+    min-width:0!important;
+    width:100%!important;
+    table-layout:auto!important;
+    font-size:12px!important;
+    border-collapse:separate!important;
+  }
+  #cl-detail-overlay table thead{display:none!important}
+  #cl-detail-overlay table tbody,#cl-detail-overlay table tr{display:block!important;width:100%!important}
+  #cl-detail-overlay table tr{
+    border:1px solid var(--bdr)!important;
+    border-radius:10px!important;
+    margin:0 8px 8px!important;
+    padding:10px 12px!important;
+    background:#fff!important;
+    box-shadow:0 1px 2px rgba(0,0,0,.03)!important;
+  }
+  #cl-detail-overlay table td{
+    display:flex!important;
+    border:none!important;
+    padding:5px 0!important;
+    white-space:normal!important;
+    word-break:break-word!important;
+    align-items:flex-start!important;
+    gap:8px!important;
+    font-size:12px!important;
+    line-height:1.55!important;
+    text-align:left!important;
+  }
+  /* 라벨 자동 부여 */
+  #cl-detail-overlay table td:nth-child(1)::before{content:'세부항목';flex:0 0 60px!important;font-weight:700!important;color:var(--t3)!important;font-size:11px!important;padding-top:1px!important}
+  #cl-detail-overlay table td:nth-child(3)::before{content:'점수';flex:0 0 60px!important;font-weight:700!important;color:var(--t3)!important;font-size:11px!important;padding-top:1px!important}
+  #cl-detail-overlay table td:nth-child(4)::before{content:'판정';flex:0 0 60px!important;font-weight:700!important;color:var(--t3)!important;font-size:11px!important;padding-top:1px!important}
+  #cl-detail-overlay table td:nth-child(5)::before{content:'시점';flex:0 0 60px!important;font-weight:700!important;color:var(--t3)!important;font-size:11px!important;padding-top:1px!important}
+  /* 첫 셀 (세부항목) 카드 헤더 강조 */
+  #cl-detail-overlay table td:nth-child(1){
+    border-bottom:1px solid #f1f5f9!important;
+    padding-bottom:8px!important;
+    margin-bottom:6px!important;
+  }
+  #cl-detail-overlay table td:nth-child(1) > *{font-weight:800!important;color:var(--blue)!important}
+  /* 점수/판정/시점 우측 정렬 해제 */
+  #cl-detail-overlay table td:nth-child(3),
+  #cl-detail-overlay table td:nth-child(4),
+  #cl-detail-overlay table td:nth-child(5){text-align:left!important}
+  /* 평가기준 (col 2) 라벨 위, 본문 풀폭 */
+  #cl-detail-overlay table td:nth-child(2),
+  #cl-detail-overlay table td:nth-child(6){
+    flex-direction:column!important;
+    gap:5px!important;
+    border-top:1px solid #f1f5f9!important;
+    margin-top:6px!important;
+    padding-top:10px!important;
+  }
+  #cl-detail-overlay table td:nth-child(2)::before{content:'📋 평가기준';font-size:11px!important;color:var(--t2)!important;font-weight:800!important;flex:none!important}
+  #cl-detail-overlay table td:nth-child(6)::before{content:'🔍 분석 / 💡 솔루션';font-size:11px!important;color:#0078C8!important;font-weight:800!important;flex:none!important}
+  /* 짝수행 회색 무력화 */
+  #cl-detail-overlay table tr[style*="border-bottom"]{background:#fff!important}
+  /* 테이블 외곽 가로 스크롤 컨테이너 — overflow 해제 */
+  #cl-detail-overlay div[style*="border-top:1px solid"][style*="overflow-x:auto"]{
+    overflow-x:visible!important;
+    padding:6px 0 12px!important;
+  }
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━
    QR 포스터 — 인쇄 시 포스터만 표시
    ━━━━━━━━━━━━━━━━━━━━━━━ */
