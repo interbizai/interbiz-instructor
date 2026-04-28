@@ -13768,7 +13768,22 @@ async function removeEduType(id,name){
   const byName=await dbRemoveEduTypeByName(name, D.activeOrg);
   dbDeleted+=byName?.deleted||0;
   console.log('DB delete by name:',byName);
-  // 3) 레거시 NULL 행을 특정 조직에서 삭제한 경우만 → 다른 조직에 fork (삭제 성공 후에만)
+  // 3) 진짜 삭제 실패(0건) — DB row 였으나 1건도 못 지움 → 롤백 + 진단 alert
+  if(!isLocal && dbDeleted===0){
+    D.eduTypes=snapD;
+    try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(e){}
+    renderEduTypeManage();
+    showEduTypeToast('❌ 삭제 실패','#ef4444');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error(`"${name}" 삭제: 0 rows affected. RLS 또는 권한 문제 가능.`);
+    console.error('Supabase SQL Editor에서 아래 모두 실행:');
+    console.error('  ALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;');
+    console.error('  GRANT ALL ON edu_types TO anon, authenticated;');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    alert(`삭제 실패: 1개도 지워지지 않았습니다.\n\nSupabase SQL Editor 에서 아래를 모두 실행해주세요:\n\nALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON edu_types TO anon, authenticated;\n\n이미 실행하셨다면 콘솔(F12) 에러를 확인해주세요.`);
+    return;
+  }
+  // 4) 레거시 NULL 행을 특정 조직에서 삭제한 경우만 → 다른 조직에 fork (삭제 성공 후에만)
   if(isLegacyNull && D.activeOrg && dbDeleted>0 && Array.isArray(D.orgList) && D.orgList.length){
     const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
     for(const otherOrg of otherOrgs){
@@ -13780,28 +13795,10 @@ async function removeEduType(id,name){
       }catch(e){ console.warn('fork edu_type to',otherOrg,'failed:',e); }
     }
   }
-  // 3) 검증 — DB에 여전히 남아있으면 RLS 차단 → 롤백 (현재 조직 스코프로 검증)
-  const verify=await dbGetEduTypes(D.activeOrg);
-  if(verify){
-    const stillExists=verify.find(r=>r.name===name);
-    if(stillExists){
-      // 롤백
-      D.eduTypes=snapD;
-      try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(e){}
-      renderEduTypeManage();
-      showEduTypeToast('❌ 삭제 실패: Supabase RLS가 차단 중','#ef4444');
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error(`"${name}" (id:${stillExists.id}) 가 Supabase에 여전히 존재합니다.`);
-      console.error('원인: edu_types 테이블의 RLS 정책이 DELETE를 차단');
-      console.error('해결: Supabase SQL Editor에서 아래 중 하나 실행');
-      console.error('  ① ALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;');
-      console.error('  ② CREATE POLICY "edu_types_all" ON edu_types FOR ALL TO anon,authenticated USING (true) WITH CHECK (true);');
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      alert(`삭제 실패: Supabase RLS가 DELETE를 차단하고 있습니다.\n\nSupabase SQL Editor에서 아래 명령 실행 후 다시 시도하세요:\n\nALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;`);
-      return;
-    }
-    // DB 기준으로 D.eduTypes 동기화
-    D.eduTypes=verify.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
+  // 5) 최종 동기화 — DB 기준으로 D.eduTypes 갱신 (현재 조직 스코프)
+  const fresh=await dbGetEduTypes(D.activeOrg);
+  if(fresh){
+    D.eduTypes=fresh.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
     renderEduTypeManage();
   }
   showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
