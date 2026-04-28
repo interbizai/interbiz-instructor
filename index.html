@@ -1757,6 +1757,144 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   body,p,span,div{word-break:keep-all}
 }
 
+/* ═══════════════════════════════════════════════════
+   타임스탬프 / 평가 항목별 피드백 — 모바일 카드 변환
+   8칸 테이블 (1280px) → 행마다 카드 형태로
+   ═══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* 컨테이너 높이 제약 풀고 자연스러운 흐름 */
+  #an-ts-feed,#an-criteria-result{padding:0!important;background:transparent!important;border:none!important}
+  #an-ts-feed > div,#an-criteria-result > div{
+    max-height:none!important;
+    overflow:visible!important;
+    flex-direction:column!important;
+  }
+  /* 헤더 테이블 / colgroup 숨김 — 카드 라벨로 대체 */
+  #an-ts-feed table colgroup,#an-criteria-result table colgroup,
+  #an-ts-feed table thead,#an-criteria-result table thead,
+  #an-ts-feed > div > table:first-child,#an-criteria-result > div > table:first-child{
+    display:none!important;
+  }
+  /* 본문 래퍼도 스크롤 없애기 */
+  #an-ts-feed > div > div,#an-criteria-result > div > div{
+    overflow:visible!important;
+    flex:none!important;
+    min-height:0!important;
+  }
+  /* 본문 테이블 풀폭 + min-width 해제 */
+  #an-ts-feed table,#an-criteria-result table{
+    min-width:0!important;
+    width:100%!important;
+    table-layout:auto!important;
+    border-collapse:separate!important;
+    border-spacing:0!important;
+    background:transparent!important;
+  }
+  #an-ts-feed tbody,#an-criteria-result tbody{display:block!important;width:100%!important}
+  /* 행 → 카드 */
+  #an-ts-feed tbody tr,#an-criteria-result tbody tr{
+    display:block!important;
+    border:1px solid var(--bdr)!important;
+    border-radius:12px!important;
+    margin:0 0 10px 0!important;
+    padding:12px 14px!important;
+    background:#fff!important;
+    box-shadow:0 1px 3px rgba(0,0,0,.04)!important;
+    cursor:pointer!important;
+  }
+  #an-ts-feed tbody tr:active,#an-criteria-result tbody tr:active{
+    background:#f8fafc!important;
+  }
+  /* 셀 — 라벨 + 값 수평 */
+  #an-ts-feed tbody td,#an-criteria-result tbody td{
+    display:flex!important;
+    border:none!important;
+    padding:5px 0!important;
+    white-space:normal!important;
+    word-break:break-word!important;
+    align-items:flex-start!important;
+    gap:8px!important;
+    font-size:12.5px!important;
+    line-height:1.55!important;
+    text-align:left!important;
+  }
+  /* nth-child 별 라벨 추가 (HTML 변경 없이) */
+  #an-ts-feed tbody td:nth-child(1)::before,#an-criteria-result tbody td:nth-child(1)::before{
+    content:'대항목';
+  }
+  #an-ts-feed tbody td:nth-child(2)::before,#an-criteria-result tbody td:nth-child(2)::before{
+    content:'세부항목';
+  }
+  #an-ts-feed tbody td:nth-child(4)::before,#an-criteria-result tbody td:nth-child(4)::before{
+    content:'배점';
+  }
+  #an-ts-feed tbody td:nth-child(5)::before,#an-criteria-result tbody td:nth-child(5)::before{
+    content:'점수';
+  }
+  #an-ts-feed tbody td:nth-child(6)::before,#an-criteria-result tbody td:nth-child(6)::before{
+    content:'시점';
+  }
+  #an-ts-feed tbody td:nth-child(1)::before,#an-criteria-result tbody td:nth-child(1)::before,
+  #an-ts-feed tbody td:nth-child(2)::before,#an-criteria-result tbody td:nth-child(2)::before,
+  #an-ts-feed tbody td:nth-child(4)::before,#an-criteria-result tbody td:nth-child(4)::before,
+  #an-ts-feed tbody td:nth-child(5)::before,#an-criteria-result tbody td:nth-child(5)::before,
+  #an-ts-feed tbody td:nth-child(6)::before,#an-criteria-result tbody td:nth-child(6)::before{
+    flex:0 0 60px!important;
+    font-weight:700!important;
+    color:var(--t3)!important;
+    font-size:11px!important;
+    padding-top:1px!important;
+  }
+  /* 첫 줄 (대항목) 강조 — 카드 헤더 */
+  #an-ts-feed tbody td:nth-child(1),#an-criteria-result tbody td:nth-child(1){
+    border-bottom:1px solid #f1f5f9!important;
+    padding-bottom:8px!important;
+    margin-bottom:6px!important;
+  }
+  #an-ts-feed tbody td:nth-child(1) > *,#an-criteria-result tbody td:nth-child(1) > *,
+  #an-ts-feed tbody td:nth-child(2) > *,#an-criteria-result tbody td:nth-child(2) > *{
+    font-weight:700!important;
+    color:var(--t1)!important;
+  }
+  /* 점수 셀 가운데 정렬 해제 + 배점·점수·시점 컴팩트하게 한 줄 그룹화 */
+  #an-ts-feed tbody td:nth-child(4),#an-criteria-result tbody td:nth-child(4),
+  #an-ts-feed tbody td:nth-child(5),#an-criteria-result tbody td:nth-child(5),
+  #an-ts-feed tbody td:nth-child(6),#an-criteria-result tbody td:nth-child(6){
+    text-align:left!important;
+  }
+  /* 긴 텍스트 (평가 기준 / 분석 / 솔루션) — 라벨 위로, 본문 아래 풀폭 */
+  #an-ts-feed tbody td:nth-child(3),#an-criteria-result tbody td:nth-child(3),
+  #an-ts-feed tbody td:nth-child(7),#an-criteria-result tbody td:nth-child(7),
+  #an-ts-feed tbody td:nth-child(8),#an-criteria-result tbody td:nth-child(8){
+    flex-direction:column!important;
+    gap:5px!important;
+    border-top:1px solid #f1f5f9!important;
+    margin-top:6px!important;
+    padding-top:10px!important;
+  }
+  #an-ts-feed tbody td:nth-child(3)::before,#an-criteria-result tbody td:nth-child(3)::before{
+    content:'📋 평가 기준';
+    font-size:11px!important;color:var(--t2)!important;font-weight:800!important;flex:none!important;
+  }
+  #an-ts-feed tbody td:nth-child(7)::before,#an-criteria-result tbody td:nth-child(7)::before{
+    content:'🔍 분석';
+    font-size:11px!important;color:#0078C8!important;font-weight:800!important;flex:none!important;
+  }
+  #an-ts-feed tbody td:nth-child(8)::before,#an-criteria-result tbody td:nth-child(8)::before{
+    content:'💡 솔루션';
+    font-size:11px!important;color:#10b981!important;font-weight:800!important;flex:none!important;
+  }
+  /* 회색 띠 (홀수행) 무력화 — 카드 형태에서는 모두 흰색 */
+  #an-ts-feed tbody tr[style*="background:#fafbfc"],
+  #an-ts-feed tbody tr[style*="background:#ffffff"],
+  #an-criteria-result tbody tr[style*="background:#fafbfc"],
+  #an-criteria-result tbody tr[style*="background:#ffffff"]{
+    background:#fff!important;
+  }
+  /* 영상 통합/세부영상 모달 — 한쪽 컨테이너 안 표시될 때 */
+  .an-feed-box{border-radius:12px!important}
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━
    QR 포스터 — 인쇄 시 포스터만 표시
    ━━━━━━━━━━━━━━━━━━━━━━━ */
