@@ -13612,21 +13612,7 @@ async function removeEduType(id,name){
   D.eduTypes=snapD.filter(r=>String(r.id)!==String(id) && r.name!==name);
   try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.filter(n=>n!==name))); }catch(e){}
   renderEduTypeManage();
-  // 2-A) 레거시 NULL 행을 특정 조직에서 삭제하는 경우 → 다른 조직에는 fork 후 NULL 행 삭제
-  //      (현재 조직만 항목이 사라지고, 다른 조직은 자기 이름의 행으로 보존)
-  if(isLegacyNull && D.activeOrg && Array.isArray(D.orgList) && D.orgList.length){
-    const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
-    for(const otherOrg of otherOrgs){
-      try{
-        // 이미 그 조직에 같은 이름이 있으면 중복 방지
-        const dup=await sb.from('edu_types').select('id').eq('name',name).eq('org_name',otherOrg).limit(1);
-        if(!dup?.data?.length){
-          await sb.from('edu_types').insert({name, org_name:otherOrg});
-        }
-      }catch(e){ console.warn('fork edu_type to',otherOrg,'failed:',e); }
-    }
-  }
-  // 2-B) Supabase 삭제 시도 — id 기준 + name 기준 (현재 조직 범위)
+  // 2) Supabase 삭제 — id 기준 + name 기준 (현재 조직 범위)
   const isLocal=!id||String(id).startsWith('local-');
   let dbDeleted=0;
   if(!isLocal){
@@ -13639,6 +13625,19 @@ async function removeEduType(id,name){
   const byName=await dbRemoveEduTypeByName(name, D.activeOrg);
   dbDeleted+=byName?.deleted||0;
   console.log('DB delete by name:',byName);
+  // 3) 레거시 NULL 행을 특정 조직에서 삭제한 경우만 → 다른 조직에 fork (삭제 성공 후에만)
+  //    삭제가 RLS로 막혔다면 fork도 스킵해서 다른 조직에 중복 생성 방지
+  if(isLegacyNull && D.activeOrg && dbDeleted>0 && Array.isArray(D.orgList) && D.orgList.length){
+    const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
+    for(const otherOrg of otherOrgs){
+      try{
+        const dup=await sb.from('edu_types').select('id').eq('name',name).eq('org_name',otherOrg).limit(1);
+        if(!dup?.data?.length){
+          await sb.from('edu_types').insert({name, org_name:otherOrg});
+        }
+      }catch(e){ console.warn('fork edu_type to',otherOrg,'failed:',e); }
+    }
+  }
   // 3) 검증 — DB에 여전히 남아있으면 RLS 차단 → 롤백 (현재 조직 스코프로 검증)
   const verify=await dbGetEduTypes(D.activeOrg);
   if(verify){
