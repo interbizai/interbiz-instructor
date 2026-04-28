@@ -13547,7 +13547,23 @@ async function purgeAllUsers(){
 }
 async function toggleSubAdmin(id,grant){
   if(CU?.isSubAdmin){alert('부관리자 등록/취소는 관리자만 가능합니다.');return;}
-  await dbUpdateUser(id,{isSubAdmin:grant});
+  // 서버 API 사용 — sbAdmin(service role) 으로 RLS 우회
+  try{
+    const token=localStorage.getItem('ib_token')||'';
+    const r=await fetch('/api/auth/grant-sub-admin',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({userId:id, grant:!!grant})
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){
+      alert('권한 변경 실패: '+(j.error||r.status));
+      return;
+    }
+  }catch(e){
+    alert('권한 변경 실패: 네트워크 오류');
+    return;
+  }
   const u=D.users.find(x=>x.id===id);
   if(u) u.isSubAdmin=grant;
   alert(grant?`${u?.name||''} 님에게 부관리자 권한을 부여했습니다.`:`${u?.name||''} 님의 부관리자 권한을 취소했습니다.`);
