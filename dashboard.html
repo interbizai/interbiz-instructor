@@ -13748,43 +13748,42 @@ async function removeEduType(id,name){
   const snapD=[...(Array.isArray(D.eduTypes)?D.eduTypes:[])];
   let snapLocal=[];
   try{ snapLocal=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
-  // 삭제 대상 행 정보 — 레거시(NULL/공통) 여부 확인
-  const targetRow=snapD.find(r=>String(r.id)===String(id));
-  const isLegacyNull=!!targetRow && (targetRow.org_name===null || targetRow.org_name===undefined || targetRow.org_name==='');
-  // 1) 즉시 UI 반영 (optimistic)
-  D.eduTypes=snapD.filter(r=>String(r.id)!==String(id) && r.name!==name);
+  // 1) 즉시 UI 반영 (optimistic) — 같은 이름의 모든 행 제거
+  D.eduTypes=snapD.filter(r=>r.name!==name);
   try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.filter(n=>n!==name))); }catch(e){}
   renderEduTypeManage();
-  // 2) Supabase 삭제 — id 기준 + name 기준 (현재 조직 범위)
+  // 2) DB에서 같은 이름의 모든 관련 행 한 번에 조회 (현재 조직 + NULL)
+  let relatedRows=[];
+  try{
+    const orFilter=D.activeOrg?`org_name.eq.${D.activeOrg},org_name.is.null`:'org_name.is.null';
+    const r=await sb.from('edu_types').select('*').eq('name',name).or(orFilter);
+    relatedRows=r?.data||[];
+  }catch(e){ console.warn('select related rows failed:',e); }
+  console.log(`[removeEduType] '${name}' 관련 행 ${relatedRows.length}개:`, relatedRows);
   const isLocal=!id||String(id).startsWith('local-');
   let dbDeleted=0;
-  if(!isLocal){
-    const numId=parseInt(id,10);
-    const res=await dbRemoveEduType(isNaN(numId)?id:numId);
-    dbDeleted+=res?.deleted||0;
-    console.log('DB delete by id:',res);
+  // 3) 같은 이름의 모든 관련 행 삭제 (id 단위 정확한 삭제)
+  for(const row of relatedRows){
+    try{
+      const r=await sb.from('edu_types').delete().eq('id', row.id).select();
+      const cnt=r?.data?.length||0;
+      dbDeleted+=cnt;
+      console.log(`  delete id=${row.id} (org=${row.org_name||'NULL'}): ${cnt}`);
+    }catch(e){ console.warn('  delete failed for id=',row.id,e); }
   }
-  // name 기준 삭제는 현재 활성 조직 범위로 제한 (다른 조직의 동명 항목은 보존)
-  const byName=await dbRemoveEduTypeByName(name, D.activeOrg);
-  dbDeleted+=byName?.deleted||0;
-  console.log('DB delete by name:',byName);
-  // 3) 진짜 삭제 실패(0건) — DB row 였으나 1건도 못 지움 → 롤백 + 진단 alert
-  if(!isLocal && dbDeleted===0){
+  // 4) 진짜 삭제 실패(0건) — DB row 였으나 1건도 못 지움 → 롤백 + 진단 alert
+  if(!isLocal && relatedRows.length>0 && dbDeleted===0){
     D.eduTypes=snapD;
     try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(e){}
     renderEduTypeManage();
     showEduTypeToast('❌ 삭제 실패','#ef4444');
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.error(`"${name}" 삭제: 0 rows affected. RLS 또는 권한 문제 가능.`);
-    console.error('Supabase SQL Editor에서 아래 모두 실행:');
-    console.error('  ALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;');
-    console.error('  GRANT ALL ON edu_types TO anon, authenticated;');
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    alert(`삭제 실패: 1개도 지워지지 않았습니다.\n\nSupabase SQL Editor 에서 아래를 모두 실행해주세요:\n\nALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON edu_types TO anon, authenticated;\n\n이미 실행하셨다면 콘솔(F12) 에러를 확인해주세요.`);
+    console.error(`"${name}" 삭제: 0 rows affected. RLS/권한 문제.`);
+    alert(`삭제 실패: 1개도 지워지지 않았습니다.\n\nSupabase SQL Editor 에서 실행:\n\nALTER TABLE edu_types DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON edu_types TO anon, authenticated;\n\n이미 실행하셨다면 F12 콘솔 에러를 확인해주세요.`);
     return;
   }
-  // 4) 레거시 NULL 행을 특정 조직에서 삭제한 경우만 → 다른 조직에 fork (삭제 성공 후에만)
-  if(isLegacyNull && D.activeOrg && dbDeleted>0 && Array.isArray(D.orgList) && D.orgList.length){
+  // 5) NULL 레거시 행이 삭제된 경우 → 다른 조직에 fork
+  const hadNullRow=relatedRows.some(r=>!r.org_name);
+  if(hadNullRow && D.activeOrg && Array.isArray(D.orgList) && D.orgList.length){
     const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
     for(const otherOrg of otherOrgs){
       try{
@@ -13795,7 +13794,7 @@ async function removeEduType(id,name){
       }catch(e){ console.warn('fork edu_type to',otherOrg,'failed:',e); }
     }
   }
-  // 5) 최종 동기화 — DB 기준으로 D.eduTypes 갱신 (현재 조직 스코프)
+  // 6) 최종 동기화 — DB 기준으로 D.eduTypes 갱신 (현재 조직 스코프)
   const fresh=await dbGetEduTypes(D.activeOrg);
   if(fresh){
     D.eduTypes=fresh.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
