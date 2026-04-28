@@ -5274,16 +5274,25 @@ function openPickRankingModal(){
   const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
   const prevVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  // 영상 평가 점수 — 평가안기준(교육맞춤평가) 우선, AI독자 차순, 폴백 timestamp
+  const videoEvalMap={};
+  (D.evaluations||[]).forEach(e=>{ if(e.video_id && e.overall_score>0){ videoEvalMap[e.video_id+'_'+e.eval_type]=e.overall_score; } });
+  const vidScore=(v)=>{
+    const c=videoEvalMap[v.id+'_평가안기준']; if(c) return c;
+    const a=videoEvalMap[v.id+'_AI독자']; if(a) return a;
+    const g=(v.timestamps||[]).filter(t=>t.type==='good').length;
+    return Math.min(100, g*10+(v.timestamps||[]).length*3);
+  };
   const allScored=(D.users||[]).filter(u=>!u.deleted).map(u=>{
     const uV=monthVids.filter(v=>v.userId===u.id);
     const uVo=monthVoice.filter(v=>v.user_id===u.id);
-    const sc=[...uV.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...uVo.map(v=>v.score||0)];
+    const sc=[...uV.map(vidScore),...uVo.map(v=>v.score||0)];
     const avg=sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length):0;
     const pV=prevVids.filter(v=>v.userId===u.id);const pVo=prevVoice.filter(v=>v.user_id===u.id);
-    const pSc=[...pV.map(v=>{const g=(v.timestamps||[]).filter(t=>t.type==='good').length;return g*10+(v.timestamps||[]).length*3;}),...pVo.map(v=>v.score||0)];
+    const pSc=[...pV.map(vidScore),...pVo.map(v=>v.score||0)];
     const pAvg=pSc.length?(pSc.reduce((a,b)=>a+b,0)/pSc.length):0;
     const growth=pAvg>0?Math.round((avg-pAvg)/pAvg*100):0;
-    const vidList=[...uV.map(v=>({title:v.title||'—',date:v.date,score:Math.min(100,Math.round((v.timestamps||[]).filter(t=>t.type==='good').length*10+(v.timestamps||[]).length*3))})),...uVo.map(v=>({title:v.title||'음성 분석',date:v.eval_date||v.created_at?.slice(0,10),score:v.score||0}))];
+    const vidList=[...uV.map(v=>({title:v.title||'—',date:v.date,score:vidScore(v)})),...uVo.map(v=>({title:v.title||'음성 분석',date:v.eval_date||v.created_at?.slice(0,10),score:v.score||0}))];
     return {...u,pickScore:Math.round(avg*10)/10,evalCount:sc.length,growth,vidList};
   }).filter(u=>u.evalCount>0).sort((a,b)=>b.pickScore-a.pickScore);
 
