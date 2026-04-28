@@ -4029,7 +4029,10 @@ async function doLogin(){
   // 첫 접속 시 항상 '전체 조직' 으로 시작 (이전 세션의 조직 선택 폐기)
   localStorage.removeItem('ib_active_org');
   D.activeOrg=null;
-  if(j.user.isAdmin){
+  // 특별 하드코딩 관리자(id=0) 만 j.user 직접 사용. 그 외(부관리자 포함)는
+  // D.users 의 매핑된(camelCase) 객체를 사용해야 orgName 등이 정상 세팅됨.
+  const isSpecialAdmin=(j.user?.id===0);
+  if(isSpecialAdmin){
     CU=j.user;
     localStorage.setItem('ib_user',JSON.stringify(CU));
     await loadFromDB();
@@ -4038,7 +4041,7 @@ async function doLogin(){
     CU=D.users.find(x=>x.id===j.user.id)||j.user;
     if(CU?.isSubAdmin) CU.isAdmin=true;
     localStorage.setItem('ib_user',JSON.stringify(CU));
-    // CU 업데이트 후 드롭다운/관리자 메뉴 재계산 (부관리자는 loadFromDB 시점엔 CU.isAdmin=false 였음)
+    // CU 업데이트 후 드롭다운/관리자 메뉴 재계산
     if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
     if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
   }
