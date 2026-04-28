@@ -3427,21 +3427,31 @@ async function dbRemoveEduTypeByName(name, org){
 }
 // 영상 생성
 async function dbCreateVideo(v){
+  // 영상이 속할 조직: 영상 소유자(user)의 org → 활성 조직 → 현재 사용자 조직 순
+  const owner=(D.users||[]).find(x=>x.id===v.userId);
+  const orgName=v.orgName||owner?.orgName||D.activeOrg||CU?.orgName||CU?.channel||null;
   const full={
     user_id:v.userId, title:v.title, youtube:v.youtube||'', file_path:v.filePath||'',
     video_date:v.date||null, duration:v.duration||'', student_count:v.studentCount||0,
     status:v.status||'등록완료', video_type:v.videoType||'', channel:v.channel||'',
     solution:v.solution||'', edu_file_url:v.eduFileUrl||'', product_name:v.productName||'',
-    edu_type:v.eduType||null
+    edu_type:v.eduType||null,
+    org_name:orgName
   };
   let {data,error}=await sb.from('videos').insert(full).select().single();
   if(!error) return data;
-  // edu_type 컬럼이 DB에 없으면 제외 후 재시도
   const msg=(error.message||'').toLowerCase();
+  // edu_type 컬럼이 DB에 없으면 제외 후 재시도
   if(msg.includes('column') && msg.includes('edu_type')){
     console.warn('edu_type 컬럼 없음 — 제외 후 재시도');
     const {edu_type,...noEdu}=full;
     ({data,error}=await sb.from('videos').insert(noEdu).select().single());
+    if(!error) return data;
+  }
+  if((error?.message||'').toLowerCase().includes('org_name')){
+    console.warn('org_name 컬럼 없음 — 제외 후 재시도');
+    const {org_name,...noOrg}=full;
+    ({data,error}=await sb.from('videos').insert(noOrg).select().single());
     if(!error) return data;
   }
   console.error('dbCreateVideo:',error);
