@@ -3489,25 +3489,16 @@ async function dbRestoreUser(id){
 function refreshOrgSwitch(){
   const sel=document.getElementById('org-switch');
   if(!sel) return;
-  // 일반 강사: 드롭다운 숨김. 진짜 관리자/부관리자만 표시.
-  const isAdm=!!CU?.isAdmin;
-  if(!isAdm){ sel.style.display='none'; return; }
+  // 진짜 관리자만 헤더에 드롭다운 노출. 부관리자/일반 강사는 숨김.
+  if(!D.isRealAdmin){ sel.style.display='none'; return; }
   sel.style.display='inline-block';
-  if(D.isRealAdmin){
-    // 진짜 관리자: 전체 조직 + 모든 조직 옵션
-    const orgs=Array.isArray(D.orgList)?D.orgList:[];
-    const opts=['<option value="">📂 전체 조직</option>'];
-    orgs.forEach(o=>{
-      opts.push(`<option value="${o}"${D.activeOrg===o?' selected':''}>${o}</option>`);
-    });
-    sel.innerHTML=opts.join('');
-    sel.disabled=false;
-  } else {
-    // 부관리자: 자기 조직만 표시 (전환 불가)
-    const myOrg=CU?.orgName||CU?.channel||D.activeOrg||'';
-    sel.innerHTML=myOrg?`<option value="${myOrg}" selected>${myOrg}</option>`:'<option value="" selected>—</option>';
-    sel.disabled=true;
-  }
+  const orgs=Array.isArray(D.orgList)?D.orgList:[];
+  const opts=['<option value="">📂 전체 조직</option>'];
+  orgs.forEach(o=>{
+    opts.push(`<option value="${o}"${D.activeOrg===o?' selected':''}>${o}</option>`);
+  });
+  sel.innerHTML=opts.join('');
+  sel.disabled=false;
 }
 async function switchOrg(value){
   D.activeOrg=value||null;
