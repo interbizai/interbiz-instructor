@@ -1699,6 +1699,216 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   .mobile-nav-item svg{width:18px!important;height:18px!important}
 }
 
+/* ═══════════════════════════════════════════════════
+   AI 코칭 영상 분석 결과 (page-analysis) — 모바일 풀 점검
+   ═══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* ── 결과 헤더 (AI 코칭 / 제목 / 메타 / 분위기 / 영상 보기) ── */
+  #an-result-meta-top{justify-content:center!important;padding:0!important}
+  #an-result-title-wrap{
+    padding:12px!important;
+    gap:8px!important;
+    flex-wrap:wrap!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+  #an-result-title-wrap > svg{display:none!important}
+  #an-result-title{font-size:14px!important;flex-basis:100%!important;text-align:center!important;min-width:0!important;white-space:normal!important;word-break:keep-all!important}
+  #an-result-title-wrap > div[style*="flex:1"]{display:none!important}
+  #an-result-meta{justify-content:center!important;flex-basis:100%!important}
+  #an-mood-badge{font-size:11px!important;padding:4px 10px!important}
+  #an-result-title-wrap button{padding:6px 12px!important;font-size:12px!important;background:rgba(0,0,0,.05)!important;border-radius:8px!important;line-height:1.3!important}
+
+  /* ── 총점 배너 (교육맞춤 / AI 독자 그라데이션 2개) ── */
+  /* 외부 컨테이너 padding/margin */
+  #an-step2 > div[style*="border-radius:16px"][style*="overflow:hidden"][style*="box-shadow"]{
+    margin-bottom:14px!important;
+  }
+  /* 각 그라데이션 배너 — padding 축소 + flex column */
+  #an-step2 div[style*="linear-gradient(135deg,#9f1239"],
+  #an-step2 div[style*="linear-gradient(135deg,#e8590c"]{
+    padding:16px!important;
+    flex-direction:column!important;
+    gap:12px!important;
+    align-items:stretch!important;
+  }
+  /* 원형 점수 차트 — 작게 + 가운데 */
+  #an-step2 div[style*="position:relative;width:72px"]{
+    width:60px!important;
+    height:60px!important;
+    margin:0 auto!important;
+  }
+  #an-step2 #an-score-pct,#an-step2 #an-score-pct-ai{font-size:14px!important}
+  /* 5칸 통계 → 3칸 + 줄바꿈 + 작은 폰트 */
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"]{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:8px!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"] > div{
+    text-align:center!important;
+  }
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"] div[style*="font-size:22px"]{font-size:18px!important;font-weight:900!important}
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"] div[style*="font-size:9px"]{font-size:9.5px!important;white-space:normal!important;line-height:1.25!important;word-break:keep-all}
+  /* 요약 텍스트 영역 — 풀폭 + 가운데 */
+  #an-step2 div[style*="flex:1;min-width:180px"]{
+    min-width:0!important;
+    width:100%!important;
+  }
+  #an-step2 div[style*="flex:1;min-width:180px"] div[style*="font-size:10px"]{font-size:10px!important;text-align:center!important}
+  #an-step2 div[style*="flex:1;min-width:180px"] #an-ai-summary,
+  #an-step2 div[style*="flex:1;min-width:180px"] #an-ai-summary2{
+    font-size:11.5px!important;
+    text-align:center!important;
+    line-height:1.5!important;
+  }
+  #an-banner-keywords1,#an-banner-keywords2{justify-content:center!important;gap:6px!important}
+
+  /* ── 분석 탭 바 (교육맞춤평가 / AI 독자 분석) ── */
+  #an-step2 .tab-bar{
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+    -webkit-overflow-scrolling:touch;
+    margin-bottom:14px!important;
+  }
+  #an-step2 .tab-bar::-webkit-scrollbar{display:none}
+  #an-step2 .tab-btn{flex-shrink:0!important;white-space:nowrap!important;padding:10px 14px!important;font-size:12.5px!important}
+
+  /* ── 라데어 차트 + 바 + 최종의견 그리드 → 1열 ── */
+  #an-edu-radar-wrap,#an-ai-radar-wrap{
+    grid-template-columns:1fr!important;
+    gap:16px!important;
+    margin-bottom:18px!important;
+  }
+  #an-edu-radar-wrap > div,#an-ai-radar-wrap > div{min-width:0!important}
+  /* 차트 컨테이너 */
+  #an-edu-radar-wrap div[style*="min-height:340px"],
+  #an-ai-radar-wrap div[style*="min-height:340px"]{
+    min-height:240px!important;
+    padding:12px!important;
+  }
+  #an-edu-radar svg,#an-ai-radar svg{max-width:100%!important;width:100%!important;height:auto!important}
+  /* 헤더 (제목 + 전체보기 버튼) */
+  #an-edu-radar-wrap > div > div[style*="height:34px"],
+  #an-ai-radar-wrap > div > div[style*="height:34px"]{
+    height:auto!important;
+    flex-wrap:wrap!important;
+    gap:6px!important;
+  }
+  #an-edu-radar-wrap > div > div[style*="height:34px"] > div,
+  #an-ai-radar-wrap > div > div[style*="height:34px"] > div{
+    line-height:1.3!important;
+    font-size:14px!important;
+  }
+  /* 달성도 / 최종의견 박스 패딩 */
+  #an-edu-bars,#an-ai-bars{padding:12px!important}
+  #an-edu-bars > div,#an-ai-bars > div{padding:10px!important;font-size:12px!important}
+  #an-criteria-opinion,#an-ai-result{padding:0!important}
+
+  /* ── 평가 항목별 피드백 (전체 폭) ── */
+  #an-criteria-result,#an-ts-feed{padding:0!important}
+  #an-criteria-result > div,#an-ts-feed > div{padding:12px!important;font-size:12.5px!important}
+
+  /* ── 추천 시나리오 / 강의 레벨 UP / 강사 화법 (3열 → 1열) ── */
+  #an-tips-wrap{grid-template-columns:1fr!important;gap:14px!important}
+  #an-tips-wrap > div > div:first-child{font-size:13px!important}
+  #an-tips-wrap > div > div:last-child > div{padding:10px!important;font-size:12px!important;line-height:1.5!important}
+  /* 추천 시나리오 외부 박스 padding */
+  #an-tab-criteria > div[style*="background:rgba(159,18,57"]{padding:14px!important;border-radius:12px!important}
+
+  /* ── 음성 & 습관 분석 (3열 → 1열) ── */
+  #an-tab-ai div[style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+  }
+  #an-tab-ai div[style*="border:1px solid var(--bdr)"][style*="padding:20px"]{padding:14px!important}
+  #an-habits,#an-voice-stats,#an-engagement{font-size:12px!important}
+
+  /* ── 액션 버튼 영역 ── */
+  #an-action-btns{
+    flex-wrap:wrap!important;
+    justify-content:center!important;
+    margin-top:14px!important;
+  }
+  #an-action-btns .btn,#an-action-btns button{flex:1!important;min-width:120px!important}
+  /* PDF 출력 버튼 — 풀폭 + 하단 고정 */
+  .pdf-bottom{padding:14px 12px!important;text-align:center!important}
+  .pdf-bottom .btn-pdf{width:100%!important;padding:14px!important;font-size:14px!important}
+
+  /* ═══════════════════════════════════════════════
+     AI 코칭 스피치 평가 (page-voice) — 모바일 풀 점검
+     ═══════════════════════════════════════════════ */
+  /* 좌우 분할 → 세로 1열 + 간격 정리 */
+  #va-split{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+    margin-bottom:14px!important;
+  }
+  #va-split > div{margin-top:0!important}
+  /* 카드 헤더 */
+  #va-split > div > div:first-child{padding:10px 14px!important;font-size:12px!important}
+  /* 카드 본문 */
+  #va-criteria-result,#va-ai-result{padding:14px!important;font-size:12.5px!important}
+  #va-criteria-result > *,#va-ai-result > *{max-width:100%!important;word-break:keep-all}
+  /* 종합 솔루션 */
+  #va-report{padding:0!important;margin-bottom:14px!important}
+  #va-report > *{padding:14px!important;font-size:12.5px!important}
+  /* 액션 버튼 영역 */
+  #va-action-btns{
+    flex-wrap:wrap!important;
+    justify-content:center!important;
+  }
+  #va-action-btns .btn,#va-action-btns button{flex:1!important;min-width:120px!important}
+
+  /* ═══════════════════════════════════════════════
+     인터픽 (page-pick) — 추가 폴리싱
+     ═══════════════════════════════════════════════ */
+  /* 헤로 영역 더 컴팩트하게 (≤768px) */
+  #page-pick .pick-hero-wide{padding:14px 0 8px!important;margin-bottom:8px!important}
+  #page-pick .pick-hero-title{font-size:22px!important;line-height:1.2!important}
+  #page-pick .pick-hero-sub{font-size:12.5px!important;margin-top:6px!important}
+  /* 페이지 내 광폭 영역 패딩 */
+  #page-pick > main{padding:12px 14px 90px!important}
+  /* 통계 카드 명확하게 1열 */
+  #pick-stats{grid-template-columns:1fr!important;gap:6px!important}
+  #pick-stats > div{padding:10px 14px!important}
+  #pick-stats > div > div:first-child{font-size:18px!important;font-weight:900!important}
+  /* TOP 3 1열 — 모바일에서는 2개씩 보다 명확함 */
+  #pick-top3{grid-template-columns:1fr!important;gap:10px!important}
+  /* 과정 제품별 영상 섹션 — 카드 패딩 */
+  #pick-section-box,#pick-videos{padding:0!important}
+  #pick-videos > div{padding:12px!important}
+  /* 추천학습/일정/공지 영역 명확화 */
+  #pick-3card-row > div > div:first-child{font-size:13px!important;padding-bottom:6px!important;margin-bottom:8px!important}
+  #pick-3card-row > div > div:nth-child(2){font-size:12.5px!important;min-height:80px!important}
+
+  /* 페이지 타이틀 — 더 컴팩트 */
+  #page-pick .page-title{padding:8px 0 14px!important;margin-bottom:0!important}
+  #page-pick .page-title h2{font-size:18px!important}
+
+  /* 영상 추가 (관리자) 영역 */
+  #pick-admin-add{padding:12px!important;margin-bottom:12px!important}
+  #pick-admin-add input,#pick-admin-add select,#pick-admin-add button{font-size:13px!important}
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━
+   매우 작은 폰 (≤360px) — 추가 보정
+   ━━━━━━━━━━━━━━━━━━━━━━━ */
+@media(max-width:360px){
+  /* AI 영상 분석 — 5칸 → 2칸 */
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"]{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+  #an-step2 div[style*="display:flex;gap:16px"][style*="min-width:280px"] div[style*="font-size:22px"]{font-size:16px!important}
+  /* 결과 헤더 폰트 */
+  #an-result-title{font-size:13px!important}
+  /* 인터픽 헤로 더 작게 */
+  #page-pick .pick-hero-title{font-size:19px!important}
+  #page-pick .pick-hero-sub{font-size:11.5px!important}
+}
+
 /* ═══ PWA 설치 안내 배너 (모바일 첫 진입 시 1회) ═══ */
 #pwa-install-banner{
   position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
