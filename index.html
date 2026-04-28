@@ -1415,10 +1415,80 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   .auth-card .form-input{font-size:16px!important;padding:14px 12px!important}
   .auth-btn{font-size:15px!important;padding:14px!important;font-weight:800!important}
 
-  /* #17 AI 코칭 영상 등록 폼 — 라벨 위쪽 + 풀폭 */
-  #page-analysis .form-group,#page-aicoach .form-group{margin-bottom:14px!important}
-  #page-analysis .form-lbl,#page-aicoach .form-lbl{font-size:11px!important;margin-bottom:6px!important;display:block!important}
-  #page-analysis .form-input,#page-aicoach .form-input{width:100%!important;box-sizing:border-box!important}
+  /* #17 AI 코칭 영상/스피치 등록 폼 — 모두 세로 1열 풀폭 */
+  /* AI 영상 — 5칸 grid → 1열 강제 */
+  #an-step1 div[style*="grid-template-columns:repeat(5"],
+  #an-step1 div[style*="grid-template-columns: repeat(5"]{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+  }
+  /* AI 영상 — 외부 박스 padding/max-width */
+  #an-step1 > div[style*="max-width:900px"]{max-width:100%!important;width:100%!important}
+  #an-step1 > div > div[style*="border:1px solid"][style*="padding:22px"]{padding:14px!important}
+  /* AI 영상 — 업로드 영역 */
+  #an-step1 .upload-zone{padding:18px 12px!important}
+  #an-step1 .upload-zone svg{width:24px!important;height:24px!important}
+  #an-step1 .upload-zone p{font-size:12px!important;text-align:center!important;margin-top:8px!important}
+  /* AI 영상 — 직접 파일 업로드 / 평가안 영역 */
+  #an-step1 div[style*="background:#f8f9fa"]{padding:12px!important}
+  #an-step1 div[style*="background:#f8f9fa"] > div[style*="display:flex"][style*="gap:10px"]{
+    flex-wrap:wrap!important;
+    gap:8px!important;
+  }
+  #an-step1 div[style*="background:#f8f9fa"] button{flex:1!important;min-width:130px!important}
+  /* AI 영상 — AI 분석 시작 버튼 풀폭 */
+  #an-step1 button[onclick*="runAnalysis"]{
+    max-width:100%!important;
+    width:100%!important;
+    margin-top:14px!important;
+    padding:14px!important;
+    font-size:14px!important;
+  }
+
+  /* AI 스피치 — 2칸 grid (녹음 + 설정) → 1열 세로 */
+  #va-step1 > div[style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+    max-width:100%!important;
+  }
+  /* AI 스피치 — 외부 박스 패딩 */
+  #va-step1 > div > div > div[style*="border:1px solid"][style*="padding:22px"]{padding:14px!important}
+  /* AI 스피치 — 녹음 영역 */
+  #va-step1 div[style*="background:#f8f9fa"]{padding:12px!important}
+  #va-step1 #va-rec-btn{padding:10px 16px!important;font-size:13px!important}
+  #va-step1 #va-pause-btn{padding:8px 12px!important;font-size:12px!important}
+  #va-step1 .upload-zone{padding:14px!important}
+  #va-step1 .upload-zone svg{width:22px!important;height:22px!important}
+  #va-step1 .upload-zone p{font-size:12px!important;margin-top:8px!important}
+  /* AI 스피치 — 평가안 업로드 영역 wrap */
+  #va-step1 div[style*="display:flex;gap:8px;align-items:center"]{flex-wrap:wrap!important}
+  #va-step1 div[style*="display:flex;gap:8px;align-items:center"] button{flex:1!important;min-width:110px!important}
+  /* AI 스피치 — 시작 버튼 풀폭 */
+  #va-step1 ~ button[onclick*="runVoiceAnalysis"],
+  #page-voice button[onclick*="runVoiceAnalysis"],
+  #va-step1 .auth-btn{
+    max-width:100%!important;
+    width:100%!important;
+    margin-top:14px!important;
+    padding:14px!important;
+    font-size:14px!important;
+  }
+
+  /* 공통 form-group / 라벨 / input */
+  #page-analysis .form-group,#page-aicoach .form-group,#page-voice .form-group{margin-bottom:14px!important;margin:0 0 14px 0!important}
+  #page-analysis .form-lbl,#page-aicoach .form-lbl,#page-voice .form-lbl{
+    font-size:12px!important;
+    font-weight:700!important;
+    color:var(--t1)!important;
+    margin-bottom:6px!important;
+    display:block!important;
+  }
+  #page-analysis .form-input,#page-aicoach .form-input,#page-voice .form-input{
+    width:100%!important;
+    box-sizing:border-box!important;
+    font-size:14px!important;
+    padding:11px 12px!important;
+  }
 
   /* 추가 — 카드/박스 안전 padding */
   .content-card,.r-vid-card,.lect-card,.stat-card{padding:14px 12px!important}
@@ -2703,7 +2773,6 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <span id="an-delete-area"></span>
     </div>
   </div>
-  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
   </div>
 </main>
 </div>
@@ -3018,7 +3087,6 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
       <span id="va-delete-area"></span>
     </div>
   </div>
-  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
   </div>
 </main>
 </div>
