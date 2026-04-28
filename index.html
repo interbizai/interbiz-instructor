@@ -1654,7 +1654,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('an-checklist').click()">파일 직접 선택 (PDF/Excel)</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:var(--green)" onclick="downloadChecklistSample()">샘플 다운로드</button>
           <span style="font-size:11px;color:var(--t3)" id="an-checklist-name">선택된 파일 없음</span>
-          <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('an-checklist-name').textContent=this.files[0]?.name||'없음'">
+          <input type="file" id="an-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="uploadAnChecklistFile(this)">
         </div>
         <div id="an-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700">✓ 체크리스트 적용: <span id="an-cl-applied-name"></span></div>
       </div>
@@ -2114,7 +2114,7 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="document.getElementById('va-checklist').click()">파일 선택</button>
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--green)" onclick="downloadVoiceChecklistSample()">샘플 다운</button>
             <span style="font-size:11px;color:var(--t3)" id="va-cl-name">없음</span>
-            <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="el('va-cl-name').textContent=this.files[0]?.name||'없음'">
+            <input type="file" id="va-checklist" accept=".pdf,.xlsx,.xls" style="display:none" onchange="uploadVaChecklistFile(this)">
           </div>
           <div id="va-cl-applied" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-size:11px;color:var(--green);font-weight:700">✓ 체크리스트 적용: <span id="va-cl-applied-name"></span></div>
           <div style="font-size:10px;color:var(--t3);margin-top:4px">없으면 AI 독자 분석만 적용</div>
@@ -3454,18 +3454,34 @@ async function loadFromDB(){
   if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
   // 관리자 메뉴 표시/숨김
   if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
-  const {data:cri}=await sb.from('criteria').select('*').order('sort_order');
-  if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description}));
-  const {data:ref}=await sb.from('ref_videos').select('*');
-  if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
-  // (voice_evals는 /api/db/load에서 받음)
-  // (learning_links, checklist_files는 /api/db/load에서 받음)
-  // 삭제 요청
-  const {data:dr}=await sb.from('delete_requests').select('*').order('created_at',{ascending:false});
-  D.deleteRequests=dr||[];
-  // 교육자료 카테고리
-  const {data:ec}=await sb.from('edu_categories').select('*').order('sort_order');
-  D.eduCategories=ec||[];
+  // criteria — 조직별 분리 (활성 조직 + NULL 레거시)
+  {
+    let q=sb.from('criteria').select('*').order('sort_order');
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const {data:cri}=await q;
+    if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description,org_name:c.org_name||null}));
+  }
+  // ref_videos — 조직별 분리
+  {
+    let q=sb.from('ref_videos').select('*');
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const {data:ref}=await q;
+    if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
+  }
+  // delete_requests — 조직별 분리
+  {
+    let q=sb.from('delete_requests').select('*').order('created_at',{ascending:false});
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const {data:dr}=await q;
+    D.deleteRequests=dr||[];
+  }
+  // 교육자료 카테고리 — 조직별 분리 (NULL 레거시 = 공통)
+  {
+    let q=sb.from('edu_categories').select('*').order('sort_order');
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const {data:ec}=await q;
+    D.eduCategories=ec||[];
+  }
   // 최초 1회 기본 카테고리 시드
   await seedEduCategoriesIfEmpty();
   // 교육종류 (조직별 분리 · Supabase가 유일한 기준 · 자동 마이그레이션 없음)
@@ -7332,6 +7348,80 @@ function applyEduFile(url,name){
   if(badge){
     badge.style.display='block';
     if(badgeName) badgeName.textContent=name;
+  }
+}
+// AI 코칭 — 파일 직접 선택 시 Supabase Storage 업로드 → URL 을 an-checklist-url 에 세팅
+async function uploadAnChecklistFile(input){
+  const file=input?.files?.[0];
+  const nameEl=document.getElementById('an-checklist-name');
+  if(!file){ if(nameEl) nameEl.textContent='선택된 파일 없음'; return; }
+  if(nameEl) nameEl.textContent=file.name+' (업로드 중…)';
+  try{
+    const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+    const path=`eval-checklists/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const {error:ue}=await sb.storage.from('files').upload(path,file);
+    if(ue){
+      console.error('upload failed:',ue);
+      if(nameEl) nameEl.textContent=file.name+' (업로드 실패)';
+      alert('파일 업로드 실패: '+(ue.message||''));
+      input.value='';
+      return;
+    }
+    const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+    if(!document.getElementById('an-checklist-url')){
+      const h=document.createElement('input');h.type='hidden';h.id='an-checklist-url';document.body.appendChild(h);
+    }
+    document.getElementById('an-checklist-url').value=publicUrl;
+    if(nameEl) nameEl.textContent=file.name+' (직접 업로드 적용)';
+    // 드롭다운 바로 아래 배지 표시 (교육자료 클릭과 동일)
+    const badge=document.getElementById('an-edu-applied');
+    const badgeName=document.getElementById('an-edu-applied-name');
+    if(badge){
+      badge.style.display='block';
+      if(badgeName) badgeName.textContent=file.name;
+    }
+    // 적용 표시 박스
+    const applied=document.getElementById('an-cl-applied');
+    const appliedName=document.getElementById('an-cl-applied-name');
+    if(applied){ applied.style.display='block'; if(appliedName) appliedName.textContent=file.name; }
+  }catch(e){
+    console.error('uploadAnChecklistFile:',e);
+    if(nameEl) nameEl.textContent=file.name+' (업로드 실패)';
+    alert('파일 업로드 중 오류: '+(e.message||''));
+    input.value='';
+  }
+}
+// 스피치 평가 — 파일 직접 선택 시 Supabase Storage 업로드 → URL 을 va-checklist-url 에 세팅
+async function uploadVaChecklistFile(input){
+  const file=input?.files?.[0];
+  const nameEl=document.getElementById('va-cl-name');
+  if(!file){ if(nameEl) nameEl.textContent='없음'; return; }
+  if(nameEl) nameEl.textContent=file.name+' (업로드 중…)';
+  try{
+    const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+    const path=`eval-checklists/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const {error:ue}=await sb.storage.from('files').upload(path,file);
+    if(ue){
+      console.error('upload failed:',ue);
+      if(nameEl) nameEl.textContent=file.name+' (업로드 실패)';
+      alert('파일 업로드 실패: '+(ue.message||''));
+      input.value='';
+      return;
+    }
+    const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+    if(!document.getElementById('va-checklist-url')){
+      const h=document.createElement('input');h.type='hidden';h.id='va-checklist-url';document.body.appendChild(h);
+    }
+    document.getElementById('va-checklist-url').value=publicUrl;
+    if(nameEl) nameEl.textContent=file.name+' (직접 업로드 적용)';
+    const applied=document.getElementById('va-cl-applied');
+    const appliedName=document.getElementById('va-cl-applied-name');
+    if(applied){ applied.style.display='block'; if(appliedName) appliedName.textContent=file.name; }
+  }catch(e){
+    console.error('uploadVaChecklistFile:',e);
+    if(nameEl) nameEl.textContent=file.name+' (업로드 실패)';
+    alert('파일 업로드 중 오류: '+(e.message||''));
+    input.value='';
   }
 }
 // 가전 제품 셀렉트 초기화
