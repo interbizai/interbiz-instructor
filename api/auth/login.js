@@ -98,9 +98,12 @@ export default async function handler(req, res) {
     }
     if (!ok) return res.status(401).json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
-    const token = signToken({ sub: user.id, email: user.email, isAdmin: !!user.isSubAdmin });
+    // DB 컬럼은 snake_case (is_sub_admin) — camelCase 별칭을 함께 살려서 클라이언트로 전달
+    const isSub = !!(user.is_sub_admin || user.isSubAdmin);
+    const token = signToken({ sub: user.id, email: user.email, isAdmin: isSub });
     const safeUser = stripSensitive(user);
-    if (user.isSubAdmin) safeUser.isAdmin = true;
+    safeUser.isSubAdmin = isSub;
+    if (isSub) safeUser.isAdmin = true;
     return res.status(200).json({ ok: true, token, user: safeUser });
   } catch (e) {
     console.error('[login] unexpected error:', e);
