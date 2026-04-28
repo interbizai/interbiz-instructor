@@ -13605,11 +13605,28 @@ async function removeEduType(id,name){
   const snapD=[...(Array.isArray(D.eduTypes)?D.eduTypes:[])];
   let snapLocal=[];
   try{ snapLocal=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
+  // 삭제 대상 행 정보 — 레거시(NULL/공통) 여부 확인
+  const targetRow=snapD.find(r=>String(r.id)===String(id));
+  const isLegacyNull=!!targetRow && (targetRow.org_name===null || targetRow.org_name===undefined || targetRow.org_name==='');
   // 1) 즉시 UI 반영 (optimistic)
   D.eduTypes=snapD.filter(r=>String(r.id)!==String(id) && r.name!==name);
   try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.filter(n=>n!==name))); }catch(e){}
   renderEduTypeManage();
-  // 2) Supabase 삭제 시도 — id 기준 + name 기준
+  // 2-A) 레거시 NULL 행을 특정 조직에서 삭제하는 경우 → 다른 조직에는 fork 후 NULL 행 삭제
+  //      (현재 조직만 항목이 사라지고, 다른 조직은 자기 이름의 행으로 보존)
+  if(isLegacyNull && D.activeOrg && Array.isArray(D.orgList) && D.orgList.length){
+    const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
+    for(const otherOrg of otherOrgs){
+      try{
+        // 이미 그 조직에 같은 이름이 있으면 중복 방지
+        const dup=await sb.from('edu_types').select('id').eq('name',name).eq('org_name',otherOrg).limit(1);
+        if(!dup?.data?.length){
+          await sb.from('edu_types').insert({name, org_name:otherOrg});
+        }
+      }catch(e){ console.warn('fork edu_type to',otherOrg,'failed:',e); }
+    }
+  }
+  // 2-B) Supabase 삭제 시도 — id 기준 + name 기준 (현재 조직 범위)
   const isLocal=!id||String(id).startsWith('local-');
   let dbDeleted=0;
   if(!isLocal){

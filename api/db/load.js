@@ -70,9 +70,9 @@ export default async function handler(req, res) {
       timestamps = ts || [];
     }
 
-    // 진짜 관리자에게는 전체 조직 목록 제공 (드롭다운용)
+    // 전체 조직 목록 제공 — 진짜 관리자(드롭다운용) + 부관리자(edu_types fork 용)
     let orgList = [];
-    if (isRealAdmin) {
+    {
       const { data: distinctOrgs } = await sbAdmin.from('users').select('org_name').not('org_name', 'is', null);
       orgList = [...new Set((distinctOrgs || []).map(u => u.org_name).filter(Boolean))].sort();
     }
