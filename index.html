@@ -5061,8 +5061,9 @@ function updateTopNav(activePage){
   const notifDot=document.getElementById('tn-notif-dot');
   if(notifDot) notifDot.style.display=(CU?.isAdmin&&cnt)?'block':'none';
   // 알림 메뉴 — 로그인된 모든 사용자에게 노출 (강사+관리자 통합 알림 패널 진입)
+  // 진짜 관리자(env 로그인)는 CU.id가 없을 수 있어 CU 자체로 검사
   const ddNotif=document.getElementById('tn-dd-notif');
-  if(ddNotif) ddNotif.style.display=CU?.id?'flex':'none';
+  if(ddNotif) ddNotif.style.display=CU?'flex':'none';
   // 미읽음 카운트는 refreshNotifBadge가 .hdr-notif-badge 자동 갱신
   // 프로필 업데이트
   const u=D.users?.find(x=>x.id===CU?.id);
