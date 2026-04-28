@@ -1130,15 +1130,18 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
 /* ═══════════════════════════════════════════════════
    모바일 최적화 보강 (iOS / Android PWA)
+   PC 뷰에는 영향이 없도록 모든 규칙을 @media 로 격리
    ═══════════════════════════════════════════════════ */
-/* 안전 영역 (iPhone 노치/홈 인디케이터) */
-body{
-  padding-top:env(safe-area-inset-top);
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
+@media(max-width:900px){
+  /* 안전 영역 (iPhone 노치/홈 인디케이터) */
+  body{
+    padding-top:env(safe-area-inset-top);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  .topnav{padding-top:env(safe-area-inset-top)!important;height:calc(58px + env(safe-area-inset-top))!important}
+  .mobile-nav{padding-bottom:calc(6px + env(safe-area-inset-bottom))!important}
 }
-.topnav{padding-top:env(safe-area-inset-top)!important;height:calc(58px + env(safe-area-inset-top))!important}
-.mobile-nav{padding-bottom:calc(6px + env(safe-area-inset-bottom))!important}
 
 /* iOS 입력창 자동 줌 방지 (font-size ≥ 16px 필수) */
 @media(max-width:600px){
@@ -1150,21 +1153,24 @@ body{
   /* 단, 라벨용 작은 input 은 예외 처리 가능 — 필요 시 .small-input 클래스 부여 */
 }
 
-/* 더블탭 줌 방지 + 빠른 클릭 */
-button,.btn,.tn-item,.tab-btn,.mobile-nav-item,.lect-card,
-.tn-favicon,.tn-logo,a[onclick],[onclick]{
-  touch-action:manipulation;
-  -webkit-tap-highlight-color:rgba(0,120,200,.15);
+/* 더블탭 줌 방지 + 빠른 클릭 — 모바일만 (PC 동작 보호) */
+@media(max-width:900px){
+  button,.btn,.tn-item,.tab-btn,.mobile-nav-item,.lect-card,
+  .tn-favicon,.tn-logo,a[onclick],[onclick]{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:rgba(0,120,200,.15);
+  }
+  /* 텍스트 선택 방지 (모바일에서 의도치 않은 길게 누르기) */
+  .tn-item,.tab-btn,.mobile-nav-item,.btn,button{
+    -webkit-user-select:none;
+    user-select:none;
+  }
 }
 
-/* 텍스트 선택 가능 영역 (모바일에서 의도치 않은 길게 누르기 방지) */
-.tn-item,.tab-btn,.mobile-nav-item,.btn,button{
-  -webkit-user-select:none;
-  user-select:none;
+/* 이미지 늘어남 방지 — 모바일에만 적용 (PC 레이아웃 보호) */
+@media(max-width:900px){
+  img:not(.no-shrink){max-width:100%;height:auto}
 }
-
-/* 이미지 늘어남 방지 */
-img{max-width:100%;height:auto}
 
 /* 모바일 — 터치 타겟 최소 44px */
 @media(max-width:600px){
@@ -1175,8 +1181,11 @@ img{max-width:100%;height:auto}
   .btn-tiny,.btn[style*="padding:4px"],.btn[style*="padding:2px"]{ min-height:0 }
 }
 
-/* 가로 스크롤 발생 방지 (mobile 안정화) */
-html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+/* 가로 스크롤 발생 방지 — 모바일에만 적용 (PC 레이아웃 보호) */
+html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+@media(max-width:900px){
+  html,body{overflow-x:hidden}
+}
 
 /* PWA Standalone 모드 — 브라우저 chrome 없이 동작 시 풀스크린 보정 */
 @media (display-mode:standalone){
@@ -14800,10 +14809,12 @@ window.showPage=function(id){
 
 <!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 -->
 <style>
-#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:50;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;user-select:text;-webkit-user-select:text;display:flex;align-items:center;gap:6px;transition:opacity .25s,transform .25s}
+/* PC 기본 — 원래 형태 그대로 */
+#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:10000;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;user-select:text;-webkit-user-select:text;transition:opacity .25s,transform .25s}
 #global-footer .email{color:#334155;font-weight:700;cursor:text;user-select:all;-webkit-user-select:all}
-#global-footer .gf-close{border:none;background:transparent;color:#94a3b8;font-size:14px;line-height:1;cursor:pointer;padding:0 4px;display:none}
+#global-footer .gf-close{display:none}
 #global-footer.collapsed{transform:translateX(-50%) translateY(120%);opacity:0;pointer-events:none}
+/* 모바일만 — flex 배치 + 닫기 버튼 + z-index 낮춤 */
 @media (max-width:900px){
   #global-footer{
     bottom:calc(70px + env(safe-area-inset-bottom,0));
@@ -14811,14 +14822,24 @@ window.showPage=function(id){
     padding:3px 10px;
     background:rgba(255,255,255,.85);
     z-index:40;
+    display:flex;
+    align-items:center;
+    gap:6px;
   }
-  #global-footer .gf-close{display:inline-block}
-}
-@media print{#global-footer{display:none!important}}
-/* 로그인 페이지에서는 모바일 footer 숨김 (입력창 가림 방지) */
-@media(max-width:900px){
+  #global-footer .gf-close{
+    display:inline-block;
+    border:none;
+    background:transparent;
+    color:#94a3b8;
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    padding:0 4px;
+  }
+  /* 로그인 페이지에서는 모바일 footer 숨김 (입력창 가림 방지) */
   body:has(#page-login.active) #global-footer{display:none}
 }
+@media print{#global-footer{display:none!important}}
 </style>
 <div id="global-footer">
   <span>수정요청</span>
