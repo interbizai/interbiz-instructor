@@ -1292,6 +1292,158 @@ html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing
   .pick-photo-col.offset{margin-top:calc(-50% - 4px)!important}
 }
 
+/* ═══════════════════════════════════════════════════
+   모바일 폴리싱 — 17개 진단 항목 종합 적용
+   ═══════════════════════════════════════════════════ */
+@media(max-width:600px){
+  /* #1 인터픽 페이지 좌우 패딩 축소 */
+  #page-pick > main{padding:12px 14px 80px!important}
+
+  /* #2 헤로 텍스트 크기/패딩 */
+  #page-pick .pick-hero-wide{padding:18px 0 14px!important;margin-bottom:12px!important}
+  #page-pick .pick-hero-title{font-size:24px!important;letter-spacing:-.5px!important;line-height:1.25!important}
+  #page-pick .pick-hero-sub{font-size:13px!important;margin-top:8px!important;line-height:1.5!important}
+
+  /* #3 사진 컬라주 순서 — 헤로가 먼저, 컬라주 아래로 */
+  .pick-main-split{display:flex!important;flex-direction:column!important;gap:8px!important}
+  .pick-main-left{order:1!important}
+  .pick-photo-aside{order:2!important;margin-top:4px!important}
+
+  /* #4 3카드 gap 축소 + padding 정리 */
+  #pick-3card-row{gap:14px!important;margin-top:18px!important;margin-bottom:18px!important}
+  #pick-3card-row > div{padding:0!important}
+
+  /* #5 통계 카드 라벨 wrap 정상화 */
+  #pick-stats{gap:8px!important}
+  #pick-stats > div{padding:14px 12px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;flex-wrap:nowrap!important}
+  #pick-stats > div > div:first-child{font-size:18px!important;flex-shrink:0!important;white-space:nowrap}
+  #pick-stats > div > div:last-child{font-size:11px!important;line-height:1.35!important;text-align:right!important;flex:1!important;min-width:0;word-break:keep-all}
+
+  /* #6 TOP 3 강사 정보 줄 — overflow 안전 */
+  .pick-top-card-inner{overflow:hidden!important}
+  .pick-top-card-inner .lect-name,.pick-top-card-inner span[style*="font-size:16px"]{
+    min-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  /* #7 TOP 3 — 교육종류 칩 절대 위치 해제 → 카드 상단 정상 위치 */
+  .pick-top-card-inner > span[style*="position:absolute"]{
+    position:static!important;
+    display:inline-block!important;
+    margin-bottom:8px!important;
+    max-width:100%!important;
+    text-align:left!important;
+  }
+
+  /* #8 건수/LV/경력 라벨 11px + gap 좁게 정리 */
+  .pick-top-card-inner div[style*="display:flex;gap:14px;margin-bottom:12px;align-items:baseline"]{
+    gap:8px!important;
+    justify-content:space-between!important;
+  }
+  .pick-top-card-inner div[style*="font-size:9px"]{font-size:10.5px!important;margin-top:2px!important}
+
+  /* #9 페이지 타이틀 우측 "2026년 4월" — wrap 허용 */
+  .page-title{flex-wrap:wrap!important}
+  #pick-title-ym{font-size:12px!important;margin-left:8px!important}
+
+  /* #10 상단 nav — favicon + 로고 + 드롭다운 wrap 안전 */
+  .topnav{flex-wrap:wrap!important;height:auto!important;min-height:50px!important;padding-bottom:6px!important}
+  .tn-left{flex-wrap:nowrap!important;gap:8px!important;margin-right:0!important}
+  .tn-logo{height:22px!important}
+  .org-switch{font-size:11px!important;padding:4px 8px!important;width:110px!important;margin-left:8px!important}
+
+  /* #11 하단 모바일 네비 폰트 가독성 (6칸 대응) */
+  .mobile-nav{padding:4px 0 calc(4px + env(safe-area-inset-bottom))!important}
+  .mobile-nav-inner{gap:0!important}
+  .mobile-nav-item{
+    font-size:10px!important;
+    font-weight:700!important;
+    padding:4px 2px!important;
+    min-width:0!important;
+    flex:1!important;
+    gap:1px!important;
+  }
+  .mobile-nav-item svg{width:20px!important;height:20px!important}
+
+  /* #12 버튼 nowrap — 카드 내부 길이 영향 안 받게 */
+  .btn,button.btn,.tab-btn{white-space:nowrap!important}
+  /* 단, 의도적 wrap 이 필요한 경우 .btn-wrap 클래스로 명시 */
+
+  /* #13 모달 닫기 안전영역 */
+  .overlay > div{padding-top:max(20px, env(safe-area-inset-top))!important}
+
+  /* #15 라데어 차트 + 바 영역 — 좌우 → 세로 */
+  #an-edu-radar-wrap,#an-ai-radar-wrap,
+  #an-criteria-result,#an-ai-result{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+  }
+  /* SVG 차트 모바일 100% */
+  .an-radar svg,.va-radar svg,svg.radar{max-width:100%!important;width:100%!important;height:auto!important}
+
+  /* #16 로그인 폼 — placeholder/input 가독성 */
+  .auth-card{padding:24px 20px!important}
+  .auth-card .form-input{font-size:16px!important;padding:14px 12px!important}
+  .auth-btn{font-size:15px!important;padding:14px!important;font-weight:800!important}
+
+  /* #17 AI 코칭 영상 등록 폼 — 라벨 위쪽 + 풀폭 */
+  #page-analysis .form-group,#page-aicoach .form-group{margin-bottom:14px!important}
+  #page-analysis .form-lbl,#page-aicoach .form-lbl{font-size:11px!important;margin-bottom:6px!important;display:block!important}
+  #page-analysis .form-input,#page-aicoach .form-input{width:100%!important;box-sizing:border-box!important}
+
+  /* 추가 — 카드/박스 안전 padding */
+  .content-card,.r-vid-card,.lect-card,.stat-card{padding:14px 12px!important}
+
+  /* #14 관리자 강사 테이블 — 카드 형태로 변환 */
+  .lecturer-table-card-wrap .tbl,
+  .lecturer-table-card-wrap .tbl thead{display:none!important}
+  .lecturer-table-card-wrap .tbl tbody,
+  .lecturer-table-card-wrap .tbl tr{display:block!important;width:100%!important}
+  .lecturer-table-card-wrap .tbl tr{
+    border:1px solid var(--bdr)!important;
+    border-radius:12px!important;
+    margin-bottom:10px!important;
+    padding:12px!important;
+    background:#fff!important;
+    box-shadow:var(--sh-sm)!important;
+  }
+  .lecturer-table-card-wrap .tbl td{
+    display:flex!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    border:none!important;
+    padding:6px 0!important;
+    font-size:13px!important;
+  }
+  .lecturer-table-card-wrap .tbl td::before{
+    content:attr(data-label)!important;
+    font-size:11px!important;
+    color:var(--t3)!important;
+    font-weight:700!important;
+    flex-shrink:0!important;
+    margin-right:10px!important;
+  }
+  .lecturer-table-card-wrap .tbl td:first-child{
+    border-bottom:1px solid var(--bdr)!important;
+    padding-bottom:10px!important;
+    margin-bottom:8px!important;
+    font-size:15px!important;
+    font-weight:800!important;
+  }
+  .lecturer-table-card-wrap .tbl td:first-child::before{display:none!important}
+  /* 액션 버튼 영역 가로 wrap */
+  .lecturer-table-card-wrap .tbl td:last-child{
+    flex-wrap:wrap!important;
+    gap:6px!important;
+    justify-content:flex-end!important;
+    border-top:1px solid var(--bdr)!important;
+    padding-top:10px!important;
+    margin-top:6px!important;
+  }
+}
+
 /* ═══ PWA 설치 안내 배너 (모바일 첫 진입 시 1회) ═══ */
 #pwa-install-banner{
   position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
@@ -3146,9 +3298,13 @@ html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="8" r="4"/><path d="M2 20c0-3.3 2.7-6 6-6h4c3.3 0 6 2.7 6 6"/></svg>
       MY 역량
     </div>
-    <div class="mobile-nav-item" onclick="openAdminWithAuth()">
+    <div class="mobile-nav-item" data-page="page-admin" onclick="openAdminWithAuth()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       관리자
+    </div>
+    <div class="mobile-nav-item" onclick="if(confirm('로그아웃 하시겠습니까?'))doLogout()" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      로그아웃
     </div>
   </div>
 </div>
@@ -14644,11 +14800,30 @@ window.showPage=function(id){
 
 <!-- 전역 footer — 로그인·AI 로딩 오버레이 포함 모든 페이지 노출 -->
 <style>
-#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:10000;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;user-select:text;-webkit-user-select:text}
+#global-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;font-size:10.5px;color:#64748b;z-index:50;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;user-select:text;-webkit-user-select:text;display:flex;align-items:center;gap:6px;transition:opacity .25s,transform .25s}
 #global-footer .email{color:#334155;font-weight:700;cursor:text;user-select:all;-webkit-user-select:all}
-@media (max-width:900px){#global-footer{bottom:70px}}
+#global-footer .gf-close{border:none;background:transparent;color:#94a3b8;font-size:14px;line-height:1;cursor:pointer;padding:0 4px;display:none}
+#global-footer.collapsed{transform:translateX(-50%) translateY(120%);opacity:0;pointer-events:none}
+@media (max-width:900px){
+  #global-footer{
+    bottom:calc(70px + env(safe-area-inset-bottom,0));
+    font-size:10px;
+    padding:3px 10px;
+    background:rgba(255,255,255,.85);
+    z-index:40;
+  }
+  #global-footer .gf-close{display:inline-block}
+}
 @media print{#global-footer{display:none!important}}
+/* 로그인 페이지에서는 모바일 footer 숨김 (입력창 가림 방지) */
+@media(max-width:900px){
+  body:has(#page-login.active) #global-footer{display:none}
+}
 </style>
-<div id="global-footer">수정요청 <span class="email">sanggon.lee@interbiz.co.kr</span></div>
+<div id="global-footer">
+  <span>수정요청</span>
+  <span class="email">sanggon.lee@interbiz.co.kr</span>
+  <button class="gf-close" onclick="this.parentElement.classList.add('collapsed')" aria-label="닫기">✕</button>
+</div>
 </body>
 </html>
