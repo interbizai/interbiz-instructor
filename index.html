@@ -627,6 +627,26 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 /* Left: favicon + logo */
 .tn-left{display:flex;align-items:center;gap:10px;margin-left:8px;margin-right:32px;flex-shrink:0}
 .org-switch{padding:6px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-weight:700;background:#fff;margin-left:20px;cursor:pointer;color:var(--t1);flex-shrink:0;width:150px}
+/* 관리자 — 좌측 드롭다운으로 인한 메뉴 비대칭을 절대중앙 정렬로 보정 */
+.topnav{position:relative}
+.topnav:has(#org-switch:not([style*="display: none"]):not([style*="display:none"])) .tn-menu{
+  position:absolute;
+  left:50%;
+  top:0;
+  bottom:0;
+  transform:translateX(-50%);
+  flex:none;
+  width:auto;
+  pointer-events:auto;
+  background:transparent;
+}
+@media(max-width:900px){
+  /* 모바일에서는 절대 정렬 비활성 (메뉴 자체가 숨김) */
+  .topnav:has(#org-switch:not([style*="display: none"]):not([style*="display:none"])) .tn-menu{
+    position:static;
+    transform:none;
+  }
+}
 .org-switch:hover{border-color:var(--blue)}
 .tn-favicon{width:34px;height:34px;border-radius:50%;overflow:hidden;cursor:pointer;animation:tnJump 2.5s ease infinite;flex-shrink:0}
 .tn-favicon img{width:100%;height:100%;object-fit:contain}
@@ -13424,6 +13444,128 @@ function switchLectTab(name,btn){
 }
 
 /* ════════════════════════════════
+   개선 포인트 — 강사 약점 도출 + 학습 추천
+════════════════════════════════ */
+function renderImprovePoints(userId){
+  const container=document.getElementById('improve-points-content-'+userId);
+  if(!container) return;
+  const userVids=(D.videos||[]).filter(v=>v.userId===userId);
+  const vidIds=new Set(userVids.map(v=>v.id));
+  const evals=(D.evaluations||[]).filter(e=>e.video_id && vidIds.has(e.video_id) && e.overall_score>0);
+  if(!evals.length){
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);background:#fafafa;border-radius:12px;border:1px dashed var(--bdr)">
+      <div style="font-size:32px;margin-bottom:8px">🎯</div>
+      <div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px">아직 평가 데이터가 없습니다</div>
+      <div style="font-size:12px;color:var(--t3)">AI 평가를 1회 이상 진행하면 개선 포인트가 자동으로 도출됩니다.</div>
+    </div>`;
+    return;
+  }
+  // 최근 3개월 평가만
+  const threeMonthsAgo=new Date(); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth()-3);
+  const recentEvals=evals.filter(e=>new Date(e.created_at||0)>=threeMonthsAgo);
+  const targetEvals=recentEvals.length?recentEvals:evals;
+  // 카테고리별 점수 집계 (sub_scores 기준)
+  const catStats={};
+  targetEvals.forEach(e=>{
+    (e.sub_scores||[]).forEach(s=>{
+      const cat=s.category||'기타';
+      if(!catStats[cat]) catStats[cat]={sum:0,max:0,count:0,items:[]};
+      catStats[cat].sum+=s.score||0;
+      catStats[cat].max+=s.max||0;
+      catStats[cat].count++;
+      if(s.solution) catStats[cat].items.push(s);
+    });
+  });
+  // 평균 점수% 계산 + 정렬 (낮은 순)
+  const cats=Object.entries(catStats).map(([name,d])=>({
+    name,
+    pct:d.max>0?Math.round(d.sum/d.max*100):0,
+    sum:d.sum, max:d.max, count:d.count,
+    items:d.items
+  })).filter(c=>c.max>0).sort((a,b)=>a.pct-b.pct);
+  if(!cats.length){
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">평가 데이터가 충분하지 않습니다.</div>`;
+    return;
+  }
+  // 상위 3개 약점 카테고리
+  const top3Weak=cats.slice(0,3);
+  const overallAvg=cats.reduce((a,c)=>a+c.pct,0)/cats.length;
+  // 학습 자료 / 링크에서 카테고리명 매칭
+  const findRelatedMaterials=(catName)=>{
+    const kw=catName.toLowerCase();
+    const checklists=(D.checklists||[]).filter(c=>(c.name||'').toLowerCase().includes(kw)||(c.category||'').toLowerCase().includes(kw));
+    const links=(D.learningLinks||[]).filter(l=>(l.name||'').toLowerCase().includes(kw)||(l.description||'').toLowerCase().includes(kw));
+    return {checklists, links};
+  };
+  // 색상 함수
+  const colorOf=(pct)=>pct>=85?'#10b981':pct>=70?'#f59e0b':'#ef4444';
+  // HTML 렌더
+  container.innerHTML=`
+    <!-- 요약 카드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+      <div style="border:1px solid var(--bdr);border-radius:14px;padding:18px;background:linear-gradient(135deg,rgba(0,120,200,.04),rgba(0,120,200,.01))">
+        <div style="font-size:11px;color:var(--t3);font-weight:700;margin-bottom:6px">📊 분석 범위</div>
+        <div style="font-size:22px;font-weight:900;color:var(--t1)">${targetEvals.length}<span style="font-size:13px;color:var(--t3);font-weight:700">건 평가</span></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px">${recentEvals.length?'최근 3개월':'전체 기간'} 기준</div>
+      </div>
+      <div style="border:1px solid var(--bdr);border-radius:14px;padding:18px;background:linear-gradient(135deg,${colorOf(overallAvg)}10,${colorOf(overallAvg)}03)">
+        <div style="font-size:11px;color:var(--t3);font-weight:700;margin-bottom:6px">🎯 종합 평균</div>
+        <div style="font-size:22px;font-weight:900;color:${colorOf(overallAvg)}">${Math.round(overallAvg)}<span style="font-size:13px;color:var(--t3);font-weight:700">점</span></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px">전 카테고리 평균</div>
+      </div>
+    </div>
+    <!-- 약점 카테고리 카드 -->
+    <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">🔥 우선 개선 포인트 ${top3Weak.length}개</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px">
+      ${top3Weak.map((c,i)=>{
+        const mat=findRelatedMaterials(c.name);
+        const color=colorOf(c.pct);
+        return `<div style="border:1px solid var(--bdr);border-radius:14px;overflow:hidden;background:#fff">
+          <div style="padding:16px 18px;background:${color}08;border-bottom:1px solid ${color}20;display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:800;color:var(--t1)">${c.name}</div>
+              <div style="font-size:11px;color:var(--t3);margin-top:2px">평균 ${c.pct}점 · ${c.count}회 평가</div>
+            </div>
+            <div style="flex-shrink:0;text-align:right">
+              <div style="font-size:24px;font-weight:900;color:${color}">${c.pct}<span style="font-size:12px;color:var(--t3)">%</span></div>
+            </div>
+          </div>
+          <!-- AI 코칭 솔루션 (가장 최근 ) -->
+          ${c.items.length?`<div style="padding:14px 18px;border-bottom:1px solid var(--bdr)">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">💡 AI 추천 솔루션</div>
+            <div style="font-size:12.5px;color:var(--t2);line-height:1.6">${(c.items[0].solution||c.items[0].text||'').replace(/</g,'&lt;')}</div>
+          </div>`:''}
+          <!-- 추천 학습 자료 -->
+          <div style="padding:14px 18px">
+            <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px">📘 추천 학습</div>
+            ${(mat.checklists.length||mat.links.length)?
+              [...mat.checklists.map(cl=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafafa;border-radius:8px;margin-bottom:6px;cursor:pointer" onclick="showPage('page-edu')">
+                <span style="font-size:14px">📋</span>
+                <span style="font-size:12.5px;color:var(--t1);font-weight:600">${(cl.name||'').replace(/</g,'&lt;')}</span>
+                <span style="font-size:10px;color:var(--t3);margin-left:auto">체크리스트</span>
+              </div>`),
+              ...mat.links.map(lk=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafafa;border-radius:8px;margin-bottom:6px;cursor:pointer" onclick="window.open('${(lk.url||'').replace(/'/g,"\\'")}','_blank')">
+                <span style="font-size:14px">🔗</span>
+                <span style="font-size:12.5px;color:var(--t1);font-weight:600">${(lk.name||'').replace(/</g,'&lt;')}</span>
+                <span style="font-size:10px;color:var(--t3);margin-left:auto">학습 링크</span>
+              </div>`)].join('')
+            :`<div style="padding:10px;font-size:11.5px;color:var(--t3);background:#fafafa;border-radius:8px">관련 학습 자료 등록 시 여기 자동 표시됩니다. <a href="javascript:showPage('page-edu')" style="color:var(--blue);font-weight:700">교육콘텐츠 →</a></div>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <!-- 강점 카테고리 (참고) -->
+    ${cats.length>3?`<div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:10px">✨ 강점 영역 (계속 유지)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${cats.slice(-3).reverse().map(c=>`<div style="padding:8px 14px;border:1px solid #d1fae5;background:#ecfdf5;border-radius:999px;font-size:11.5px;color:#065f46;font-weight:700">
+        ${c.name} <span style="color:#10b981;margin-left:4px">${c.pct}%</span>
+      </div>`).join('')}
+    </div>`:''}
+  `;
+}
+
+/* ════════════════════════════════
    LECTURER DETAIL
 ════════════════════════════════ */
 let lectFromPage='page-home';
@@ -13576,9 +13718,10 @@ function openLecturer(id, fromPage){
       </div>
     </div>
 
-    <!-- ▶ 탭: MY 역량 | AI 코칭 목록 | MY 메모 -->
+    <!-- ▶ 탭: MY 역량 | 개선 포인트 | AI 코칭 목록 | MY 메모 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchLectTab('역량',this)">MY 역량</button>
+      <button class="tab-btn" onclick="switchLectTab('개선',this);renderImprovePoints(${u.id})">개선 포인트</button>
       <button class="tab-btn" onclick="switchLectTab('코칭',this)">AI 코칭 목록</button>
       <button class="tab-btn" onclick="switchLectTab('메모',this)">MY 메모</button>
     </div>
@@ -13655,6 +13798,11 @@ function openLecturer(id, fromPage){
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- TAB: 개선 포인트 -->
+    <div class="lect-tab-pane" id="lect-tab-개선" style="display:none">
+      <div id="improve-points-content-${u.id}" style="min-height:200px"></div>
     </div>
 
     <!-- TAB: AI 코칭 목록 -->
