@@ -616,7 +616,7 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .topnav.show{display:flex}
 /* Left: favicon + logo */
 .tn-left{display:flex;align-items:center;gap:10px;margin-left:8px;margin-right:32px;flex-shrink:0}
-.org-switch{padding:6px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-weight:700;background:#fff;margin-left:20px;cursor:pointer;color:var(--t1);flex-shrink:0;width:100px}
+.org-switch{padding:6px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;font-weight:700;background:#fff;margin-left:20px;cursor:pointer;color:var(--t1);flex-shrink:0;width:150px}
 .org-switch:hover{border-color:var(--blue)}
 .tn-favicon{width:34px;height:34px;border-radius:50%;overflow:hidden;cursor:pointer;animation:tnJump 2.5s ease infinite;flex-shrink:0}
 .tn-favicon img{width:100%;height:100%;object-fit:contain}
@@ -2734,10 +2734,11 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
     <div style="max-width:620px;position:relative">
       <div id="edu-type-toast" style="position:absolute;top:-10px;right:0;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;color:#fff;background:#10b981;opacity:0;transform:translateY(-6px);transition:opacity .25s ease, transform .25s ease;pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
       <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육종류 관리</div>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">강사가 영상 등록 · 녹화 시 선택할 교육종류 목록입니다. 텍스트로 자유롭게 추가/삭제하세요.</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">강사가 영상 등록 · 녹화 시 선택할 교육종류 목록입니다. <b style="color:var(--t1)">조직별로 분리되어 등록</b>됩니다.</div>
+      <div id="edu-type-noorg-warn" style="display:none;padding:10px 14px;border:1px solid #f59e0b;background:#fff8e6;border-radius:8px;font-size:12px;color:#9a3412;margin-bottom:12px;font-weight:700">⚠ 상단 드롭다운에서 조직을 먼저 선택하세요. (전체 조직 모드에서는 추가/삭제 불가)</div>
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <input type="text" id="edu-type-input" class="form-input" placeholder="예: 신입 기초과정" onkeydown="if(event.key==='Enter')addEduType()" style="flex:1">
-        <button class="btn" style="padding:10px 20px;font-size:12px;font-weight:700;background:var(--blue);color:#fff" onclick="addEduType()">+ 추가</button>
+        <button id="edu-type-add-btn" class="btn" style="padding:10px 20px;font-size:12px;font-weight:700;background:var(--blue);color:#fff" onclick="addEduType()">+ 추가</button>
       </div>
       <div id="edu-type-list" style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden"></div>
     </div>
@@ -3295,14 +3296,17 @@ async function dbUpdateUser(id,fields){
   const {error}=await sb.from('users').update(map).eq('id',id);
   if(error) console.error('dbUpdateUser:',error);
 }
-// 교육종류 목록 (공유 · Supabase)
-async function dbGetEduTypes(){
-  const {data,error}=await sb.from('edu_types').select('*').order('id');
+// 교육종류 목록 (조직별 분리 · Supabase)
+// org_name = NULL 인 행은 레거시(공통) 으로 취급되어 모든 조직에서 노출
+async function dbGetEduTypes(org){
+  let q=sb.from('edu_types').select('*').order('id');
+  if(org) q=q.or(`org_name.eq.${org},org_name.is.null`);
+  const {data,error}=await q;
   if(error){ console.warn('dbGetEduTypes:',error.message); return null; }
-  return (data||[]).map(r=>({id:r.id,name:r.name}));
+  return (data||[]).map(r=>({id:r.id,name:r.name,org_name:r.org_name||null}));
 }
-async function dbAddEduType(name){
-  const {data,error}=await sb.from('edu_types').insert({name}).select().single();
+async function dbAddEduType(name, org){
+  const {data,error}=await sb.from('edu_types').insert({name, org_name: org||null}).select().single();
   if(error){ console.error('dbAddEduType:',error); return {_error:error.message}; }
   return data;
 }
@@ -3311,8 +3315,13 @@ async function dbRemoveEduType(id){
   if(error){ console.error('dbRemoveEduType:',error); return {_error:error.message}; }
   return {ok:true,deleted:data?.length||0};
 }
-async function dbRemoveEduTypeByName(name){
-  const {data,error}=await sb.from('edu_types').delete().eq('name',name).select();
+async function dbRemoveEduTypeByName(name, org){
+  let q=sb.from('edu_types').delete().eq('name',name);
+  if(org!==undefined){
+    if(org===null) q=q.is('org_name', null);
+    else q=q.eq('org_name', org);
+  }
+  const {data,error}=await q.select();
   if(error){ console.error('dbRemoveEduTypeByName:',error); return {_error:error.message}; }
   return {ok:true,deleted:data?.length||0};
 }
@@ -3457,10 +3466,10 @@ async function loadFromDB(){
   D.eduCategories=ec||[];
   // 최초 1회 기본 카테고리 시드
   await seedEduCategoriesIfEmpty();
-  // 교육종류 (Supabase가 유일한 기준 · 자동 마이그레이션 없음)
-  const et=await dbGetEduTypes();
+  // 교육종류 (조직별 분리 · Supabase가 유일한 기준 · 자동 마이그레이션 없음)
+  const et=await dbGetEduTypes(D.activeOrg);
   if(et!==null){
-    D.eduTypes=et.map(r=>({id:String(r.id),name:r.name}));
+    D.eduTypes=et.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
     // localStorage는 DB 이름으로 강제 동기화 (다른 컴에서 삭제한 항목이 부활하는 것을 차단)
     try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
   } else {
@@ -13523,6 +13532,14 @@ function showToast(msg,color){
 function renderEduTypeManage(){
   const listEl=el('edu-type-list');
   if(!listEl) return;
+  // 진짜 관리자가 '전체 조직' 모드일 때는 추가 차단 안내
+  const noOrgWarn=el('edu-type-noorg-warn');
+  const inp=el('edu-type-input');
+  const addBtn=el('edu-type-add-btn');
+  const isAllOrg=D.isRealAdmin && !D.activeOrg;
+  if(noOrgWarn) noOrgWarn.style.display=isAllOrg?'block':'none';
+  if(inp) inp.disabled=isAllOrg;
+  if(addBtn){ addBtn.disabled=isAllOrg; addBtn.style.opacity=isAllOrg?'0.4':'1'; addBtn.style.cursor=isAllOrg?'not-allowed':'pointer'; }
   const records=getEduTypeRecords();
   if(!records.length){
     listEl.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육종류가 없습니다. 상단 입력창으로 추가하세요.</div>';
@@ -13530,27 +13547,38 @@ function renderEduTypeManage(){
   }
   const esc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const escHtml=s=>String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  listEl.innerHTML=records.map((r)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
-    <span style="font-size:13px;font-weight:600;color:var(--t1)">${escHtml(r.name)}</span>
-    <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType('${esc(r.id)}','${esc(r.name)}')">삭제</button>
-  </div>`).join('');
-  const inp=el('edu-type-input');if(inp) inp.focus();
+  listEl.innerHTML=records.map((r)=>{
+    const orgBadge=isAllOrg && r.org_name
+      ? `<span style="font-size:10px;font-weight:700;color:var(--blue);background:rgba(0,120,200,.08);padding:2px 8px;border-radius:999px;margin-left:8px">${escHtml(r.org_name)}</span>`
+      : (isAllOrg && !r.org_name ? `<span style="font-size:10px;font-weight:700;color:var(--t3);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:999px;margin-left:8px">공통</span>` : '');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
+      <span style="font-size:13px;font-weight:600;color:var(--t1)">${escHtml(r.name)}${orgBadge}</span>
+      <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType('${esc(r.id)}','${esc(r.name)}')">삭제</button>
+    </div>`;
+  }).join('');
+  if(inp && !isAllOrg) inp.focus();
 }
 async function addEduType(){
   const inp=el('edu-type-input');
   const name=(inp?.value||'').trim();
   if(!name){ inp?.focus(); return; }
+  // 진짜 관리자가 '전체 조직' 모드일 때는 어느 조직에 추가할지 모호 → 차단
+  if(D.isRealAdmin && !D.activeOrg){
+    showEduTypeToast('상단 드롭다운에서 조직을 먼저 선택하세요','#f59e0b');
+    inp?.focus();
+    return;
+  }
   const existing=getEduTypeRecords().map(r=>r.name);
   if(existing.includes(name)){ showEduTypeToast('이미 등록된 교육종류입니다','#f59e0b'); return; }
   // 1) 즉시 UI 반영 (optimistic)
   const tempId='local-'+Date.now();
   const currentDb=(Array.isArray(D.eduTypes)?D.eduTypes:[]);
-  D.eduTypes=[...currentDb,{id:tempId,name,_pending:true}];
+  D.eduTypes=[...currentDb,{id:tempId,name,org_name:D.activeOrg||null,_pending:true}];
   if(inp) inp.value='';
   renderEduTypeManage();
   showEduTypeToast(`"${name}" 추가되었습니다`);
-  // 2) 백그라운드 Supabase 저장
-  const row=await dbAddEduType(name);
+  // 2) 백그라운드 Supabase 저장 — 현재 활성 조직에 귀속
+  const row=await dbAddEduType(name, D.activeOrg);
   if(row?._error){
     const msg=(row._error||'').toLowerCase();
     const isTableMissing=msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache');
@@ -13568,7 +13596,7 @@ async function addEduType(){
     }
   } else {
     // 성공 → tempId를 real id로 교체
-    D.eduTypes=D.eduTypes.map(r=>r.id===tempId?{id:String(row.id),name:row.name}:r);
+    D.eduTypes=D.eduTypes.map(r=>r.id===tempId?{id:String(row.id),name:row.name,org_name:row.org_name||null}:r);
   }
 }
 async function removeEduType(id,name){
@@ -13590,11 +13618,12 @@ async function removeEduType(id,name){
     dbDeleted+=res?.deleted||0;
     console.log('DB delete by id:',res);
   }
-  const byName=await dbRemoveEduTypeByName(name);
+  // name 기준 삭제는 현재 활성 조직 범위로 제한 (다른 조직의 동명 항목은 보존)
+  const byName=await dbRemoveEduTypeByName(name, D.activeOrg);
   dbDeleted+=byName?.deleted||0;
   console.log('DB delete by name:',byName);
-  // 3) 검증 — DB에 여전히 남아있으면 RLS 차단 → 롤백
-  const verify=await dbGetEduTypes();
+  // 3) 검증 — DB에 여전히 남아있으면 RLS 차단 → 롤백 (현재 조직 스코프로 검증)
+  const verify=await dbGetEduTypes(D.activeOrg);
   if(verify){
     const stillExists=verify.find(r=>r.name===name);
     if(stillExists){
@@ -13614,7 +13643,7 @@ async function removeEduType(id,name){
       return;
     }
     // DB 기준으로 D.eduTypes 동기화
-    D.eduTypes=verify.map(r=>({id:String(r.id),name:r.name}));
+    D.eduTypes=verify.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
     renderEduTypeManage();
   }
   showEduTypeToast(`"${name}" 삭제되었습니다`,'#6b7280');
