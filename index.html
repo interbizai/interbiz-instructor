@@ -1308,10 +1308,13 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   /* #1 인터픽 페이지 좌우 패딩 축소 */
   #page-pick > main{padding:12px 14px 80px!important}
 
-  /* #2 헤로 텍스트 크기/패딩 */
-  #page-pick .pick-hero-wide{padding:18px 0 14px!important;margin-bottom:12px!important}
-  #page-pick .pick-hero-title{font-size:24px!important;letter-spacing:-.5px!important;line-height:1.25!important}
-  #page-pick .pick-hero-sub{font-size:13px!important;margin-top:8px!important;line-height:1.5!important}
+  /* #2 헤로 텍스트 크기/패딩 + 중앙 정렬 */
+  #page-pick .pick-hero-wide{padding:18px 12px 14px!important;margin-bottom:12px!important;text-align:center!important}
+  #page-pick .pick-hero-inner{text-align:center!important}
+  #page-pick .pick-hero-title{font-size:24px!important;letter-spacing:-.5px!important;line-height:1.25!important;text-align:center!important}
+  #page-pick .pick-hero-sub{font-size:13px!important;margin-top:8px!important;line-height:1.5!important;text-align:center!important}
+  /* 제목/부제 + 수정 버튼 한 줄 wrap 도 가운데 */
+  #page-pick .pick-hero-inner > div{justify-content:center!important;flex-wrap:wrap!important;text-align:center!important}
 
   /* #3 사진 컬라주 순서 — 헤로가 먼저, 컬라주 아래로 */
   .pick-main-split{display:flex!important;flex-direction:column!important;gap:8px!important}
