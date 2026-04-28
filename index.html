@@ -3,14 +3,24 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
 <title>인터 PICK</title>
 <link rel="icon" type="image/x-icon" href="assets/logo/파비콘/1-Photoroom.ico">
+<!-- Apple Touch Icons (iOS 홈 화면 추가 시 사용) -->
 <link rel="apple-touch-icon" sizes="180x180" href="assets/logo/1_white.png">
+<link rel="apple-touch-icon" sizes="167x167" href="assets/logo/1_white.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/logo/1_white.png">
+<link rel="apple-touch-icon" sizes="120x120" href="assets/logo/1_white.png">
 <link rel="manifest" href="manifest.json">
+<!-- iOS PWA 옵션 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="인터PICK">
 <meta name="application-name" content="인터PICK">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- 테마 색상 (Android Chrome 주소창 색) -->
+<meta name="theme-color" content="#0078C8" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#0078C8" media="(prefers-color-scheme:dark)">
 <meta property="og:title" content="인터 PICK">
 <meta property="og:description" content="현장강사 역량 평가 및 AI 코칭 플랫폼">
 <meta property="og:image" content="https://interbiz-instructor.vercel.app/assets/logo/logo_1.png">
@@ -1117,9 +1127,207 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   /* 인쇄 헤더 */
   .page.active::before{content:'interbiz 현장강사 역량 평가 리포트';display:block;text-align:center;font-size:12px;font-weight:800;padding:4px 0 8px;border-bottom:1.5px solid #1a202c;margin-bottom:8px}
 }
+
+/* ═══════════════════════════════════════════════════
+   모바일 최적화 보강 (iOS / Android PWA)
+   ═══════════════════════════════════════════════════ */
+/* 안전 영역 (iPhone 노치/홈 인디케이터) */
+body{
+  padding-top:env(safe-area-inset-top);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+}
+.topnav{padding-top:env(safe-area-inset-top)!important;height:calc(58px + env(safe-area-inset-top))!important}
+.mobile-nav{padding-bottom:calc(6px + env(safe-area-inset-bottom))!important}
+
+/* iOS 입력창 자동 줌 방지 (font-size ≥ 16px 필수) */
+@media(max-width:600px){
+  input[type="text"],input[type="email"],input[type="tel"],input[type="password"],
+  input[type="number"],input[type="search"],input[type="url"],input[type="date"],
+  textarea,select,.form-input{
+    font-size:16px!important;
+  }
+  /* 단, 라벨용 작은 input 은 예외 처리 가능 — 필요 시 .small-input 클래스 부여 */
+}
+
+/* 더블탭 줌 방지 + 빠른 클릭 */
+button,.btn,.tn-item,.tab-btn,.mobile-nav-item,.lect-card,
+.tn-favicon,.tn-logo,a[onclick],[onclick]{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(0,120,200,.15);
+}
+
+/* 텍스트 선택 가능 영역 (모바일에서 의도치 않은 길게 누르기 방지) */
+.tn-item,.tab-btn,.mobile-nav-item,.btn,button{
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+/* 이미지 늘어남 방지 */
+img{max-width:100%;height:auto}
+
+/* 모바일 — 터치 타겟 최소 44px */
+@media(max-width:600px){
+  .btn,button,.tab-btn,select,input[type="button"],input[type="submit"]{
+    min-height:44px;
+  }
+  /* 작은 액션 버튼은 명시적으로 작아도 됨 */
+  .btn-tiny,.btn[style*="padding:4px"],.btn[style*="padding:2px"]{ min-height:0 }
+}
+
+/* 가로 스크롤 발생 방지 (mobile 안정화) */
+html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+
+/* PWA Standalone 모드 — 브라우저 chrome 없이 동작 시 풀스크린 보정 */
+@media (display-mode:standalone){
+  body{user-select:none;-webkit-user-select:none}
+  /* 설치 프롬프트 배너 자동 숨김 */
+  #pwa-install-banner{display:none!important}
+}
+
+/* iOS PWA 스플래시 배경 */
+@supports (-webkit-touch-callout:none){
+  body{background-attachment:scroll}
+}
+
+/* 인터픽 — 모바일에서 우측 사진 컬라주를 더 작게 */
+@media(max-width:600px){
+  #pick-photo-track,.pick-photo-aside{
+    min-height:340px!important;
+    max-height:340px!important;
+  }
+}
+
+/* 관리자 — 강사 테이블 모바일에서 세로 스크롤 가능하게 */
+@media(max-width:600px){
+  .admin-table-wrap,.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .admin-table-wrap table,.tbl-wrap table{min-width:520px}
+}
+
+/* 모달 — 모바일에서 풀스크린 가까운 크기 */
+@media(max-width:480px){
+  .overlay>div{width:100vw!important;max-width:100vw!important;border-radius:0!important;max-height:100vh!important}
+  .auth-card,.modal{padding:16px!important}
+}
+
+/* ═══ 페이지별 모바일 미세 조정 ═══ */
+@media(max-width:480px){
+  /* 인터픽 — TOP 3 카드 1열 */
+  #pick-top3{grid-template-columns:1fr!important;gap:12px!important}
+  .pick-top-card{margin:0!important}
+  .pick-top-card-inner{padding:14px!important}
+  /* 통계 카드 1열 (기본 2열에서) */
+  #pick-stats{grid-template-columns:1fr!important;gap:8px!important}
+  #pick-stats>div{padding:12px 14px!important;display:flex;align-items:center;justify-content:space-between!important;text-align:left!important}
+  #pick-stats>div>div:first-child{font-size:20px!important}
+  #pick-stats>div>div:last-child{margin-top:0!important;font-size:11px!important}
+  /* 인터픽 헤로 텍스트 */
+  .pick-hero-title{font-size:24px!important;letter-spacing:-1px!important}
+  /* 추천학습/이번주일정/공지 — 1열 */
+  #pick-3card-row{grid-template-columns:1fr!important;gap:12px!important}
+  /* 사진 컬라주 — 더 짧게 */
+  #pick-photo-track,.pick-photo-aside{min-height:280px!important;max-height:280px!important}
+  /* AI 코칭 — 영상 정보 그리드 1열 */
+  #page-analysis .content-card>div:first-child>div[style*="repeat(5"]{grid-template-columns:1fr!important;gap:10px!important}
+  /* 영상 등록 — 평가안 영역 wrap */
+  #an-checklist-name,#va-cl-name{word-break:break-all;font-size:11px!important}
+  /* MY 역량 — 통계 4열 → 2열 */
+  #lect-stat-cards{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  #lect-stat-cards>div{padding:14px 10px!important}
+  /* MY 역량 — 뱃지 wrap 더 촘촘하게 */
+  .badge-grid,.badge-list{gap:6px!important}
+  /* MY 역량 — 영상 카드 1열 */
+  .lect-vid-grid,.lect-video-list{grid-template-columns:1fr!important}
+  /* 교육콘텐츠 — 입력창들 풀폭 */
+  #edu-cl-form input,#edu-cl-form select,#edu-lk-form input{width:100%!important;box-sizing:border-box}
+  /* 영상 등록 폼 — 가로 5칸 → 세로 */
+  #an-step1 .form-group,#st-step1 .form-group{margin-bottom:12px}
+  /* 관리자 — 탭바 가로 스크롤 */
+  .tab-bar{overflow-x:auto;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab-btn{flex-shrink:0;white-space:nowrap}
+  /* 관리자 — 강사 카드 형태로 (테이블 행을 블록처럼) */
+  .lect-card{min-width:100%!important;max-width:100%!important;margin-bottom:8px!important}
+  /* 관리자 — 부관리자/삭제 버튼 더 큼직하게 */
+  .tbl td .btn{padding:6px 10px!important;font-size:11px!important}
+  /* 영상 분석 페이지 — 좌우 split 세로 (이미 있지만 강화) */
+  #an-split,#va-split,#st-split{grid-template-columns:1fr!important;gap:14px!important}
+  #an-player,#va-recorder{aspect-ratio:16/9;width:100%!important;max-width:100%!important}
+  /* 결과 헤더 — 점수+의견 wrap */
+  #an-result-meta{flex-wrap:wrap!important;gap:8px!important}
+  /* 검색창 풀폭 */
+  .home-search-wrap,#home-search-wrap{max-width:95%!important}
+}
+
+/* 480~768 (대형 폰 / 작은 태블릿) */
+@media(min-width:481px) and (max-width:768px){
+  #pick-stats{grid-template-columns:repeat(2,1fr)!important}
+  #pick-top3{grid-template-columns:repeat(2,1fr)!important}
+  #pick-top3 .pick-top-card:nth-child(3){grid-column:span 2}
+}
+
+/* ═══ PWA 설치 안내 배너 (모바일 첫 진입 시 1회) ═══ */
+#pwa-install-banner{
+  position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
+  background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:14px;
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+  padding:14px 16px;z-index:400;display:none;
+  animation:pwaSlideUp .35s cubic-bezier(.22,1,.36,1);
+}
+#pwa-install-banner.show{display:flex;align-items:center;gap:12px}
+@keyframes pwaSlideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+#pwa-install-banner img{width:40px;height:40px;border-radius:8px;flex-shrink:0}
+#pwa-install-banner .pwa-text{flex:1;min-width:0}
+#pwa-install-banner .pwa-title{font-size:13px;font-weight:800;color:var(--t1)}
+#pwa-install-banner .pwa-desc{font-size:11px;color:var(--t3);margin-top:2px;line-height:1.4}
+#pwa-install-banner .pwa-btn{padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+#pwa-install-banner .pwa-close{padding:6px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0}
+
+/* iOS 안내 모달 (Safari "공유 → 홈 화면에 추가" 단계) */
+#pwa-ios-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;animation:pwaFadeIn .25s ease}
+#pwa-ios-modal.show{display:flex}
+@keyframes pwaFadeIn{from{opacity:0}to{opacity:1}}
+#pwa-ios-modal .ios-card{background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center;animation:pwaSlideUp .35s cubic-bezier(.22,1,.36,1)}
+#pwa-ios-modal .ios-step{display:flex;align-items:center;gap:12px;padding:10px 0;text-align:left}
+#pwa-ios-modal .ios-step-num{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#pwa-ios-modal .ios-step-text{font-size:13px;color:var(--t1);line-height:1.5}
 </style>
 </head>
 <body>
+
+<!-- PWA 설치 배너 (모바일 첫 진입 1회) -->
+<div id="pwa-install-banner" role="dialog" aria-label="앱으로 설치">
+  <img src="assets/logo/1_white.png" alt="인터PICK">
+  <div class="pwa-text">
+    <div class="pwa-title">앱으로 설치하기</div>
+    <div class="pwa-desc">홈 화면에 추가하면 더 빠르게 사용할 수 있어요</div>
+  </div>
+  <button class="pwa-btn" onclick="pwaInstall()">설치</button>
+  <button class="pwa-close" onclick="pwaDismiss()" aria-label="닫기">✕</button>
+</div>
+
+<!-- iOS 설치 안내 (Safari 공유 → 홈 화면에 추가) -->
+<div id="pwa-ios-modal" role="dialog" aria-label="iOS 설치 안내">
+  <div class="ios-card">
+    <div style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--t1)">앱처럼 설치하기 (iOS)</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.5">Safari 의 공유 메뉴에서 "홈 화면에 추가" 를 선택해주세요.</div>
+    <div style="text-align:left">
+      <div class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div class="ios-step-text">하단 또는 상단의 <b>공유 버튼</b> <span style="display:inline-block;width:14px;height:14px;border:1.5px solid var(--blue);border-radius:3px;text-align:center;line-height:10px;font-size:11px;color:var(--blue)">↑</span> 을 누르세요</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div class="ios-step-text">메뉴를 스크롤해서 <b>"홈 화면에 추가"</b> 를 선택하세요</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">3</div>
+        <div class="ios-step-text">우측 상단 <b>"추가"</b> 를 누르면 완료</div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('pwa-ios-modal').classList.remove('show')" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;width:100%;cursor:pointer">확인</button>
+  </div>
+</div>
 
 <!-- 조직 변경 시 즉시 로딩 오버레이 노출 (sessionStorage 플래그 기반) -->
 <script>
@@ -4107,6 +4315,95 @@ async function doLogin(){
   hideLoginLoading();
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); }
+
+/* ════════════════════════════════
+   PWA 설치 / Service Worker
+════════════════════════════════ */
+let _pwaDeferredPrompt=null;
+
+// Service Worker 등록 (HTTPS / localhost 만)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').then(reg=>{
+      console.log('[PWA] SW 등록 완료', reg.scope);
+      // 새 버전 감지 시 자동 활성화
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed' && navigator.serviceWorker.controller){
+            console.log('[PWA] 새 버전 활성화');
+            nw.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(e=>console.warn('[PWA] SW 등록 실패:',e));
+  });
+}
+
+// Android Chrome — 자동 설치 프롬프트 캐시
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  _pwaDeferredPrompt=e;
+  // 모바일 + 미설치 + 미차단 일 때 배너 노출
+  if(_isMobile() && !_isStandalone() && !localStorage.getItem('pwa_install_dismissed')){
+    setTimeout(()=>{
+      const b=document.getElementById('pwa-install-banner');
+      if(b) b.classList.add('show');
+    },2000);
+  }
+});
+
+// iOS — Safari 만 설치 가능, 자동 프롬프트 없음 → 안내 모달 노출
+window.addEventListener('load',()=>{
+  if(!_isIOS() || _isStandalone()) return;
+  if(localStorage.getItem('pwa_install_dismissed')) return;
+  setTimeout(()=>{
+    const b=document.getElementById('pwa-install-banner');
+    if(b) b.classList.add('show');
+  },3000);
+});
+
+function _isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function _isAndroid(){
+  return /Android/i.test(navigator.userAgent);
+}
+function _isMobile(){
+  return _isIOS() || _isAndroid();
+}
+function _isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+// 설치 버튼 클릭
+async function pwaInstall(){
+  // Android — 네이티브 프롬프트
+  if(_pwaDeferredPrompt){
+    _pwaDeferredPrompt.prompt();
+    const {outcome}=await _pwaDeferredPrompt.userChoice;
+    console.log('[PWA] 설치 결과:',outcome);
+    _pwaDeferredPrompt=null;
+    pwaDismiss();
+    return;
+  }
+  // iOS — Safari 안내 모달
+  if(_isIOS()){
+    document.getElementById('pwa-install-banner').classList.remove('show');
+    document.getElementById('pwa-ios-modal').classList.add('show');
+    return;
+  }
+  // 그 외 — 안내 토스트
+  alert('이 브라우저에서는 자동 설치가 지원되지 않습니다. Safari(iOS) 또는 Chrome(Android) 에서 다시 시도해주세요.');
+}
+
+function pwaDismiss(){
+  const b=document.getElementById('pwa-install-banner');
+  if(b) b.classList.remove('show');
+  try{ localStorage.setItem('pwa_install_dismissed','1'); }catch(e){}
+}
+
 /* ── Home Search ── */
 (function(){
   const inp=()=>document.getElementById('home-search-input');

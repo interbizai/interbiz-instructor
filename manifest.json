@@ -1,22 +1,48 @@
 {
   "name": "인터 PICK",
   "short_name": "인터PICK",
+  "description": "현장강사 역량 평가 및 AI 코칭 플랫폼",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#0078C8",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "categories": ["education", "productivity", "business"],
   "icons": [
+    { "src": "assets/logo/1_white.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/logo/1_white.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo/1_white.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "assets/logo/1_white.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "name": "인터픽",
+      "short_name": "PICK",
+      "description": "이달의 인터PICK 강사 보기",
+      "url": "/?p=pick",
+      "icons": [{ "src": "assets/logo/1_white.png", "sizes": "192x192" }]
     },
     {
-      "src": "assets/logo/1_white.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "name": "AI 코칭",
+      "short_name": "AI",
+      "description": "영상 등록 및 AI 평가",
+      "url": "/?p=aicoach",
+      "icons": [{ "src": "assets/logo/1_white.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "MY 역량",
+      "short_name": "MY",
+      "description": "내 평가 결과 보기",
+      "url": "/?p=mypage",
+      "icons": [{ "src": "assets/logo/1_white.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
