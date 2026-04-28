@@ -1758,6 +1758,23 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━
+   QR 포스터 — 인쇄 시 포스터만 표시
+   ━━━━━━━━━━━━━━━━━━━━━━━ */
+@media print{
+  body.qr-print-mode > *{display:none!important}
+  body.qr-print-mode #qr-poster-overlay,
+  body.qr-print-mode #qr-poster-overlay > div{display:block!important;visibility:visible!important;background:#fff!important}
+  body.qr-print-mode #qr-poster-overlay{position:static!important;background:#fff!important}
+  body.qr-print-mode .qr-poster-toolbar{display:none!important}
+  body.qr-print-mode #global-footer,body.qr-print-mode .mobile-nav{display:none!important}
+}
+/* 포스터 모달 모바일 폴리싱 */
+@media(max-width:600px){
+  #qr-preview-row{grid-template-columns:1fr!important}
+  #qr-poster-img{width:240px!important;height:240px!important}
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━
    매우 작은 폰 (≤360px) — 갤럭시 폴드 외부 등
    ━━━━━━━━━━━━━━━━━━━━━━━ */
 @media(max-width:360px){
@@ -3656,6 +3673,91 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
     <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">금액 현황</button>
+    <button class="tab-btn" onclick="switchTab('앱QR',this);renderAppQR()">앱 설치 QR</button>
+  </div>
+
+  <!-- 앱 설치 QR / 포스터 -->
+  <div class="tab-pane" id="tab-앱QR">
+    <div style="max-width:760px">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">앱 설치 QR 코드</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:18px">QR 코드를 PDF/이미지로 저장해서 인쇄·공유하세요. 휴대폰으로 스캔하면 인터픽 설치 안내가 자동으로 표시됩니다.</div>
+      <!-- URL 입력 -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input id="qr-url-input" type="text" class="form-input" value="https://interpick.vercel.app" placeholder="설치 안내 URL" style="flex:1;min-width:240px">
+        <button class="btn btn-blue" onclick="renderAppQR()" style="padding:10px 18px;font-size:13px;font-weight:700">QR 다시 생성</button>
+      </div>
+      <!-- 미리보기 + 액션 -->
+      <div style="display:grid;grid-template-columns:240px 1fr;gap:18px;align-items:start;margin-bottom:18px;padding:18px;border:1px solid var(--bdr);border-radius:14px;background:#fafafa" id="qr-preview-row">
+        <div style="background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:12px;text-align:center">
+          <img id="qr-preview-img" src="" alt="QR" style="width:100%;height:auto;display:block;background:#fff">
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:6px">활용 방법</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.7">
+            ① <b>포스터 인쇄</b> — 아래 "포스터 보기" → 브라우저 인쇄 (Ctrl+P) → "PDF로 저장" 선택<br>
+            ② <b>이미지 공유</b> — "QR 이미지 다운로드" 로 PNG 저장 후 카톡/메일 첨부<br>
+            ③ <b>안드로이드</b> — 자동 설치 배너 → 한 번 탭<br>
+            ④ <b>아이폰</b> — Safari 로 열어야 안내가 정상 표시
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+            <button class="btn btn-blue" onclick="openQRPoster()" style="padding:10px 16px;font-size:12px;font-weight:700">📄 포스터 보기 (PDF 저장)</button>
+            <button class="btn btn-ghost" onclick="downloadQRImage()" style="padding:10px 16px;font-size:12px;font-weight:700;color:var(--green);border:1px solid rgba(16,185,129,.3)">⬇ QR 이미지 다운로드</button>
+            <button class="btn btn-ghost" onclick="copyQRLink()" style="padding:10px 16px;font-size:12px;font-weight:700">🔗 링크 복사</button>
+          </div>
+          <div id="qr-toast" style="margin-top:8px;font-size:11px;color:var(--green);font-weight:700;display:none">✓ 복사되었습니다</div>
+        </div>
+      </div>
+      <!-- 안내 텍스트 카피용 -->
+      <div style="margin-top:8px">
+        <div style="font-size:12px;font-weight:800;color:var(--t1);margin-bottom:6px">문자/카톡 공유용 안내문</div>
+        <textarea id="qr-share-text" readonly style="width:100%;min-height:160px;padding:12px;border:1px solid var(--bdr);border-radius:10px;font-size:12px;color:var(--t2);line-height:1.6;background:#fafafa;font-family:inherit;resize:vertical"></textarea>
+        <button class="btn btn-ghost" onclick="copyQRShareText()" style="margin-top:8px;padding:8px 14px;font-size:12px;font-weight:700">📋 안내문 복사</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인쇄용 포스터 모달 -->
+  <div id="qr-poster-overlay" class="overlay">
+    <div style="background:#fff;border-radius:16px;width:min(640px,96vw);max-height:96vh;overflow-y:auto;padding:0;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+      <!-- 인쇄 시 숨김 영역 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--bdr)" class="qr-poster-toolbar">
+        <span style="font-size:14px;font-weight:800;color:var(--t1)">앱 설치 포스터</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-blue" onclick="printQRPoster()" style="padding:8px 16px;font-size:12px;font-weight:700">🖨 인쇄/PDF 저장</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('qr-poster-overlay').classList.remove('show')" style="padding:8px 16px;font-size:12px">닫기</button>
+        </div>
+      </div>
+      <!-- 실제 포스터 -->
+      <div id="qr-poster-content" style="padding:40px 30px;text-align:center;background:#fff">
+        <div style="font-size:14px;font-weight:700;color:var(--t3);letter-spacing:2px;margin-bottom:6px">INTERPICK · APP INSTALL</div>
+        <div style="font-size:34px;font-weight:900;color:var(--t1);letter-spacing:-1px;margin-bottom:6px">📱 인터 PICK</div>
+        <div style="font-size:14px;color:var(--t2);margin-bottom:24px">강사 역량 평가 & AI 코칭 플랫폼</div>
+        <div style="display:inline-block;padding:18px;border:2px solid #000;border-radius:18px;background:#fff;margin-bottom:18px">
+          <img id="qr-poster-img" src="" alt="QR" style="width:280px;height:280px;display:block;background:#fff">
+        </div>
+        <div style="font-size:13px;color:var(--t1);font-weight:700;margin-bottom:6px">휴대폰 카메라로 QR 코드를 스캔하세요</div>
+        <div id="qr-poster-url" style="font-size:13px;color:var(--blue);font-weight:700;margin-bottom:24px;word-break:break-all">https://interpick.vercel.app</div>
+        <div style="border-top:1px dashed var(--bdr);padding-top:18px;text-align:left;max-width:440px;margin:0 auto">
+          <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px">📲 설치 방법</div>
+          <div style="display:flex;gap:14px;margin-bottom:10px">
+            <div style="flex:0 0 30px;font-size:18px">🤖</div>
+            <div style="flex:1;font-size:12px;color:var(--t2);line-height:1.6">
+              <b style="color:var(--t1)">갤럭시(Android)</b> — Chrome 으로 접속 → 화면 하단 <b>"앱으로 설치하기"</b> 배너 → [설치] 탭
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;margin-bottom:10px">
+            <div style="flex:0 0 30px;font-size:18px">🍎</div>
+            <div style="flex:1;font-size:12px;color:var(--t2);line-height:1.6">
+              <b style="color:var(--t1)">아이폰(iOS)</b> — 반드시 <b>Safari</b> 로 접속 → 공유 버튼 → <b>"홈 화면에 추가"</b>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:11px;color:#92400e;font-weight:600">
+            ⚠️ 카카오톡·네이버 앱 내 브라우저에서는 설치가 제한됩니다. <b>Safari/Chrome</b> 으로 열어주세요.
+          </div>
+        </div>
+        <div style="margin-top:20px;font-size:10px;color:var(--t3)">문의 : sanggon.lee@interbiz.co.kr</div>
+      </div>
+    </div>
   </div>
 
   <!-- 금액 현황 (크레딧) -->
@@ -14834,6 +14936,85 @@ function showToast(msg,color){
   clearTimeout(window._globalToastT);
   window._globalToastT=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-8px);';},2000);
 }
+/* ════════════════════════════════
+   앱 설치 QR / 포스터
+════════════════════════════════ */
+function _qrApiUrl(text,size){
+  const s=size||400;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${s}x${s}&data=${encodeURIComponent(text)}&margin=8`;
+}
+function _qrShareTextDefault(url){
+  return `📱 인터 PICK 앱 설치 안내
+
+강사 역량 평가 시스템을 휴대폰 앱처럼 사용할 수 있어요.
+
+🔗 설치 주소
+${url}
+
+📲 설치 방법
+① 위 주소를 휴대폰 브라우저에서 열기
+   - 갤럭시(Android): Chrome 권장
+   - 아이폰(iOS): 반드시 Safari 로 열기 ⚠️
+② 화면 하단의 "앱으로 설치하기" 배너 → [설치]
+③ 홈 화면에 인터픽 아이콘 생성
+
+문의 : sanggon.lee@interbiz.co.kr`;
+}
+function renderAppQR(){
+  const inp=document.getElementById('qr-url-input');
+  const url=(inp?.value||'').trim()||'https://interpick.vercel.app';
+  if(inp) inp.value=url;
+  const previewImg=document.getElementById('qr-preview-img');
+  const posterImg=document.getElementById('qr-poster-img');
+  const posterUrl=document.getElementById('qr-poster-url');
+  const shareTxt=document.getElementById('qr-share-text');
+  if(previewImg) previewImg.src=_qrApiUrl(url,400);
+  if(posterImg) posterImg.src=_qrApiUrl(url,560);
+  if(posterUrl) posterUrl.textContent=url;
+  if(shareTxt) shareTxt.value=_qrShareTextDefault(url);
+}
+function openQRPoster(){
+  renderAppQR();
+  document.getElementById('qr-poster-overlay').classList.add('show');
+}
+function printQRPoster(){
+  document.body.classList.add('qr-print-mode');
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>document.body.classList.remove('qr-print-mode'),300);
+  },80);
+}
+async function downloadQRImage(){
+  const url=(document.getElementById('qr-url-input')?.value||'').trim()||'https://interpick.vercel.app';
+  try{
+    const res=await fetch(_qrApiUrl(url,800));
+    const blob=await res.blob();
+    const dl=document.createElement('a');
+    dl.href=URL.createObjectURL(blob);
+    dl.download=`interpick-qr-${Date.now()}.png`;
+    dl.click();
+    setTimeout(()=>URL.revokeObjectURL(dl.href),1000);
+  }catch(e){
+    alert('QR 이미지 다운로드 실패. 인터넷 연결을 확인해주세요.');
+  }
+}
+function copyQRLink(){
+  const url=(document.getElementById('qr-url-input')?.value||'').trim()||'https://interpick.vercel.app';
+  navigator.clipboard?.writeText(url).then(()=>{
+    const t=document.getElementById('qr-toast');
+    if(t){t.style.display='block';t.textContent='✓ 링크 복사 완료';setTimeout(()=>t.style.display='none',1800);}
+  }).catch(()=>alert('복사 실패. 직접 복사해주세요: '+url));
+}
+function copyQRShareText(){
+  const t=document.getElementById('qr-share-text');
+  if(!t) return;
+  t.select();
+  navigator.clipboard?.writeText(t.value).then(()=>{
+    const toast=document.getElementById('qr-toast');
+    if(toast){toast.style.display='block';toast.textContent='✓ 안내문 복사 완료';setTimeout(()=>toast.style.display='none',1800);}
+  }).catch(()=>document.execCommand('copy'));
+}
+
 function renderEduTypeManage(){
   const listEl=el('edu-type-list');
   if(!listEl) return;
