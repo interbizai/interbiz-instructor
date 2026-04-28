@@ -1453,6 +1453,234 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   페이지 전체 모바일 종합 정리 (≤768px)
+   - 인터픽 흐르는 사진 숨김
+   - AI 코칭/교육콘텐츠/MY 역량/관리자 디테일
+   ═══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     인터픽 — 흐르는 사진 모바일 완전 숨김
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  .pick-photo-aside,
+  #pick-photo-track,
+  #pick-photo-scroll,
+  .pick-photo-scroll,
+  .pick-photo-track,
+  .pick-photo-pause,
+  .pick-photo-fade-top,
+  .pick-photo-fade-bot{
+    display:none!important;
+  }
+  /* 헤로 영역만 풀폭 사용 */
+  .pick-main-split{display:block!important}
+  .pick-main-left{padding-bottom:8px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     공통 — 텍스트/타이틀 안전
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  .page-title h2{font-size:17px!important;letter-spacing:-.3px!important}
+  .page-title-icon{width:28px!important;height:28px!important}
+  .page-title-icon svg{width:18px!important;height:18px!important}
+
+  /* 모든 섹션 헤딩 통일 */
+  h1,h2,h3,h4{word-break:keep-all;line-height:1.3}
+
+  /* 카드/박스 균형 */
+  .content-card{padding:14px 12px!important;margin:8px 0!important}
+  .stat-card,.r-vid-card,.lect-card,.pick-top-card{padding:12px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     AI 코칭 영상 분석 (page-analysis)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* 결과 헤더 - 점수 + 의견 wrap */
+  #an-result-meta,#an-step2 div[style*="flex-wrap:nowrap"]{flex-wrap:wrap!important;gap:8px!important}
+  /* 영상 정보 5칸 그리드는 이미 1칸으로 변경됨 (#17), 라벨 강조 */
+  #page-analysis .form-lbl,#page-aicoach .form-lbl{
+    font-size:11px!important;font-weight:700!important;color:var(--t2)!important;
+    margin-bottom:4px!important;display:block!important;
+  }
+  /* 결과 점수 큰 숫자 — 모바일에서도 임팩트 유지 */
+  #an-step2 div[style*="font-size:36px"],
+  #an-step2 div[style*="font-size:48px"]{font-size:32px!important}
+  /* 분석 결과 카드 패딩 */
+  #an-step2 .content-card,#an-criteria-result,#an-ai-result{padding:14px 12px!important}
+  /* 평가/AI 결과 개별 항목 — 카드 형태로 */
+  #an-edu-bars,#an-ai-bars{padding:8px!important}
+  #an-edu-bars > div,#an-ai-bars > div{padding:10px 12px!important;margin-bottom:8px!important}
+  /* 타임스탬프 피드 */
+  #an-ts-feed{padding:0!important}
+  #an-ts-feed > div{padding:12px!important;margin-bottom:8px!important;border-radius:10px!important}
+  /* 영상 플레이어 */
+  #an-player,#an-player-mini{width:100%!important;max-width:100%!important;aspect-ratio:16/9!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     스피치 평가 (page-voice)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  #va-split{grid-template-columns:1fr!important;gap:12px!important}
+  #va-recorder,#va-result-area{padding:12px!important}
+  /* 녹음 시각화 영역 */
+  #va-recorder canvas,#va-recorder svg{max-width:100%!important;height:auto!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     시나리오 (페이지 있다면)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  #page-scenario .content-card{padding:14px 12px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     교육콘텐츠 (page-edu)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  #page-edu .content-card{padding:14px 12px!important}
+  /* 교육자료 그리드 → 1열 */
+  #edu-grid{grid-template-columns:1fr!important;gap:14px!important}
+  /* 파일/체크리스트/링크 행 */
+  #edu-cl-list > div,#edu-lk-list > div,#cl-list > div,
+  .edu-file-row,.checklist-row{
+    flex-wrap:wrap!important;
+    gap:8px!important;
+    padding:12px!important;
+  }
+  /* 다운로드/교체/삭제 버튼 — 액션 영역 풀폭 wrap */
+  #edu-cl-list > div > div:last-child,
+  #cl-list > div > div:last-child{
+    width:100%!important;
+    justify-content:flex-end!important;
+    gap:6px!important;
+    margin-top:6px!important;
+  }
+  /* 카테고리 칩 wrap */
+  .edu-cat-chips,.cat-chip-list{flex-wrap:wrap!important;gap:6px!important}
+  /* 학습 링크 입력 폼 */
+  #edu-lk-form{flex-direction:column!important;gap:8px!important}
+  #edu-lk-form > input,#edu-lk-form > button{width:100%!important;box-sizing:border-box!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     MY 역량 (강사 상세, page-lecturer)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* 프로필 상단 — 사진 + 이름 세로 */
+  #page-lecturer .prof-layout,
+  #lecturer-main > div > div[style*="display:flex;gap:28px"]{
+    flex-direction:column!important;
+    gap:14px!important;
+    text-align:center!important;
+    padding:18px 12px!important;
+  }
+  /* 사진 영역 가운데 */
+  #lecturer-main > div > div[style*="display:flex;gap:28px"] > div:first-child{
+    min-width:0!important;
+    width:100%!important;
+    padding:0!important;
+  }
+  /* 분위기 chip 위치 보정 */
+  #lecturer-main div[style*="position:absolute;top:16px;right:20px"]{
+    position:static!important;
+    justify-content:center!important;
+    margin-top:8px!important;
+  }
+  /* 통계 카드 4→2열 (이미 적용) + 폰트 */
+  #lect-stat-cards{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  #lect-stat-cards > div{padding:12px 10px!important}
+  #lect-stat-cards > div div[style*="font-size:24px"]{font-size:20px!important}
+  /* 레이더 차트 wrap */
+  #lect-radar-wrap{grid-template-columns:1fr!important;gap:14px!important}
+  #lect-radar-wrap svg{max-width:100%!important;height:auto!important}
+  /* 뱃지 영역 */
+  .badge-grid,.badge-list,.badge-track{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:6px!important;
+    justify-content:flex-start!important;
+  }
+  .badge-grid > *,.badge-list > *{flex-shrink:0}
+  /* 영상 카드 1열 */
+  .lect-vid-grid,.lect-video-list{grid-template-columns:1fr!important;gap:12px!important}
+  /* MY 역량 탭 */
+  #lecturer-main .tab-bar{overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch}
+  #lecturer-main .tab-bar::-webkit-scrollbar{display:none}
+  #lecturer-main .tab-btn{flex-shrink:0!important;white-space:nowrap!important;padding:8px 12px!important;font-size:12px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     관리자 (page-admin)
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* 탭바 가로 스크롤 */
+  #page-admin .tab-bar,
+  #page-admin .tab-list{
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+    -webkit-overflow-scrolling:touch;
+    border-bottom:1px solid var(--bdr)!important;
+  }
+  #page-admin .tab-bar::-webkit-scrollbar{display:none}
+  #page-admin .tab-btn{flex-shrink:0!important;white-space:nowrap!important;padding:10px 14px!important;font-size:12px!important}
+  /* 탭 내용 패딩 */
+  #page-admin .tab-pane{padding:8px 0!important}
+  /* 관리 탭 — 상단 필터 영역 */
+  #page-admin div[style*="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"]{
+    flex-wrap:wrap!important;
+    gap:8px!important;
+  }
+  #page-admin .form-input,#page-admin select{width:100%!important;box-sizing:border-box!important}
+  /* 상단 통계 그리드 */
+  #page-admin div[style*="grid-template-columns:repeat(4"]{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  /* 강사 목록 — 자동 카드화 (실제 .tbl 인 경우) */
+  #admin-content .tbl{font-size:12px!important}
+  #admin-content .tbl-wrap,
+  #admin-content table{overflow-x:auto!important;-webkit-overflow-scrolling:touch;display:block!important}
+  /* 교육종류 / 카테고리 / 뱃지 기준 — 입력 폼 풀폭 */
+  #tab-교육종류 input,#tab-AI코칭목록 input,#tab-뱃지기준 input,#tab-금액현황 input,
+  #tab-교육종류 select,#tab-AI코칭목록 select{width:100%!important;box-sizing:border-box!important}
+  /* 추가 버튼 */
+  #tab-교육종류 .btn[onclick*="addEdu"],
+  #tab-뱃지기준 .btn[onclick*="addBadge"]{
+    width:100%!important;
+    margin-top:8px!important;
+  }
+  /* 금액 현황 표 */
+  #tab-금액현황 table{font-size:11px!important}
+  #tab-금액현황 td,#tab-금액현황 th{padding:6px 4px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     모달 / 오버레이 공통 — 안전 풀스크린
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  .overlay > div,.modal{
+    max-height:90vh!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  /* 모달 내 input/select */
+  .overlay input,.overlay select,.overlay textarea{font-size:16px!important;width:100%!important;box-sizing:border-box!important}
+  /* 모달 내 버튼 행 */
+  .overlay .modal-actions,
+  .overlay div[style*="display:flex"][style*="gap"][style*="justify-content"]{flex-wrap:wrap!important;gap:8px!important}
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━
+     공통 텍스트 안전
+     ━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* 긴 이름/제목 ellipsis */
+  .lect-name,.r-vid-title,.eval-name,.cat-name{
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    min-width:0!important;
+  }
+  /* span 안에 strong/em 등 줄바꿈 방지 */
+  span,strong,em{word-break:keep-all}
+  /* 한글 단어 보존 */
+  body,p,span,div{word-break:keep-all}
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━
+   매우 작은 폰 (≤360px) — 갤럭시 폴드 외부 등
+   ━━━━━━━━━━━━━━━━━━━━━━━ */
+@media(max-width:360px){
+  #page-pick > main{padding:10px 10px 80px!important}
+  #page-pick .pick-hero-title{font-size:20px!important}
+  #pick-stats > div > div:first-child{font-size:16px!important}
+  #pick-stats > div > div:last-child{font-size:10px!important}
+  .mobile-nav-item{font-size:9px!important}
+  .mobile-nav-item svg{width:18px!important;height:18px!important}
+}
+
 /* ═══ PWA 설치 안내 배너 (모바일 첫 진입 시 1회) ═══ */
 #pwa-install-banner{
   position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
