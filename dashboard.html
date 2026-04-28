@@ -5071,9 +5071,9 @@ function renderPick(){
   // 통계 카드
   const statsEl=el('pick-stats');
   if(statsEl) statsEl.innerHTML=[
-    {val:cumUsers,unit:'명',lbl:'전체 등록 강사 수'},
+    {val:cumUsers,unit:'명',lbl:'이번 달 평가 강사'},
     {val:totalEvals,unit:'건',lbl:'이번 달 AI 평가 완료'},
-    {val:avgAll,unit:'점',lbl:'전체 평균 AI 점수'},
+    {val:avgAll,unit:'점',lbl:'이번 달 평균 점수'},
     {val:weekNew,unit:'건',lbl:'이번 주 신규 콘텐츠'}
   ].map(s=>`<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;text-align:center">
     <div style="font-size:24px;font-weight:900;color:var(--t1)">${s.val}<span style="font-size:12px;font-weight:700">${s.unit}</span></div>
