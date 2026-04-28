@@ -3500,8 +3500,13 @@ async function loadFromDB(){
   const {data:pf2}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
   D.portfolio=pf2||[];
   // 뱃지 기준
-  const {data:bc}=await sb.from('badge_criteria').select('*').order('sort_order',{ascending:true});
-  D.badgeCriteria=bc||[];
+  // badge_criteria — 조직별 분리 (활성 조직 + NULL 레거시)
+  {
+    let q=sb.from('badge_criteria').select('*').order('sort_order',{ascending:true});
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const {data:bc}=await q;
+    D.badgeCriteria=bc||[];
+  }
   // 초기 시드 (DB 비어있으면 50개 삽입)
   if(!D.badgeCriteria.length) await seedBadgeCriteria();
   // (pick_contents, pick_notices, calendar_events는 /api/db/load에서 받음)
@@ -4171,16 +4176,24 @@ async function seedEduCategoriesIfEmpty(){
   try{
     const eduRows=(D.eduCategories||[]).filter(c=>(c.type||'edu')==='edu');
     if(eduRows.length) return; // 이미 항목 있으면 스킵
-    if(localStorage.getItem('edu_categories_seeded_v1')==='1') return;
+    // 시드는 진짜 관리자가 특정 조직을 선택했을 때만 실행 (전체 조직 모드/부관리자 시드 차단)
+    if(!D.activeOrg || !D.isRealAdmin) return;
+    const seedKey='edu_categories_seeded_v1_'+D.activeOrg;
+    if(localStorage.getItem(seedKey)==='1') return;
     const existingNames=new Set((D.eduCategories||[]).map(c=>c.name));
     for(let i=0;i<EDU_CAT_SEED.edu.length;i++){
       const name=EDU_CAT_SEED.edu[i];
       if(existingNames.has(name)) continue;
-      let {error}=await sb.from('edu_categories').insert({name,sort_order:i+1,type:'edu'});
+      let {error}=await sb.from('edu_categories').insert({name,sort_order:i+1,type:'edu',org_name:D.activeOrg});
       if(error && (error.message||'').toLowerCase().includes('column') && (error.message||'').toLowerCase().includes('type')){
-        ({error}=await sb.from('edu_categories').insert({name,sort_order:i+1}));
+        ({error}=await sb.from('edu_categories').insert({name,sort_order:i+1,org_name:D.activeOrg}));
+      }
+      if(error && (error.message||'').toLowerCase().includes('org_name')){
+        // org_name 컬럼 미존재 → 마이그레이션 미실행 환경 폴백
+        await sb.from('edu_categories').insert({name,sort_order:i+1});
       }
     }
+    localStorage.setItem(seedKey,'1');
     const {data:ec2}=await sb.from('edu_categories').select('*').order('sort_order');
     D.eduCategories=ec2||[];
     localStorage.setItem('edu_categories_seeded_v1','1');
@@ -4604,17 +4617,34 @@ async function addEduCategory(type){
   const input=document.getElementById(inputId)||legacyInput;
   const name=input?.value?.trim();
   if(!name){alert('카테고리명을 입력하세요');return;}
+  // 진짜 관리자가 '전체 조직' 모드면 어느 조직에 추가할지 모호 → 차단
+  if(D.isRealAdmin && !D.activeOrg){
+    alert('상단 드롭다운에서 조직을 먼저 선택하세요. (전체 조직 모드에서는 추가 불가)');
+    return;
+  }
   // 기존 항목과 중복 체크
   if(getEduCategories(type).includes(name)){alert('이미 존재하는 카테고리입니다.');return;}
   const order=(D.eduCategories||[]).length+1;
-  // 1차: type 포함 insert
-  let {error}=await sb.from('edu_categories').insert({name,sort_order:order,type});
+  const orgName=D.activeOrg||CU?.orgName||CU?.channel||null;
+  // 1차: type + org_name 포함 insert
+  let {error}=await sb.from('edu_categories').insert({name,sort_order:order,type,org_name:orgName});
+  if(error){
+    const msg=(error.message||'').toLowerCase();
+    // org_name 컬럼 없으면 제외 후 재시도
+    if(msg.includes('column') && msg.includes('org_name')){
+      console.warn('edu_categories.org_name 컬럼 없음 — 제외 후 재시도');
+      ({error}=await sb.from('edu_categories').insert({name,sort_order:order,type}));
+    }
+  }
   if(error){
     const msg=(error.message||'').toLowerCase();
     // type 컬럼 없으면 제외 후 재시도 (ALTER 실행 전에도 동작)
     if(msg.includes('column') && msg.includes('type')){
       console.warn('edu_categories.type 컬럼 없음 — 제외 후 재시도');
-      ({error}=await sb.from('edu_categories').insert({name,sort_order:order}));
+      ({error}=await sb.from('edu_categories').insert({name,sort_order:order,org_name:orgName}));
+      if(error && (error.message||'').toLowerCase().includes('org_name')){
+        ({error}=await sb.from('edu_categories').insert({name,sort_order:order}));
+      }
     }
   }
   if(error){alert('추가 실패: '+error.message);return;}
@@ -4623,11 +4653,41 @@ async function addEduCategory(type){
 }
 async function deleteEduCategory(name,type){
   if(!confirm(`"${name}" 카테고리를 삭제하시겠습니까?`))return;
-  const{error,data}=await sb.from('edu_categories').delete().eq('name',name).select();
-  if(error){alert('삭제 실패: '+error.message);return;}
-  if(!data||!data.length){
-    alert('삭제되지 않았습니다. Supabase RLS 정책을 확인하세요.\n\nALTER TABLE edu_categories DISABLE ROW LEVEL SECURITY;\n또는\nCREATE POLICY ... FOR DELETE TO anon, authenticated USING (true);');
+  // 1) 같은 이름의 모든 관련 행 조회 (현재 조직 + NULL 레거시)
+  let relatedRows=[];
+  try{
+    let q=sb.from('edu_categories').select('*').eq('name',name);
+    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+    const r=await q;
+    relatedRows=r?.data||[];
+  }catch(e){ console.warn('select related edu_categories failed:',e); }
+  // 2) 각 행을 id 단위로 삭제 (현재 조직 행 + NULL 레거시 행만)
+  let dbDeleted=0;
+  for(const row of relatedRows){
+    try{
+      const r=await sb.from('edu_categories').delete().eq('id',row.id).select();
+      const cnt=r?.data?.length||0;
+      dbDeleted+=cnt;
+    }catch(e){ console.warn('  delete failed for id=',row.id,e); }
+  }
+  if(relatedRows.length>0 && dbDeleted===0){
+    alert('삭제되지 않았습니다. Supabase RLS / GRANT 확인 필요.\n\nALTER TABLE edu_categories DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON edu_categories TO anon, authenticated;');
     return;
+  }
+  // 3) NULL 레거시 행이 삭제됐으면 다른 조직에 fork (현재 조직만 사라지고 다른 조직 보존)
+  const hadNullRow=relatedRows.some(r=>!r.org_name);
+  if(hadNullRow && D.activeOrg && Array.isArray(D.orgList) && D.orgList.length){
+    const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
+    for(const otherOrg of otherOrgs){
+      try{
+        const dup=await sb.from('edu_categories').select('id').eq('name',name).eq('org_name',otherOrg).limit(1);
+        if(!dup?.data?.length){
+          // fork 시 type 도 첫 NULL 행과 동일하게 유지
+          const t=(relatedRows.find(r=>!r.org_name)||{}).type||type||'edu';
+          await sb.from('edu_categories').insert({name, type:t, sort_order:0, org_name:otherOrg});
+        }
+      }catch(e){ console.warn('fork edu_category to',otherOrg,'failed:',e); }
+    }
   }
   await loadFromDB();renderEduPage();
 }
@@ -5748,12 +5808,21 @@ const TIER_STYLE={
   legend:{label:'레전드',color:'#6b21a8',bg:'#f3e8ff',border:'#a855f7'}
 };
 
-// 초기 시드
+// 초기 시드 (조직별 — 활성 조직 1회만)
 async function seedBadgeCriteria(){
+  if(!D.activeOrg) return; // 전체 조직 모드/조직 없음 시 시드 차단
+  const seedKey='badge_criteria_seeded_v1_'+D.activeOrg;
+  if(localStorage.getItem(seedKey)==='1') return;
   for(const b of BADGE_CRITERIA){
-    await sb.from('badge_criteria').insert({name:b.name,category:b.cat,description:b.desc,sort_order:b.id});
+    await sb.from('badge_criteria').insert({name:b.name,category:b.cat,description:b.desc,sort_order:b.id,org_name:D.activeOrg});
   }
-  const {data}=await sb.from('badge_criteria').select('*').order('sort_order');
+  localStorage.setItem(seedKey,'1');
+  await refreshBadgeCriteriaFromDB();
+}
+async function refreshBadgeCriteriaFromDB(){
+  let q=sb.from('badge_criteria').select('*').order('sort_order');
+  if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+  const {data}=await q;
   D.badgeCriteria=data||[];
 }
 
@@ -5764,29 +5833,56 @@ async function addBadgeCriteria(){
   const tier=document.getElementById('badge-add-tier')?.value||'silver';
   const desc=document.getElementById('badge-add-desc')?.value?.trim();
   if(!name||!desc){alert('뱃지명과 달성 기준을 입력하세요');return;}
+  if(D.isRealAdmin && !D.activeOrg){
+    alert('상단 드롭다운에서 조직을 먼저 선택하세요. (전체 조직 모드에서는 추가 불가)');
+    return;
+  }
   // 커스텀 뱃지는 기본 뱃지 개수+1번부터 (기본 BADGE_CRITERIA.length 개 보존)
   const _base=BADGE_CRITERIA.length;
   const order=Math.max(_base+1,(D.badgeCriteria||[]).reduce((m,x)=>Math.max(m,x.sort_order||0),_base)+1);
-  const payload={name,category:cat,description:desc,sort_order:order};
+  const orgName=D.activeOrg||CU?.orgName||CU?.channel||null;
+  const payload={name,category:cat,description:desc,sort_order:order,org_name:orgName};
   // tier 컬럼이 DB에 없을 수 있으므로 시도 후 실패 시 재시도
   let error=null;
   const r1=await sb.from('badge_criteria').insert({...payload,tier});
   if(r1.error){
-    const r2=await sb.from('badge_criteria').insert(payload);
-    error=r2.error;
+    const msg=(r1.error.message||'').toLowerCase();
+    if(msg.includes('org_name')){
+      // org_name 미존재 폴백
+      const r1b=await sb.from('badge_criteria').insert({name,category:cat,description:desc,sort_order:order,tier});
+      error=r1b.error;
+    } else {
+      const r2=await sb.from('badge_criteria').insert(payload);
+      error=r2.error;
+    }
   }
   if(error){alert('등록 실패: '+error.message);return;}
-  const {data}=await sb.from('badge_criteria').select('*').order('sort_order');
-  D.badgeCriteria=data||[];
+  await refreshBadgeCriteriaFromDB();
   renderBadgeCriteria();
   document.getElementById('badge-add-name').value='';
   document.getElementById('badge-add-desc').value='';
 }
 async function deleteBadgeCriteria(id){
   if(!confirm('삭제하시겠습니까?'))return;
+  // 대상 행 — 현재 조직 행이거나 NULL 레거시
+  const target=(D.badgeCriteria||[]).find(x=>x.id===id);
   await sb.from('badge_criteria').delete().eq('id',id);
-  const {data}=await sb.from('badge_criteria').select('*').order('sort_order');
-  D.badgeCriteria=data||[];
+  // NULL 레거시 행 삭제 시 다른 조직에 fork
+  if(target && !target.org_name && D.activeOrg && Array.isArray(D.orgList) && D.orgList.length){
+    const otherOrgs=D.orgList.filter(o=>o && o!==D.activeOrg);
+    for(const otherOrg of otherOrgs){
+      try{
+        const dup=await sb.from('badge_criteria').select('id').eq('name',target.name).eq('org_name',otherOrg).limit(1);
+        if(!dup?.data?.length){
+          await sb.from('badge_criteria').insert({
+            name:target.name, category:target.category, description:target.description,
+            sort_order:target.sort_order, tier:target.tier, org_name:otherOrg
+          });
+        }
+      }catch(e){ console.warn('fork badge_criteria to',otherOrg,'failed:',e); }
+    }
+  }
+  await refreshBadgeCriteriaFromDB();
   renderBadgeCriteria();
 }
 async function editBadgeCriteria(id){
@@ -8842,7 +8938,8 @@ async function submitDeleteRequest(){
     user_name:CU?.name||'',
     video_id:_delReqVideoId,
     reason,
-    status:'pending'
+    status:'pending',
+    org_name: D.activeOrg || CU?.orgName || CU?.channel || null
   });
   await loadFromDB();
   closeOverlay('delreq-overlay');
