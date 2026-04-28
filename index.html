@@ -4166,13 +4166,14 @@ async function seedEduCategoriesIfEmpty(){
   }catch(e){ console.warn('seed edu categories failed:',e); }
 }
 // 교육종류 (Supabase가 유일 기준 · localStorage는 오프라인 캐시로만 사용)
+// 주의: D 는 let 선언이라 window.D 는 undefined → typeof 체크로 우회
 function getEduTypeRecords(){
-  const dbRecs=(window.D&&Array.isArray(D.eduTypes))?D.eduTypes:[];
+  const dbRecs=(typeof D!=='undefined' && Array.isArray(D.eduTypes))?D.eduTypes:[];
   if(dbRecs.length) return dbRecs;
-  // DB가 비어있고 앱 초기화 전이면 localStorage 캐시 사용
+  // DB가 비어있고 앱 초기화 전이면 localStorage 캐시 사용 (org_name 정보는 없음)
   let localNames=[];
   try{ localNames=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(e){}
-  return localNames.filter(Boolean).map((n,i)=>({id:'local-'+i,name:n}));
+  return localNames.filter(Boolean).map((n,i)=>({id:'local-'+i,name:n,org_name:null}));
 }
 function getEduTypes(){
   return getEduTypeRecords().map(r=>r?.name||r).filter(Boolean);
