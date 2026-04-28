@@ -969,12 +969,17 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 #page-pick .page-title-icon svg{fill:#000!important;stroke:#000!important}
 #page-pick #pick-title-ym{color:#000!important;font-weight:700}
 
-#page-pick .pick-hero-wide{background:#fff!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:48px 0 40px!important;margin-bottom:40px!important;text-align:center!important}
+#page-pick .pick-hero-wide{background:#fff!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:48px 0 40px!important;margin-bottom:40px!important}
 #page-pick .pick-hero-bg{display:none!important}
-#page-pick .pick-hero-inner{text-align:center!important}
-#page-pick .pick-hero-inner > div{justify-content:center!important;flex-wrap:wrap!important}
-#page-pick .pick-hero-title{color:#000!important;font-family:'LG글씨',sans-serif!important;font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1.15;white-space:pre-wrap!important;word-break:keep-all;text-align:center!important}
-#page-pick .pick-hero-sub{color:#000!important;font-family:'LG글씨',sans-serif!important;font-weight:500;margin-top:18px!important;white-space:pre-wrap!important;word-break:keep-all;text-align:center!important}
+/* 정렬 클래스 (PC) — JS 가 hero-align-{left|center|right} 부여 */
+.hero-align-left{text-align:left!important}
+.hero-align-center{text-align:center!important}
+.hero-align-right{text-align:right!important}
+.pick-hero-inner.hero-align-left > div{justify-content:flex-start!important;flex-wrap:wrap!important}
+.pick-hero-inner.hero-align-center > div{justify-content:center!important;flex-wrap:wrap!important}
+.pick-hero-inner.hero-align-right > div{justify-content:flex-end!important;flex-wrap:wrap!important}
+#page-pick .pick-hero-title{color:#000!important;font-family:'LG글씨',sans-serif!important;font-size:64px;font-weight:900;letter-spacing:-2px;line-height:1.15;white-space:pre-wrap!important;word-break:keep-all}
+#page-pick .pick-hero-sub{color:#000!important;font-family:'LG글씨',sans-serif!important;font-weight:500;margin-top:18px!important;white-space:pre-wrap!important;word-break:keep-all}
 @media(max-width:1400px){#page-pick .pick-hero-title{font-size:48px}}
 @media(max-width:900px){#page-pick .pick-hero-title{font-size:34px;letter-spacing:-1px}}
 
@@ -1310,13 +1315,21 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   /* #1 인터픽 페이지 좌우 패딩 축소 */
   #page-pick > main{padding:12px 14px 80px!important}
 
-  /* #2 헤로 텍스트 크기/패딩 + 중앙 정렬 */
+  /* #2 헤로 텍스트 크기/패딩 + 모바일은 항상 가운데 (PC 정렬 옵션 무시) */
   #page-pick .pick-hero-wide{padding:18px 12px 14px!important;margin-bottom:12px!important;text-align:center!important}
-  #page-pick .pick-hero-inner{text-align:center!important}
-  #page-pick .pick-hero-title{font-size:24px!important;letter-spacing:-.5px!important;line-height:1.25!important;text-align:center!important}
-  #page-pick .pick-hero-sub{font-size:13px!important;margin-top:8px!important;line-height:1.5!important;text-align:center!important}
-  /* 제목/부제 + 수정 버튼 한 줄 wrap 도 가운데 */
-  #page-pick .pick-hero-inner > div{justify-content:center!important;flex-wrap:wrap!important;text-align:center!important}
+  #page-pick .pick-hero-inner,
+  #page-pick .pick-hero-inner.hero-align-left,
+  #page-pick .pick-hero-inner.hero-align-right{text-align:center!important}
+  #page-pick .pick-hero-title,
+  #page-pick .pick-hero-title.hero-align-left,
+  #page-pick .pick-hero-title.hero-align-right{font-size:24px!important;letter-spacing:-.5px!important;line-height:1.25!important;text-align:center!important}
+  #page-pick .pick-hero-sub,
+  #page-pick .pick-hero-sub.hero-align-left,
+  #page-pick .pick-hero-sub.hero-align-right{font-size:13px!important;margin-top:8px!important;line-height:1.5!important;text-align:center!important}
+  /* 제목/부제 + 수정 버튼 한 줄 wrap 도 모바일은 가운데 */
+  #page-pick .pick-hero-inner > div,
+  #page-pick .pick-hero-inner.hero-align-left > div,
+  #page-pick .pick-hero-inner.hero-align-right > div{justify-content:center!important;flex-wrap:wrap!important;text-align:center!important}
 
   /* #3 사진 컬라주 순서 — 헤로가 먼저, 컬라주 아래로 */
   .pick-main-split{display:flex!important;flex-direction:column!important;gap:8px!important}
@@ -5508,8 +5521,8 @@ async function deleteLink(id){
 // 히어로 타이틀/부제 — DB 로드 + 스타일 복원
 // 값 포맷: JSON 문자열 {text,color,font,weight,italic} — 레거시는 평문도 허용
 const HERO_DEFAULTS={
-  hero_title:{text:'강사가 성장하면, 현장이 달라집니다',color:'#0a0a0a',font:'inherit',weight:900,italic:false},
-  hero_sub:{text:'수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.',color:'#475569',font:'inherit',weight:700,italic:false}
+  hero_title:{text:'강사가 성장하면, 현장이 달라집니다',color:'#0a0a0a',font:'inherit',weight:900,italic:false,align:'center'},
+  hero_sub:{text:'수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.',color:'#475569',font:'inherit',weight:700,italic:false,align:'center'}
 };
 function parseHeroValue(raw,fallback){
   if(!raw) return {...fallback};
@@ -5530,6 +5543,16 @@ function applyHeroStyle(elx,cfg){
   if(cfg.weight) elx.style.setProperty('font-weight',String(cfg.weight),'important');
   else elx.style.removeProperty('font-weight');
   elx.style.setProperty('font-style',cfg.italic?'italic':'normal','important');
+  // 정렬 — 클래스로 지정 (모바일 CSS 가 항상 center 로 override 가능하게)
+  const align=cfg.align||'center';
+  elx.classList.remove('hero-align-left','hero-align-center','hero-align-right');
+  elx.classList.add(`hero-align-${align}`);
+  // 헤로 컨테이너 (제목+수정 버튼 row) 도 같은 클래스
+  const inner=elx.closest('.pick-hero-inner');
+  if(inner){
+    inner.classList.remove('hero-align-left','hero-align-center','hero-align-right');
+    inner.classList.add(`hero-align-${align}`);
+  }
 }
 async function loadHeroText(){
   const t=el('pick-hero-title'), s=el('pick-hero-sub');
@@ -5609,14 +5632,20 @@ function editHeroText(key){
         </select>
       </div>
     </div>
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
         <input id="hero-edit-italic" type="checkbox"${cur.italic?' checked':''}> 이탤릭
       </label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--t3)">정렬</span>
+        <div id="hero-edit-align" style="display:inline-flex;border:1px solid #ddd;border-radius:8px;overflow:hidden">
+          ${['left','center','right'].map(a=>`<button type="button" data-align="${a}" onclick="_heroSetAlign('${a}')" style="padding:7px 12px;border:none;background:${(cur.align||'center')===a?'var(--blue)':'#fff'};color:${(cur.align||'center')===a?'#fff':'var(--t2)'};font-size:11px;font-weight:700;cursor:pointer">${a==='left'?'왼쪽':a==='center'?'가운데':'오른쪽'}</button>`).join('')}
+        </div>
+      </div>
     </div>
     <div style="margin-bottom:18px;padding:16px;border:1px dashed var(--bdr);border-radius:10px;background:#fafafa">
       <div style="font-size:10px;color:var(--t3);margin-bottom:6px">미리보기</div>
-      <div id="hero-edit-preview" style="font-size:${isTitle?'32px':'16px'};font-weight:${cur.weight||(isTitle?900:700)};color:${cur.color||'#0a0a0a'};font-family:${cur.font==='inherit'?'inherit':cur.font};font-style:${cur.italic?'italic':'normal'};line-height:1.3;word-break:keep-all;white-space:pre-wrap">${(cur.text||'').replace(/</g,'&lt;')}</div>
+      <div id="hero-edit-preview" style="font-size:${isTitle?'32px':'16px'};font-weight:${cur.weight||(isTitle?900:700)};color:${cur.color||'#0a0a0a'};font-family:${cur.font==='inherit'?'inherit':cur.font};font-style:${cur.italic?'italic':'normal'};text-align:${cur.align||'center'};line-height:1.3;word-break:keep-all;white-space:pre-wrap">${(cur.text||'').replace(/</g,'&lt;')}</div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" style="padding:8px 18px" onclick="document.getElementById('hero-edit-overlay').remove()">취소</button>
@@ -5624,6 +5653,18 @@ function editHeroText(key){
     </div>
   </div>`;
   document.body.appendChild(overlay);
+  // 현재 선택된 정렬 추적
+  window._heroEditAlign=cur.align||'center';
+  window._heroSetAlign=function(a){
+    window._heroEditAlign=a;
+    document.querySelectorAll('#hero-edit-align button').forEach(b=>{
+      const sel=b.getAttribute('data-align')===a;
+      b.style.background=sel?'var(--blue)':'#fff';
+      b.style.color=sel?'#fff':'var(--t2)';
+    });
+    const p=document.getElementById('hero-edit-preview');
+    if(p) p.style.textAlign=a;
+  };
   // 입력 변경 시 미리보기 갱신
   window._heroPreview=function(){
     const p=document.getElementById('hero-edit-preview'); if(!p) return;
@@ -5633,6 +5674,7 @@ function editHeroText(key){
     p.style.fontFamily=fv==='inherit'?'inherit':fv;
     p.style.fontWeight=document.getElementById('hero-edit-weight').value;
     p.style.fontStyle=document.getElementById('hero-edit-italic').checked?'italic':'normal';
+    p.style.textAlign=window._heroEditAlign||'center';
   };
   ['hero-edit-text','hero-edit-color','hero-edit-font','hero-edit-weight','hero-edit-italic'].forEach(id=>{
     const e=document.getElementById(id); if(e) e.addEventListener('input',window._heroPreview);
@@ -5645,7 +5687,8 @@ async function saveHeroEdit(key){
     color:document.getElementById('hero-edit-color').value,
     font:document.getElementById('hero-edit-font').value,
     weight:Number(document.getElementById('hero-edit-weight').value),
-    italic:document.getElementById('hero-edit-italic').checked
+    italic:document.getElementById('hero-edit-italic').checked,
+    align:window._heroEditAlign||'center'
   };
   if(!cfg.text.trim()){alert('텍스트를 입력하세요.');return;}
   const json=JSON.stringify(cfg);
