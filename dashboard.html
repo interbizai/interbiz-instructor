@@ -5061,12 +5061,12 @@ function renderPick(){
   const allScoresAll=allVidScores.filter(s=>s>0);
   const avgAll=allScoresAll.length?(allScoresAll.reduce((a,b)=>a+b,0)/allScoresAll.length).toFixed(1):'0.0';
 
-  // 이번 주 신규 콘텐츠 (월~일) — 영상 평가 받은 것만 기준 (+ 필터 적용)
+  // 이번 주 신규 콘텐츠 — DB 등록일(created_at) 기준
   const todayDow=now.getDay();
   const daysSinceMon=todayDow===0?6:todayDow-1;
   const weekStart=new Date(thisYear,thisMonth,now.getDate()-daysSinceMon,0,0,0);
   const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);weekEnd.setHours(23,59,59);
-  const weekNew=applyPickFilter((D.videos||[]).filter(v=>{const d=new Date(v.date||v.created_at||0);return d>=weekStart&&d<=weekEnd;}),f).length;
+  const weekNew=applyPickFilter((D.videos||[]).filter(v=>{const d=new Date(v.created_at||v.date||0);return d>=weekStart&&d<=weekEnd;}),f).length;
 
   // 통계 카드
   const statsEl=el('pick-stats');
