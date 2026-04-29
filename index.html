@@ -274,6 +274,11 @@ main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 .rec-dot{width:12px;height:12px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .rec-bar{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700}
+.cam-flip-btn{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:5;transition:transform .2s,background .2s;-webkit-tap-highlight-color:transparent}
+.cam-flip-btn:hover,.cam-flip-btn:active{background:rgba(0,0,0,.78);transform:scale(1.06)}
+.cam-flip-btn svg{width:22px;height:22px;display:block}
+.cam-flip-btn[disabled]{opacity:.4;cursor:not-allowed}
+@media(max-width:768px){.cam-flip-btn{display:flex}}
 
 /* ── Lecturer grid ── */
 .lect-grid{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;scrollbar-width:thin}
@@ -1326,6 +1331,71 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   #an-result-meta{flex-wrap:wrap!important;gap:8px!important}
   /* 검색창 풀폭 */
   .home-search-wrap,#home-search-wrap{max-width:95%!important}
+}
+
+/* 인라인 grid 모바일 보강 — JS 템플릿 등으로 인라인 styled 된 곳 */
+@media(max-width:600px){
+  /* QR 관리 미리보기 — 240px 1fr → 1fr */
+  #qr-preview-row{grid-template-columns:1fr!important}
+  /* 관리자 AI 코칭 필터 (7컬럼) */
+  #tab-AI코칭 .filter-bar{grid-template-columns:repeat(2,1fr)!important;gap:6px!important}
+  /* 시나리오 코칭 결과/최종 카드 (JS 템플릿) */
+  .sc-grid-2{grid-template-columns:1fr!important;gap:10px!important}
+  /* 평가안 행 — 1fr 80px 2fr auto → 1fr 64px auto (인풋 stack) */
+  #criteria-rows>div{grid-template-columns:1fr 64px auto!important;gap:6px!important}
+  #criteria-rows>div>input[type="text"]:nth-of-type(2){grid-column:1/-1!important}
+}
+@media(max-width:480px){
+  /* 캐러셀 카드 폭 — 360 폰 대응 */
+  .carousel-card{min-width:260px!important}
+}
+
+/* 모바일 키보드 회피 + 가로 녹화 안내 */
+@media(max-width:768px){
+  /* 동적 뷰포트 — 키보드 올라올 때 자동 축소 */
+  body{min-height:100vh;min-height:100dvh}
+  /* 입력 포커스 시 헤더·푸터에 가리지 않게 */
+  input,select,textarea{scroll-margin-top:80px;scroll-margin-bottom:120px}
+}
+/* 영상 녹화 페이지 — 세로 모드 시 가로 권장 안내 */
+.rec-rotate-hint{display:none;text-align:center;font-size:11.5px;font-weight:700;color:var(--blue);background:rgba(0,120,200,.08);padding:9px 12px;border-radius:10px;margin-bottom:10px;border:1px dashed rgba(0,120,200,.3)}
+@media(max-width:768px) and (orientation:portrait){
+  .rec-rotate-hint{display:block}
+}
+
+/* 모바일 — 터치 영역 확대 (iOS HIG/Material 권장 44px) */
+@media(max-width:600px){
+  /* iOS 자동 줌 방지: 인풋 폰트 16px */
+  input[type="text"],input[type="email"],input[type="password"],input[type="number"],
+  input[type="search"],input[type="tel"],input[type="url"],input[type="date"],
+  input[type="datetime-local"],input[type="month"],input[type="time"],
+  select,textarea{
+    font-size:16px!important;
+  }
+  /* 인풋·셀렉트 — 터치 친화 높이 */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+  select{
+    min-height:44px;
+  }
+  /* 일반 버튼 최소 영역 (카메라 플립·탭 버튼은 별도 처리) */
+  .btn:not(.cam-flip-btn){min-height:44px}
+  /* 너무 작은 padding 버튼 보강 (style 인라인 padding 5/6/7px) */
+  .btn[style*="padding:5px"],.btn[style*="padding: 5px"],
+  .btn[style*="padding:6px"],.btn[style*="padding: 6px"],
+  .btn[style*="padding:7px"],.btn[style*="padding: 7px"]{
+    padding:10px 14px!important;min-height:44px!important;
+  }
+  /* 탭 버튼 */
+  .tab-btn{min-height:44px;padding:10px 14px!important}
+  /* 드롭다운 메뉴 항목 (topnav, 알림 등) */
+  .tn-dd a,.tn-dd-item,.tn-dd>div[onclick],.dropdown-item,.menu-item{
+    min-height:44px;display:flex;align-items:center;padding:10px 14px;
+  }
+  /* 아코디언 헤더 */
+  .acc-head,.acc-item-header,.acc-trigger{min-height:48px}
+  /* 작은 ✕ 닫기·삭제 버튼 살짝 확대 */
+  .btn-ghost[onclick*="splice"],.btn-ghost[onclick*="remove"],
+  .btn-ghost[onclick*="삭제"]{min-height:40px;min-width:40px}
 }
 
 /* 480~768 (대형 폰 / 작은 태블릿) */
@@ -3683,10 +3753,14 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   <div id="stream-step2" style="display:none">
     <div class="stream-layout">
       <div>
+        <div class="rec-rotate-hint">📱 폰을 가로로 돌리면 더 넓게 녹화됩니다</div>
         <!-- Webcam -->
         <div class="webcam-wrap" id="stream-webcam-wrap" style="margin-bottom:14px">
           <video id="stream-webcam" autoplay muted playsinline></video>
           <div class="rec-bar" id="stream-rec-bar" style="display:none"><div class="rec-dot"></div><span id="stream-rec-timer">00:00</span></div>
+          <button class="cam-flip-btn" type="button" onclick="flipCamera('stream')" aria-label="카메라 전환" title="전면/후면 전환">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4h-3.2L15 2H9L7.2 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM7 17l-3-3 3-3v2h6v2H7v2zm10-1l-3-3v2H8v-2h6V9l3 3-3 3v-2z"/></svg>
+          </button>
         </div>
         <!-- Audio Waveform Visualizer -->
         <div style="border-radius:var(--r2);overflow:hidden;margin-bottom:14px;background:#fff;border:1px solid rgba(0,0,0,.18);padding:14px">
@@ -11789,7 +11863,7 @@ function goStreamStep2(){
     alert('이 브라우저에서 카메라를 지원하지 않습니다.\nHTTPS(배포 사이트)에서 접속해주세요.');
     return;
   }
-  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+  getCameraStream().then(stream=>{
     streamStream=stream;
     el('stream-webcam').srcObject=stream;
     // Audio visualizer setup
@@ -11995,7 +12069,7 @@ function retakeStream(){
   el('step3-num').className='step-num'; el('step3-text').className='step-text';
   el('step2-num').className='step-num active'; el('step2-text').className='step-text active';
   streamBlob=null;
-  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+  getCameraStream().then(stream=>{
     streamStream=stream;
     el('stream-webcam').srcObject=stream;
   }).catch(err=>alert('카메라 접근 권한이 필요합니다.'));
@@ -13232,7 +13306,7 @@ function scRenderCoaching(){
     ${Object.entries(scripts).map(([k,v])=>`<div style="padding:8px 12px;border-radius:8px;background:#fff;border:1px solid rgba(139,92,246,.15);margin-bottom:6px"><div style="font-size:10.5px;font-weight:800;color:#8b5cf6;margin-bottom:3px">[${k}]</div><div style="font-size:12px;color:var(--t1);line-height:1.7;white-space:pre-wrap">${v}</div></div>`).join('')}
   </div>`:'';
   body.innerHTML=`
-    <div style="display:grid;grid-template-columns:160px 1fr;gap:16px;margin-bottom:14px">
+    <div class="sc-grid-2" style="display:grid;grid-template-columns:160px 1fr;gap:16px;margin-bottom:14px">
       <div style="padding:16px;border:1px solid ${gradeColor}40;border-radius:14px;background:${gradeColor}0d;text-align:center">
         <div style="font-size:40px;font-weight:900;color:${gradeColor};line-height:1">${c.grade||'—'}</div>
         <div style="font-size:22px;font-weight:800;color:var(--t1);margin-top:4px">${c.overall_score||0}<span style="font-size:11px;color:var(--t3)">/100</span></div>
@@ -13252,7 +13326,7 @@ function scRenderCoaching(){
       <div><div style="font-size:12px;font-weight:800;color:#d97706;margin-bottom:6px">➕ 보완 제안</div>${mk(c.additions,'#f59e0b','➕','추가 제안 없음')}</div>
     </div>
     ${scriptHtml}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+    <div class="sc-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
       <div>
         <div style="font-size:11.5px;font-weight:800;color:var(--t3);margin-bottom:4px">📝 내 초안</div>
         <textarea readonly style="width:100%;height:200px;padding:10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px;background:#f9fafb;resize:vertical;font-family:inherit">${(scState.draft||'').replace(/</g,'&lt;')}</textarea>
@@ -13287,7 +13361,7 @@ function scRenderFinal(){
         <button class="btn btn-blue" style="padding:7px 14px;font-size:12px" onclick="scReset()">🔄 새로 시작</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:180px 1fr;gap:14px;margin-bottom:16px">
+    <div class="sc-grid-2" style="display:grid;grid-template-columns:180px 1fr;gap:14px;margin-bottom:16px">
       <div style="padding:14px;border:1px solid ${gradeColor}40;border-radius:14px;background:${gradeColor}0d;text-align:center">
         <div style="font-size:36px;font-weight:900;color:${gradeColor};line-height:1">${c?.grade||'—'}</div>
         <div style="font-size:18px;font-weight:800;color:var(--t1);margin-top:4px">${c?.overall_score||0}점</div>
@@ -14982,9 +15056,13 @@ function openVideo(id){
     </div>
     <!-- Webcam area (hidden by default) -->
     <div id="webcam-area" style="display:none;margin-bottom:18px">
+      <div class="rec-rotate-hint">📱 폰을 가로로 돌리면 더 넓게 녹화됩니다</div>
       <div class="webcam-wrap" id="webcam-wrap">
         <video id="webcam-preview" autoplay muted playsinline></video>
         <div class="rec-bar" id="rec-bar" style="display:none"><div class="rec-dot"></div><span id="rec-timer">00:00</span></div>
+        <button class="cam-flip-btn" type="button" onclick="flipCamera('rec')" aria-label="카메라 전환" title="전면/후면 전환">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4h-3.2L15 2H9L7.2 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM7 17l-3-3 3-3v2h6v2H7v2zm10-1l-3-3v2H8v-2h6V9l3 3-3 3v-2z"/></svg>
+        </button>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn btn-red" id="rec-start-btn" onclick="toggleRecord(${vid.id})">녹화 시작</button>
@@ -15850,9 +15928,44 @@ function renderTop5(filtered){
    WEBCAM RECORDING
 ════════════════════════════════ */
 let webcamStream=null, mediaRecorder=null, recordedChunks=[], recTimerID=null, recSeconds=0;
+
+// ── 모바일 카메라 전면/후면 전환 ──
+let currentFacingMode='user'; // 'user'(전면) | 'environment'(후면)
+async function getCameraStream(){
+  try{
+    return await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:currentFacingMode}},
+      audio:true
+    });
+  }catch(e){
+    return await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  }
+}
+async function flipCamera(target){
+  // 녹화 중에는 전환 차단
+  if(target==='stream' && typeof streamRecorder!=='undefined' && streamRecorder && streamRecorder.state==='recording'){
+    alert('녹화 중에는 카메라를 전환할 수 없습니다.\n녹화를 완료한 뒤 다시 시도해주세요.'); return;
+  }
+  if(target==='rec' && mediaRecorder && mediaRecorder.state==='recording'){
+    alert('녹화 중에는 카메라를 전환할 수 없습니다.\n녹화를 완료한 뒤 다시 시도해주세요.'); return;
+  }
+  currentFacingMode = currentFacingMode==='user' ? 'environment' : 'user';
+  try{
+    if(target==='stream'){
+      if(streamStream){ streamStream.getTracks().forEach(t=>t.stop()); }
+      streamStream = await getCameraStream();
+      const v = el('stream-webcam'); if(v) v.srcObject = streamStream;
+    } else if(target==='rec'){
+      if(webcamStream){ webcamStream.getTracks().forEach(t=>t.stop()); }
+      webcamStream = await getCameraStream();
+      const v = el('webcam-preview'); if(v) v.srcObject = webcamStream;
+    }
+  }catch(e){ alert('카메라 전환 실패: '+e.message); }
+}
+
 function startWebcam(vidId){
   el('webcam-area').style.display='block';
-  navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
+  getCameraStream().then(stream=>{
     webcamStream=stream;
     el('webcam-preview').srcObject=stream;
   }).catch(err=>{ alert('카메라 접근 권한이 필요합니다: '+err.message); stopWebcam(); });
