@@ -1350,6 +1350,27 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
   .carousel-card{min-width:260px!important}
 }
 
+/* 상단 진행 바 — 페이지 전환·데이터 로딩 시 표시 */
+#top-progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,#0078C8 0%,#10b981 100%);box-shadow:0 0 8px rgba(0,120,200,.5);z-index:9999;transition:width .25s ease,opacity .3s ease;pointer-events:none;opacity:0}
+#top-progress.go{opacity:1}
+
+/* 스켈레톤 펄스 헬퍼 — 데이터 로딩 자리표시 */
+@keyframes skelShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel{background:linear-gradient(90deg,#eef0f3 25%,#dde1e6 50%,#eef0f3 75%);background-size:200% 100%;animation:skelShimmer 1.4s linear infinite;border-radius:8px;color:transparent!important;pointer-events:none;user-select:none}
+.skel-card{height:140px;border-radius:14px}
+.skel-line{height:14px;border-radius:6px;margin:6px 0}
+.skel-line.short{width:50%}
+.skel-line.medium{width:75%}
+.skel-circle{border-radius:50%}
+.skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.skel-grid>.skel-card{margin:0}
+
+/* 권한 깜빡임 방지 (FOUC) — body에 .role-admin 붙기 전까지 관리자 메뉴 숨김 */
+body:not(.role-admin) [data-page="page-admin"],
+body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
+  display:none!important;
+}
+
 /* 모바일 키보드 회피 + 가로 녹화 안내 */
 @media(max-width:768px){
   /* 동적 뷰포트 — 키보드 올라올 때 자동 축소 */
@@ -2381,6 +2402,9 @@ html,body{-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 </style>
 </head>
 <body>
+
+<!-- 상단 진행 바 (페이지 전환·데이터 로딩) -->
+<div id="top-progress" aria-hidden="true"></div>
 
 <!-- PWA 설치 배너 (모바일 첫 진입 1회) -->
 <div id="pwa-install-banner" role="dialog" aria-label="앱으로 설치">
@@ -4859,6 +4883,8 @@ async function switchOrg(value){
   location.reload();
 }
 async function loadFromDB(){
+  startProgress();
+  try{
   // localStorage에서 관리자가 선택한 조직 복원
   if(!D.activeOrg){
     try{ const s=localStorage.getItem('ib_active_org'); if(s) D.activeOrg=s; }catch(e){}
@@ -4970,6 +4996,7 @@ async function loadFromDB(){
       hideLoginLoading();
     }
   }catch(e){}
+  } finally { endProgress(); }
 }
 
 /* ════════════════════════════════
@@ -5054,9 +5081,79 @@ let curVidId = null;
 function save(){ /* DB 저장은 각 함수에서 직접 처리 */ }
 
 /* ════════════════════════════════
+   TOP PROGRESS BAR (페이지 전환·네트워크 로딩 시각 신호)
+════════════════════════════════ */
+let _progressTimer=null, _progressActive=0;
+function startProgress(){
+  _progressActive++;
+  const b=document.getElementById('top-progress');
+  if(!b) return;
+  b.classList.add('go');
+  let v=parseFloat(b.style.width)||0;
+  if(v>=80) v=10;
+  clearInterval(_progressTimer);
+  _progressTimer=setInterval(()=>{
+    v=Math.min(85, v + Math.max(0.4, (85-v)*0.06));
+    b.style.width=v+'%';
+  },80);
+}
+function endProgress(){
+  _progressActive=Math.max(0,_progressActive-1);
+  if(_progressActive>0) return;
+  const b=document.getElementById('top-progress');
+  if(!b) return;
+  clearInterval(_progressTimer);
+  b.style.width='100%';
+  setTimeout(()=>{ b.classList.remove('go'); b.style.width='0'; },280);
+}
+async function withProgress(fn){
+  startProgress();
+  try{ return await fn(); } finally { endProgress(); }
+}
+// 모든 /api/* 호출과 GCS 업로드에 자동 progress
+(function(){
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = async function(input, init){
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const track = /\/api\//.test(url) || /storage\.googleapis\.com\/|supabase\.co\/storage\//.test(url);
+    if(track) startProgress();
+    try { return await _origFetch(input, init); }
+    finally { if(track) endProgress(); }
+  };
+})();
+
+// 이미지 자동 lazy load — 화면 밖 이미지는 지연 로드 (첫 진입 단축)
+(function(){
+  const apply=(img)=>{
+    if(img.tagName!=='IMG') return;
+    if(!img.hasAttribute('loading')) img.loading='lazy';
+    if(!img.hasAttribute('decoding')) img.decoding='async';
+  };
+  // 이미 있는 이미지
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('img').forEach(apply);
+  });
+  // 동적으로 추가되는 이미지
+  const obs=new MutationObserver(muts=>{
+    muts.forEach(m=>{
+      m.addedNodes.forEach(n=>{
+        if(n.nodeType!==1) return;
+        if(n.tagName==='IMG') apply(n);
+        else if(n.querySelectorAll) n.querySelectorAll('img').forEach(apply);
+      });
+    });
+  });
+  if(document.body) obs.observe(document.body,{childList:true,subtree:true});
+  else document.addEventListener('DOMContentLoaded',()=>obs.observe(document.body,{childList:true,subtree:true}));
+})();
+
+/* ════════════════════════════════
    ROUTING
 ════════════════════════════════ */
 function showPage(id){
+  // 페이지 전환 시각 신호 — 짧게 progress 띄움
+  startProgress();
+  setTimeout(endProgress, 220);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   window.scrollTo(0,0);
@@ -8188,6 +8285,7 @@ function checkAdmin(){
 }
 function refreshAdminVisibility(){
   const isAdm = !!CU?.isAdmin;
+  document.body.classList.toggle('role-admin', isAdm);
   document.querySelectorAll('[data-page="page-admin"]').forEach(el=>{ el.style.display = isAdm ? '' : 'none'; });
   document.querySelectorAll('.mobile-nav-item[onclick*="openAdminWithAuth"]').forEach(el=>{ el.style.display = isAdm ? '' : 'none'; });
 }

@@ -1,5 +1,5 @@
 // 인터PICK Service Worker — PWA 캐싱 + 오프라인 지원
-const VERSION = 'v1.0.2';
+const VERSION = 'v1.0.3';
 const STATIC_CACHE = `interpick-static-${VERSION}`;
 const RUNTIME_CACHE = `interpick-runtime-${VERSION}`;
 
@@ -56,32 +56,40 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML / 네비게이션 — Network First (최신 코드 우선) → 실패 시 캐시
+  // HTML / 네비게이션 — Stale-While-Revalidate
+  // (캐시 즉시 반환으로 첫 진입 빠르게 + 백그라운드에서 새 버전 받아 캐시 갱신 → 다음 새로고침 시 최신)
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
-          return res;
-        })
-        .catch(() => caches.match(req).then((c) => c || caches.match('/index.html')))
+      caches.match(req).then((cached) => {
+        const networkPromise = fetch(req)
+          .then((res) => {
+            if (res && res.ok) {
+              const copy = res.clone();
+              caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
+            }
+            return res;
+          })
+          .catch(() => cached || caches.match('/index.html'));
+        return cached || networkPromise;
+      })
     );
     return;
   }
 
-  // 정적 자원 (이미지/폰트/스크립트) — Cache First → 실패 시 네트워크
+  // 정적 자원 (이미지/폰트/스크립트) — Stale-While-Revalidate
+  // (캐시 즉시 + 백그라운드 갱신 → 새 배포 후에도 첫 진입 안 느림)
   event.respondWith(
     caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        // 200 OK + 같은 출처 만 캐싱
-        if (res.ok && url.origin === self.location.origin) {
-          const copy = res.clone();
-          caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      });
+      const networkPromise = fetch(req)
+        .then((res) => {
+          if (res && res.ok && url.origin === self.location.origin) {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => cached);
+      return cached || networkPromise;
     })
   );
 });
