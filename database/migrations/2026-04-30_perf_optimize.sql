@@ -1,10 +1,11 @@
 -- ===================================================================
--- 인터픽 성능 최적화 (2026-04-30)
+-- 인터픽 성능 최적화 (2026-04-30) — v2 안전판
 -- 1) vertex_cache 테이블 신규 — AI 분석 결과 재사용
--- 2) 핵심 테이블 인덱스 추가 — org_name / user_id / created_at
+-- 2) 핵심 테이블 인덱스 추가 — 컬럼 존재 여부 자동 체크
 --
 -- ⚠ Supabase SQL Editor 에서 그대로 실행하세요.
--- ⚠ 모두 IF NOT EXISTS 라 여러 번 실행해도 안전합니다.
+-- ⚠ 모두 IF NOT EXISTS + 컬럼 존재 체크라 여러 번 실행해도 안전합니다.
+-- ⚠ 일부 컬럼이 없는 테이블이 있어도 다른 인덱스는 정상적으로 만들어집니다.
 -- ===================================================================
 
 -- ─────────────────────────────────────────────────────────
@@ -39,63 +40,143 @@ REVOKE ALL ON public.vertex_cache FROM anon, authenticated;
 REVOKE ALL ON FUNCTION public.vertex_cache_hit(TEXT) FROM anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────
--- 2. 핵심 테이블 인덱스
---    /api/db/load 가 매번 11개 테이블을 org_name + 정렬로 조회 →
---    인덱스 없으면 풀스캔. 데이터 누적될수록 느려짐.
+-- 2. 컬럼 존재 시에만 인덱스 생성 (안전 헬퍼)
 -- ─────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public._safe_create_index(
+  p_index_name TEXT,
+  p_table_name TEXT,
+  p_columns    TEXT  -- 'col1' or 'col1, col2 DESC'
+) RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  col_list TEXT[];
+  col      TEXT;
+  bare_col TEXT;
+  missing  TEXT := NULL;
+BEGIN
+  -- 테이블 존재 체크
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema='public' AND table_name=p_table_name
+  ) THEN
+    RETURN format('SKIP %s: table %I missing', p_index_name, p_table_name);
+  END IF;
 
--- users
-CREATE INDEX IF NOT EXISTS idx_users_org              ON public.users (org_name);
+  -- 컬럼 목록 분리 후 각 컬럼 존재 여부 확인
+  col_list := string_to_array(p_columns, ',');
+  FOREACH col IN ARRAY col_list LOOP
+    -- "col_name DESC" 같은 정렬 키워드 제거 후 컬럼명만 추출
+    bare_col := trim(split_part(trim(col), ' ', 1));
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema='public' AND table_name=p_table_name AND column_name=bare_col
+    ) THEN
+      missing := bare_col;
+      EXIT;
+    END IF;
+  END LOOP;
 
--- videos
-CREATE INDEX IF NOT EXISTS idx_videos_org             ON public.videos (org_name);
-CREATE INDEX IF NOT EXISTS idx_videos_user            ON public.videos (user_id);
+  IF missing IS NOT NULL THEN
+    RETURN format('SKIP %s: column %I.%I missing', p_index_name, p_table_name, missing);
+  END IF;
 
--- evaluations
-CREATE INDEX IF NOT EXISTS idx_evaluations_org_created
-  ON public.evaluations (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_evaluations_video      ON public.evaluations (video_id);
-CREATE INDEX IF NOT EXISTS idx_evaluations_user       ON public.evaluations (user_id);
-
--- voice_evals
-CREATE INDEX IF NOT EXISTS idx_voice_evals_org_created
-  ON public.voice_evals (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_voice_evals_video      ON public.voice_evals (video_id);
-CREATE INDEX IF NOT EXISTS idx_voice_evals_user       ON public.voice_evals (user_id);
-
--- timestamps (videoIds in (...) 조회)
-CREATE INDEX IF NOT EXISTS idx_timestamps_video       ON public.timestamps (video_id);
-
--- 콘텐츠 7종 (모두 org_name + created_at 또는 order_index 정렬)
-CREATE INDEX IF NOT EXISTS idx_calendar_org_start
-  ON public.calendar_events (org_name, start_time);
-CREATE INDEX IF NOT EXISTS idx_learning_links_org_created
-  ON public.learning_links (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_recommended_videos_org_created
-  ON public.recommended_videos (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pick_contents_org_created
-  ON public.pick_contents (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pick_notices_org_created
-  ON public.pick_notices (org_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pick_featured_org_order
-  ON public.pick_featured_videos (org_name, order_index);
-CREATE INDEX IF NOT EXISTS idx_checklist_files_org_created
-  ON public.checklist_files (org_name, created_at DESC);
+  EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON public.%I (%s)', p_index_name, p_table_name, p_columns);
+  RETURN format('OK %s on %s(%s)', p_index_name, p_table_name, p_columns);
+END;
+$$;
 
 -- ─────────────────────────────────────────────────────────
--- 3. 캐시 TTL 정리 — 90일 지난 캐시는 자동 삭제 (선택)
---    Supabase pg_cron 이 켜져있어야 동작. 안 켜져있으면 무시.
+-- 3. 인덱스 일괄 생성 — 결과는 NOTICE 로 한 줄씩 보고됨 (OK / SKIP)
+-- ─────────────────────────────────────────────────────────
+DO $$
+DECLARE
+  msg TEXT;
+BEGIN
+  -- users
+  msg := public._safe_create_index('idx_users_org', 'users', 'org_name');
+  RAISE NOTICE '%', msg;
+
+  -- videos
+  msg := public._safe_create_index('idx_videos_org', 'videos', 'org_name');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_videos_user', 'videos', 'user_id');
+  RAISE NOTICE '%', msg;
+
+  -- evaluations
+  msg := public._safe_create_index('idx_evaluations_org_created', 'evaluations', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_evaluations_video', 'evaluations', 'video_id');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_evaluations_user', 'evaluations', 'user_id');
+  RAISE NOTICE '%', msg;
+
+  -- voice_evals
+  msg := public._safe_create_index('idx_voice_evals_org_created', 'voice_evals', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_voice_evals_video', 'voice_evals', 'video_id');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_voice_evals_user', 'voice_evals', 'user_id');
+  RAISE NOTICE '%', msg;
+
+  -- timestamps
+  msg := public._safe_create_index('idx_timestamps_video', 'timestamps', 'video_id');
+  RAISE NOTICE '%', msg;
+
+  -- 콘텐츠 7종
+  msg := public._safe_create_index('idx_calendar_org_start', 'calendar_events', 'org_name, start_time');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_learning_links_org_created', 'learning_links', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_recommended_videos_org_created', 'recommended_videos', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_pick_contents_org_created', 'pick_contents', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_pick_notices_org_created', 'pick_notices', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_pick_featured_org_order', 'pick_featured_videos', 'org_name, order_index');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_checklist_files_org_created', 'checklist_files', 'org_name, created_at DESC');
+  RAISE NOTICE '%', msg;
+
+  -- 알림 (notifications)
+  msg := public._safe_create_index('idx_notifications_user', 'notifications', 'user_id');
+  RAISE NOTICE '%', msg;
+  msg := public._safe_create_index('idx_notifications_user_read', 'notifications', 'user_id, read_at');
+  RAISE NOTICE '%', msg;
+END $$;
+
+-- ─────────────────────────────────────────────────────────
+-- 4. 검증 — 어느 인덱스가 만들어졌는지 한눈에 확인
+-- ─────────────────────────────────────────────────────────
+SELECT tablename, indexname
+FROM pg_indexes
+WHERE schemaname='public' AND indexname LIKE 'idx_%'
+ORDER BY tablename, indexname;
+
+-- ─────────────────────────────────────────────────────────
+-- 5. (선택) 누락된 컬럼 진단용 — 어떤 테이블에 user_id 가 없는지 확인
+--    위 DO 블록이 SKIP 메시지를 NOTICE 로 보여주지만,
+--    Supabase SQL Editor 에서 NOTICE 가 안 보일 때 이 쿼리로 직접 확인
+-- ─────────────────────────────────────────────────────────
+-- SELECT t.table_name,
+--        EXISTS (SELECT 1 FROM information_schema.columns c
+--                WHERE c.table_schema='public' AND c.table_name=t.table_name AND c.column_name='user_id') AS has_user_id,
+--        EXISTS (SELECT 1 FROM information_schema.columns c
+--                WHERE c.table_schema='public' AND c.table_name=t.table_name AND c.column_name='org_name') AS has_org_name,
+--        EXISTS (SELECT 1 FROM information_schema.columns c
+--                WHERE c.table_schema='public' AND c.table_name=t.table_name AND c.column_name='video_id') AS has_video_id
+-- FROM (VALUES ('users'),('videos'),('evaluations'),('voice_evals'),('timestamps'),
+--              ('calendar_events'),('learning_links'),('recommended_videos'),
+--              ('pick_contents'),('pick_notices'),('pick_featured_videos'),
+--              ('checklist_files'),('notifications')) AS t(table_name)
+-- ORDER BY t.table_name;
+
+-- ─────────────────────────────────────────────────────────
+-- 6. 캐시 TTL 정리 — 120일 지난 캐시 자동 삭제 (선택, pg_cron 필요)
 -- ─────────────────────────────────────────────────────────
 -- SELECT cron.schedule(
 --   'vertex-cache-cleanup',
---   '0 3 * * *',  -- 매일 새벽 3시
---   $$ DELETE FROM public.vertex_cache WHERE created_at < now() - INTERVAL '90 days'; $$
+--   '0 3 * * *',
+--   $$ DELETE FROM public.vertex_cache WHERE created_at < now() - INTERVAL '120 days'; $$
 -- );
-
--- ─────────────────────────────────────────────────────────
--- 검증 쿼리 (실행 후 확인용)
--- ─────────────────────────────────────────────────────────
--- SELECT indexname, tablename FROM pg_indexes
--- WHERE schemaname='public' AND indexname LIKE 'idx_%' ORDER BY tablename, indexname;
-
--- SELECT COUNT(*) AS cached_results FROM public.vertex_cache;
