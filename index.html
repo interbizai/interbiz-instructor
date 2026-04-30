@@ -2408,7 +2408,7 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 
 <!-- PWA 설치 배너 (모바일 첫 진입 1회) -->
 <div id="pwa-install-banner" role="dialog" aria-label="앱으로 설치">
-  <img src="assets/logo/1_white.png" alt="인터PICK">
+  <img src="assets/logo/인터비즈로고.png" alt="인터PICK" width="56" height="56" loading="lazy" decoding="async">
   <div class="pwa-text">
     <div class="pwa-title">앱으로 설치하기</div>
     <div class="pwa-desc">홈 화면에 추가하면 더 빠르게 사용할 수 있어요</div>
@@ -4882,21 +4882,61 @@ async function switchOrg(value){
   showLoginLoading('조직 변경 중');
   location.reload();
 }
+// /api/db/load 자동 재시도 — Cold start / 일시적 네트워크 끊김 / race condition 대응
+// 1초 → 3초 → 7초 지수 백오프, 최대 3회. 401/403은 즉시 중단(재시도 의미 없음).
+async function fetchDBLoadWithRetry(token, org){
+  const delays=[0, 1000, 3000];
+  let lastErr='네트워크 오류';
+  let lastStatus=0;
+  for(let i=0;i<delays.length;i++){
+    if(delays[i]>0) await new Promise(r=>setTimeout(r,delays[i]));
+    try {
+      const r=await fetch('/api/db/load',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({org:org||null})
+      });
+      lastStatus=r.status;
+      const j=await r.json().catch(()=>null);
+      if(j && j.ok) return j;
+      lastErr=(j&&j.error)||('HTTP '+r.status);
+      if(r.status===401||r.status===403) break;  // 인증 만료는 재시도 무의미
+    } catch(e){
+      lastErr=e.message||String(e);
+    }
+  }
+  return {ok:false,error:lastErr,status:lastStatus};
+}
+
 async function loadFromDB(){
   startProgress();
+  D.loadingDB = true;
   try{
   // localStorage에서 관리자가 선택한 조직 복원
   if(!D.activeOrg){
     try{ const s=localStorage.getItem('ib_active_org'); if(s) D.activeOrg=s; }catch(e){}
   }
-  // 조직 필터 적용된 핵심 데이터 한 번에 받기
+  // 조직 필터 적용된 핵심 데이터 한 번에 받기 (자동 재시도 포함)
   const token=localStorage.getItem('ib_token')||'';
   let serverData=null;
-  try {
-    const r=await fetch('/api/db/load',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({org:D.activeOrg||null})});
-    const j=await r.json();
-    if(j.ok) serverData=j; else console.error('loadFromDB:',j.error);
-  } catch(e){ console.warn('loadFromDB fetch:',e); }
+  const j=await fetchDBLoadWithRetry(token, D.activeOrg);
+  if(j.ok) {
+    serverData=j;
+  } else {
+    console.error('loadFromDB:',j.error);
+    // 인증 만료 → 자동 로그아웃
+    if(j.status===401||j.status===403){
+      try{ localStorage.removeItem('ib_token'); localStorage.removeItem('ib_user'); }catch(e){}
+      if(typeof showToast==='function') showToast('인증이 만료되었습니다. 다시 로그인해주세요.','#ef4444');
+      setTimeout(()=>location.reload(), 1500);
+    } else {
+      // 네트워크/서버 오류 — 토스트 + 5초 후 자동 1회 재시도
+      if(typeof showToast==='function') showToast('데이터 로드 실패('+j.error+'). 잠시 후 자동 재시도합니다.','#ef4444');
+      setTimeout(()=>{
+        if(!D.users || !D.users.length) loadFromDB().catch(()=>{});
+      }, 5000);
+    }
+  }
   if(serverData){
     D.users=mapUsersFromRows(serverData.users);
     D.videos=mapVideosFromRows(serverData.videos, serverData.timestamps);
@@ -4996,7 +5036,7 @@ async function loadFromDB(){
       hideLoginLoading();
     }
   }catch(e){}
-  } finally { endProgress(); }
+  } finally { D.loadingDB = false; endProgress(); }
 }
 
 /* ════════════════════════════════
@@ -13852,10 +13892,11 @@ function _renderImprovePoints_disabled(userId){
   const vidIds=new Set(userVids.map(v=>v.id));
   const evals=(D.evaluations||[]).filter(e=>e.video_id && vidIds.has(e.video_id) && e.overall_score>0);
   if(!evals.length){
+    const isLoading = D.loadingDB;
     container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);background:#fafafa;border-radius:12px;border:1px dashed var(--bdr)">
-      <div style="font-size:32px;margin-bottom:8px">🎯</div>
-      <div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px">아직 평가 데이터가 없습니다</div>
-      <div style="font-size:12px;color:var(--t3)">AI 평가를 1회 이상 진행하면 개선 포인트가 자동으로 도출됩니다.</div>
+      <div style="font-size:32px;margin-bottom:8px">${isLoading?'⏳':'🎯'}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px">${isLoading?'평가 데이터를 불러오는 중...':'아직 평가 데이터가 없습니다'}</div>
+      <div style="font-size:12px;color:var(--t3)">${isLoading?'잠시만 기다려주세요':'AI 평가를 1회 이상 진행하면 개선 포인트가 자동으로 도출됩니다.'}</div>
     </div>`;
     return;
   }
@@ -16328,6 +16369,19 @@ function setAnResultMeta(opts){
 /* ════════════════════════════════
    INIT
 ════════════════════════════════ */
+// Cold Start 워밍업 — 로그인 페이지에서 사장님이 폼 채우는 동안 serverless 함수 미리 깨우기
+// (CU 있으면 곧 loadFromDB가 알아서 호출하니 skip — 중복 호출 방지)
+(function warmUpColdStart(){
+  if(typeof CU!=='undefined' && CU) return;
+  try {
+    fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({_warm:true})
+    }).catch(()=>{});
+  } catch(e){}
+})();
+
 window.addEventListener('load',async ()=>{
   if(CU){
     await loadFromDB();

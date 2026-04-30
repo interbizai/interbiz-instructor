@@ -3,10 +3,29 @@ import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 export const config = { maxDuration: 300 };
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const SB_URL = process.env.SUPABASE_URL;
+const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const sbAdmin = SB_URL && SB_SERVICE_KEY ? createClient(SB_URL, SB_SERVICE_KEY, { auth: { persistSession: false } }) : null;
+
+function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, model }) {
+  const h = crypto.createHash('sha256');
+  h.update(String(video_gcs_uri || video_url || ''));
+  h.update('|');
+  h.update(JSON.stringify(checklist_items || []));
+  h.update('|');
+  h.update(String(eval_type || ''));
+  h.update('|');
+  h.update(String(edu_file_url || ''));
+  h.update('|');
+  h.update(String(model || 'gemini-2.5-pro'));
+  return h.digest('hex');
+}
 
 function verifyAuth(req) {
   if (!JWT_SECRET) return { ok: false, error: '서버 설정 오류' };
@@ -357,6 +376,22 @@ export default async function handler(req, res) {
     if (!eval_type || !['평가안기준', 'AI독자'].includes(eval_type))
       return res.status(400).json({ ok: false, error: 'eval_type: "평가안기준" | "AI독자"' });
 
+    // 캐시 조회 — 같은 영상+평가안+교육자료+모델이면 저장된 결과 즉시 반환 (Vertex 비용 절감)
+    const skipCache = req.body?.skip_cache === true;
+    const cacheKey = makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, model });
+    if (sbAdmin && !skipCache) {
+      try {
+        const { data: hit } = await sbAdmin.from('vertex_cache').select('result').eq('cache_key', cacheKey).maybeSingle();
+        if (hit?.result) {
+          // hit 기록 (fire-and-forget)
+          sbAdmin.rpc('vertex_cache_hit', { p_key: cacheKey }).then(() => {}).catch(() => {});
+          return res.status(200).json({ ok: true, eval_type, model, result: hit.result, cached: true });
+        }
+      } catch (e) {
+        console.warn('[vertex-analyze] cache lookup failed:', e.message);
+      }
+    }
+
     const creds = getCredentials();
     if (!creds.project_id || !creds.client_email || !creds.private_key)
       return res.status(500).json({ ok: false, error: 'GCP credentials missing' });
@@ -493,7 +528,20 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ ok: true, eval_type, model, result: parsed });
+    // 캐시 저장 (fire-and-forget — 응답 지연 X)
+    if (sbAdmin && !skipCache) {
+      sbAdmin.from('vertex_cache').upsert({
+        cache_key: cacheKey,
+        eval_type,
+        model,
+        result: parsed,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'cache_key' }).then(() => {}).catch((e) => {
+        console.warn('[vertex-analyze] cache save failed:', e.message);
+      });
+    }
+
+    return res.status(200).json({ ok: true, eval_type, model, result: parsed, cached: false });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message || String(e), stack: e.stack?.split('\n').slice(0, 5).join('\n') });
   }
