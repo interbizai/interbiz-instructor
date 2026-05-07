@@ -45,10 +45,8 @@
 }
 @font-face{font-family:'LG글씨';src:url('assets/LG글씨.TTF') format('truetype');font-display:swap}
 body{background:#faf9f6;font-family:'LG글씨',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--t1);min-height:100vh;font-size:15px}
-#page-home{background:#faf9f6}
-#page-home main,#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
+#page-login main,#page-register main{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 20px 40px}
 #page-login,#page-register{background:#f8f7f4}
-#page-home main{max-width:900px;margin:0 auto}
 #page-login,#page-register{background:#f8f7f4}
 .page{display:none;min-height:100vh}
 .page.active{display:block}
@@ -510,8 +508,6 @@ select.form-input{appearance:none;cursor:pointer;background:#fff url("data:image
 .upload-zone p{font-size:12px;color:var(--t3);margin-top:8px}
 
 /* ── Home Page ── */
-#page-home .hdr{padding-left:16px;background:transparent;box-shadow:none;border-bottom:none}
-#page-home .hdr .hdr-logo{visibility:hidden}
 .home-hero{text-align:center;padding:4vh 0 1vh}
 .home-hero img{height:110px}
 .home-carousel{overflow:hidden;position:relative;margin-bottom:36px}
@@ -2647,214 +2643,6 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 </div>
 
 <!-- ════════════════════════════════════
-     PAGE: HOME (로그인 후 첫 화면)
-════════════════════════════════════ -->
-<div id="page-home" class="page">
-<header class="hdr">
-  <div class="hdr-logo">
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;box-shadow:none;cursor:pointer" onclick="showPage('page-home')">
-  </div>
-  <div class="hdr-right">
-    <span class="chip hdr-month"></span>
-    <div class="avatar-wrap">
-      <div class="avatar hdr-av">?</div>
-      <div class="avatar-dropdown">
-        <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
-        <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
-        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
-        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
-        <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
-        <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
-      </div>
-    </div>
-  </div>
-</header>
-<main style="max-width:900px">
-  <!-- Logo hero -->
-  <div class="home-hero">
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:130px;image-rendering:high-quality">
-  </div>
-
-  <!-- 8 Icon Grid (중앙 정렬) -->
-  <div class="home-icons">
-    <div class="home-icon-cell" onclick="openStreaming()"><div class="home-icon-box hi-anim" id="hi2"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><polygon points="14,10 30,20 14,30" fill="#E21E26" class="si-play"/><rect x="11" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/><rect x="23" y="10" width="6" height="20" rx="2" fill="#E21E26" class="si-pause"/></svg></div><span class="home-icon-lbl">영상 스트리밍</span></div>
-    <div class="home-icon-cell" onclick="openAnalysis()"><div class="home-icon-box" id="hi3"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" rx="4" stroke="#8b5cf6" stroke-width="2"/><text x="20" y="24" text-anchor="middle" font-size="14" font-weight="900" fill="#8b5cf6" font-family="sans-serif">AI</text><g class="hi-robot-hand"><path d="M34 18c2-1 4 0 4 2s-2 3-4 2" stroke="#8b5cf6" stroke-width="1.5" fill="rgba(139,92,246,.15)" stroke-linecap="round"/><line x1="36" y1="17" x2="37" y2="14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/><line x1="38" y1="18" x2="39" y2="15" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/></g></svg></div><span class="home-icon-lbl">영상등록 분석</span></div>
-    <div class="home-icon-cell" onclick="if(CU&&CU.isAdmin){openAdmin()}else if(CU&&CU.id){openLecturer(CU.id,'page-home')}else{showPage('page-myprofile')}"><div class="home-icon-box" id="hi4"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="15" r="6" stroke="#10b981" stroke-width="2"/><path d="M8 34c0-6 5-10 12-10s12 4 12 10" stroke="#10b981" stroke-width="2" stroke-linecap="round"/><circle cx="30" cy="12" r="5" fill="#10b981" class="hi-badge"/><path d="M28 12l1.5 1.5 3-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="hi-badge"/></svg></div><span class="home-icon-lbl">내페이지</span></div>
-    <div class="home-icon-cell" onclick="openVoiceAnalysis()"><div class="home-icon-box" id="hi5"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect x="16" y="8" width="8" height="14" rx="4" stroke="#0078C8" stroke-width="2"/><path d="M10 20a10 10 0 0020 0" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="30" x2="20" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="34" x2="25" y2="34" stroke="#0078C8" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="10" x2="8" y2="16" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w1"/><line x1="4" y1="12" x2="4" y2="18" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w2"/><line x1="32" y1="10" x2="32" y2="16" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w3"/><line x1="36" y1="12" x2="36" y2="18" stroke="#0078C8" stroke-width="1.5" stroke-linecap="round" class="hi-wave hi-w4"/></svg></div><span class="home-icon-lbl">음성분석</span></div>
-    <div class="home-icon-cell" onclick="showPage('page-edu')"><div class="home-icon-box" id="hi6"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><span class="home-icon-lbl">교육콘텐츠</span></div>
-    <div class="home-icon-cell" onclick="openAdmin()"><div class="home-icon-box hi-anim" id="hi8"><svg width="36" height="36" viewBox="0 0 40 40" fill="none" class="si-bell"><path d="M28 17a8 8 0 00-16 0c0 8-4 10-4 10h24s-4-2-4-10" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 31a3 3 0 005 0" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/><circle cx="29" cy="11" r="5" fill="#EF4444" class="si-dot"/></svg></div><span class="home-icon-lbl">관리자</span></div>
-  </div>
-
-  <!-- 강사 검색 -->
-  <div class="home-search-wrap" id="home-search-wrap">
-    <div class="home-search-box" id="home-search-box">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="home-search-input" id="home-search-input" type="text" placeholder="강사 이름으로 검색..." autocomplete="off" style="font-size:15px">
-    </div>
-    <div class="home-search-results" id="home-search-results"></div>
-  </div>
-</main>
-</div>
-
-<!-- ════════════════════════════════════
-     PAGE: DASHBOARD
-════════════════════════════════════ -->
-<div id="page-dashboard" class="page">
-<!-- Header -->
-<header class="hdr">
-  <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-home')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      홈
-    </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz">
-  </div>
-  <div class="hdr-right">
-    <span class="chip hdr-month">2026년 4월</span>
-    <div class="avatar-wrap">
-      <div class="avatar hdr-av">?</div>
-      <div class="avatar-dropdown">
-        <div class="avatar-dd-header"><div class="avatar-dd-name hdr-user-name">—</div><div class="avatar-dd-sub hdr-user-sub">—</div></div>
-        <div class="avatar-dd-item" onclick="goMyPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>내페이지</div>
-        <div class="avatar-dd-item hdr-notif-btn" onclick="openNotifPanel()" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>알림<span class="hdr-notif-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 5px">0</span></div>
-        <div class="avatar-dd-item" onclick="openCalendar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>달력</div>
-        <div class="avatar-dd-item hdr-admin-btn" style="display:none" onclick="openAdmin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>관리자</div>
-        <div class="avatar-dd-item" onclick="doLogout()" style="color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>로그아웃</div>
-      </div>
-    </div>
-  </div>
-</header>
-<main>
-  <div class="page-title"><div class="page-title-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#0078C8" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="#0078C8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2>평가결과</h2></div>
-  <div class="content-card">
-  <!-- Filter bar -->
-  <div class="filter-bar" style="animation:fadeUp .35s ease both">
-    <div class="f-item"><label class="f-lbl">기간</label>
-      <select id="f-date" onchange="renderDashboard()">
-        <option value="">전체 기간</option>
-        <option value="1w">최근 1주</option>
-        <option value="1m">최근 1개월</option>
-        <option value="3m">최근 3개월</option>
-        <option value="6m">최근 6개월</option>
-        <option value="1y">최근 1년</option>
-      </select>
-    </div>
-    <div class="f-item"><label class="f-lbl">조직명</label>
-      <select id="f-ch" multiple onchange="renderDashboard()" size="1">
-        <option value="">전체</option>
-      </select>
-    </div>
-    <div class="f-item"><label class="f-lbl">팀</label>
-      <select id="f-team" multiple onchange="renderDashboard()" size="1">
-        <option value="">전체</option>
-      </select>
-    </div>
-    <div class="f-item"><label class="f-lbl">교육자료</label>
-      <select id="f-product" multiple onchange="renderDashboard()" size="1">
-        <option value="">전체</option>
-      </select>
-    </div>
-    <div class="f-item"><label class="f-lbl">경력기간</label>
-      <select id="f-tenure" onchange="renderDashboard()">
-        <option value="">전체</option>
-        <option value="3m">3개월 미만</option>
-        <option value="1y">1년 미만</option>
-        <option value="1y+">1년 이상</option>
-        <option value="5y+">5년 이상</option>
-        <option value="10y+">10년 이상</option>
-      </select>
-    </div>
-    <div class="f-item"><label class="f-lbl">이름</label>
-      <select id="f-name" multiple onchange="renderDashboard()" size="1"><option value="">전체</option></select>
-    </div>
-    <div class="f-item" style="justify-content:flex-end">
-      <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px;margin-top:18px" onclick="resetFilters()">↺ 초기화</button>
-    </div>
-  </div>
-
-  <!-- AI Summary (hidden) -->
-  <div id="ai-strip" style="display:none"><div id="ai-strip-text"></div></div>
-
-  <!-- Stats row -->
-  <div class="stats-row">
-    <div class="stat-card neu">
-      <div class="stat-val"><span id="sv-total">6</span><span class="stat-unit">명</span></div>
-      <div class="stat-lbl">총 강사 수</div>
-    </div>
-    <div class="stat-card neu">
-      <div class="stat-val"><span id="sv-vids">12</span><span class="stat-unit">개</span></div>
-      <div class="stat-lbl">분석 완료 영상</div>
-    </div>
-    <div class="stat-card neu">
-      <div class="stat-val"><span id="sv-avg">85.3</span><span class="stat-unit">점</span></div>
-      <div class="stat-lbl">전체 평균 점수</div>
-    </div>
-    <div class="stat-card neu">
-      <div class="stat-val"><span id="sv-s">0</span><span class="stat-unit">개</span></div>
-      <div class="stat-lbl">70점 이하 개선 필요</div>
-    </div>
-  </div>
-
-  <!-- 랭킹 -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;overflow:hidden" id="ranking-area"></div>
-
-  <!-- 평가 내역 목록 (영상) -->
-  <div class="sec-lbl-sm">평가 내역 목록 (영상)</div>
-  <div class="eval-table-wrap">
-    <div class="eval-table-scroll">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('date')">평가일시 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('eduType')">교육종류 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('team')">팀 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('product')">가전 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('name')">이름 ↕</th>
-          <th style="cursor:pointer;user-select:none;text-align:center" onclick="sortEvalHistory('score')">점수 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortEvalHistory('career')">경력 ↕</th>
-          <th style="text-align:center">추이</th>
-          <th style="text-align:center">관리</th>
-        </tr>
-      </thead>
-      <tbody id="eval-history-tbody"></tbody>
-    </table>
-    </div>
-  </div>
-
-  <!-- 평가 내역 목록 (음성) -->
-  <div class="sec-lbl-sm">평가 내역 목록 (음성)</div>
-  <div class="eval-table-wrap">
-    <div class="eval-table-scroll" style="max-height:none">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('date')">평가일시 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('eduType')">교육종류 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('team')">팀 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('product')">가전 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('name')">이름 ↕</th>
-          <th style="cursor:pointer;user-select:none;text-align:center" onclick="sortVoiceHistory('score')">점수 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('career')">경력 ↕</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortVoiceHistory('tone')">분위기 ↕</th>
-          <th style="text-align:center">추이</th>
-          <th style="text-align:center">관리</th>
-        </tr>
-      </thead>
-      <tbody id="voice-history-tbody"></tbody>
-    </table>
-    </div>
-    <div id="voice-history-more" style="text-align:center;padding:8px;display:none;cursor:pointer;font-size:12px;color:var(--blue);font-weight:700;border-top:1px solid var(--bdr)" onclick="showAllVoiceHistory()">더보기 ▼</div>
-  </div>
-
-  <!-- Lecturer Grid -->
-  <div class="sec-lbl-sm">강사 정보</div>
-  <div class="lect-grid" id="lect-grid"></div>
-  <div class="pdf-bottom"><button class="btn btn-blue btn-pdf" onclick="window.print()">PDF 출력</button></div>
-  </div>
-</main>
-</div>
-
-<!-- ════════════════════════════════════
      PAGE: ANALYSIS (영상등록 분석)
 ════════════════════════════════════ -->
 <!-- AI 분석 로딩 오버레이 -->
@@ -2897,11 +2685,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-analysis" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-home')">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-pick')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -3199,11 +2987,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-calendar" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-home')">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="showPage('page-pick')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -3374,11 +3162,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-voice" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopVoiceRec();showPage('page-home')">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopVoiceRec();showPage('page-pick')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -3571,10 +3359,10 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-scenario" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" onclick="showPage('page-home')" style="padding:7px 12px">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-pick')" style="padding:7px 12px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -3709,11 +3497,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-streaming" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopStreamWebcam();showPage('page-home')">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" onclick="stopStreamWebcam();showPage('page-pick')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -3875,11 +3663,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-lecturer" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" style="padding:7px 12px" id="lect-back-btn" onclick="showPage('page-home')">
+    <button class="btn btn-ghost nav-back" style="padding:7px 12px" id="lect-back-btn" onclick="showPage('page-pick')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       뒤로
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
   <div class="hdr-right">
     <span class="chip hdr-month"></span>
@@ -4095,11 +3883,11 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <div id="page-admin" class="page">
 <header class="hdr">
   <div class="hdr-logo">
-    <button class="btn btn-ghost nav-back" onclick="showPage('page-home')" style="padding:7px 12px">
+    <button class="btn btn-ghost nav-back" onclick="showPage('page-pick')" style="padding:7px 12px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       홈
     </button>
-    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')">
+    <img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')">
   </div>
 </header>
 <main>
@@ -4561,7 +4349,7 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <!-- ── Compare Modal ── -->
 <div class="overlay" id="compare-overlay">
   <div class="auth-card" style="width:520px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
-    <div class="auth-logo"><img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-home')"></div>
+    <div class="auth-logo"><img src="assets/logo/인터비즈로고.png" alt="interbiz" style="height:40px;cursor:pointer" onclick="showPage('page-pick')"></div>
     <div class="auth-sub" style="margin-bottom:20px">비교할 강사를 필터로 찾아주세요</div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
       <div class="form-group" style="margin:0">
@@ -5259,12 +5047,12 @@ function showPage(id){
     if(tn) tn.classList.add('show');
     if(mn) mn.style.display='';
     updateTopNav(id);
-    if(id==='page-home') hideRightPanel();
+    // (page-home 삭제됨 — 항상 right panel 표시)
     else showRightPanel();
   }
   // 헤더 숨기기 (topnav가 대체)
   const page=document.getElementById(id);
-  if(page && !noNav.includes(id) && id!=='page-home'){
+  if(page && !noNav.includes(id)){
     page.querySelectorAll('.hdr').forEach(h=>h.style.display='none');
   }
   if(CU) try{updateHeaderUI();}catch(e){}
@@ -5273,7 +5061,7 @@ function showPage(id){
 }
 /* ── Sidebar Toggle ── */
 let sidebarVisible=true;
-const pageLabels={'page-dashboard':'평가결과','page-streaming':'영상 스트리밍','page-analysis':'영상등록 분석','page-lecturer':'내페이지','page-voice':'음성분석','page-links':'학습링크','page-checklist':'체크리스트','page-admin':'관리자','page-video':'영상 분석','page-myprofile':'프로필'};
+const pageLabels={'page-pick':'인터PICK','page-streaming':'영상 스트리밍','page-analysis':'영상등록 분석','page-lecturer':'내페이지','page-voice':'음성분석','page-edu':'교육콘텐츠','page-admin':'관리자','page-video':'영상 분석','page-myprofile':'프로필','page-scenario':'시나리오 코치','page-calendar':'달력'};
 
 function toggleSidebar(){
   sidebarVisible=!sidebarVisible;
@@ -5291,7 +5079,7 @@ function addBurgerToHeaders(){
     if(logo.querySelector('.sidebar-toggle')) return;
     // 홈, 로그인, 회원가입 페이지에는 안 넣기
     const pageId=logo.closest('.page')?.id||'';
-    if(['page-home','page-login','page-register'].includes(pageId)) return;
+    if(['page-login','page-register'].includes(pageId)) return;
     const btn=document.createElement('button');
     btn.className='sidebar-toggle';
     btn.onclick=toggleSidebar;
@@ -5310,7 +5098,7 @@ function addBurgerToHeaders(){
 /* ── Top Navigation Logic ── */
 function updateTopNav(activePage){
   // active 상태 업데이트
-  const pageMap={'page-dashboard':'page-pick','page-pick':'page-pick','page-analysis':'page-aicoach','page-streaming':'page-aicoach','page-voice':'page-aicoach','page-links':'page-edu','page-checklist':'page-edu','page-edu':'page-edu','page-lecturer':'page-lecturer','page-myprofile':'page-lecturer','page-admin':'page-admin'};
+  const pageMap={'page-pick':'page-pick','page-analysis':'page-aicoach','page-streaming':'page-aicoach','page-voice':'page-aicoach','page-scenario':'page-aicoach','page-edu':'page-edu','page-lecturer':'page-lecturer','page-myprofile':'page-lecturer','page-admin':'page-admin'};
   const activeMenu=pageMap[activePage]||'';
   document.querySelectorAll('.tn-item').forEach(it=>{
     it.classList.toggle('active',it.dataset.page===activeMenu||it.dataset.page===activePage);
@@ -5558,7 +5346,7 @@ function updateHeaderUI(){
   // 모든 헤더 로고 클릭 → 홈
   document.querySelectorAll('.hdr-logo img').forEach(img=>{
     img.style.cursor='pointer';
-    img.onclick=()=>showPage('page-home');
+    img.onclick=()=>showPage('page-pick');
   });
   // 관리자 알림 뱃지 (비관리자는 숨김)
   document.querySelectorAll('.notif-btn').forEach(b=>b.style.display=CU?.isAdmin?'flex':'none');
@@ -5949,7 +5737,7 @@ function pwaDismiss(){
     if(!users.length){r.innerHTML='<div class="home-search-empty">검색 결과가 없습니다</div>';r.classList.add('show');return;}
     r.innerHTML=users.map((u,i)=>{
       const bg=colors[(u.id-1)%6];
-      return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-home');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
+      return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-pick');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
         <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
         <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.office||''}</span></div><div class="hs-meta">${[u.team,u.position].filter(Boolean).join(' · ')}</div></div>
         <svg class="hs-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
@@ -6902,38 +6690,54 @@ async function saveHeroEdit(key){
 }
 
 // 히어로 우측 — 2컬럼 독립 스크롤 사진 패널 (컬럼별 랜덤 순서 + animation-delay 로 무한 루프)
+// 인터PICK 사진 흐름
+//   요구사항:
+//     - 새로고침할 때마다 등록된 모든 강사 사진이 1번씩 지나간 뒤 다시 1번씩(2번째)…를 무한 반복
+//     - 좌·우 컬럼에 같은 사진이 동시에 보이지 않게(겹침 방지) 사용자를 두 컬럼에 분리 배치
+//     - 순서는 셔플 — 새로고침 시마다 새 랜덤
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
   const users=(D.users||[]).filter(u=>!u.deleted&&!u.isAdmin&&u.email!=='admin'&&u.photo);
-  const PER_COL=6;
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-  const TOTAL=PER_COL*2; // 12 슬롯 (좌6 + 우6)
-  const pool=[];
-  if(users.length>0){
-    // 1) 고유 사용자 우선 노출 — 한 번 셔플 후 고유 사용자 먼저 12 슬롯 채움
-    //    같은 사람이 좌·우 컬럼에 동시에 나오는 것 방지 (TOTAL 까지는 고유 우선, 부족 시에만 순환)
-    const shuffledUsers=shuffle(users);
-    for(let i=0;i<TOTAL;i++){
-      pool.push({user:shuffledUsers[i%shuffledUsers.length], real:true});
-    }
-  } else {
-    for(let i=0;i<TOTAL;i++) pool.push({user:null,real:false});
+  const cardHtml=(u)=>u?.photo
+    ? `<div class="pick-photo-card"><img class="pick-portrait" src="${u.photo}" alt="" onerror="this.remove()"/></div>`
+    : `<div class="pick-photo-card">${placeholderHtml}</div>`;
+
+  if(users.length===0){
+    const empty=Array(6).fill(null).map(cardHtml).join('');
+    track.innerHTML=`<div class="pick-photo-col">${empty+empty}</div><div class="pick-photo-col offset">${empty+empty}</div>`;
+    return;
   }
-  const cardHtml=(it)=>{
-    return it.real&&it.user?.photo
-      ? `<div class="pick-photo-card"><img class="pick-portrait" src="${it.user.photo}" alt="" onerror="this.remove()"/></div>`
-      : `<div class="pick-photo-card">${placeholderHtml}</div>`;
+
+  // 1) 모든 강사 사진 셔플 (새로고침 시마다 새 랜덤)
+  const shuffled=shuffle(users);
+  // 2) 좌·우 컬럼에 분리 배치 → 같은 사진이 동시에 좌·우에 보이지 않음 (겹침 방지)
+  //    홀수 인덱스 = 좌, 짝수 인덱스 = 우 (지그재그) → 좌·우가 균형 있게 채워짐
+  const leftList=[], rightList=[];
+  shuffled.forEach((u,i)=>{ (i%2===0?leftList:rightList).push(u); });
+  // 3) 최소 길이 보장 — 한쪽이 너무 짧으면 다른 쪽 사진으로 채움 (이때만 사진 중복 발생)
+  const minLen=Math.max(6, Math.ceil(shuffled.length/2));
+  const fill=(arr,fallbackPool)=>{
+    if(arr.length>=minLen) return arr;
+    const out=[...arr];
+    let i=0;
+    while(out.length<minLen){
+      out.push(fallbackPool[i%fallbackPool.length]); i++;
+    }
+    return out;
   };
-  // 2) 좌·우 컬럼은 pool 을 순서대로 분할 (재셔플 안 함 → 중복 노출 최소화)
-  const leftItems=pool.slice(0,PER_COL);
-  const rightItems=pool.slice(PER_COL,TOTAL);
-  const colHtml=(items)=>items.map(cardHtml).join('');
-  const leftUnit=colHtml(leftItems);
-  const rightUnit=colHtml(rightItems);
-  // 우측 컬럼은 CSS margin-top:-66.666%-6px 으로 반 카드(+반 gap)만큼 위로 이동 → 맨 위/아래 반씩 보임
+  const leftFinal=fill(leftList, shuffled);
+  const rightFinal=fill(rightList, shuffled);
+  const leftUnit=leftFinal.map(cardHtml).join('');
+  const rightUnit=rightFinal.map(cardHtml).join('');
+  // 4) 동일 unit 2회 반복 → CSS animation translateY -50% 로 seamless 무한 루프
+  //    한 사이클 = 모든 사진 1번씩 지나감 → 다시 1번씩(2번째) → 3번째 …
   track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col offset">${rightUnit+rightUnit}</div>`;
+  // 5) 강사 수가 많을수록 속도 일정 — 1명당 약 4초 (최소 40초)
+  const duration=Math.max(40, Math.max(leftFinal.length,rightFinal.length)*4);
+  track.querySelectorAll('.pick-photo-col').forEach(col=>{ col.style.animationDuration=duration+'s'; });
 }
 
 // 스크롤 일시정지/재생
@@ -10816,93 +10620,17 @@ async function saveAnalysisVideo(){
 let vaStream=null,vaRecorder=null,vaChunks=[],vaTimerID=null,vaSec=0,vaAudioCtx=null,vaAnalyser=null,vaAnimId=null;
 let vaRecognition=null,vaSTTText='',vaSTTLines=[];
 
-/* ════════════════════════════════
-   LEARNING LINKS
-════════════════════════════════ */
-/* ════════════════════════════════
-   CHECKLIST / 평가안 관리
-════════════════════════════════ */
-function openChecklist(){
-  const uploadArea=el('cl-upload-area');
-  if(uploadArea) uploadArea.style.display=CU?.isAdmin?'':'none';
-  // 현재 월 세팅
-  const now=new Date();
-  const mSel=el('cl-month');if(mSel) mSel.value=String(now.getMonth()+1);
-  renderChecklists();
-  showPage('page-checklist');
-}
-
-function uploadChecklist(){
-  const name=v('cl-name').trim();
-  const fileInput=el('cl-file');
-  if(!name){alert('파일 이름을 입력하세요.');return;}
-  if(!fileInput.files?.length){alert('파일을 선택하세요.');return;}
-  const file=fileInput.files[0];
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    await sb.from('checklist_files').insert({
-      name, year:v('cl-year'), month:v('cl-month'), category:v('cl-category'),
-      file_name:file.name, file_type:file.type, file_data:e.target.result,
-      file_size:file.size, uploaded_by:CU?.name||'관리자',
-      org_name:D.activeOrg||null
-    });
-    await loadFromDB();
-    el('cl-name').value='';fileInput.value='';
-    renderChecklists();
-    alert('파일이 등록되었습니다!');
-  };
-  reader.readAsDataURL(file);
-}
-
-function renderChecklists(){
-  const listEl=el('cl-list');
-  if(!listEl) return; // 레거시 체크리스트 페이지가 DOM에 없으면 skip
-  const all=(D.checklists||[]).map(c=>({id:c.id,name:c.name,year:c.year,month:c.month,category:c.category,fileName:c.file_name,fileType:c.file_type,fileData:c.file_data,fileSize:c.file_size,uploadedBy:c.uploaded_by,uploadedAt:c.created_at?.split('T')[0]||''}));
-  const fy=v('cl-filter-year');
-  const fc=v('cl-filter-cat');
-  const filtered=all.filter(c=>(!fy||c.year===fy)&&(!fc||c.category===fc));
-  const isAdmin=CU?.isAdmin;
-  const catColors={'체크리스트':'#0078C8','평가안':'#10b981','교안':'#f59e0b','기타':'#8b5cf6'};
-  const typeIcons={'체크리스트':'📋','평가안':'📊','교안':'📑','기타':'📎'};
-
-  if(!filtered.length){
-    listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:12px">등록된 파일이 없습니다.</div>';
-    return;
-  }
-
-  listEl.innerHTML=filtered.map((c,i)=>{
-    const color=catColors[c.category]||'#718096';
-    const icon=typeIcons[c.category]||'📎';
-    const sizeKB=c.fileSize?Math.round(c.fileSize/1024):0;
-    const ext=c.fileName?.split('.').pop()?.toUpperCase()||'';
-    return `<div style="display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(0,0,0,.18);border-radius:var(--r1);background:#fff;margin-bottom:8px;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.06)'" onmouseout="this.style.boxShadow=''">
-      <div style="width:44px;height:44px;border-radius:12px;background:${color}12;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <span style="font-size:13px;font-weight:700">${c.name}</span>
-          <span style="padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;background:${color}15;color:${color}">${c.category}</span>
-          <span style="padding:1px 6px;border-radius:10px;font-size:9px;background:rgba(0,0,0,.05);color:var(--t3)">${ext}</span>
-        </div>
-        <div style="font-size:10px;color:var(--t3)">${c.year}년 ${c.month}월 · ${c.uploadedBy} · ${c.uploadedAt} · ${sizeKB}KB</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.fileName}</div>
-      </div>
-      <button class="btn btn-blue" style="padding:6px 14px;font-size:11px;flex-shrink:0" onclick="downloadChecklist(${c.id})">다운로드</button>
-      ${isAdmin?`<button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:4px;flex-shrink:0" onclick="deleteChecklist(${c.id})">✕</button>`:''}
-    </div>`;
-  }).join('');
-}
-
+// ── (제거) 구버전 page-checklist 페이지 함수들 (openChecklist/uploadChecklist/renderChecklists)
+//    교육콘텐츠(page-edu) 의 체크리스트 관리가 대체. phantom page-checklist div 정의도 없음.
+//    downloadChecklist 만 유지 (다른 곳에서 호출됨)
 function downloadChecklist(id){
   const c=(D.checklists||[]).find(x=>x.id===id);
   if(!c||!c.file_data) return;
-  const fileData=c.file_data;const fileName=c.file_name;
   const a=document.createElement('a');
-  a.href=fileData;
-  a.download=fileName||'download';
+  a.href=c.file_data;
+  a.download=c.file_name||'download';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
-
-/* (중복 deleteChecklist 제거됨 — 앞쪽 edu-page 버전이 단일 정의. 레거시 페이지도 그 함수를 재사용) */
 
 /* ════════════════════════════════
    CALENDAR
@@ -11190,53 +10918,8 @@ async function rejectDeleteRequest(reqId){
   updateHeaderUI();
 }
 
-function openLearningLinks(){
-  // 관리자만 추가 영역 보이기
-  const adminArea=el('link-admin-area');
-  if(adminArea) adminArea.style.display=(CU&&CU.isAdmin)?'':'none';
-  renderLinks();
-  showPage('page-links');
-}
-function renderLinks(){
-  const links=(D.learningLinks||[]).map(l=>({id:l.id,name:l.name,desc:l.description,url:l.url}));
-  const isAdmin=CU&&CU.isAdmin;
-  const colors=['#0078C8','#E21E26','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
-  if(!links.length){
-    el('link-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:12px">등록된 링크가 없습니다.</div>';
-    return;
-  }
-  el('link-list').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">${links.map((lk,i)=>{
-    const c=colors[i%colors.length];
-    const initial=lk.name[0]||'?';
-    return `<div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);background:#fff;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="window.open('${lk.url}','_blank')">
-      <div style="height:80px;background:linear-gradient(135deg,${c},${c}cc);display:flex;align-items:center;justify-content:center;position:relative">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </div>
-        ${isAdmin?`<button style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="event.stopPropagation();removeLearningLink(${lk.id})">✕</button>`:''}
-      </div>
-      <div style="padding:12px">
-        <div style="font-size:13px;font-weight:800;margin-bottom:2px">${lk.name}</div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px">${lk.desc||''}</div>
-        <div style="font-size:10px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lk.url}</div>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
-}
-async function addLearningLink(){
-  const name=v('link-name').trim(), url=v('link-url').trim(), desc=v('link-desc')?.trim()||'';
-  if(!name||!url){alert('이름과 URL을 입력하세요.');return;}
-  await sb.from('learning_links').insert({name,description:desc,url:url.startsWith('http')?url:'https://'+url,org_name:D.activeOrg||null});
-  await loadFromDB();
-  el('link-name').value='';el('link-url').value='';if(el('link-desc'))el('link-desc').value='';
-  renderLinks();
-}
-async function removeLearningLink(id){
-  if(!confirm('삭제하시겠습니까?'))return;
-  await sb.from('learning_links').delete().eq('id',id);
-  await loadFromDB();
-  renderLinks();
-}
+// ── (제거) 구버전 page-links 페이지 함수들 (openLearningLinks/renderLinks/addLearningLink/removeLearningLink)
+//    교육콘텐츠(page-edu) 의 addEduLink/deleteLink 가 대체. phantom page-links div 정의도 없음.
 
 function openVoiceAnalysis(){
   el('va-step1').style.display='';
@@ -12498,7 +12181,7 @@ async function saveStreamVideo(){
   });
   if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:'',videoType:v('st-type')||'',eduType:v('st-edu-type')||''}); }
   alert('영상이 저장되었습니다!');
-  showPage('page-home');
+  showPage('page-pick');
 }
 
 function retakeStream(){
@@ -12514,31 +12197,8 @@ function retakeStream(){
 }
 
 /* ════════════════════════════════
-   DASHBOARD
+   DASHBOARD (page-dashboard 삭제됨 — getFiltered/getFilteredVideos 만 다른 곳에서 재사용)
 ════════════════════════════════ */
-function resetFilters(){
-  ['f-date','f-ch','f-team','f-product','f-tenure','f-name'].forEach(id=>{const e=el(id);if(e)e.value='';});
-  renderDashboard();
-}
-
-function initDashboard(){
-  try{
-  const chs=el('f-ch'); const prevCh=chs?.value||''; if(chs){chs.innerHTML='<option value="">전체</option>';
-  [...new Set(D.users.map(u=>(u.orgName||'').trim()).filter(Boolean))].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; chs.appendChild(o); });
-  chs.value=prevCh;}
-  const ps=el('f-product'); const prevP=ps?.value||''; if(ps){ps.innerHTML='<option value="">전체</option>';
-  getEduCategories().forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; ps.appendChild(o); });
-  ps.value=prevP;}
-  const ts=el('f-team'); const prevT=ts?.value||''; if(ts){ts.innerHTML='<option value="">전체</option>';
-  [...new Set(D.users.map(u=>(u.team||'').trim()).filter(Boolean))].forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; ts.appendChild(o); });
-  ts.value=prevT;}
-  const ns=el('f-name'); if(ns){ns.innerHTML='<option value="">전체</option>';
-  D.users.forEach(u=>{ const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; ns.appendChild(o); });}
-  renderDashboard();
-  try{startIconAnimations();}catch(e){}
-  }catch(e){console.error('initDashboard error:',e);}
-}
-
 function getFiltered(){
   const getMulti=id=>[...document.getElementById(id)?.selectedOptions||[]].map(o=>o.value).filter(v=>v);
   const chs=getMulti('f-ch'),teams=getMulti('f-team'),names=getMulti('f-name'),products=getMulti('f-product');
@@ -12611,39 +12271,7 @@ function getFilteredVideos(filtered){
   });
 }
 
-function renderDashboard(){
-  try{
-  const filtered=getFiltered();
-  const filteredVids=getFilteredVideos(filtered);
-  // evaluations 테이블 기준 실제 평가받은 영상만 카운트
-  const evalScoreMap={};
-  (D.evaluations||[]).forEach(e=>{
-    if(!e.video_id||!e.overall_score) return;
-    if(!evalScoreMap[e.video_id]) evalScoreMap[e.video_id]={};
-    evalScoreMap[e.video_id][e.eval_type]=e.overall_score;
-  });
-  const evaledVids=filteredVids.filter(v=>evalScoreMap[v.id]);
-  const evaledUserIds=new Set(evaledVids.map(v=>v.userId));
-  const evaledUsers=filtered.filter(u=>evaledUserIds.has(u.id));
-
-  // stats — 실제 평가 완료 기반
-  if(el('sv-total')) el('sv-total').textContent=evaledUsers.length;
-  if(el('sv-vids')) el('sv-vids').textContent=evaledVids.length;
-  const allScores=evaledVids.map(v=>{
-    const s=evalScoreMap[v.id];
-    return s['평가안기준']||s['AI독자']||0;
-  }).filter(s=>s>0);
-  const avg=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):'0.0';
-  if(el('sv-avg')) el('sv-avg').textContent=avg;
-  const lowVidCount=allScores.filter(s=>s<=70).length;
-  if(el('sv-s')) el('sv-s').textContent=lowVidCount;
-  try{renderAIStrip(evaledUsers);}catch(e){console.error('aistrip:',e);}
-  try{renderRanking(evaledUsers);}catch(e){console.error('ranking:',e);}
-  try{renderEvalHistory(filtered);}catch(e){console.error('evalHistory:',e);}
-  try{renderVoiceHistory(filtered);}catch(e){console.error('voiceHistory:',e);}
-  try{renderGrid(evaledUsers);}catch(e){console.error('grid:',e);}
-  }catch(e){console.error('renderDashboard error:',e);}
-}
+// (제거) renderDashboard — page-dashboard 와 함께 폐지
 
 let evalHistoryRows=[];
 let evalSortKey='date';
@@ -14640,9 +14268,9 @@ function _renderImprovePoints_disabled(userId){
 /* ════════════════════════════════
    LECTURER DETAIL
 ════════════════════════════════ */
-let lectFromPage='page-home';
+let lectFromPage='page-pick';
 function openLecturer(id, fromPage){
-  lectFromPage=fromPage||'page-home';
+  lectFromPage=fromPage||'page-pick';
   // F5 복원용 컨텍스트 저장
   try{localStorage.setItem('ib_last_ctx',JSON.stringify({type:'lecturer',id,fromPage:lectFromPage}));}catch(_){}
   // Update back button
@@ -17066,7 +16694,7 @@ window.addEventListener('load',async ()=>{
     try{const s=localStorage.getItem('ib_last_ctx'); if(s) ctx=JSON.parse(s);}catch(_){}
     const initialPage=(lastPage && lastPage!=='page-login' && lastPage!=='page-register')?lastPage:'page-pick';
     // 단순 페이지(데이터 의존 없는 것)는 즉시 표시
-    if(['page-pick','page-home','page-edu','page-myprofile','page-aicoach','page-streaming'].includes(initialPage)){
+    if(['page-pick','page-edu','page-myprofile','page-aicoach','page-streaming'].includes(initialPage)){
       try{ showPage(initialPage); }catch(_){ showPage('page-pick'); }
     } else {
       // 데이터 필요한 페이지(영상·강사·관리자) 는 일단 page-pick 표시 후 데이터 로드 끝나면 전환
@@ -17087,8 +16715,8 @@ window.addEventListener('load',async ()=>{
             } else { showPage('page-voice'); }
           } else if(lastPage==='page-lecturer'){
             if(ctx && ctx.type==='lecturer' && ctx.id && typeof openLecturer==='function'){
-              openLecturer(ctx.id, ctx.fromPage||'page-home');
-            } else if(CU?.id){ openLecturer(CU.id,'page-home'); }
+              openLecturer(ctx.id, ctx.fromPage||'page-pick');
+            } else if(CU?.id){ openLecturer(CU.id,'page-pick'); }
           } else if(lastPage==='page-dashboard'){
             showPage('page-pick');
           } else if(lastPage==='page-admin'){
