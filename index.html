@@ -6909,12 +6909,15 @@ function renderPickPhotoCollage(){
   const PER_COL=6;
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-  // 사진 1장이라도 등록되어 있으면 빈 슬롯을 같은 사진으로 채워 빈틈 없이 타일링
-  // 등록 사진이 0장인 경우에만 '추가 예정' 플레이스홀더 사용
+  const TOTAL=PER_COL*2; // 12 슬롯 (좌6 + 우6)
   const pool=[];
-  const TOTAL=PER_COL*2;
   if(users.length>0){
-    for(let i=0;i<TOTAL;i++) pool.push({user:users[i%users.length],real:true});
+    // 1) 고유 사용자 우선 노출 — 한 번 셔플 후 고유 사용자 먼저 12 슬롯 채움
+    //    같은 사람이 좌·우 컬럼에 동시에 나오는 것 방지 (TOTAL 까지는 고유 우선, 부족 시에만 순환)
+    const shuffledUsers=shuffle(users);
+    for(let i=0;i<TOTAL;i++){
+      pool.push({user:shuffledUsers[i%shuffledUsers.length], real:true});
+    }
   } else {
     for(let i=0;i<TOTAL;i++) pool.push({user:null,real:false});
   }
@@ -6923,8 +6926,9 @@ function renderPickPhotoCollage(){
       ? `<div class="pick-photo-card"><img class="pick-portrait" src="${it.user.photo}" alt="" onerror="this.remove()"/></div>`
       : `<div class="pick-photo-card">${placeholderHtml}</div>`;
   };
-  const leftItems=shuffle(pool).slice(0,PER_COL);
-  const rightItems=shuffle(pool).slice(0,PER_COL);
+  // 2) 좌·우 컬럼은 pool 을 순서대로 분할 (재셔플 안 함 → 중복 노출 최소화)
+  const leftItems=pool.slice(0,PER_COL);
+  const rightItems=pool.slice(PER_COL,TOTAL);
   const colHtml=(items)=>items.map(cardHtml).join('');
   const leftUnit=colHtml(leftItems);
   const rightUnit=colHtml(rightItems);
