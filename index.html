@@ -6698,7 +6698,13 @@ async function saveHeroEdit(key){
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
-  const users=(D.users||[]).filter(u=>!u.deleted&&!u.isAdmin&&u.email!=='admin'&&u.photo);
+  // 같은 소속만 노출 — 관리자가 특정 조직 보기 모드면 그 조직, 아니면 본인 소속
+  // 진짜 관리자(id=0, orgName 없음) 가 '전체 조직' 모드일 때만 모든 사진
+  const myOrg=D.activeOrg||CU?.orgName||'';
+  const users=(D.users||[]).filter(u=>
+    !u.deleted && !u.isAdmin && u.email!=='admin' && u.photo
+    && (!myOrg || (u.orgName||'')===myOrg)
+  );
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const cardHtml=(u)=>u?.photo
