@@ -16421,83 +16421,36 @@ function showToast(msg,color){
   window._globalToastT=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-8px);';},2000);
 }
 /* ════════════════════════════════
-   앱 설치 QR / 포스터
+   앱 설치 QR / 포스터  ── 지연 로드 (lazy load)
+   실제 로직은 /assets/js/qr-poster.js 에 분리됨.
+   "앱 설치 QR" 탭 클릭 시 처음 한 번만 다운로드 → 캐시.
+   stub 함수들은 모듈 로드 후 실제 구현으로 자동 교체됨.
 ════════════════════════════════ */
-function _qrApiUrl(text,size){
-  const s=size||400;
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${s}x${s}&data=${encodeURIComponent(text)}&margin=8`;
+let _qrModuleLoadingPromise=null;
+function _ensureQRModule(){
+  if(window._qrModuleLoaded) return Promise.resolve();
+  if(_qrModuleLoadingPromise) return _qrModuleLoadingPromise;
+  _qrModuleLoadingPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='/assets/js/qr-poster.js';
+    s.async=true;
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('QR 모듈 로드 실패'));
+    document.head.appendChild(s);
+  });
+  return _qrModuleLoadingPromise;
 }
-function _qrShareTextDefault(url){
-  return `📱 인터 PICK 앱 설치 안내
-
-강사 역량 평가 시스템을 휴대폰 앱처럼 사용할 수 있어요.
-
-🔗 설치 주소
-${url}
-
-📲 설치 방법
-① 위 주소를 휴대폰 브라우저에서 열기
-   - 갤럭시(Android): Chrome 권장
-   - 아이폰(iOS): 반드시 Safari 로 열기 ⚠️
-② 화면 하단의 "앱으로 설치하기" 배너 → [설치]
-③ 홈 화면에 인터픽 아이콘 생성
-
-문의 : sanggon.lee@interbiz.co.kr`;
+async function renderAppQR(){
+  // 모듈 로드 전 클릭됐을 수 있으므로 큐 플래그
+  window._qrPendingRender=true;
+  try{ await _ensureQRModule(); window.renderAppQR(); }
+  catch(e){ console.warn(e); alert('QR 모듈 로드 실패. 새로고침 후 다시 시도하세요.'); }
 }
-function renderAppQR(){
-  const inp=document.getElementById('qr-url-input');
-  const url=(inp?.value||'').trim()||'https://interpick.vercel.app';
-  if(inp) inp.value=url;
-  const previewImg=document.getElementById('qr-preview-img');
-  const posterImg=document.getElementById('qr-poster-img');
-  const posterUrl=document.getElementById('qr-poster-url');
-  const shareTxt=document.getElementById('qr-share-text');
-  if(previewImg) previewImg.src=_qrApiUrl(url,400);
-  if(posterImg) posterImg.src=_qrApiUrl(url,560);
-  if(posterUrl) posterUrl.textContent=url;
-  if(shareTxt) shareTxt.value=_qrShareTextDefault(url);
-}
-function openQRPoster(){
-  renderAppQR();
-  document.getElementById('qr-poster-overlay').classList.add('show');
-}
-function printQRPoster(){
-  document.body.classList.add('qr-print-mode');
-  setTimeout(()=>{
-    window.print();
-    setTimeout(()=>document.body.classList.remove('qr-print-mode'),300);
-  },80);
-}
-async function downloadQRImage(){
-  const url=(document.getElementById('qr-url-input')?.value||'').trim()||'https://interpick.vercel.app';
-  try{
-    const res=await fetch(_qrApiUrl(url,800));
-    const blob=await res.blob();
-    const dl=document.createElement('a');
-    dl.href=URL.createObjectURL(blob);
-    dl.download=`interpick-qr-${Date.now()}.png`;
-    dl.click();
-    setTimeout(()=>URL.revokeObjectURL(dl.href),1000);
-  }catch(e){
-    alert('QR 이미지 다운로드 실패. 인터넷 연결을 확인해주세요.');
-  }
-}
-function copyQRLink(){
-  const url=(document.getElementById('qr-url-input')?.value||'').trim()||'https://interpick.vercel.app';
-  navigator.clipboard?.writeText(url).then(()=>{
-    const t=document.getElementById('qr-toast');
-    if(t){t.style.display='block';t.textContent='✓ 링크 복사 완료';setTimeout(()=>t.style.display='none',1800);}
-  }).catch(()=>alert('복사 실패. 직접 복사해주세요: '+url));
-}
-function copyQRShareText(){
-  const t=document.getElementById('qr-share-text');
-  if(!t) return;
-  t.select();
-  navigator.clipboard?.writeText(t.value).then(()=>{
-    const toast=document.getElementById('qr-toast');
-    if(toast){toast.style.display='block';toast.textContent='✓ 안내문 복사 완료';setTimeout(()=>toast.style.display='none',1800);}
-  }).catch(()=>document.execCommand('copy'));
-}
+async function openQRPoster(){ try{ await _ensureQRModule(); window.openQRPoster(); }catch(e){console.warn(e);} }
+async function printQRPoster(){ try{ await _ensureQRModule(); window.printQRPoster(); }catch(e){console.warn(e);} }
+async function downloadQRImage(){ try{ await _ensureQRModule(); window.downloadQRImage(); }catch(e){console.warn(e);} }
+async function copyQRLink(){ try{ await _ensureQRModule(); window.copyQRLink(); }catch(e){console.warn(e);} }
+async function copyQRShareText(){ try{ await _ensureQRModule(); window.copyQRShareText(); }catch(e){console.warn(e);} }
 
 function renderEduTypeManage(){
   const listEl=el('edu-type-list');
