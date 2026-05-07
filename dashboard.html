@@ -1829,12 +1829,24 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
       </div>
       <!-- 음성 & 습관 분석 -->
       <div style="margin-bottom:28px">
-        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">음성 & 습관 분석</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:800;color:var(--t1)">음성 & 습관 분석</div>
+          <button class="btn btn-ghost" id="an-pitch-excel-btn" style="display:none;padding:5px 12px;font-size:11px;color:var(--green);border-color:var(--green)" onclick="downloadPitchExcel()" title="음높이 시점별 결과를 엑셀로 다운로드">📥 음높이 엑셀</button>
+        </div>
         <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
             <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">반복어 습관</div><div id="an-habits" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>
             <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">음성 분석</div><div id="an-voice-stats"></div></div>
             <div><div style="font-size:13px;font-weight:700;margin-bottom:10px">환기 타이밍</div><div id="an-engagement"></div></div>
+          </div>
+          <!-- 음높이 정성 평가 (AI 독자 분석) -->
+          <div id="an-pitch-section" style="display:none;margin-top:18px;padding-top:18px;border-top:1px dashed var(--bdr)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:13px;font-weight:700">🎵 음높이 분석</span>
+              <span style="font-size:10.5px;color:var(--t3)">AI 청각 인상 기반 정성 평가 (Hz 측정 아님)</span>
+            </div>
+            <div id="an-pitch-summary"></div>
+            <div id="an-pitch-segments" style="margin-top:10px"></div>
           </div>
         </div>
       </div>
@@ -2095,15 +2107,14 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
             <option value="">선택</option>
           </select>
         </div>
+        <!-- 교육자료(va-product)는 스피치 분석에서는 사용하지 않음 — 호환을 위해 hidden 유지 -->
+        <select id="va-product" style="display:none"><option value=""></option></select>
         <div class="form-group">
-          <label class="form-lbl">교육자료</label>
-          <select class="form-input" id="va-product" onchange="loadVoiceEduFiles()"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-lbl">체크리스트</label>
+          <label class="form-lbl">체크리스트 <span style="font-size:10px;color:var(--green);font-weight:700">· 스피치 자동 적용</span></label>
           <select class="form-input" id="va-cl-select" onchange="applyChecklistFromSelect('va')">
             <option value="">선택</option>
           </select>
+          <div id="va-cl-applied-info" style="display:none;margin-top:4px;padding:4px 8px;background:rgba(16,185,129,.08);border-radius:6px;font-size:10px;color:var(--green);font-weight:700">✓ <span id="va-cl-applied-info-name"></span> 자동 적용됨</div>
         </div>
         <div class="form-group">
           <label class="form-lbl">제품</label>
@@ -2114,9 +2125,8 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
         <input type="hidden" id="va-count" value="20">
         <input type="hidden" id="va-tone" value="">
         <input type="hidden" id="va-role" value="현장강사">
-        <!-- 교육자료 연동 파일 -->
-        <div id="va-edu-files" style="display:none;padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">등록된 교육자료 — 클릭 시 평가안 적용</div>
+        <!-- 교육자료 연동 파일 영역 — 스피치에서는 사용하지 않음 -->
+        <div id="va-edu-files" style="display:none">
           <div id="va-edu-file-list"></div>
         </div>
         <!-- 평가안/체크리스트 업로드 -->
@@ -2342,9 +2352,13 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
 
     <!-- 시나리오에 포함할 요소 (선택) -->
     <div style="padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa;margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:800;color:var(--t1)">시나리오에 포함할 요소 <span style="font-size:10.5px;color:var(--t3);font-weight:500;margin-left:4px">· 기본값 제공 · 자유 편집·추가·삭제</span></div>
-        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="scAddAxis()">+ 항목 추가</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:800;color:var(--t1)">시나리오에 포함할 요소 <span style="font-size:10.5px;color:var(--t3);font-weight:500;margin-left:4px">· 기본값은 관리자 세팅 · 자유 편집·추가·삭제 (변경사항 자동 DB 저장)</span></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="scResetToDefault()" title="본인 커스텀을 지우고 관리자 기본값으로 되돌림">↺ 기본값 복귀</button>
+          <button id="sc-admin-default-btn" class="btn btn-ghost" style="display:none;padding:5px 12px;font-size:11px;color:var(--blue);border-color:var(--blue)" onclick="scSetCurrentAsDefault()" title="현재 요소를 해당 교육유형의 관리자 기본값으로 저장">★ 기본값으로 저장</button>
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="scAddAxis()">+ 항목 추가</button>
+        </div>
       </div>
       <div id="sc-axes-list" style="display:flex;flex-direction:column;gap:3px"></div>
     </div>
@@ -4403,23 +4417,42 @@ function renderEduPage(){
   // 교육링크 (카드형 3개 가로)
   const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
   let lkHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-      <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-      <input type="text" id="edu-lk-url" placeholder="URL" style="flex:2;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <input type="text" id="edu-lk-url" placeholder="URL" style="flex:2;min-width:240px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
     </div>
-    <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="addEduLink()">등록</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-lk-thumb-input').click()">📷 썸네일 이미지 (선택)</button>
+      <input type="file" id="edu-lk-thumb-input" accept="image/*" style="display:none" onchange="onEduLinkThumbChange(this)">
+      <span id="edu-lk-thumb-name" style="font-size:11px;color:var(--t3)">YouTube URL은 자동 감지됩니다</span>
+      <div id="edu-lk-thumb-preview" style="display:none;width:48px;height:36px;border-radius:6px;background-size:cover;background-position:center;border:1px solid var(--bdr)"></div>
+      <button type="button" id="edu-lk-thumb-clear" style="display:none;font-size:11px;background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700" onclick="clearEduLinkThumb()">제거</button>
+      <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-left:auto" onclick="addEduLink()">등록</button>
+    </div>
   </div>`:'';
   lkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
   lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
     const bg=linkColors[i%linkColors.length];
     let domain='';try{domain=new URL(lk.url).hostname;}catch(e){}
+    const ytId=getYouTubeId(lk.url||'');
+    const customThumb=lk.thumbnail_url||lk.thumbnailUrl||'';
+    const ytThumb=ytId?`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`:'';
+    const heroBg=customThumb||ytThumb;
     const faviconUrl=domain?`https://www.google.com/s2/favicons?domain=${domain}&sz=128`:'';
+    const heroHtml=heroBg
+      ? `<div style="height:120px;background:#000 url('${heroBg.replace(/'/g,'%27')}') center/cover no-repeat;position:relative">
+           ${ytId?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:10px">▶ YouTube</div>`:''}
+         </div>`
+      : `<div style="height:120px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+           ${faviconUrl?`<img src="${faviconUrl}" style="width:40px;height:40px;border-radius:8px;background:#fff;padding:4px" onerror="this.style.display='none'">`:''}
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+         </div>`;
+    const adminControls=isAdmin?`
+      <button style="position:absolute;top:8px;right:36px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();editLinkThumb(${lk.id})" title="썸네일 변경">✎</button>
+      <button style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
     return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      ${isAdmin?`<button style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})">×</button>`:''}
-      <div style="height:120px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-        ${faviconUrl?`<img src="${faviconUrl}" style="width:40px;height:40px;border-radius:8px;background:#fff;padding:4px">`:''}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </div>
+      ${adminControls}
+      ${heroHtml}
       <div style="padding:10px 12px">
         <div style="font-size:13px;font-weight:700;color:var(--t1)">${lk.name}</div>
         <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${lk.url}</div>
@@ -4428,6 +4461,72 @@ function renderEduPage(){
   }).join('')||'<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육링크가 없습니다</div>';
   lkHtml+='</div>';
   lkArea.innerHTML=lkHtml;
+}
+// 공용 YouTube ID 추출
+function getYouTubeId(url){
+  if(!url) return '';
+  const m=String(url).match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  return m?m[1]:'';
+}
+// 교육링크 썸네일 임시 보관 (등록 폼)
+let _eduLinkThumbFile=null, _eduLinkThumbDataUrl='';
+function onEduLinkThumbChange(input){
+  const f=input?.files?.[0]; if(!f) return;
+  if(!/^image\//.test(f.type)){alert('이미지 파일만 가능합니다.');input.value='';return;}
+  if(f.size>3*1024*1024){alert('3MB 이하 이미지만 가능합니다.');input.value='';return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    _eduLinkThumbFile=f;
+    _eduLinkThumbDataUrl=e.target.result;
+    const nm=document.getElementById('edu-lk-thumb-name'); if(nm) nm.textContent=f.name;
+    const pv=document.getElementById('edu-lk-thumb-preview');
+    if(pv){pv.style.display='inline-block';pv.style.backgroundImage=`url('${_eduLinkThumbDataUrl}')`;}
+    const cl=document.getElementById('edu-lk-thumb-clear'); if(cl) cl.style.display='inline-block';
+  };
+  r.readAsDataURL(f);
+}
+function clearEduLinkThumb(){
+  _eduLinkThumbFile=null; _eduLinkThumbDataUrl='';
+  const nm=document.getElementById('edu-lk-thumb-name'); if(nm) nm.textContent='YouTube URL은 자동 감지됩니다';
+  const pv=document.getElementById('edu-lk-thumb-preview'); if(pv){pv.style.display='none';pv.style.backgroundImage='';}
+  const cl=document.getElementById('edu-lk-thumb-clear'); if(cl) cl.style.display='none';
+  const inp=document.getElementById('edu-lk-thumb-input'); if(inp) inp.value='';
+}
+async function uploadEduLinkThumb(file){
+  if(!file) return '';
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const path=`edu_link_thumbs/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const{error:ue}=await sb.storage.from('files').upload(path,file,{upsert:false,cacheControl:'31536000'});
+  if(ue){console.error('thumb upload',ue); return '';}
+  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+  return publicUrl||'';
+}
+// 기존 링크 썸네일 변경 — 관리자 전용
+async function editLinkThumb(id){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)) return;
+  const lk=(D.learningLinks||[]).find(l=>l.id===id); if(!lk) return;
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+  inp.onchange=async()=>{
+    const f=inp.files?.[0]; if(!f) return;
+    if(!/^image\//.test(f.type)){alert('이미지만 가능');return;}
+    if(f.size>3*1024*1024){alert('3MB 이하만 가능');return;}
+    const url=await uploadEduLinkThumb(f);
+    if(!url){alert('업로드 실패');return;}
+    const r=await sb.from('learning_links').update({thumbnail_url:url}).eq('id',id);
+    if(r.error){
+      const msg=(r.error.message||'').toLowerCase();
+      if(msg.includes('column') && msg.includes('thumbnail_url')){
+        alert('DB에 thumbnail_url 컬럼이 없습니다. 관리자에게 문의: ALTER TABLE learning_links ADD COLUMN thumbnail_url text;');
+        return;
+      }
+      alert('저장 실패: '+r.error.message); return;
+    }
+    await loadFromDB(); renderEduPage();
+    if(typeof showToast==='function') showToast('썸네일 변경 완료','#10b981');
+  };
+  document.body.appendChild(inp); inp.click();
+  setTimeout(()=>inp.remove(),60000);
 }
 // ── 체크리스트 엑셀 파서 ─────────────────────────────
 // 컬럼 매핑: 대항목 / 세부항목 / 평가기준(체크리스트) / 배점 / 평가기준 상세
@@ -4701,8 +4800,27 @@ async function addEduLink(){
   const name=document.getElementById('edu-lk-name')?.value?.trim();
   const url=document.getElementById('edu-lk-url')?.value?.trim();
   if(!name||!url){showToast('링크명과 URL을 입력하세요','#f59e0b');return;}
-  const{error:lkErr}=await sb.from('learning_links').insert({name,url,category:'학습',org_name:D.activeOrg||null});
-  if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
+  // 1) 사용자가 직접 업로드한 썸네일이 있으면 Storage 업로드
+  let thumbUrl='';
+  if(_eduLinkThumbFile){
+    thumbUrl=await uploadEduLinkThumb(_eduLinkThumbFile);
+    if(!thumbUrl){showToast('썸네일 업로드 실패','#ef4444');return;}
+  }
+  // 2) DB insert — thumbnail_url 컬럼이 없는 환경 대비 1차 시도 → 실패 시 컬럼 제외 재시도
+  const payload={name,url,category:'학습',org_name:D.activeOrg||null};
+  if(thumbUrl) payload.thumbnail_url=thumbUrl;
+  let {error:lkErr}=await sb.from('learning_links').insert(payload);
+  if(lkErr){
+    const msg=(lkErr.message||'').toLowerCase();
+    if(thumbUrl && msg.includes('column') && msg.includes('thumbnail_url')){
+      console.warn('learning_links.thumbnail_url 컬럼 없음 — 컬럼 제외 후 재시도');
+      const fallback={name,url,category:'학습',org_name:D.activeOrg||null};
+      ({error:lkErr}=await sb.from('learning_links').insert(fallback));
+      if(!lkErr) showToast('등록됨 — 썸네일 컬럼 미생성으로 썸네일은 저장되지 않았습니다','#f59e0b');
+    }
+    if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
+  }
+  clearEduLinkThumb();
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
 }
 async function addEduCategory(type){
@@ -6846,7 +6964,16 @@ async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalTy
     good:result.good||[], bad:result.bad||[], upgrade:result.upgrade||[],
     scenarios:result.scenarios||[], level_tips:result.level_tips||[],
     teaching_patterns:result.teaching_patterns||[],
-    speech_report:{rubric_alignment_score:result.rubric_alignment_score,rubric_alignment_reason:result.rubric_alignment_reason,summary_opinion:result.summary_opinion||''},
+    speech_report:{
+      rubric_alignment_score:result.rubric_alignment_score,
+      rubric_alignment_reason:result.rubric_alignment_reason,
+      summary_opinion:result.summary_opinion||'',
+      // 음높이 정성 평가 (Gemini)
+      pitch_overall:result.pitch_overall||'',
+      pitch_recommendation:result.pitch_recommendation||'',
+      pitch_reason:result.pitch_reason||'',
+      pitch_segments:Array.isArray(result.pitch_segments)?result.pitch_segments:[]
+    },
     mood:result.mood||null,
     decibel:clampInt(result.decibel,0,200),
     tempo:clampInt(result.tempo_wpm,0,1000),
@@ -6906,6 +7033,10 @@ function mapVertexToLegacy(critRes,aiRes){
     tempo:a.tempo_wpm||c.tempo_wpm||0, tempoStatus:'적정',
     engagementGaps:a.engagement_gaps_minutes||c.engagement_gaps_minutes||[],
     engagementWarning:'',
+    pitchOverall:a.pitch_overall||c.pitch_overall||'',
+    pitchRecommendation:a.pitch_recommendation||c.pitch_recommendation||'',
+    pitchReason:a.pitch_reason||c.pitch_reason||'',
+    pitchSegments:(a.pitch_segments||c.pitch_segments||[]),
     scenarios:(c.scenarios||[]).map(s=>`${s.situation}: "${s.original_line}" → "${s.suggested_line}"`),
     levelUpTips:(c.level_tips||[]).map(t=>({title:t.title,text:t.detail})),
     speechTips:(c.teaching_patterns||[]).map(t=>({title:t.type,text:t.original+' → '+t.alternative})),
@@ -7155,9 +7286,25 @@ function populateChecklistSelects(){
     const sel=document.getElementById(id);
     if(sel){const prev=sel.value;sel.innerHTML=html;sel.value=prev||'';}
   });
-  // 스피치 (단일)
+  // 스피치 (단일) — 등록된 [스피치] 체크리스트가 있으면 자동 선택
   const vaSel=document.getElementById('va-cl-select');
-  if(vaSel){const prev=vaSel.value;vaSel.innerHTML=speechHtml;vaSel.value=prev||'';}
+  if(vaSel){
+    const prev=vaSel.value;
+    vaSel.innerHTML=speechHtml;
+    if(prev && Array.from(vaSel.options).some(o=>o.value===prev)){
+      vaSel.value=prev;
+    } else if(speechList.length){
+      // 사용자가 직접 선택하지 않은 경우 첫 번째 [스피치] 체크리스트를 자동 적용
+      const first=[...speechList].sort((a,b)=>(a.name||'').localeCompare(b.name||''))[0];
+      if(first){
+        vaSel.value=String(first.id);
+        try{ if(typeof applyChecklistFromSelect==='function') applyChecklistFromSelect('va'); }catch(_){ }
+        const info=document.getElementById('va-cl-applied-info');
+        const nm=document.getElementById('va-cl-applied-info-name');
+        if(info&&nm){ nm.textContent='[스피치] '+(first.name||''); info.style.display='block'; }
+      }
+    }
+  }
 }
 // 반복어 배지 클릭 → 해당 반복어 발화 시점 리스트 + 영상 재생 팝업
 function openHabitTimestamps(idx){
@@ -8109,6 +8256,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   }
   el('an-engagement').innerHTML=engageHtml+(r.engagementWarning?`<div style="font-size:11px;color:var(--t2);margin-top:6px">${r.engagementWarning}</div>`:'');
 
+  // 음높이 정성 평가 렌더 (AI 독자 분석 기반)
+  renderPitchAnalysis(r);
   // ⑦ AI 독자 타임스탬프 (aiRaw 기반 — 평가안과 별도)
   el('an-ts-feed').innerHTML=aiTimestamps.length?renderTsTable(aiTimestamps,'ai'):'<div style="padding:20px;text-align:center;color:var(--t3)">분석 데이터 없음</div>';
   // AI 독자 Good/Bad/Upgrade — Vertex raw 데이터 사용
@@ -8119,6 +8268,121 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   el('an-ai-result').innerHTML=renderOpinionTabs('an-ai-result',aiGoodItems,aiBadItems,aiUpgradeItems,'aop',r.overallComment||'AI가 분석한 종합 의견입니다.');
 }
 
+// ─── 음높이 정성 평가 렌더 ───
+// r: mapVertexToLegacy 결과 (pitchOverall / pitchRecommendation / pitchReason / pitchSegments)
+function renderPitchAnalysis(r){
+  const sec=document.getElementById('an-pitch-section');
+  const sum=document.getElementById('an-pitch-summary');
+  const segBox=document.getElementById('an-pitch-segments');
+  const btn=document.getElementById('an-pitch-excel-btn');
+  if(!sec||!sum||!segBox) return;
+  const segs=Array.isArray(r?.pitchSegments)?r.pitchSegments:[];
+  const overall=r?.pitchOverall||'';
+  const reco=r?.pitchRecommendation||'';
+  const reason=r?.pitchReason||'';
+  // 데이터가 전혀 없으면 섹션 숨김
+  if(!overall && !reco && !segs.length){
+    sec.style.display='none';
+    if(btn) btn.style.display='none';
+    window._anPitchSegs=null;
+    return;
+  }
+  sec.style.display='block';
+  if(btn) btn.style.display=segs.length?'inline-block':'none';
+  window._anPitchSegs=segs;
+  // 권장 방향 → 화살표 (△ 위로 / ▽ 아래로 / = 유지)
+  const recoArrow=/높/.test(reco)?'△':/낮/.test(reco)?'▽':'=';
+  const recoColor=recoArrow==='△'?'#10b981':recoArrow==='▽'?'#dc2626':'#475569';
+  const overallColor=/높/.test(overall)?'#0078C8':/낮/.test(overall)?'#f59e0b':'#10b981';
+  sum.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="padding:12px;background:#f8f9fa;border-radius:10px">
+        <div style="font-size:10.5px;color:var(--t3);margin-bottom:4px">전체 음높이 인상</div>
+        <div style="font-size:18px;font-weight:900;color:${overallColor}">${overall||'—'}</div>
+      </div>
+      <div style="padding:12px;background:#f8f9fa;border-radius:10px">
+        <div style="font-size:10.5px;color:var(--t3);margin-bottom:4px">권장 방향</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px;font-weight:900;color:${recoColor};line-height:1">${recoArrow}</span>
+          <span style="font-size:13px;font-weight:800;color:var(--t1)">${reco||'—'}</span>
+        </div>
+      </div>
+    </div>
+    ${reason?`<div style="margin-top:10px;padding:10px 12px;background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;font-size:11.5px;color:#92400e;line-height:1.6">💡 ${reason}</div>`:''}
+  `;
+  // 시점별 발화 — △/=/▽ 표기
+  if(!segs.length){segBox.innerHTML='';return;}
+  const arrowFor=adv=>{const a=String(adv||'').trim();
+    if(a==='↑'||/높/.test(a)) return {ic:'△',col:'#10b981'};
+    if(a==='↓'||/낮/.test(a)) return {ic:'▽',col:'#dc2626'};
+    return {ic:'=',col:'#475569'};
+  };
+  segBox.innerHTML=`
+    <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">발화별 음높이 힌트 <span style="font-weight:500;color:var(--t3)">· 클릭하면 해당 시점 영상 재생</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;padding-right:4px">
+      ${segs.map((s,si)=>{
+        const a=arrowFor(s.advice);
+        const ts=String(s.timestamp||'').trim();
+        const safeTs=ts.replace(/'/g,'');
+        const tsTag=ts?`<span style="padding:2px 8px;background:rgba(0,120,200,.12);color:var(--blue);border-radius:10px;font-size:10.5px;font-weight:800;cursor:pointer;flex-shrink:0" onclick="openAnVideoAt('${safeTs}')">▶ ${ts}</span>`:'';
+        const lvCol=/높/.test(s.level)?'#0078C8':/낮/.test(s.level)?'#f59e0b':'#10b981';
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;background:#fff">
+          <span style="font-size:18px;font-weight:900;color:${a.col};line-height:1;flex-shrink:0;min-width:18px;text-align:center">${a.ic}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+              ${tsTag}
+              <span style="font-size:10px;font-weight:800;color:${lvCol};padding:1px 6px;border:1px solid ${lvCol}33;border-radius:8px">${s.level||''}</span>
+            </div>
+            ${s.quote?`<div style="font-size:11.5px;color:var(--t1);line-height:1.5;font-style:italic">"${(s.quote||'').replace(/</g,'&lt;')}"</div>`:''}
+            ${s.reason?`<div style="font-size:11px;color:var(--t3);margin-top:2px;line-height:1.5">${(s.reason||'').replace(/</g,'&lt;')}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+// ─── 음높이 엑셀 다운로드 ───
+function downloadPitchExcel(){
+  const segs=window._anPitchSegs||[];
+  if(!segs.length){alert('음높이 분석 데이터가 없습니다.');return;}
+  const title=(document.getElementById('an-title')?.value||'영상분석').trim();
+  const date=new Date().toISOString().split('T')[0];
+  const arrowFor=adv=>{const a=String(adv||'').trim();
+    if(a==='↑'||/높/.test(a)) return '△ 높이세요';
+    if(a==='↓'||/낮/.test(a)) return '▽ 낮추세요';
+    return '= 유지';
+  };
+  // XLSX 라이브러리가 있으면 .xlsx, 아니면 CSV 폴백
+  if(typeof XLSX!=='undefined'){
+    const aoa=[
+      ['음높이 분석 — '+title,'','','',''],
+      ['분석일',date,'강사',CU?.name||'—',''],
+      [],
+      ['시점','발화 인용','음높이','권장 방향','이유']
+    ];
+    segs.forEach(s=>{aoa.push([s.timestamp||'',s.quote||'',s.level||'',arrowFor(s.advice),s.reason||'']);});
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:10},{wch:36},{wch:8},{wch:14},{wch:50}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'음높이');
+    XLSX.writeFile(wb,`음높이_${title}_${date}.xlsx`);
+    return;
+  }
+  // CSV 폴백 (BOM)
+  let csv='﻿음높이 분석 — '+title+'\n';
+  csv+=`분석일,${date},강사,${CU?.name||'—'}\n\n`;
+  csv+='시점,발화 인용,음높이,권장 방향,이유\n';
+  segs.forEach(s=>{
+    const q=String(s.quote||'').replace(/"/g,'""');
+    const r=String(s.reason||'').replace(/"/g,'""');
+    csv+=`${s.timestamp||''},"${q}",${s.level||''},${arrowFor(s.advice)},"${r}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`음높이_${title}_${date}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
 // 타임스탬프 테이블 공통 렌더
 function renderTsTable(timestamps,which){
   const srcWhich=which||'crit';
@@ -9751,6 +10015,11 @@ function openVoiceResult(vaId){
       rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
       rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
       summary_opinion:row.speech_report?.summary_opinion||'',
+      // 음높이 정성 평가 (저장 시 speech_report 안에 포함됨)
+      pitch_overall:row.speech_report?.pitch_overall||'',
+      pitch_recommendation:row.speech_report?.pitch_recommendation||'',
+      pitch_reason:row.speech_report?.pitch_reason||'',
+      pitch_segments:Array.isArray(row.speech_report?.pitch_segments)?row.speech_report.pitch_segments:[],
       edu_file_url:row.edu_file_url||''
     }:null;
     const aiRes=normalizeVertexResult(toVertex(aiRow));
@@ -11230,6 +11499,10 @@ const SC_KEYWORDS={
 
 const SC_STATE_KEY='sc_coach_state_v1';
 let scState=null;
+// SC: DB 연동 (다기기 동기화)
+// - axes 는 (scope='default', edu_type) 별 관리자 기본값 + (scope='user_<id>', edu_type) 사용자 커스텀 으로 분리 저장
+// - draft / step 등 작업 상태는 본인 PC 작업 흐름이므로 localStorage 만 사용 (의도적 — 다른 PC에서 열면 새로 시작)
+window._scAxesDbCache={}; // {scope:edu_type:axes[]}
 
 function scDefaultState(){return{
   step:0,eduType:'',product:'',phase:'',customer:'',store:'',
@@ -11248,11 +11521,131 @@ function scInit(){
   if(!Array.isArray(scState.eduFiles)) scState.eduFiles=[];
   scRenderEduFiles();
   const ta=document.getElementById('sc-draft');if(ta) ta.value=scState.draft||'';
-  scRenderAxes();scRender();
+  // axes — DB에서 로드 (관리자 기본값 + 사용자 커스텀)
+  scLoadAxesFromDB().then(()=>{ scRenderAxes(); scUpdateDraftAxes&&scUpdateDraftAxes(); });
+  // 관리자/부관리자만 "기본값으로 저장" 버튼 노출
+  const adminBtn=document.getElementById('sc-admin-default-btn');
+  if(adminBtn) adminBtn.style.display=(CU?.isAdmin||CU?.isSubAdmin)?'inline-flex':'none';
+  scRender();
+}
+// 관리자: 현재 axes 를 해당 교육유형의 기본값으로 DB 저장
+async function scSetCurrentAsDefault(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){alert('관리자/부관리자만 가능합니다.');return;}
+  const eduType=scState.eduType||'';
+  const lbl=eduType||'전체 기준';
+  if(!confirm(`현재 ${scState.axes?.length||0}개 요소를 [${lbl}] 교육유형의 관리자 기본값으로 저장합니다. 모든 사용자에게 적용됩니다. 진행할까요?`)) return;
+  const r=await scSaveDefaultAxesToDB(eduType,scState.axes||[]);
+  if(!r.ok){alert('저장 실패: '+r.error);return;}
+  if(typeof showToast==='function') showToast(`[${lbl}] 기본값 저장 완료 — 모든 사용자에게 반영됩니다`,'#10b981');
 }
 
 function scSaveState(){try{localStorage.setItem(SC_STATE_KEY,JSON.stringify(scState));}catch(e){}}
-function scSaveField(k,v){scState[k]=v;scSaveState();}
+function scSaveField(k,v){
+  scState[k]=v;scSaveState();
+  // 교육유형 변경 시 → 해당 유형 axes 재로딩
+  if(k==='eduType'){
+    scLoadAxesFromDB().then(()=>{scRenderAxes();scUpdateDraftAxes&&scUpdateDraftAxes();});
+  }
+}
+
+// ────────────────────────────────────────────
+// DB 연동 (scenario_axes_config)
+// ────────────────────────────────────────────
+async function scLoadAxesFromDB(){
+  if(!window.sb){scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));return;}
+  const eduType=scState.eduType||'';
+  const userScope=CU?.id?('user_'+CU.id):'';
+  // 우선순위: 사용자 커스텀(eduType) > 사용자 커스텀(전체) > 관리자 기본(eduType) > 관리자 기본(전체) > 로컬(이전 데이터) > 코드 기본값
+  const localAxesFromState=Array.isArray(scState.axes)?scState.axes:null;
+  try{
+    const{data,error}=await sb.from('scenario_axes_config').select('scope,edu_type,axes')
+      .or(`scope.eq.default,scope.eq.${userScope||'__none__'}`);
+    if(error){
+      const msg=(error.message||'').toLowerCase();
+      if(msg.includes('relation') || msg.includes('does not exist') || msg.includes('schema cache')){
+        console.warn('scenario_axes_config 테이블 없음 — DB 마이그레이션 미실행. localStorage/코드 기본값 사용');
+        if(localAxesFromState && localAxesFromState.length){scState.axes=JSON.parse(JSON.stringify(localAxesFromState));}
+        else scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+        return;
+      }
+      throw error;
+    }
+    const rows=data||[];
+    const pick=(scope,et)=>rows.find(r=>r.scope===scope&&(r.edu_type||'')===(et||''));
+    let chosen=null;
+    if(userScope){
+      chosen=pick(userScope,eduType)||pick(userScope,'')||null;
+    }
+    if(!chosen) chosen=pick('default',eduType)||pick('default','')||null;
+    if(chosen && Array.isArray(chosen.axes) && chosen.axes.length){
+      scState.axes=JSON.parse(JSON.stringify(chosen.axes));
+    } else {
+      // DB 비어 있음 — 이전 localStorage 데이터가 있으면 1회 자동 마이그레이션 (다기기 동기화 시작)
+      const isCustomized=localAxesFromState && localAxesFromState.length &&
+        JSON.stringify(localAxesFromState)!==JSON.stringify(SC_DEFAULT_AXES);
+      if(isCustomized && userScope){
+        scState.axes=JSON.parse(JSON.stringify(localAxesFromState));
+        // DB로 백업 (실패해도 무시 — 다음 편집 시 다시 시도됨)
+        scSaveUserAxesToDB().then(r=>{if(r.ok && typeof showToast==='function') showToast('이전 작업분을 클라우드로 백업했습니다','#10b981');}).catch(()=>{});
+      } else {
+        scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+      }
+    }
+  }catch(e){
+    console.warn('scLoadAxesFromDB:',e?.message||e);
+    if(localAxesFromState && localAxesFromState.length) scState.axes=JSON.parse(JSON.stringify(localAxesFromState));
+    else scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  }
+}
+
+// 사용자 본인 axes 저장 (본 사용자가 직접 편집한 결과 → DB)
+// 주의: edu_type 은 빈 문자열로 저장해야 .eq('edu_type','') 매칭 가능 (NULL 비교는 .is 필요 → 일관성 위해 ''로 통일)
+async function scSaveUserAxesToDB(){
+  if(!window.sb||!CU?.id) return {ok:false,error:'로그인 필요'};
+  const scope='user_'+CU.id;
+  const edu_type=scState.eduType||'';
+  const payload={scope,edu_type,org_name:D.activeOrg||'',axes:scState.axes||[],updated_by:CU?.name||'',updated_at:new Date().toISOString()};
+  try{
+    const q=await sb.from('scenario_axes_config').select('id').eq('scope',scope).eq('edu_type',edu_type).limit(1);
+    if(q.error) throw q.error;
+    const exist=(q.data||[])[0];
+    let r;
+    if(exist) r=await sb.from('scenario_axes_config').update(payload).eq('id',exist.id);
+    else r=await sb.from('scenario_axes_config').insert(payload);
+    if(r.error) throw r.error;
+    return {ok:true};
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation') || msg.includes('does not exist') || msg.includes('schema cache')){
+      return {ok:false,error:'DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음)'};
+    }
+    return {ok:false,error:e.message||String(e)};
+  }
+}
+
+// 관리자 기본값 저장 — admin UI 에서 호출
+async function scSaveDefaultAxesToDB(eduType,axes){
+  if(!window.sb) return {ok:false,error:'sb 없음'};
+  const scope='default';
+  const edu_type=eduType||'';
+  const payload={scope,edu_type,org_name:D.activeOrg||'',axes:axes||[],updated_by:CU?.name||'admin',updated_at:new Date().toISOString()};
+  try{
+    const q=await sb.from('scenario_axes_config').select('id').eq('scope',scope).eq('edu_type',edu_type).limit(1);
+    if(q.error) throw q.error;
+    const exist=(q.data||[])[0];
+    let r;
+    if(exist) r=await sb.from('scenario_axes_config').update(payload).eq('id',exist.id);
+    else r=await sb.from('scenario_axes_config').insert(payload);
+    if(r.error) throw r.error;
+    return {ok:true};
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation') || msg.includes('does not exist') || msg.includes('schema cache')){
+      return {ok:false,error:'DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음)'};
+    }
+    return {ok:false,error:e.message||String(e)};
+  }
+}
 
 function scFillEduTypes(){
   const sel=document.getElementById('sc-edu-type');if(!sel) return;
@@ -11326,10 +11719,35 @@ function scAxisModalSave(mode,i){
   if(mode==='edit'){const a=scState.axes[i];if(!a)return;a.name=name;a.hint=ht.trim();}
   else{scState.axes.push({id:'custom_'+Date.now(),name,hint:ht.trim()});}
   scSaveState();scRenderAxes();scUpdateDraftAxes();scAxisModalClose();
+  // DB 동기화 (사용자 본인 커스텀)
+  scSaveUserAxesToDB().then(r=>{
+    if(!r.ok && typeof showToast==='function') showToast('DB 저장 실패: '+r.error,'#ef4444');
+  });
 }
 function scEditAxis(i){scAxisModal('edit',i);}
 function scAddAxis(){scAxisModal('add');}
-function scRemoveAxis(i){if(!confirm('삭제할까요?')) return;scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scRemoveAxis(i){
+  if(!confirm('삭제할까요?')) return;
+  scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();
+  scSaveUserAxesToDB().then(r=>{
+    if(!r.ok && typeof showToast==='function') showToast('DB 저장 실패: '+r.error,'#ef4444');
+  });
+}
+// 본인 커스텀 초기화 → 관리자 기본값으로 복귀
+async function scResetToDefault(){
+  if(!confirm('포함 요소를 관리자 기본값으로 되돌릴까요? 본인의 커스텀은 삭제됩니다.')) return;
+  const scope='user_'+(CU?.id||0);
+  try{
+    if(window.sb){
+      const eduType=scState.eduType||'';
+      await sb.from('scenario_axes_config').delete()
+        .eq('scope',scope).eq('edu_type',eduType);
+    }
+  }catch(e){console.warn('scResetToDefault:',e);}
+  await scLoadAxesFromDB();
+  scSaveState();scRenderAxes();scUpdateDraftAxes();
+  if(typeof showToast==='function') showToast('관리자 기본값으로 복귀','#10b981');
+}
 
 function scOnDraftInput(v){
   scState.draft=v;scSaveState();
@@ -13120,6 +13538,11 @@ function openVideo(id){
       rubric_alignment_score:row.speech_report?.rubric_alignment_score??null,
       rubric_alignment_reason:row.speech_report?.rubric_alignment_reason||'',
       summary_opinion:row.speech_report?.summary_opinion||'',
+      // 음높이 정성 평가 (저장 시 speech_report 안에 포함됨)
+      pitch_overall:row.speech_report?.pitch_overall||'',
+      pitch_recommendation:row.speech_report?.pitch_recommendation||'',
+      pitch_reason:row.speech_report?.pitch_reason||'',
+      pitch_segments:Array.isArray(row.speech_report?.pitch_segments)?row.speech_report.pitch_segments:[],
       edu_file_url:row.edu_file_url||''
     }:null;
     const critResult=normalizeVertexResult(toVertex(critRow));
@@ -14015,8 +14438,15 @@ function renderMyProfile(){
       <!-- 프로필 헤더: 성명 크게 + 보조정보 -->
       <div style="padding:24px;margin-bottom:18px;border:1px solid var(--bdr);border-radius:14px;background:#fff">
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-          <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f1f5f9;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--t2)">
-            ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name?.[0]||'?'}
+          <div style="position:relative;flex-shrink:0">
+            <div id="mp-photo-circle" style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--t2);cursor:pointer;border:2px solid var(--bdr)" onclick="document.getElementById('mp-photo-input').click()" title="클릭하여 사진 변경">
+              ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name?.[0]||'?'}
+            </div>
+            <button onclick="document.getElementById('mp-photo-input').click()" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:var(--blue);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18)" title="사진 등록/변경">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <input type="file" id="mp-photo-input" accept="image/*" style="display:none" onchange="uploadMyPhoto(this)">
+            ${u.photo?`<button onclick="removeMyPhoto()" style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;border:1px solid #fff;background:#ef4444;color:#fff;cursor:pointer;font-size:12px;line-height:1;font-weight:900;box-shadow:0 1px 4px rgba(0,0,0,.2)" title="사진 제거">×</button>`:''}
           </div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
@@ -14027,6 +14457,7 @@ function renderMyProfile(){
               ${[u.orgName,u.team,u.position,u.office].filter(Boolean).join(' · ')||'—'}
             </div>
             <div style="font-size:11px;color:var(--t3);margin-top:3px">${u.email||''}</div>
+            <div style="font-size:10.5px;color:var(--t3);margin-top:6px">📷 동그란 사진을 클릭하면 사진을 등록·변경할 수 있어요</div>
           </div>
         </div>
       </div>
@@ -14078,6 +14509,54 @@ async function saveProfile(){
   await dbUpdateUser(u.id,{name,phone});
   u.name=name;u.phone=phone;CU=u;localStorage.setItem('ib_user',JSON.stringify(CU));
   alert('✅ 프로필이 저장되었습니다.');
+}
+// 마이페이지 사진 업로드 — 클릭 즉시 DB 반영
+async function uploadMyPhoto(input){
+  if(!CU||!CU.id){alert('로그인 정보가 없습니다.');return;}
+  const file=input?.files?.[0];
+  if(!file) return;
+  if(!/^image\//.test(file.type)){alert('이미지 파일만 업로드 가능합니다.');input.value='';return;}
+  if(file.size>5*1024*1024){alert('5MB 이하 이미지만 업로드 가능합니다.');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const dataUrl=e.target.result;
+    // 미리보기 즉시 반영
+    const circle=document.getElementById('mp-photo-circle');
+    if(circle) circle.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    try{
+      await dbUpdateUser(CU.id,{photo:dataUrl});
+      const u=D.users.find(x=>x.id===CU.id);
+      if(u) u.photo=dataUrl;
+      CU.photo=dataUrl;
+      localStorage.setItem('ib_user',JSON.stringify(CU));
+      // 헤더 아바타도 갱신
+      try{document.querySelectorAll('.hdr-av').forEach(av=>{av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;});}catch(_){}
+      if(typeof showToast==='function') showToast('프로필 사진이 등록되었습니다','#10b981');
+      else alert('✅ 프로필 사진이 등록되었습니다.');
+      // 삭제(×) 버튼이 보이도록 다시 렌더
+      renderMyProfile();
+    }catch(err){
+      alert('저장 실패: '+(err.message||err));
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+async function removeMyPhoto(){
+  if(!CU||!CU.id) return;
+  if(!confirm('프로필 사진을 제거할까요?')) return;
+  try{
+    await dbUpdateUser(CU.id,{photo:null});
+    const u=D.users.find(x=>x.id===CU.id);
+    if(u) u.photo=null;
+    CU.photo=null;
+    localStorage.setItem('ib_user',JSON.stringify(CU));
+    try{document.querySelectorAll('.hdr-av').forEach(av=>{av.innerHTML=CU.name?.[0]||'?';});}catch(_){}
+    if(typeof showToast==='function') showToast('프로필 사진이 제거되었습니다','#6b7280');
+    renderMyProfile();
+  }catch(err){
+    alert('제거 실패: '+(err.message||err));
+  }
 }
 
 /* ════════════════════════════════
