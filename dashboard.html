@@ -2848,9 +2848,28 @@ div[style*="linear-gradient(135deg,#e8590c"] span[style*="background:rgba(255,25
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('교육종류',this);renderEduTypeManage()">교육종류</button>
+    <button class="tab-btn" onclick="switchTab('시나리오요소',this);renderScenarioAxesAdmin()">시나리오 요소</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
     <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">금액 현황</button>
+  </div>
+
+  <!-- 시나리오 요소 (교육유형별) -->
+  <div class="tab-pane" id="tab-시나리오요소">
+    <div style="max-width:920px">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육유형별 시나리오 포함 요소</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:14px">AI 시나리오 코치에서 강사가 시나리오 작성 시 참고할 <b style="color:var(--t1)">교육유형별 기본 요소</b>를 관리합니다. 강사 본인이 추가 편집한 항목은 별도로 보존됩니다.</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:var(--t2)">교육유형:</span>
+        <select id="sa-edu-type" onchange="loadScenarioAxesForEduType()" style="min-width:200px;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"></select>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11.5px" onclick="saAddAxis()">+ 항목 추가</button>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11.5px;color:var(--orange,#d97706)" onclick="saResetAxesToCodeDefault()" title="이 교육유형의 기본값을 코드 기본 7개로 초기화">↺ 코드 기본값으로</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;font-weight:700" onclick="saSaveAxes()">★ 이 교육유형 기본값으로 저장</button>
+      </div>
+      <div id="sa-axes-list" style="border:1px solid var(--bdr);border-radius:10px;padding:12px;background:#fafafa;min-height:120px;display:flex;flex-direction:column;gap:4px"></div>
+      <div id="sa-status" style="margin-top:10px;font-size:11.5px;color:var(--t3)"></div>
+    </div>
   </div>
 
   <!-- 금액 현황 (크레딧) -->
@@ -5070,18 +5089,23 @@ async function saveHeroEdit(key){
   const json=JSON.stringify(cfg);
   // 항상 localStorage 에 백업 저장 (DB 가 비어 있거나 RLS 로 막혀도 새로고침 후 유지)
   try{localStorage.setItem(key,json);}catch(e){}
-  // DB 저장 시도 (선택적)
+  // DB 저장 시도 — 실패하면 다른 PC에서 안 보이므로 사용자에게 알림 (이전에는 console.warn 만)
   let dbOk=true;
+  let dbErrMsg='';
   try{
     const{error}=await sb.from('app_settings').upsert({key,value:json});
     if(error) throw error;
   }catch(e){
     dbOk=false;
-    console.warn('app_settings DB 저장 실패 — localStorage 에만 저장됨:',e?.message||e);
+    dbErrMsg=e?.message||String(e);
+    console.warn('app_settings DB 저장 실패 — localStorage 에만 저장됨:',dbErrMsg);
   }
   applyHeroStyle(el(key==='hero_title'?'pick-hero-title':'pick-hero-sub'),cfg);
   window._heroCfg=window._heroCfg||{}; window._heroCfg[key]=cfg;
   document.getElementById('hero-edit-overlay')?.remove();
+  if(!dbOk){
+    alert('⚠ 클라우드(DB) 저장 실패\n\n사용자님 브라우저에서는 보이지만 다른 PC/계정에서는 보이지 않습니다.\n\n원인: '+dbErrMsg+'\n\nSupabase RLS 정책 또는 app_settings 테이블 권한을 확인해주세요.');
+  }
 }
 
 // 히어로 우측 — 2컬럼 독립 스크롤 사진 패널 (컬럼별 랜덤 순서 + animation-delay 로 무한 루프)
@@ -11521,6 +11545,25 @@ function scInit(){
   if(!Array.isArray(scState.eduFiles)) scState.eduFiles=[];
   scRenderEduFiles();
   const ta=document.getElementById('sc-draft');if(ta) ta.value=scState.draft||'';
+  // 초안 DB 로드 (다른 PC에서 이어 쓰기) — localStorage 보다 최신이면 적용
+  scLoadDraftFromDB().then(rec=>{
+    if(!rec || typeof rec!=='object') return;
+    const dbDraft=String(rec.draft||'');
+    const localDraft=String(scState.draft||'');
+    // DB가 더 길거나 (다른 PC 작업분이 더 진행됨), localStorage 비어있으면 DB 우선
+    if(dbDraft && (!localDraft || dbDraft.length > localDraft.length+10)){
+      const ok=!localDraft || confirm('다른 PC에서 작성 중이던 초안이 있습니다 ('+dbDraft.length+'자). 불러올까요? 취소하면 현재 초안 유지.');
+      if(ok){
+        scState.draft=dbDraft;
+        ['eduType','product','phase','customer','store'].forEach(k=>{if(rec[k]!=null) scState[k]=rec[k];});
+        scSaveState();
+        const ta2=document.getElementById('sc-draft'); if(ta2) ta2.value=dbDraft;
+        const cnt=document.getElementById('sc-draft-count'); if(cnt) cnt.textContent=dbDraft.length+'자';
+        ['eduType','product','phase','customer','store'].forEach(f=>{const el=document.getElementById('sc-'+({eduType:'edu-type',product:'product',phase:'phase',customer:'customer',store:'store'}[f]));if(el&&scState[f]!=null) el.value=scState[f];});
+        scLoadAxesFromDB().then(()=>{scRenderAxes();scUpdateDraftAxes&&scUpdateDraftAxes();});
+      }
+    }
+  });
   // axes — DB에서 로드 (관리자 기본값 + 사용자 커스텀)
   scLoadAxesFromDB().then(()=>{ scRenderAxes(); scUpdateDraftAxes&&scUpdateDraftAxes(); });
   // 관리자/부관리자만 "기본값으로 저장" 버튼 노출
@@ -11528,6 +11571,153 @@ function scInit(){
   if(adminBtn) adminBtn.style.display=(CU?.isAdmin||CU?.isSubAdmin)?'inline-flex':'none';
   scRender();
 }
+// ════════════════════════════════════════════════════════════
+// 관리자 페이지 — 시나리오 요소 관리 (교육유형별)
+// ════════════════════════════════════════════════════════════
+let _saAxes=[];           // 현재 편집 중인 axes 배열
+let _saCurrentEduType=''; // 현재 편집 중인 교육유형
+
+function renderScenarioAxesAdmin(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){
+    const sel=document.getElementById('sa-edu-type');
+    if(sel) sel.innerHTML='<option value="">관리자/부관리자만 접근 가능</option>';
+    document.getElementById('sa-axes-list').innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">권한이 없습니다.</div>';
+    return;
+  }
+  // 교육유형 드롭다운 채우기
+  const sel=document.getElementById('sa-edu-type');
+  if(!sel) return;
+  let types=(window.getEduTypes?getEduTypes():[])||[];
+  if(!types.length) types=['판매경쟁력상황실','신입교육','심화교육','현장실습','판매자세교육','현장직무교육'];
+  const extra=['기타','상관없음'];
+  sel.innerHTML='<option value="">전체 기준 (모든 교육유형 공통)</option>'+
+    types.map(t=>`<option value="${t.replace(/"/g,'&quot;')}">${t}</option>`).join('')+
+    '<optgroup label="기타">'+extra.map(t=>`<option value="${t}">${t}</option>`).join('')+'</optgroup>';
+  // 기본 선택값 유지
+  if(_saCurrentEduType && Array.from(sel.options).some(o=>o.value===_saCurrentEduType)){
+    sel.value=_saCurrentEduType;
+  }
+  loadScenarioAxesForEduType();
+}
+
+async function loadScenarioAxesForEduType(){
+  const sel=document.getElementById('sa-edu-type');
+  const eduType=sel?.value||'';
+  _saCurrentEduType=eduType;
+  const status=document.getElementById('sa-status');
+  if(status) status.textContent='로딩 중...';
+  try{
+    const{data,error}=await sb.from('scenario_axes_config')
+      .select('axes,updated_by,updated_at')
+      .eq('scope','default').eq('edu_type',eduType).limit(1);
+    if(error) throw error;
+    const row=(data||[])[0];
+    if(row && Array.isArray(row.axes) && row.axes.length){
+      _saAxes=JSON.parse(JSON.stringify(row.axes));
+      if(status) status.innerHTML=`마지막 수정: <b>${row.updated_by||'—'}</b> · ${(row.updated_at||'').slice(0,16).replace('T',' ')}`;
+    } else {
+      // DB에 기본값 없음 → 코드 기본값 표시
+      _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+      if(status) status.textContent='이 교육유형은 아직 관리자 기본값이 없습니다 — 편집 후 ★ 저장 시 기본값이 됩니다.';
+    }
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache')){
+      if(status) status.innerHTML='<span style="color:#dc2626">⚠ DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음). SQL 먼저 실행해주세요.</span>';
+    } else {
+      if(status) status.innerHTML='<span style="color:#dc2626">로딩 실패: '+(e.message||e)+'</span>';
+    }
+    _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  }
+  saRenderAxes();
+}
+
+function saRenderAxes(){
+  const box=document.getElementById('sa-axes-list');
+  if(!box) return;
+  if(!_saAxes.length){box.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">요소가 없습니다 — "+ 항목 추가"로 넣어주세요.</div>';return;}
+  box.innerHTML=_saAxes.map((a,i)=>`<div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#fff;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px;line-height:1.5">
+    <span style="color:var(--t3);font-weight:700;min-width:18px">${i+1}.</span>
+    <span style="flex:1">
+      <b style="color:var(--t1)">${(a.name||'').replace(/</g,'&lt;')}</b>
+      ${a.hint?`<span style="color:var(--t3);font-size:11.5px;margin-left:4px">— ${(a.hint||'').replace(/</g,'&lt;')}</span>`:''}
+    </span>
+    <span style="display:flex;gap:6px;flex-shrink:0">
+      <a style="color:var(--blue);cursor:pointer;font-weight:700;font-size:11px" onclick="saEditAxis(${i})">편집</a>
+      ${i>0?`<a style="color:var(--t3);cursor:pointer;font-weight:700;font-size:11px" onclick="saMoveAxis(${i},-1)" title="위로">↑</a>`:''}
+      ${i<_saAxes.length-1?`<a style="color:var(--t3);cursor:pointer;font-weight:700;font-size:11px" onclick="saMoveAxis(${i},1)" title="아래로">↓</a>`:''}
+      <a style="color:#dc2626;cursor:pointer;font-weight:700;font-size:11px" onclick="saRemoveAxis(${i})">삭제</a>
+    </span>
+  </div>`).join('');
+}
+
+function saAddAxis(){saAxisModal('add',-1);}
+function saEditAxis(i){saAxisModal('edit',i);}
+function saMoveAxis(i,dir){
+  const ni=i+dir; if(ni<0||ni>=_saAxes.length) return;
+  const tmp=_saAxes[i]; _saAxes[i]=_saAxes[ni]; _saAxes[ni]=tmp;
+  saRenderAxes();
+}
+function saRemoveAxis(i){
+  if(!confirm('삭제할까요? (저장 버튼을 눌러야 DB에 반영)')) return;
+  _saAxes.splice(i,1); saRenderAxes();
+}
+function saAxisModal(mode,i){
+  const isEdit=mode==='edit';
+  const a=isEdit?_saAxes[i]:{name:'',hint:''};
+  const existing=document.getElementById('sa-axis-modal'); if(existing) existing.remove();
+  const dlg=document.createElement('div');
+  dlg.id='sa-axis-modal';
+  dlg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  dlg.innerHTML=`<div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:440px;padding:22px;font-family:inherit">
+    <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:4px">${isEdit?'요소 편집':'요소 추가'}</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:16px">교육유형 [${_saCurrentEduType||'전체 기준'}] 의 시나리오 요소</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">항목명 <span style="color:#dc2626">*</span></div>
+      <input id="sa-ax-name" value="${(a.name||'').replace(/"/g,'&quot;')}" placeholder="예: 수치 근거" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">설명·힌트</div>
+      <input id="sa-ax-hint" value="${(a.hint||'').replace(/"/g,'&quot;')}" placeholder="예: 구체 수치·단위 (예: 0.5℃, 5%)" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" onclick="document.getElementById('sa-axis-modal').remove()" style="padding:8px 16px;border:1px solid var(--bdr);background:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600">취소</button>
+      <button type="button" onclick="saAxisModalSave('${mode}',${isEdit?i:-1})" style="padding:8px 18px;border:none;background:var(--blue);color:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:700">${isEdit?'저장':'추가'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click',e=>{if(e.target===dlg) dlg.remove();});
+  setTimeout(()=>{const n=document.getElementById('sa-ax-name'); if(n){n.focus();n.select();}},30);
+}
+function saAxisModalSave(mode,i){
+  const nm=(document.getElementById('sa-ax-name')||{}).value||'';
+  const ht=(document.getElementById('sa-ax-hint')||{}).value||'';
+  const name=nm.trim();
+  if(!name){const inp=document.getElementById('sa-ax-name'); if(inp){inp.style.borderColor='#dc2626';inp.focus();} return;}
+  if(mode==='edit'){const a=_saAxes[i]; if(!a) return; a.name=name; a.hint=ht.trim();}
+  else {_saAxes.push({id:'custom_'+Date.now(),name,hint:ht.trim()});}
+  document.getElementById('sa-axis-modal')?.remove();
+  saRenderAxes();
+}
+function saResetAxesToCodeDefault(){
+  if(!confirm('이 교육유형의 요소를 코드 기본 7개(수치 근거·FAB·경쟁사 비교·실물 시연·비유·반론 대응·부가 제안)로 초기화할까요? 저장 버튼을 눌러야 DB에 반영됩니다.')) return;
+  _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  saRenderAxes();
+}
+async function saSaveAxes(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){alert('관리자/부관리자만 가능합니다.');return;}
+  const status=document.getElementById('sa-status');
+  if(status) status.textContent='저장 중...';
+  const r=await scSaveDefaultAxesToDB(_saCurrentEduType,_saAxes);
+  if(!r.ok){
+    if(status) status.innerHTML='<span style="color:#dc2626">저장 실패: '+r.error+'</span>';
+    alert('저장 실패: '+r.error);
+    return;
+  }
+  if(status) status.innerHTML=`<span style="color:#10b981">✓ 저장 완료 — [${_saCurrentEduType||'전체 기준'}] 교육유형의 모든 사용자에게 반영됩니다.</span>`;
+  if(typeof showToast==='function') showToast(`[${_saCurrentEduType||'전체 기준'}] 기본값 저장 완료`,'#10b981');
+}
+
 // 관리자: 현재 axes 를 해당 교육유형의 기본값으로 DB 저장
 async function scSetCurrentAsDefault(){
   if(!(CU?.isAdmin||CU?.isSubAdmin)){alert('관리자/부관리자만 가능합니다.');return;}
@@ -11542,9 +11732,16 @@ async function scSetCurrentAsDefault(){
 function scSaveState(){try{localStorage.setItem(SC_STATE_KEY,JSON.stringify(scState));}catch(e){}}
 function scSaveField(k,v){
   scState[k]=v;scSaveState();
-  // 교육유형 변경 시 → 해당 유형 axes 재로딩
+  // 교육유형 변경 시 → 해당 유형 axes 재로딩 (관리자가 세팅한 기본값으로 자동 갱신)
   if(k==='eduType'){
     scLoadAxesFromDB().then(()=>{scRenderAxes();scUpdateDraftAxes&&scUpdateDraftAxes();});
+  }
+  // 작업 흐름 필드(eduType·product·phase·customer·store) 변경 시 DB 백업 (다기기 동기화)
+  if(['eduType','product','phase','customer','store'].includes(k)){
+    if(_scDraftDebounceTimer) clearTimeout(_scDraftDebounceTimer);
+    _scDraftDebounceTimer=setTimeout(()=>{
+      scSaveDraftToDB(scState.draft||'').catch(()=>{});
+    },1500);
   }
 }
 
@@ -11749,10 +11946,38 @@ async function scResetToDefault(){
   if(typeof showToast==='function') showToast('관리자 기본값으로 복귀','#10b981');
 }
 
+// 초안 입력 → localStorage 즉시 + DB 디바운스 저장 (다기기 이어쓰기)
+let _scDraftDebounceTimer=null;
 function scOnDraftInput(v){
   scState.draft=v;scSaveState();
   const cnt=document.getElementById('sc-draft-count');if(cnt) cnt.textContent=v.length+'자';
   scUpdateDraftAxes();
+  // 3초간 추가 입력 없으면 DB로 백업 (다기기 이어쓰기 위해)
+  if(_scDraftDebounceTimer) clearTimeout(_scDraftDebounceTimer);
+  _scDraftDebounceTimer=setTimeout(()=>{
+    scSaveDraftToDB(v).catch(()=>{}); // 실패 무시 — localStorage 백업이 있음
+  },3000);
+}
+// 시나리오 초안 DB 저장 (사용자별 1행)
+async function scSaveDraftToDB(text){
+  if(!window.sb||!CU?.id) return;
+  try{
+    const payload={
+      key:'sc_draft_user_'+CU.id,
+      value:JSON.stringify({draft:text||'',eduType:scState.eduType||'',product:scState.product||'',phase:scState.phase||'',customer:scState.customer||'',store:scState.store||'',updated_at:new Date().toISOString()})
+    };
+    await sb.from('app_settings').upsert(payload);
+  }catch(e){console.warn('scSaveDraftToDB:',e?.message||e);}
+}
+// 시나리오 초안 DB 로드 (다른 PC에서 이어쓰기용)
+async function scLoadDraftFromDB(){
+  if(!window.sb||!CU?.id) return null;
+  try{
+    const{data,error}=await sb.from('app_settings').select('value').eq('key','sc_draft_user_'+CU.id).maybeSingle();
+    if(error) return null;
+    if(!data?.value) return null;
+    return JSON.parse(data.value);
+  }catch(e){return null;}
 }
 function scUpdateDraftAxes(){
   const box=document.getElementById('sc-draft-axes-status');if(!box) return;
