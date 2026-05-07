@@ -4093,10 +4093,29 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('관리',this)">관리</button>
     <button class="tab-btn" onclick="switchTab('교육종류',this);renderEduTypeManage()">교육종류</button>
+    <button class="tab-btn" onclick="switchTab('시나리오요소',this);renderScenarioAxesAdmin()">시나리오 요소</button>
     <button class="tab-btn" onclick="switchTab('AI코칭',this);renderAdminCoaching()">AI 코칭 목록</button>
     <button class="tab-btn" onclick="switchTab('뱃지기준',this)">뱃지 기준</button>
     <button class="tab-btn" onclick="switchTab('금액현황',this);renderAdminCreditBanner()">금액 현황</button>
     <button class="tab-btn" onclick="switchTab('앱QR',this);renderAppQR()">앱 설치 QR</button>
+  </div>
+
+  <!-- 시나리오 요소 (교육유형별) -->
+  <div class="tab-pane" id="tab-시나리오요소">
+    <div style="max-width:920px">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육유형별 시나리오 포함 요소</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:14px">AI 시나리오 코치에서 강사가 시나리오 작성 시 참고할 <b style="color:var(--t1)">교육유형별 기본 요소</b>를 관리합니다. 강사 본인이 추가 편집한 항목은 별도로 보존됩니다.</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:var(--t2)">교육유형:</span>
+        <select id="sa-edu-type" onchange="loadScenarioAxesForEduType()" style="min-width:200px;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px"></select>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11.5px" onclick="saAddAxis()">+ 항목 추가</button>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11.5px;color:#d97706" onclick="saResetAxesToCodeDefault()" title="이 교육유형의 기본값을 코드 기본 7개로 초기화">↺ 코드 기본값으로</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;font-weight:700" onclick="saSaveAxes()">★ 이 교육유형 기본값으로 저장</button>
+      </div>
+      <div id="sa-axes-list" style="border:1px solid var(--bdr);border-radius:10px;padding:12px;background:#fafafa;min-height:120px;display:flex;flex-direction:column;gap:4px"></div>
+      <div id="sa-status" style="margin-top:10px;font-size:11.5px;color:var(--t3)"></div>
+    </div>
   </div>
 
   <!-- 앱 설치 QR / 포스터 -->
@@ -13173,11 +13192,116 @@ function scInit(){
   if(!Array.isArray(scState.eduFiles)) scState.eduFiles=[];
   scRenderEduFiles();
   const ta=document.getElementById('sc-draft');if(ta) ta.value=scState.draft||'';
-  scRenderAxes();scRender();
+  // axes — DB에서 로드 (관리자 기본값 + 사용자 커스텀)
+  scLoadAxesFromDB().then(()=>{ scRenderAxes(); scUpdateDraftAxes&&scUpdateDraftAxes(); });
+  // 관리자/부관리자만 "기본값으로 저장" 버튼 노출
+  const adminBtn=document.getElementById('sc-admin-default-btn');
+  if(adminBtn) adminBtn.style.display=(CU?.isAdmin||CU?.isSubAdmin)?'inline-flex':'none';
+  scRender();
 }
 
 function scSaveState(){try{localStorage.setItem(SC_STATE_KEY,JSON.stringify(scState));}catch(e){}}
-function scSaveField(k,v){scState[k]=v;scSaveState();}
+function scSaveField(k,v){
+  scState[k]=v;scSaveState();
+  // 교육유형 변경 시 → 해당 유형 axes 재로딩 (관리자가 세팅한 기본값으로 자동 갱신)
+  if(k==='eduType'){
+    scLoadAxesFromDB().then(()=>{scRenderAxes();scUpdateDraftAxes&&scUpdateDraftAxes();});
+  }
+}
+
+// ────────────────────────────────────────────
+// DB 연동 (scenario_axes_config) — 다기기 동기화
+// ────────────────────────────────────────────
+async function scLoadAxesFromDB(){
+  if(!window.sb){scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));return;}
+  const eduType=scState.eduType||'';
+  const userScope=CU?.id?('user_'+CU.id):'';
+  const localAxesFromState=Array.isArray(scState.axes)?scState.axes:null;
+  try{
+    const{data,error}=await sb.from('scenario_axes_config').select('scope,edu_type,axes')
+      .or(`scope.eq.default,scope.eq.${userScope||'__none__'}`);
+    if(error){
+      const msg=(error.message||'').toLowerCase();
+      if(msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache')){
+        console.warn('scenario_axes_config 테이블 없음 — DB 마이그레이션 미실행');
+        if(localAxesFromState && localAxesFromState.length){scState.axes=JSON.parse(JSON.stringify(localAxesFromState));}
+        else scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+        return;
+      }
+      throw error;
+    }
+    const rows=data||[];
+    const pick=(scope,et)=>rows.find(r=>r.scope===scope&&(r.edu_type||'')===(et||''));
+    let chosen=null;
+    if(userScope){
+      chosen=pick(userScope,eduType)||pick(userScope,'')||null;
+    }
+    if(!chosen) chosen=pick('default',eduType)||pick('default','')||null;
+    if(chosen && Array.isArray(chosen.axes) && chosen.axes.length){
+      scState.axes=JSON.parse(JSON.stringify(chosen.axes));
+    } else {
+      // DB 비어 있음 — localStorage 커스텀이 있으면 1회 자동 마이그레이션
+      const isCustomized=localAxesFromState && localAxesFromState.length &&
+        JSON.stringify(localAxesFromState)!==JSON.stringify(SC_DEFAULT_AXES);
+      if(isCustomized && userScope){
+        scState.axes=JSON.parse(JSON.stringify(localAxesFromState));
+        scSaveUserAxesToDB().catch(()=>{});
+      } else {
+        scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+      }
+    }
+  }catch(e){
+    console.warn('scLoadAxesFromDB:',e?.message||e);
+    if(localAxesFromState && localAxesFromState.length) scState.axes=JSON.parse(JSON.stringify(localAxesFromState));
+    else scState.axes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  }
+}
+
+async function scSaveUserAxesToDB(){
+  if(!window.sb||!CU?.id) return {ok:false,error:'로그인 필요'};
+  const scope='user_'+CU.id;
+  const edu_type=scState.eduType||'';
+  const payload={scope,edu_type,org_name:D.activeOrg||'',axes:scState.axes||[],updated_by:CU?.name||'',updated_at:new Date().toISOString()};
+  try{
+    const q=await sb.from('scenario_axes_config').select('id').eq('scope',scope).eq('edu_type',edu_type).limit(1);
+    if(q.error) throw q.error;
+    const exist=(q.data||[])[0];
+    let r;
+    if(exist) r=await sb.from('scenario_axes_config').update(payload).eq('id',exist.id);
+    else r=await sb.from('scenario_axes_config').insert(payload);
+    if(r.error) throw r.error;
+    return {ok:true};
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache')){
+      return {ok:false,error:'DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음)'};
+    }
+    return {ok:false,error:e.message||String(e)};
+  }
+}
+
+async function scSaveDefaultAxesToDB(eduType,axes){
+  if(!window.sb) return {ok:false,error:'sb 없음'};
+  const scope='default';
+  const edu_type=eduType||'';
+  const payload={scope,edu_type,org_name:D.activeOrg||'',axes:axes||[],updated_by:CU?.name||'admin',updated_at:new Date().toISOString()};
+  try{
+    const q=await sb.from('scenario_axes_config').select('id').eq('scope',scope).eq('edu_type',edu_type).limit(1);
+    if(q.error) throw q.error;
+    const exist=(q.data||[])[0];
+    let r;
+    if(exist) r=await sb.from('scenario_axes_config').update(payload).eq('id',exist.id);
+    else r=await sb.from('scenario_axes_config').insert(payload);
+    if(r.error) throw r.error;
+    return {ok:true};
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache')){
+      return {ok:false,error:'DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음)'};
+    }
+    return {ok:false,error:e.message||String(e)};
+  }
+}
 
 function scFillEduTypes(){
   const sel=document.getElementById('sc-edu-type');if(!sel) return;
@@ -13245,6 +13369,151 @@ function scAxisModal(mode,i){
   dlg.addEventListener('keydown',onKey);
 }
 function scAxisModalClose(){const d=document.getElementById('sc-axis-modal');if(d) d.remove();}
+// ════════════════════════════════════════════════════════════
+// 관리자 페이지 — 시나리오 요소 관리 (교육유형별)
+// ════════════════════════════════════════════════════════════
+let _saAxes=[];
+let _saCurrentEduType='';
+
+function renderScenarioAxesAdmin(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){
+    const sel=document.getElementById('sa-edu-type');
+    if(sel) sel.innerHTML='<option value="">관리자/부관리자만 접근 가능</option>';
+    const box=document.getElementById('sa-axes-list');
+    if(box) box.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">권한이 없습니다.</div>';
+    return;
+  }
+  const sel=document.getElementById('sa-edu-type');
+  if(!sel) return;
+  let types=(window.getEduTypes?getEduTypes():[])||[];
+  if(!types.length) types=['판매경쟁력상황실','신입교육','심화교육','현장실습','판매자세교육','현장직무교육'];
+  const extra=['기타','상관없음'];
+  sel.innerHTML='<option value="">전체 기준 (모든 교육유형 공통)</option>'+
+    types.map(t=>`<option value="${t.replace(/"/g,'&quot;')}">${t}</option>`).join('')+
+    '<optgroup label="기타">'+extra.map(t=>`<option value="${t}">${t}</option>`).join('')+'</optgroup>';
+  if(_saCurrentEduType && Array.from(sel.options).some(o=>o.value===_saCurrentEduType)){
+    sel.value=_saCurrentEduType;
+  }
+  loadScenarioAxesForEduType();
+}
+
+async function loadScenarioAxesForEduType(){
+  const sel=document.getElementById('sa-edu-type');
+  const eduType=sel?.value||'';
+  _saCurrentEduType=eduType;
+  const status=document.getElementById('sa-status');
+  if(status) status.textContent='로딩 중...';
+  try{
+    const{data,error}=await sb.from('scenario_axes_config')
+      .select('axes,updated_by,updated_at')
+      .eq('scope','default').eq('edu_type',eduType).limit(1);
+    if(error) throw error;
+    const row=(data||[])[0];
+    if(row && Array.isArray(row.axes) && row.axes.length){
+      _saAxes=JSON.parse(JSON.stringify(row.axes));
+      if(status) status.innerHTML=`마지막 수정: <b>${row.updated_by||'—'}</b> · ${(row.updated_at||'').slice(0,16).replace('T',' ')}`;
+    } else {
+      _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+      if(status) status.textContent='이 교육유형은 아직 관리자 기본값이 없습니다 — 편집 후 ★ 저장 시 기본값이 됩니다.';
+    }
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    if(msg.includes('relation')||msg.includes('does not exist')||msg.includes('schema cache')){
+      if(status) status.innerHTML='<span style="color:#dc2626">⚠ DB 마이그레이션 미실행 (scenario_axes_config 테이블 없음)</span>';
+    } else {
+      if(status) status.innerHTML='<span style="color:#dc2626">로딩 실패: '+(e.message||e)+'</span>';
+    }
+    _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  }
+  saRenderAxes();
+}
+
+function saRenderAxes(){
+  const box=document.getElementById('sa-axes-list');
+  if(!box) return;
+  if(!_saAxes.length){box.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">요소가 없습니다 — "+ 항목 추가"로 넣어주세요.</div>';return;}
+  box.innerHTML=_saAxes.map((a,i)=>`<div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#fff;border:1px solid var(--bdr);border-radius:8px;font-size:12.5px;line-height:1.5">
+    <span style="color:var(--t3);font-weight:700;min-width:18px">${i+1}.</span>
+    <span style="flex:1">
+      <b style="color:var(--t1)">${(a.name||'').replace(/</g,'&lt;')}</b>
+      ${a.hint?`<span style="color:var(--t3);font-size:11.5px;margin-left:4px">— ${(a.hint||'').replace(/</g,'&lt;')}</span>`:''}
+    </span>
+    <span style="display:flex;gap:6px;flex-shrink:0">
+      <a style="color:var(--blue);cursor:pointer;font-weight:700;font-size:11px" onclick="saEditAxis(${i})">편집</a>
+      ${i>0?`<a style="color:var(--t3);cursor:pointer;font-weight:700;font-size:11px" onclick="saMoveAxis(${i},-1)" title="위로">↑</a>`:''}
+      ${i<_saAxes.length-1?`<a style="color:var(--t3);cursor:pointer;font-weight:700;font-size:11px" onclick="saMoveAxis(${i},1)" title="아래로">↓</a>`:''}
+      <a style="color:#dc2626;cursor:pointer;font-weight:700;font-size:11px" onclick="saRemoveAxis(${i})">삭제</a>
+    </span>
+  </div>`).join('');
+}
+
+function saAddAxis(){saAxisModal('add',-1);}
+function saEditAxis(i){saAxisModal('edit',i);}
+function saMoveAxis(i,dir){
+  const ni=i+dir; if(ni<0||ni>=_saAxes.length) return;
+  const tmp=_saAxes[i]; _saAxes[i]=_saAxes[ni]; _saAxes[ni]=tmp;
+  saRenderAxes();
+}
+function saRemoveAxis(i){
+  if(!confirm('삭제할까요? (저장 버튼을 눌러야 DB에 반영)')) return;
+  _saAxes.splice(i,1); saRenderAxes();
+}
+function saAxisModal(mode,i){
+  const isEdit=mode==='edit';
+  const a=isEdit?_saAxes[i]:{name:'',hint:''};
+  const existing=document.getElementById('sa-axis-modal'); if(existing) existing.remove();
+  const dlg=document.createElement('div');
+  dlg.id='sa-axis-modal';
+  dlg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  dlg.innerHTML=`<div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:440px;padding:22px;font-family:inherit">
+    <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:4px">${isEdit?'요소 편집':'요소 추가'}</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:16px">교육유형 [${_saCurrentEduType||'전체 기준'}] 의 시나리오 요소</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">항목명 <span style="color:#dc2626">*</span></div>
+      <input id="sa-ax-name" value="${(a.name||'').replace(/"/g,'&quot;')}" placeholder="예: 수치 근거" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">설명·힌트</div>
+      <input id="sa-ax-hint" value="${(a.hint||'').replace(/"/g,'&quot;')}" placeholder="예: 구체 수치·단위 (예: 0.5℃, 5%)" style="width:100%;padding:9px 11px;border:1px solid var(--bdr);border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" onclick="document.getElementById('sa-axis-modal').remove()" style="padding:8px 16px;border:1px solid var(--bdr);background:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600">취소</button>
+      <button type="button" onclick="saAxisModalSave('${mode}',${isEdit?i:-1})" style="padding:8px 18px;border:none;background:var(--blue);color:#fff;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:700">${isEdit?'저장':'추가'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click',e=>{if(e.target===dlg) dlg.remove();});
+  setTimeout(()=>{const n=document.getElementById('sa-ax-name'); if(n){n.focus();n.select();}},30);
+}
+function saAxisModalSave(mode,i){
+  const nm=(document.getElementById('sa-ax-name')||{}).value||'';
+  const ht=(document.getElementById('sa-ax-hint')||{}).value||'';
+  const name=nm.trim();
+  if(!name){const inp=document.getElementById('sa-ax-name'); if(inp){inp.style.borderColor='#dc2626';inp.focus();} return;}
+  if(mode==='edit'){const a=_saAxes[i]; if(!a) return; a.name=name; a.hint=ht.trim();}
+  else {_saAxes.push({id:'custom_'+Date.now(),name,hint:ht.trim()});}
+  document.getElementById('sa-axis-modal')?.remove();
+  saRenderAxes();
+}
+function saResetAxesToCodeDefault(){
+  if(!confirm('이 교육유형의 요소를 코드 기본 7개(수치 근거·FAB·경쟁사 비교·실물 시연·비유·반론 대응·부가 제안)로 초기화할까요? 저장 버튼을 눌러야 DB에 반영됩니다.')) return;
+  _saAxes=JSON.parse(JSON.stringify(SC_DEFAULT_AXES));
+  saRenderAxes();
+}
+async function saSaveAxes(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){alert('관리자/부관리자만 가능합니다.');return;}
+  const status=document.getElementById('sa-status');
+  if(status) status.textContent='저장 중...';
+  const r=await scSaveDefaultAxesToDB(_saCurrentEduType,_saAxes);
+  if(!r.ok){
+    if(status) status.innerHTML='<span style="color:#dc2626">저장 실패: '+r.error+'</span>';
+    alert('저장 실패: '+r.error);
+    return;
+  }
+  if(status) status.innerHTML=`<span style="color:#10b981">✓ 저장 완료 — [${_saCurrentEduType||'전체 기준'}] 교육유형의 모든 사용자에게 반영됩니다.</span>`;
+  if(typeof showToast==='function') showToast(`[${_saCurrentEduType||'전체 기준'}] 기본값 저장 완료`,'#10b981');
+}
+
 function scAxisModalSave(mode,i){
   const nm=(document.getElementById('sc-ax-name')||{}).value||'';
   const ht=(document.getElementById('sc-ax-hint')||{}).value||'';
@@ -13253,10 +13522,42 @@ function scAxisModalSave(mode,i){
   if(mode==='edit'){const a=scState.axes[i];if(!a)return;a.name=name;a.hint=ht.trim();}
   else{scState.axes.push({id:'custom_'+Date.now(),name,hint:ht.trim()});}
   scSaveState();scRenderAxes();scUpdateDraftAxes();scAxisModalClose();
+  // DB 동기화 (사용자 본인 커스텀)
+  scSaveUserAxesToDB().then(r=>{
+    if(!r.ok && typeof showToast==='function') showToast('DB 저장 실패: '+r.error,'#ef4444');
+  });
 }
 function scEditAxis(i){scAxisModal('edit',i);}
 function scAddAxis(){scAxisModal('add');}
-function scRemoveAxis(i){if(!confirm('삭제할까요?')) return;scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();}
+function scRemoveAxis(i){
+  if(!confirm('삭제할까요?')) return;
+  scState.axes.splice(i,1);scSaveState();scRenderAxes();scUpdateDraftAxes();
+  scSaveUserAxesToDB().then(r=>{
+    if(!r.ok && typeof showToast==='function') showToast('DB 저장 실패: '+r.error,'#ef4444');
+  });
+}
+async function scResetToDefault(){
+  if(!confirm('포함 요소를 관리자 기본값으로 되돌릴까요? 본인의 커스텀은 삭제됩니다.')) return;
+  const scope='user_'+(CU?.id||0);
+  try{
+    if(window.sb){
+      const eduType=scState.eduType||'';
+      await sb.from('scenario_axes_config').delete().eq('scope',scope).eq('edu_type',eduType);
+    }
+  }catch(e){console.warn('scResetToDefault:',e);}
+  await scLoadAxesFromDB();
+  scSaveState();scRenderAxes();scUpdateDraftAxes();
+  if(typeof showToast==='function') showToast('관리자 기본값으로 복귀','#10b981');
+}
+async function scSetCurrentAsDefault(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){alert('관리자/부관리자만 가능합니다.');return;}
+  const eduType=scState.eduType||'';
+  const lbl=eduType||'전체 기준';
+  if(!confirm(`현재 ${scState.axes?.length||0}개 요소를 [${lbl}] 교육유형의 관리자 기본값으로 저장합니다. 모든 사용자에게 적용됩니다. 진행할까요?`)) return;
+  const r=await scSaveDefaultAxesToDB(eduType,scState.axes||[]);
+  if(!r.ok){alert('저장 실패: '+r.error);return;}
+  if(typeof showToast==='function') showToast(`[${lbl}] 기본값 저장 완료 — 모든 사용자에게 반영됩니다`,'#10b981');
+}
 
 function scOnDraftInput(v){
   scState.draft=v;scSaveState();
