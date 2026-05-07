@@ -5233,6 +5233,12 @@ function showPage(id){
   window.scrollTo(0,0);
   // 페이지 기억 (F5 복원용)
   if(id!=='page-login'&&id!=='page-register') localStorage.setItem('ib_last_page',id);
+  // 컨텍스트가 필요없는 페이지로 이동 시 → 이전 컨텍스트 클리어
+  // (page-analysis/page-video/page-voice/page-lecturer 는 open*() 함수가 별도로 ctx 저장)
+  const ctxPages=['page-analysis','page-video','page-voice','page-lecturer'];
+  if(!ctxPages.includes(id)){
+    try{localStorage.removeItem('ib_last_ctx');}catch(_){}
+  }
   // 상단 네비 표시/숨김
   const noNav=['page-login','page-register'];
   const tn=document.getElementById('topnav');
@@ -11929,6 +11935,8 @@ function renderUserVoiceList(userId){
 }
 
 function openVoiceResult(vaId){
+  // F5 복원용 컨텍스트 저장
+  try{localStorage.setItem('ib_last_ctx',JSON.stringify({type:'voice',id:vaId}));}catch(_){}
   const raw=D.voiceEvals||[];
   const v=raw.find(x=>x.id===vaId);
   if(v){v.studentCount=v.student_count;v.userName=v.user_name;}
@@ -14618,6 +14626,8 @@ function _renderImprovePoints_disabled(userId){
 let lectFromPage='page-home';
 function openLecturer(id, fromPage){
   lectFromPage=fromPage||'page-home';
+  // F5 복원용 컨텍스트 저장
+  try{localStorage.setItem('ib_last_ctx',JSON.stringify({type:'lecturer',id,fromPage:lectFromPage}));}catch(_){}
   // Update back button
   const bb=el('lect-back-btn');
   if(bb){ bb.setAttribute('onclick',`showPage('${lectFromPage}')`); }
@@ -15676,6 +15686,8 @@ function buildEngagementTimeline(gaps){
 ════════════════════════════════ */
 function openVideo(id){
   curVidId=id;
+  // F5 복원용 컨텍스트 저장
+  try{localStorage.setItem('ib_last_ctx',JSON.stringify({type:'video',id}));}catch(_){}
   const vid=D.videos.find(x=>x.id===id);
   if(!vid) return;
   const u=D.users.find(x=>x.id===vid.userId);
@@ -17064,6 +17076,18 @@ function setAnResultMeta(opts){
   } catch(e){}
 })();
 
+// Override showPage for profile (재귀 방지: _renderingMyProfile 가드)
+const _showPage=showPage;
+let _renderingMyProfile=false;
+window.showPage=function(id){
+  if(id==='page-myprofile' && !_renderingMyProfile){
+    _renderingMyProfile=true;
+    try{ renderMyProfile(); }finally{ _renderingMyProfile=false; }
+    return;
+  }
+  _showPage(id);
+};
+
 window.addEventListener('load',async ()=>{
   if(CU){
     await loadFromDB();
@@ -17071,25 +17095,51 @@ window.addEventListener('load',async ()=>{
     if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh){CU=fresh; if(CU.isSubAdmin) CU.isAdmin=true;} }
     initHome();
     const lastPage=localStorage.getItem('ib_last_page');
+    let ctx=null;
+    try{const s=localStorage.getItem('ib_last_ctx'); if(s) ctx=JSON.parse(s);}catch(_){}
     if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
       try{
-        if(lastPage==='page-dashboard'){showPage('page-pick');}
-        else if(lastPage==='page-admin'){renderAdmin();showPage('page-admin');}
-        else showPage(lastPage);
-      }catch(e){showPage('page-home');}
+        // 컨텍스트가 필요한 페이지는 open*() 로 직접 복원 (영상/스피치/강사 데이터 함께)
+        if(lastPage==='page-analysis' || lastPage==='page-video'){
+          if(ctx && ctx.type==='video' && ctx.id && typeof openVideo==='function'){
+            // openVideo 가 내부에서 page-analysis 로 전환
+            openVideo(ctx.id);
+          } else {
+            // ctx 없으면 home 으로 폴백 (영상 ID 없이는 의미 없음)
+            showPage('page-home');
+          }
+        } else if(lastPage==='page-voice'){
+          if(ctx && ctx.type==='voice' && ctx.id && typeof openVoiceResult==='function'){
+            openVoiceResult(ctx.id);
+            showPage('page-voice');
+          } else {
+            // 스피치 입력 화면으로 (Step1)
+            showPage('page-voice');
+          }
+        } else if(lastPage==='page-lecturer'){
+          if(ctx && ctx.type==='lecturer' && ctx.id && typeof openLecturer==='function'){
+            openLecturer(ctx.id, ctx.fromPage||'page-home');
+          } else if(CU?.id){
+            openLecturer(CU.id,'page-home');
+          } else {
+            showPage('page-home');
+          }
+        } else if(lastPage==='page-dashboard'){
+          showPage('page-pick');
+        } else if(lastPage==='page-admin'){
+          renderAdmin(); showPage('page-admin');
+        } else if(lastPage==='page-myprofile'){
+          showPage('page-myprofile');
+        } else {
+          showPage(lastPage);
+        }
+      }catch(e){console.error('F5 복원 실패:',e); showPage('page-home');}
     } else {showPage('page-pick');}
   } else {
     hideGlobalSidebar();
     showPage('page-login');
   }
 });
-
-// Override showPage for profile
-const _showPage=showPage;
-window.showPage=function(id){
-  if(id==='page-myprofile'){ renderMyProfile(); return; }
-  _showPage(id);
-};
 </script>
 </div><!-- /g-main -->
 
