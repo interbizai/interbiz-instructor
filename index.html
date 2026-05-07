@@ -4958,11 +4958,15 @@ async function loadFromDB(){
     serverData=j;
   } else {
     console.error('loadFromDB:',j.error);
-    // 인증 만료 → 자동 로그아웃
+    // 인증 만료 → 부드러운 로그아웃 (location.reload() 제거 — 무한 새로고침 루프 방지)
     if(j.status===401||j.status===403){
       try{ localStorage.removeItem('ib_token'); localStorage.removeItem('ib_user'); }catch(e){}
       if(typeof showToast==='function') showToast('인증이 만료되었습니다. 다시 로그인해주세요.','#ef4444');
-      setTimeout(()=>location.reload(), 1500);
+      // CU 비우고 로그인 페이지로 직접 이동 (reload 안 함)
+      try{ CU=null; if(typeof hideGlobalSidebar==='function') hideGlobalSidebar(); showPage('page-login'); }catch(_){}
+      D.loadingDB=false;
+      endProgress();
+      return;
     } else {
       // 네트워크/서버 오류 — 토스트 + 5초 후 자동 1회 재시도
       if(typeof showToast==='function') showToast('데이터 로드 실패('+j.error+'). 잠시 후 자동 재시도합니다.','#ef4444');
@@ -5686,28 +5690,29 @@ async function doLogin(){
   if(!r.ok||!j.ok){ hideLoginLoading(); el('li-err').textContent=j.error||'로그인 실패'; return; }
   el('li-err').textContent='';
   localStorage.setItem('ib_token',j.token);
-  // 첫 접속 시 항상 '전체 조직' 으로 시작 (이전 세션의 조직 선택 폐기)
   localStorage.removeItem('ib_active_org');
   D.activeOrg=null;
-  // 특별 하드코딩 관리자(id=0) 만 j.user 직접 사용. 그 외(부관리자 포함)는
-  // D.users 의 매핑된(camelCase) 객체를 사용해야 orgName 등이 정상 세팅됨.
-  const isSpecialAdmin=(j.user?.id===0);
-  if(isSpecialAdmin){
-    CU=j.user;
-    localStorage.setItem('ib_user',JSON.stringify(CU));
-    await loadFromDB();
-  } else {
-    await loadFromDB();
-    CU=D.users.find(x=>x.id===j.user.id)||j.user;
-    if(CU?.isSubAdmin) CU.isAdmin=true;
-    localStorage.setItem('ib_user',JSON.stringify(CU));
-    // CU 업데이트 후 드롭다운/관리자 메뉴 재계산
+  // ① 토큰만 받으면 즉시 CU 설정 + 메인 표시 (DB 로드는 백그라운드)
+  CU=j.user;
+  if(CU?.isSubAdmin) CU.isAdmin=true;
+  localStorage.setItem('ib_user',JSON.stringify(CU));
+  hideLoginLoading();
+  initHome(); showPage('page-pick');
+  startNotifPolling();
+  // ② DB 로드는 백그라운드에서 — 끝나면 CU 정확 정보로 보강
+  loadFromDB().then(()=>{
+    if(j.user?.id !== 0){ // 특별 관리자 아니면 D.users 에서 더 정확한 정보로 갱신
+      const fresh=D.users.find(x=>x.id===j.user.id);
+      if(fresh){
+        CU=fresh;
+        if(CU?.isSubAdmin) CU.isAdmin=true;
+        localStorage.setItem('ib_user',JSON.stringify(CU));
+      }
+    }
     if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
     if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
-  }
-  initHome(); showPage('page-pick');
-  hideLoginLoading();
-  startNotifPolling();
+    if(typeof renderPick==='function') try{renderPick();}catch(_){}
+  }).catch(e=>{console.warn('백그라운드 DB 로드 실패:',e);});
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } }
 
@@ -17090,51 +17095,45 @@ window.showPage=function(id){
 
 window.addEventListener('load',async ()=>{
   if(CU){
-    await loadFromDB();
-    // CU 정보 최신화
-    if(CU.id && !CU.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh){CU=fresh; if(CU.isSubAdmin) CU.isAdmin=true;} }
-    initHome();
+    // ① 즉시 마지막 페이지 표시 (껍데기만 — 데이터는 비어있음)
     const lastPage=localStorage.getItem('ib_last_page');
     let ctx=null;
     try{const s=localStorage.getItem('ib_last_ctx'); if(s) ctx=JSON.parse(s);}catch(_){}
-    if(lastPage && lastPage!=='page-login' && lastPage!=='page-register'){
-      try{
-        // 컨텍스트가 필요한 페이지는 open*() 로 직접 복원 (영상/스피치/강사 데이터 함께)
-        if(lastPage==='page-analysis' || lastPage==='page-video'){
-          if(ctx && ctx.type==='video' && ctx.id && typeof openVideo==='function'){
-            // openVideo 가 내부에서 page-analysis 로 전환
-            openVideo(ctx.id);
-          } else {
-            // ctx 없으면 home 으로 폴백 (영상 ID 없이는 의미 없음)
-            showPage('page-home');
-          }
-        } else if(lastPage==='page-voice'){
-          if(ctx && ctx.type==='voice' && ctx.id && typeof openVoiceResult==='function'){
-            openVoiceResult(ctx.id);
-            showPage('page-voice');
-          } else {
-            // 스피치 입력 화면으로 (Step1)
-            showPage('page-voice');
-          }
-        } else if(lastPage==='page-lecturer'){
-          if(ctx && ctx.type==='lecturer' && ctx.id && typeof openLecturer==='function'){
-            openLecturer(ctx.id, ctx.fromPage||'page-home');
-          } else if(CU?.id){
-            openLecturer(CU.id,'page-home');
-          } else {
-            showPage('page-home');
-          }
-        } else if(lastPage==='page-dashboard'){
-          showPage('page-pick');
-        } else if(lastPage==='page-admin'){
-          renderAdmin(); showPage('page-admin');
-        } else if(lastPage==='page-myprofile'){
-          showPage('page-myprofile');
-        } else {
-          showPage(lastPage);
-        }
-      }catch(e){console.error('F5 복원 실패:',e); showPage('page-home');}
-    } else {showPage('page-pick');}
+    const initialPage=(lastPage && lastPage!=='page-login' && lastPage!=='page-register')?lastPage:'page-pick';
+    // 단순 페이지(데이터 의존 없는 것)는 즉시 표시
+    if(['page-pick','page-home','page-edu','page-myprofile','page-aicoach','page-streaming'].includes(initialPage)){
+      try{ showPage(initialPage); }catch(_){ showPage('page-pick'); }
+    } else {
+      // 데이터 필요한 페이지(영상·강사·관리자) 는 일단 page-pick 표시 후 데이터 로드 끝나면 전환
+      showPage('page-pick');
+    }
+    // ② 백그라운드에서 DB 로드 + 컨텍스트 복원
+    loadFromDB().then(()=>{
+      if(CU?.id && !CU?.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh){CU=fresh; if(CU.isSubAdmin) CU.isAdmin=true;} }
+      initHome();
+      // 데이터가 있어야 하는 페이지를 마지막에 보고 있었다면 지금 정밀 복원
+      if(lastPage && lastPage!=='page-login' && lastPage!=='page-register' && lastPage!==initialPage){
+        try{
+          if(lastPage==='page-analysis' || lastPage==='page-video'){
+            if(ctx && ctx.type==='video' && ctx.id && typeof openVideo==='function') openVideo(ctx.id);
+          } else if(lastPage==='page-voice'){
+            if(ctx && ctx.type==='voice' && ctx.id && typeof openVoiceResult==='function'){
+              openVoiceResult(ctx.id); showPage('page-voice');
+            } else { showPage('page-voice'); }
+          } else if(lastPage==='page-lecturer'){
+            if(ctx && ctx.type==='lecturer' && ctx.id && typeof openLecturer==='function'){
+              openLecturer(ctx.id, ctx.fromPage||'page-home');
+            } else if(CU?.id){ openLecturer(CU.id,'page-home'); }
+          } else if(lastPage==='page-dashboard'){
+            showPage('page-pick');
+          } else if(lastPage==='page-admin'){
+            renderAdmin(); showPage('page-admin');
+          } else { showPage(lastPage); }
+        }catch(e){console.error('F5 복원 실패:',e);}
+      } else if(initialPage==='page-pick' && typeof renderPick==='function'){
+        try{renderPick();}catch(_){}
+      }
+    }).catch(e=>{console.warn('F5 백그라운드 로드 실패:',e);});
   } else {
     hideGlobalSidebar();
     showPage('page-login');
