@@ -4918,7 +4918,7 @@ async function switchOrg(value){
 }
 // /api/db/load 자동 재시도 — Cold start / 일시적 네트워크 끊김 / race condition 대응
 // 1초 → 3초 → 7초 지수 백오프, 최대 3회. 401/403은 즉시 중단(재시도 의미 없음).
-async function fetchDBLoadWithRetry(token, org){
+async function fetchDBLoadWithRetry(token, org, tier){
   const delays=[0, 1000, 3000];
   let lastErr='네트워크 오류';
   let lastStatus=0;
@@ -4928,7 +4928,7 @@ async function fetchDBLoadWithRetry(token, org){
       const r=await fetch('/api/db/load',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({org:org||null})
+        body:JSON.stringify({org:org||null, tier: tier || 'full'})
       });
       lastStatus=r.status;
       const j=await r.json().catch(()=>null);
@@ -4942,139 +4942,143 @@ async function fetchDBLoadWithRetry(token, org){
   return {ok:false,error:lastErr,status:lastStatus};
 }
 
-async function loadFromDB(){
+// ════════════════════════════════════════════════════════════
+// Tier 로딩 — 체감 속도 개선
+//   tier='core'    : 핵심(users/videos/evals/voice_evals/timestamps) — 첫 진입 즉시 필요
+//   tier='content' : 콘텐츠(checklists/learning_links/calendar/pick_*/recommended) — 인터PICK·교육콘텐츠용
+//   tier='full'    : 전부 (호환용 기본값)
+// ════════════════════════════════════════════════════════════
+async function loadFromDB(tier){
+  tier = tier || 'full';
   startProgress();
   D.loadingDB = true;
   try{
-  // localStorage에서 관리자가 선택한 조직 복원
-  if(!D.activeOrg){
-    try{ const s=localStorage.getItem('ib_active_org'); if(s) D.activeOrg=s; }catch(e){}
-  }
-  // 조직 필터 적용된 핵심 데이터 한 번에 받기 (자동 재시도 포함)
-  const token=localStorage.getItem('ib_token')||'';
-  let serverData=null;
-  const j=await fetchDBLoadWithRetry(token, D.activeOrg);
-  if(j.ok) {
-    serverData=j;
-  } else {
-    console.error('loadFromDB:',j.error);
-    // 인증 만료 → 부드러운 로그아웃 (location.reload() 제거 — 무한 새로고침 루프 방지)
-    if(j.status===401||j.status===403){
-      try{ localStorage.removeItem('ib_token'); localStorage.removeItem('ib_user'); }catch(e){}
-      if(typeof showToast==='function') showToast('인증이 만료되었습니다. 다시 로그인해주세요.','#ef4444');
-      // CU 비우고 로그인 페이지로 직접 이동 (reload 안 함)
-      try{ CU=null; if(typeof hideGlobalSidebar==='function') hideGlobalSidebar(); showPage('page-login'); }catch(_){}
-      D.loadingDB=false;
-      endProgress();
-      return;
+    if(!D.activeOrg){
+      try{ const s=localStorage.getItem('ib_active_org'); if(s) D.activeOrg=s; }catch(e){}
+    }
+    const token=localStorage.getItem('ib_token')||'';
+    let serverData=null;
+    const j=await fetchDBLoadWithRetry(token, D.activeOrg, tier);
+    if(j.ok){
+      serverData=j;
     } else {
-      // 네트워크/서버 오류 — 토스트 + 5초 후 자동 1회 재시도
-      if(typeof showToast==='function') showToast('데이터 로드 실패('+j.error+'). 잠시 후 자동 재시도합니다.','#ef4444');
-      setTimeout(()=>{
-        if(!D.users || !D.users.length) loadFromDB().catch(()=>{});
-      }, 5000);
+      console.error('loadFromDB('+tier+'):',j.error);
+      if(j.status===401||j.status===403){
+        try{ localStorage.removeItem('ib_token'); localStorage.removeItem('ib_user'); }catch(e){}
+        if(typeof showToast==='function') showToast('인증이 만료되었습니다. 다시 로그인해주세요.','#ef4444');
+        try{ CU=null; if(typeof hideGlobalSidebar==='function') hideGlobalSidebar(); showPage('page-login'); }catch(_){}
+        D.loadingDB=false;
+        endProgress();
+        return;
+      } else {
+        if(typeof showToast==='function') showToast('데이터 로드 실패('+j.error+'). 잠시 후 자동 재시도합니다.','#ef4444');
+        setTimeout(()=>{ if(!D.users || !D.users.length) loadFromDB(tier).catch(()=>{}); }, 5000);
+      }
     }
-  }
-  if(serverData){
-    D.users=mapUsersFromRows(serverData.users);
-    D.videos=mapVideosFromRows(serverData.videos, serverData.timestamps);
-    D.evaluations=serverData.evaluations||[];
-    D.voiceEvals=serverData.voice_evals||[];
-    D.calendarEvents=(serverData.calendar_events||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
-    D.learningLinks=serverData.learning_links||[];
-    D.recVideos=serverData.recommended_videos||[];
-    D.pickContents=serverData.pick_contents||[];
-    D.pickNotices=serverData.pick_notices||[];
-    D.pickFeaturedVideos=serverData.pick_featured_videos||[];
-    D.checklists=serverData.checklist_files||[];
-    D.activeOrg=serverData.meta?.active_org||null;
-    D.isRealAdmin=!!serverData.meta?.is_real_admin;
-    D.orgList=serverData.meta?.org_list||[];
-  } else {
-    D.users=[]; D.videos=[]; D.evaluations=[]; D.voiceEvals=[];
-    D.calendarEvents=[]; D.learningLinks=[]; D.recVideos=[];
-    D.pickContents=[]; D.pickNotices=[]; D.pickFeaturedVideos=[]; D.checklists=[];
-    D.activeOrg=null; D.isRealAdmin=false;
-  }
-  // 관리자 조직 드롭다운 갱신
-  if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
-  // 관리자 메뉴 표시/숨김
-  if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
-  // criteria — 조직별 분리 (활성 조직 + NULL 레거시)
-  {
-    let q=sb.from('criteria').select('*').order('sort_order');
-    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
-    const {data:cri}=await q;
-    if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description,org_name:c.org_name||null}));
-  }
-  // ref_videos — 조직별 분리
-  {
-    let q=sb.from('ref_videos').select('*');
-    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
-    const {data:ref}=await q;
-    if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
-  }
-  // delete_requests — 조직별 분리
-  {
-    let q=sb.from('delete_requests').select('*').order('created_at',{ascending:false});
-    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
-    const {data:dr}=await q;
-    D.deleteRequests=dr||[];
-  }
-  // 교육자료 카테고리 — 조직별 분리 (NULL 레거시 = 공통)
-  {
-    let q=sb.from('edu_categories').select('*').order('sort_order');
-    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
-    const {data:ec}=await q;
-    D.eduCategories=ec||[];
-  }
-  // 최초 1회 기본 카테고리 시드
-  await seedEduCategoriesIfEmpty();
-  // 교육종류 (조직별 분리 · Supabase가 유일한 기준 · 자동 마이그레이션 없음)
-  const et=await dbGetEduTypes(D.activeOrg);
-  if(et!==null){
-    D.eduTypes=et.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
-    // localStorage는 DB 이름으로 강제 동기화 (다른 컴에서 삭제한 항목이 부활하는 것을 차단)
-    try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
-  } else {
-    D.eduTypes=[];
-  }
-  // (recommended_videos, pick_featured_videos는 /api/db/load에서 받음)
-  // 경력/포트폴리오
-  const {data:ch}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
-  D.careerHistory=ch||[];
-  const {data:pf2}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
-  D.portfolio=pf2||[];
-  // 뱃지 기준
-  // badge_criteria — 조직별 분리 (활성 조직 + NULL 레거시)
-  {
-    let q=sb.from('badge_criteria').select('*').order('sort_order',{ascending:true});
-    if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
-    const {data:bc}=await q;
-    D.badgeCriteria=bc||[];
-  }
-  // 초기 시드 (DB 비어있으면 50개 삽입)
-  if(!D.badgeCriteria.length) await seedBadgeCriteria();
-  // (pick_contents, pick_notices, calendar_events는 /api/db/load에서 받음)
-  // (evaluations는 /api/db/load에서 받음)
-  // 체크리스트 드롭다운 재채움 (영상/스피치/스트리밍 3곳 공용)
-  if(typeof populateChecklistSelects==='function') populateChecklistSelects();
-  // 세션 가드: 로그인 중인 강사가 삭제됐으면 강제 로그아웃
-  if(CU && !CU.isAdmin && CU.id){
-    const me=D.users.find(x=>x.id===CU.id);
-    if(!me || me.deleted){
-      alert('계정이 삭제되었습니다. 관리자에게 문의하세요.');
-      doLogout();
+    if(serverData){
+      // core 데이터 (tier core/full 에 포함)
+      if(tier==='core' || tier==='full'){
+        D.users=mapUsersFromRows(serverData.users);
+        D.videos=mapVideosFromRows(serverData.videos, serverData.timestamps);
+        D.evaluations=serverData.evaluations||[];
+        D.voiceEvals=serverData.voice_evals||[];
+        D.activeOrg=serverData.meta?.active_org||D.activeOrg;
+        D.isRealAdmin=!!serverData.meta?.is_real_admin;
+        D.orgList=serverData.meta?.org_list||D.orgList||[];
+      }
+      // content 데이터 (tier content/full 에 포함)
+      if(tier==='content' || tier==='full'){
+        D.calendarEvents=(serverData.calendar_events||[]).map(e=>({...e,start_date:e.start_time?.slice(0,10)||''}));
+        D.learningLinks=serverData.learning_links||[];
+        D.recVideos=serverData.recommended_videos||[];
+        D.pickContents=serverData.pick_contents||[];
+        D.pickNotices=serverData.pick_notices||[];
+        D.pickFeaturedVideos=serverData.pick_featured_videos||[];
+        D.checklists=serverData.checklist_files||[];
+      }
+    } else if(tier==='full' || tier==='core'){
+      D.users=D.users||[]; D.videos=D.videos||[];
+      D.evaluations=D.evaluations||[]; D.voiceEvals=D.voiceEvals||[];
     }
-  }
-  // 조직 변경 로딩 오버레이 — loadFromDB 완료 후 한 번 닫고 플래그 정리
-  try{
-    if(sessionStorage.getItem('ib_org_switching')){
-      sessionStorage.removeItem('ib_org_switching');
-      hideLoginLoading();
+    if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
+    if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
+
+    // 보조 쿼리 — 'full' 에서만 모두, core/content 는 최소만
+    if(tier==='full' || tier==='content'){
+      // criteria
+      {
+        let q=sb.from('criteria').select('*').order('sort_order');
+        if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+        const {data:cri}=await q;
+        if(cri) D.criteria=cri.map(c=>({name:c.name,max:c.max_score,desc:c.description,org_name:c.org_name||null}));
+      }
+      // ref_videos
+      {
+        let q=sb.from('ref_videos').select('*');
+        if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+        const {data:ref}=await q;
+        if(ref){ D.refVideos={}; ref.forEach(r=>D.refVideos[r.channel]=r.youtube_url||''); }
+      }
+      // delete_requests
+      {
+        let q=sb.from('delete_requests').select('*').order('created_at',{ascending:false});
+        if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+        const {data:dr}=await q;
+        D.deleteRequests=dr||[];
+      }
+      // edu_categories
+      {
+        let q=sb.from('edu_categories').select('*').order('sort_order');
+        if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+        const {data:ec}=await q;
+        D.eduCategories=ec||[];
+      }
+      await seedEduCategoriesIfEmpty();
+      // edu_types
+      const et=await dbGetEduTypes(D.activeOrg);
+      if(et!==null){
+        D.eduTypes=et.map(r=>({id:String(r.id),name:r.name,org_name:r.org_name||null}));
+        try{localStorage.setItem('interbiz_eduTypes',JSON.stringify(D.eduTypes.map(x=>x.name)));}catch(e){}
+      } else { D.eduTypes=D.eduTypes||[]; }
+      // career/portfolio
+      const {data:ch}=await sb.from('career_history').select('*').order('sort_order',{ascending:false});
+      D.careerHistory=ch||[];
+      const {data:pf2}=await sb.from('portfolio').select('*').order('created_at',{ascending:false});
+      D.portfolio=pf2||[];
+      // badge_criteria
+      {
+        let q=sb.from('badge_criteria').select('*').order('sort_order',{ascending:true});
+        if(D.activeOrg) q=q.or(`org_name.eq.${D.activeOrg},org_name.is.null`);
+        const {data:bc}=await q;
+        D.badgeCriteria=bc||[];
+      }
+      if(!D.badgeCriteria || !D.badgeCriteria.length) await seedBadgeCriteria();
+      if(typeof populateChecklistSelects==='function') populateChecklistSelects();
     }
-  }catch(e){}
+
+    // 세션 가드 (어떤 tier 든)
+    if(CU && !CU.isAdmin && CU.id){
+      const me=(D.users||[]).find(x=>x.id===CU.id);
+      if(!me || me.deleted){
+        alert('계정이 삭제되었습니다. 관리자에게 문의하세요.');
+        doLogout();
+      }
+    }
+    try{
+      if(sessionStorage.getItem('ib_org_switching')){
+        sessionStorage.removeItem('ib_org_switching');
+        hideLoginLoading();
+      }
+    }catch(e){}
   } finally { D.loadingDB = false; endProgress(); }
+}
+
+// 단계 로딩 헬퍼 — 핵심부터 즉시, 콘텐츠는 백그라운드
+async function loadFromDBStaged(){
+  // 1단계: 핵심 (users/videos/evaluations/voice_evals) — 즉시 표시 가능
+  await loadFromDB('core');
+  // 2단계: 콘텐츠(인터PICK·교육콘텐츠 등) + 보조 — 백그라운드
+  loadFromDB('content').catch(e=>console.warn('백그라운드 content 로드 실패:',e));
 }
 
 /* ════════════════════════════════
@@ -5699,9 +5703,9 @@ async function doLogin(){
   hideLoginLoading();
   initHome(); showPage('page-pick');
   startNotifPolling();
-  // ② DB 로드는 백그라운드에서 — 끝나면 CU 정확 정보로 보강
-  loadFromDB().then(()=>{
-    if(j.user?.id !== 0){ // 특별 관리자 아니면 D.users 에서 더 정확한 정보로 갱신
+  // ② Staged 로딩: core(즉시 필요) → content(백그라운드)
+  loadFromDB('core').then(()=>{
+    if(j.user?.id !== 0){
       const fresh=D.users.find(x=>x.id===j.user.id);
       if(fresh){
         CU=fresh;
@@ -5712,7 +5716,11 @@ async function doLogin(){
     if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
     if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
     if(typeof renderPick==='function') try{renderPick();}catch(_){}
-  }).catch(e=>{console.warn('백그라운드 DB 로드 실패:',e);});
+    // content 는 백그라운드 (인터PICK 의 추천 콘텐츠·학습링크·체크리스트 등)
+    loadFromDB('content').then(()=>{
+      if(typeof renderPick==='function') try{renderPick();}catch(_){}
+    }).catch(e=>console.warn('백그라운드 content 로드 실패:',e));
+  }).catch(e=>{console.warn('core 로드 실패:',e);});
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } }
 
@@ -17107,8 +17115,8 @@ window.addEventListener('load',async ()=>{
       // 데이터 필요한 페이지(영상·강사·관리자) 는 일단 page-pick 표시 후 데이터 로드 끝나면 전환
       showPage('page-pick');
     }
-    // ② 백그라운드에서 DB 로드 + 컨텍스트 복원
-    loadFromDB().then(()=>{
+    // ② Staged 로딩: core(즉시 필요) → content(백그라운드)
+    loadFromDB('core').then(()=>{
       if(CU?.id && !CU?.isAdmin){ const fresh=D.users.find(x=>x.id===CU.id); if(fresh){CU=fresh; if(CU.isSubAdmin) CU.isAdmin=true;} }
       initHome();
       // 데이터가 있어야 하는 페이지를 마지막에 보고 있었다면 지금 정밀 복원
@@ -17133,7 +17141,14 @@ window.addEventListener('load',async ()=>{
       } else if(initialPage==='page-pick' && typeof renderPick==='function'){
         try{renderPick();}catch(_){}
       }
-    }).catch(e=>{console.warn('F5 백그라운드 로드 실패:',e);});
+      // content 는 백그라운드 (인터PICK·교육콘텐츠·체크리스트 등)
+      loadFromDB('content').then(()=>{
+        // content 로드 후 인터PICK·교육콘텐츠 페이지에 있다면 다시 렌더
+        const cur=document.querySelector('.page.active')?.id||'';
+        if(cur==='page-pick' && typeof renderPick==='function') try{renderPick();}catch(_){}
+        if(cur==='page-edu' && typeof renderEduPage==='function') try{renderEduPage();}catch(_){}
+      }).catch(e=>console.warn('백그라운드 content 로드 실패:',e));
+    }).catch(e=>{console.warn('F5 core 로드 실패:',e);});
   } else {
     hideGlobalSidebar();
     showPage('page-login');
