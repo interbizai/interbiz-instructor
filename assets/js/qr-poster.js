@@ -24,7 +24,7 @@ ${url}
 ② 화면 하단의 "앱으로 설치하기" 배너 → [설치]
 ③ 홈 화면에 인터픽 아이콘 생성
 
-문의 : sanggon.lee@interbiz.co.kr`;
+문의 : miyeon1.kwon@interbiz.co.kr`;
   }
 
   function renderAppQR(){
