@@ -6741,9 +6741,8 @@ function renderPickPhotoCollage(){
   // 4) 동일 unit 2회 반복 → CSS animation translateY -50% 로 seamless 무한 루프
   //    한 사이클 = 모든 사진 1번씩 지나감 → 다시 1번씩(2번째) → 3번째 …
   track.innerHTML=`<div class="pick-photo-col">${leftUnit+leftUnit}</div><div class="pick-photo-col offset">${rightUnit+rightUnit}</div>`;
-  // 5) 강사 수가 많을수록 속도 일정 — 1명당 약 4초 (최소 40초)
-  const duration=Math.max(40, Math.max(leftFinal.length,rightFinal.length)*4);
-  track.querySelectorAll('.pick-photo-col').forEach(col=>{ col.style.animationDuration=duration+'s'; });
+  // 5) 속도는 CSS 기본값(55s) 유지 — 동적 조정 제거
+  track.querySelectorAll('.pick-photo-col').forEach(col=>{ col.style.animationDuration=''; });
 }
 
 // 스크롤 일시정지/재생
