@@ -4885,10 +4885,13 @@ async function loadUserPhotosLazy(){
   if(!CU?.id) return;
   try{
     const token=localStorage.getItem('ib_token')||'';
+    // org 필터: 진짜 관리자(전체 조직 모드) 는 필터 없이 전체. 그 외는 D.activeOrg → CU.orgName 순
+    const orgParam = (D.isRealAdmin && !D.activeOrg) ? null : (D.activeOrg||CU?.orgName||null);
+    const body = orgParam ? {org: orgParam} : {};
     const r=await fetch('/api/users/photos',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({org:D.activeOrg||CU?.orgName||null})
+      body:JSON.stringify(body)
     });
     const j=await r.json().catch(()=>({}));
     if(!j.ok) return;
@@ -6745,9 +6748,8 @@ async function saveHeroEdit(key){
 function renderPickPhotoCollage(){
   const track=document.getElementById('pick-photo-track');
   if(!track) return;
-  // 같은 소속만 노출 — 관리자가 특정 조직 보기 모드면 그 조직, 아니면 본인 소속
-  // 진짜 관리자(id=0, orgName 없음) 가 '전체 조직' 모드일 때만 모든 사진
-  const myOrg=D.activeOrg||CU?.orgName||'';
+  // 같은 소속만 노출 — 진짜 관리자(전체 조직 모드)는 모든 사진, 그 외는 활성 조직 또는 본인 소속
+  const myOrg = (D.isRealAdmin && !D.activeOrg) ? '' : (D.activeOrg||CU?.orgName||'');
   const users=(D.users||[]).filter(u=>
     !u.deleted && !u.isAdmin && u.email!=='admin' && u.photo
     && (!myOrg || (u.orgName||'')===myOrg)
