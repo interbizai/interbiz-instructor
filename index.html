@@ -4880,9 +4880,13 @@ async function loadFromDBStaged(){
 
 // 사용자 사진 lazy 로드 — /api/db/load 에서 제외된 photo 를 별도 호출로 받아 D.users 에 머지
 window._photosLoaded=false;
-async function loadUserPhotosLazy(){
-  if(window._photosLoaded) return;
+async function loadUserPhotosLazy(force){
+  if(window._photosLoaded && !force) return;
   if(!CU?.id) return;
+  // D.users 가 아직 안 채워졌으면 잠시 대기 (loadFromDB('core') 와의 race 회피)
+  if(!D.users || !D.users.length){
+    await new Promise(r=>setTimeout(r,800));
+  }
   try{
     const token=localStorage.getItem('ib_token')||'';
     // org 필터: 진짜 관리자(전체 조직 모드) 는 필터 없이 전체. 그 외는 D.activeOrg → CU.orgName 순
