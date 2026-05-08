@@ -9668,8 +9668,26 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     const aiSaveCid=aiClId||critClId;  // AI 독자는 AI 체크리스트 id, 없으면 폴백
     const saveTasks=[saveEvaluation({videoId,checklistId:aiSaveCid,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
     if(critResult) saveTasks.push(saveEvaluation({videoId,checklistId:critClId,eduFileUrl,evalType:'평가안기준',result:critResult}));
-    await Promise.all(saveTasks);
+    const saveResults=await Promise.all(saveTasks);
+    // 저장 성공/실패 명시적 검증 — 하나라도 실패면 사용자에게 알림
+    const failed=saveResults.filter(r=>!r).length;
+    if(failed>0){
+      console.error('evaluations 저장 실패:',saveResults);
+      // saveEvaluation 내부에서도 alert 가 있지만 한번 더 확정 통보
+      setTimeout(()=>alert(`⚠️ ${failed}건의 평가 저장이 실패했습니다.\n\n가능한 원인:\n- 인증 만료 (다시 로그인)\n- DB 권한 (관리자에게 문의)\n- 네트워크 오류\n\n페이지를 새로고침해도 결과가 안 보이면 다시 분석해주세요.`),200);
+    }
     await loadFromDB();
+    // 실제로 저장된 row 가 DB 에 있는지 1회 검증 (로컬 캐시가 아닌 직접 query)
+    try{
+      const{data:verifyRows}=await sb.from('evaluations').select('id,eval_type').eq('video_id',videoId).limit(5);
+      const savedTypes=new Set((verifyRows||[]).map(r=>r.eval_type));
+      const expected=['AI독자']; if(critResult) expected.push('평가안기준');
+      const missing=expected.filter(t=>!savedTypes.has(t));
+      if(missing.length){
+        console.error('evaluations DB 검증 실패 — 누락:',missing,'video_id:',videoId);
+        setTimeout(()=>alert(`⚠️ DB 검증 실패\n\n${missing.join(', ')} 평가가 저장되지 않았습니다.\n다시 분석을 시도하거나 관리자에게 문의해주세요.\n\n(영상 ID: ${videoId})`),300);
+      }
+    }catch(verr){console.warn('evaluations 검증 read 실패:',verr);}
     // 6) 전역에 보관 + 렌더
     window._lastVertexResult={crit:critResult,ai:aiResult};
     window._anVideoId=videoId;
