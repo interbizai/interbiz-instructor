@@ -4867,6 +4867,44 @@ async function loadFromDBStaged(){
   await loadFromDB('core');
   // 2단계: 콘텐츠(인터PICK·교육콘텐츠 등) + 보조 — 백그라운드
   loadFromDB('content').catch(e=>console.warn('백그라운드 content 로드 실패:',e));
+  // 3단계: 사용자 사진 (base64 1~3MB/명, 메인 페이로드에 포함하면 504 발생) — 백그라운드 lazy
+  loadUserPhotosLazy().catch(e=>console.warn('사용자 사진 lazy 로드 실패:',e));
+}
+
+// 사용자 사진 lazy 로드 — /api/db/load 에서 제외된 photo 를 별도 호출로 받아 D.users 에 머지
+window._photosLoaded=false;
+async function loadUserPhotosLazy(){
+  if(window._photosLoaded) return;
+  if(!CU?.id) return;
+  try{
+    const token=localStorage.getItem('ib_token')||'';
+    const r=await fetch('/api/users/photos',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({org:D.activeOrg||CU?.orgName||null})
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!j.ok) return;
+    // D.users 에 photo 머지
+    const photoMap={};
+    (j.photos||[]).forEach(p=>{photoMap[p.id]=p.photo;});
+    (D.users||[]).forEach(u=>{
+      if(photoMap[u.id]) u.photo=photoMap[u.id];
+    });
+    // CU.photo 도 갱신 (헤더 아바타용)
+    if(CU?.id && photoMap[CU.id]){
+      CU.photo=photoMap[CU.id];
+      try{localStorage.setItem('ib_user',JSON.stringify(CU));}catch(_){}
+    }
+    window._photosLoaded=true;
+    // 현재 보여지는 페이지 재렌더 — 사진이 늦게 와도 자동 반영
+    const cur=document.querySelector('.page.active')?.id||'';
+    if(cur==='page-pick' && typeof renderPick==='function') try{renderPick();}catch(_){}
+    if(cur==='page-lecturer' && typeof renderLecturer==='function') try{renderLecturer();}catch(_){}
+    if(cur==='page-myprofile' && typeof renderMyProfile==='function') try{renderMyProfile();}catch(_){}
+    // 아바타·아바타 드롭다운 갱신
+    if(typeof updateHeaderUI==='function') try{updateHeaderUI();}catch(_){}
+  }catch(e){console.warn('loadUserPhotosLazy:',e);}
 }
 
 /* ════════════════════════════════
@@ -5508,6 +5546,8 @@ async function doLogin(){
     loadFromDB('content').then(()=>{
       if(typeof renderPick==='function') try{renderPick();}catch(_){}
     }).catch(e=>console.warn('백그라운드 content 로드 실패:',e));
+    // photo lazy 로드 (504 방지 — base64 사진은 메인 페이로드에 안 넣음)
+    loadUserPhotosLazy().catch(e=>console.warn('photo lazy:',e));
   }).catch(e=>{console.warn('core 로드 실패:',e);});
 }
 function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } }
@@ -16751,11 +16791,12 @@ window.addEventListener('load',async ()=>{
       }
       // content 는 백그라운드 (인터PICK·교육콘텐츠·체크리스트 등)
       loadFromDB('content').then(()=>{
-        // content 로드 후 인터PICK·교육콘텐츠 페이지에 있다면 다시 렌더
         const cur=document.querySelector('.page.active')?.id||'';
         if(cur==='page-pick' && typeof renderPick==='function') try{renderPick();}catch(_){}
         if(cur==='page-edu' && typeof renderEduPage==='function') try{renderEduPage();}catch(_){}
       }).catch(e=>console.warn('백그라운드 content 로드 실패:',e));
+      // photo lazy 로드
+      loadUserPhotosLazy().catch(e=>console.warn('photo lazy:',e));
     }).catch(e=>{console.warn('F5 core 로드 실패:',e);});
   } else {
     hideGlobalSidebar();

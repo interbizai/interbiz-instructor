@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };  // Vercel hobby 무료 60s까지 가능
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -30,6 +30,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: '서버 설정 오류' });
   }
 
+  // 타이밍 로그 — 다음 504 발생 시 어느 쿼리가 느린지 즉시 파악
+  const t0 = Date.now();
+  const timing = {};
   try {
     const decoded = a.decoded;
     const isRealAdmin = decoded.sub === 0;
@@ -53,11 +56,16 @@ export default async function handler(req, res) {
     // 콘텐츠/공지/달력 등은 NULL(공통 자료) + 본인 조직 모두 보이게
     const orgOrNull = (q) => targetOrg ? q.or(`org_name.eq.${targetOrg},org_name.is.null`) : q;
 
+    // ⚡ 핵심 최적화 — users_safe SELECT * 시 photo 컬럼(base64 1~3MB/명) 까지 받아 페이로드 폭증 → 504
+    //   photo 는 별도 lazy load (/api/users/photos)
+    const USERS_LITE_COLS = 'id,name,email,channel,team,position,birth_year,hire_date,phone,memo,score,grade,scores,maxes,habits,habit_counts,engagement_gaps,decibel,tempo,student_count,created_at,is_sub_admin,satisfaction,org_name,office,birth_date,status,deleted_at,lg_career_start,teach_career_start';
+    // evaluations / voice_evals — 최근 90일 + 200건 제한 (누적 데이터 폭증 방지)
+    const dateLimit = new Date(Date.now() - 90*24*3600*1000).toISOString();
     const corePromises = wantCore ? [
-      orgEq(sbAdmin.from('users_safe').select('*').order('id')),
+      orgEq(sbAdmin.from('users_safe').select(USERS_LITE_COLS).order('id')),
       orgEq(sbAdmin.from('videos').select('*').order('id')),
-      orgEq(sbAdmin.from('evaluations').select('*').order('created_at', { ascending: false })),
-      orgEq(sbAdmin.from('voice_evals').select('*').order('created_at', { ascending: false })),
+      orgEq(sbAdmin.from('evaluations').select('*').gte('created_at', dateLimit).order('created_at', { ascending: false }).limit(200)),
+      orgEq(sbAdmin.from('voice_evals').select('*').gte('created_at', dateLimit).order('created_at', { ascending: false }).limit(200)),
     ] : [null, null, null, null];
 
     const contentPromises = wantContent ? [
@@ -70,26 +78,39 @@ export default async function handler(req, res) {
       orgOrNull(sbAdmin.from('checklist_files').select('*').order('created_at', { ascending: false })),
     ] : [null, null, null, null, null, null, null];
 
+    const t1 = Date.now();
     const all = await Promise.all([...corePromises, ...contentPromises].map(p => p || Promise.resolve({ data: [] })));
+    timing.coreContent = Date.now() - t1;
     const [usersR, videosR, evalR, voiceR, calR, linkR, recR, contR, noticeR, featR, checkR] = all;
 
     const videos = videosR.data || [];
     let timestamps = [];
     if (wantCore && videos.length) {
+      const t2 = Date.now();
       const videoIds = videos.map(v => v.id);
       const { data: ts } = await sbAdmin.from('timestamps').select('*').in('video_id', videoIds).order('id');
       timestamps = ts || [];
+      timing.timestamps = Date.now() - t2;
     }
 
     // 전체 조직 목록 — core 또는 full 일 때만 (content 단독 호출 시 불필요)
     let orgList = [];
     if (wantCore) {
+      const t3 = Date.now();
       const { data: distinctOrgs } = await sbAdmin.from('users').select('org_name').not('org_name', 'is', null);
       orgList = [...new Set((distinctOrgs || []).map(u => u.org_name).filter(Boolean))].sort();
+      timing.orgList = Date.now() - t3;
+    }
+
+    // 타이밍 로그 (Vercel Functions 로그에서 확인 가능)
+    timing.total = Date.now() - t0;
+    if (timing.total > 3000) {
+      console.warn(`[db/load] slow response — tier=${tier} timing=${JSON.stringify(timing)} users=${(usersR.data||[]).length} videos=${videos.length} evals=${(evalR.data||[]).length}`);
     }
 
     // 약한 캐시 — 같은 사용자/조직이면 5초간 브라우저 캐시 (F5 연타 방지)
     res.setHeader('Cache-Control', 'private, max-age=5');
+    res.setHeader('X-Timing', JSON.stringify(timing));
 
     return res.status(200).json({
       ok: true,
