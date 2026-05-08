@@ -16751,6 +16751,18 @@ function setAnResultMeta(opts){
 // 첫 실제 로그인 시 cold start 부담은 미미하므로 워밍업 불필요
 // (필요 시 별도 /api/health 엔드포인트 만들어 OK 응답으로 변경 가능)
 
+// 사진 lazy 로드 — 무조건 페이지 진입 3초·7초·15초 후 자동 시도 (어떤 경로든 결국 머지됨)
+(function ensurePhotoMerge(){
+  const tries=[3000, 7000, 15000];
+  tries.forEach(ms=>{
+    setTimeout(()=>{
+      if(typeof loadUserPhotosLazy==='function' && CU?.id){
+        try{ loadUserPhotosLazy(true); }catch(_){}
+      }
+    }, ms);
+  });
+})();
+
 // Override showPage for profile (재귀 방지: _renderingMyProfile 가드)
 const _showPage=showPage;
 let _renderingMyProfile=false;
