@@ -110,16 +110,12 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'private, max-age=5');
     res.setHeader('X-Timing', JSON.stringify(timing));
 
-    // photo 컬럼은 페이로드 절감 위해 서버에서 잘라냄 (lazy 로드 사용)
-    const usersStripped = (usersR.data || []).map(u => {
-      if (u && 'photo' in u) { const { photo, ...rest } = u; return rest; }
-      return u;
-    });
-
+    // photo 컬럼 그대로 포함 — lazy load 가 race condition 으로 안 되는 이슈 회피
+    // (60명 × 평균 1MB = 약 60MB 미만 페이로드, 60s timeout 안에 충분히 처리)
     return res.status(200).json({
       ok: true,
       tier,
-      users: usersStripped,
+      users: usersR.data || [],
       videos,
       timestamps,
       evaluations: evalR.data || [],
