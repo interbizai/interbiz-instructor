@@ -16733,18 +16733,9 @@ function setAnResultMeta(opts){
 /* ════════════════════════════════
    INIT
 ════════════════════════════════ */
-// Cold Start 워밍업 — 로그인 페이지에서 사장님이 폼 채우는 동안 serverless 함수 미리 깨우기
-// (CU 있으면 곧 loadFromDB가 알아서 호출하니 skip — 중복 호출 방지)
-(function warmUpColdStart(){
-  if(typeof CU!=='undefined' && CU) return;
-  try {
-    fetch('/api/auth/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({_warm:true})
-    }).catch(()=>{});
-  } catch(e){}
-})();
+// Cold Start 워밍업 제거됨 — /api/auth/login warmup ping 이 400 Bad Request 콘솔 에러 발생시킴
+// 첫 실제 로그인 시 cold start 부담은 미미하므로 워밍업 불필요
+// (필요 시 별도 /api/health 엔드포인트 만들어 OK 응답으로 변경 가능)
 
 // Override showPage for profile (재귀 방지: _renderingMyProfile 가드)
 const _showPage=showPage;
