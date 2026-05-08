@@ -4883,42 +4883,52 @@ window._photosLoaded=false;
 async function loadUserPhotosLazy(force){
   if(window._photosLoaded && !force) return;
   if(!CU?.id) return;
-  // D.users 가 아직 안 채워졌으면 잠시 대기 (loadFromDB('core') 와의 race 회피)
+  // D.users 가 아직 안 채워졌으면 최대 5초 폴링
+  for(let i=0; i<25 && (!D.users || !D.users.length); i++){
+    await new Promise(r=>setTimeout(r,200));
+  }
   if(!D.users || !D.users.length){
-    await new Promise(r=>setTimeout(r,800));
+    setTimeout(()=>loadUserPhotosLazy(true), 1500);
+    return;
   }
   try{
     const token=localStorage.getItem('ib_token')||'';
-    // org 필터: 진짜 관리자(전체 조직 모드) 는 필터 없이 전체. 그 외는 D.activeOrg → CU.orgName 순
-    const orgParam = (D.isRealAdmin && !D.activeOrg) ? null : (D.activeOrg||CU?.orgName||null);
-    const body = orgParam ? {org: orgParam} : {};
+    // ⚡ 자동 호출은 항상 빈 body 로 — 모든 photo 받아 D.users 와 ID 매칭으로 머지
+    //    (서버 측 org 필터는 D.users 와 어긋날 수 있어 클라이언트 측 ID 매칭이 안전)
     const r=await fetch('/api/users/photos',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify(body)
+      body:JSON.stringify({})
     });
     const j=await r.json().catch(()=>({}));
-    if(!j.ok) return;
-    // D.users 에 photo 머지
+    if(!j.ok){
+      setTimeout(()=>loadUserPhotosLazy(true), 1500);
+      return;
+    }
+    // D.users 에 photo 머지 — ID 매칭이라 자동으로 본인 조직 사진만 머지됨
     const photoMap={};
     (j.photos||[]).forEach(p=>{photoMap[p.id]=p.photo;});
+    let merged=0;
     (D.users||[]).forEach(u=>{
-      if(photoMap[u.id]) u.photo=photoMap[u.id];
+      if(photoMap[u.id]){ u.photo=photoMap[u.id]; merged++; }
     });
-    // CU.photo 도 갱신 (헤더 아바타용)
+    // CU.photo 도 갱신
     if(CU?.id && photoMap[CU.id]){
       CU.photo=photoMap[CU.id];
       try{localStorage.setItem('ib_user',JSON.stringify(CU));}catch(_){}
     }
     window._photosLoaded=true;
-    // 현재 보여지는 페이지 재렌더 — 사진이 늦게 와도 자동 반영
+    // 현재 페이지 재렌더
     const cur=document.querySelector('.page.active')?.id||'';
     if(cur==='page-pick' && typeof renderPick==='function') try{renderPick();}catch(_){}
     if(cur==='page-lecturer' && typeof renderLecturer==='function') try{renderLecturer();}catch(_){}
     if(cur==='page-myprofile' && typeof renderMyProfile==='function') try{renderMyProfile();}catch(_){}
-    // 아바타·아바타 드롭다운 갱신
     if(typeof updateHeaderUI==='function') try{updateHeaderUI();}catch(_){}
-  }catch(e){console.warn('loadUserPhotosLazy:',e);}
+    console.log('📸 loadUserPhotosLazy:', merged+'/'+(D.users?.length||0)+'명 머지');
+  }catch(e){
+    console.warn('loadUserPhotosLazy:',e);
+    setTimeout(()=>loadUserPhotosLazy(true), 2000);
+  }
 }
 
 /* ════════════════════════════════
