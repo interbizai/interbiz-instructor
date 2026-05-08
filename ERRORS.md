@@ -147,6 +147,51 @@ SELECT
 
 ---
 
+## 🚨 에러 #7: evaluations 등 핵심 테이블 RLS 자동 ON → 평가 저장 0건 (silent block)
+
+**발생일**: 2026-05-08
+
+**증상**:
+- 강사가 영상 분석 받았는데 결과 저장 안 됨
+- 클라이언트 콘솔 에러 없음 (saveEvaluation 이 정상 응답 받음)
+- DB 직접 조회: `evaluations` 테이블 최근 24시간 INSERT 0건
+- 평가 누락 영상도 0건 (videos 테이블 자체에도 INSERT 안 됨)
+
+**진단 절차** (OPERATIONS_PLAYBOOK.md 의 평가 저장 진단 적용):
+1. GRANT 권한 확인 → ✓ 정상 (anon/authenticated INSERT 권한 있음)
+2. RLS 상태 확인 → ⚠ **ON** (이게 원인)
+3. 시간대별 추이 → 24h 0건 일관성 (정책적 차단)
+
+**원인**:
+- 누군가/뭔가가 `evaluations`, `videos`, `voice_evals` 등 핵심 테이블의 RLS 를 켰음
+  (이 코드베이스는 RLS 전제 설계 아닌데도)
+- RLS ON + 정책 없음 → INSERT 가 0행 반영 = 에러 없이 silent block
+- 클라이언트는 `error` 만 체크 → 실패 인지 못 함
+
+**해결**:
+```sql
+-- 23개 핵심 테이블 RLS 일괄 비활성화
+ALTER TABLE public.evaluations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.videos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.voice_evals DISABLE ROW LEVEL SECURITY;
+-- ...
+NOTIFY pgrst, 'reload schema';
+```
+→ 즉시 평가 저장 정상화
+
+**재발 방지**:
+- [ ] 클라이언트에서 INSERT 후 **DB select 로 검증** (이미 추가 — runAnalysis 에 verify read)
+- [ ] 평가 저장 후 결과 명시적 확인 (`saveResults.filter(r=>!r)`) — 추가됨
+- [ ] 정기 RLS 모니터링 (모든 핵심 테이블 RLS=OFF 상태 점검)
+- [ ] 본 ERRORS.md #2, #7 둘 다 RLS 가 원인 — 이 코드베이스는 RLS 켜면 안 됨을 강조
+
+**관련 파일**:
+- `database/migrations/2026-05-08_eval_save_diagnostic.sql` — 진단 쿼리 7종
+- `database/migrations/2026-05-08_fix_eval_rls_block.sql` — RLS 일괄 OFF + GRANT 보강
+- `OPERATIONS_PLAYBOOK.md` — 향후 동일 패턴 대응 절차
+
+---
+
 ## 🚨 에러 #6: Anon 클라이언트 update 에서 silent block (no error, no rows affected)
 
 **발생일**: 2026-05-07
