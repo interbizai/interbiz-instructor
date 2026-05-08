@@ -4750,7 +4750,14 @@ async function loadFromDB(tier){
     if(j.ok){
       serverData=j;
     } else {
-      console.error('loadFromDB('+tier+'):',j.error);
+      console.error('loadFromDB('+tier+'):',j.error,'status=',j.status);
+      // 504/502/522/503 — 인프라 장애 (Vercel 함수 타임아웃 또는 Supabase 응답 없음)
+      if([502,503,504,522].includes(j.status)){
+        if(typeof showToast==='function') showToast('데이터 로드가 매우 느립니다. Supabase 또는 서버 응답 지연. 1~2분 후 다시 시도해주세요.','#f59e0b');
+        D.loadingDB=false;
+        endProgress();
+        return;
+      }
       if(j.status===401||j.status===403){
         try{ localStorage.removeItem('ib_token'); localStorage.removeItem('ib_user'); }catch(e){}
         if(typeof showToast==='function') showToast('인증이 만료되었습니다. 다시 로그인해주세요.','#ef4444');

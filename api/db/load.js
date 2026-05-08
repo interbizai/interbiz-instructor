@@ -59,13 +59,12 @@ export default async function handler(req, res) {
     // ⚡ 핵심 최적화 — users_safe SELECT * 시 photo 컬럼(base64 1~3MB/명) 까지 받아 페이로드 폭증 → 504
     //   photo 는 별도 lazy load (/api/users/photos)
     const USERS_LITE_COLS = 'id,name,email,channel,team,position,birth_year,hire_date,phone,memo,score,grade,scores,maxes,habits,habit_counts,engagement_gaps,decibel,tempo,student_count,created_at,is_sub_admin,satisfaction,org_name,office,birth_date,status,deleted_at,lg_career_start,teach_career_start';
-    // evaluations / voice_evals — 최근 90일 + 200건 제한 (누적 데이터 폭증 방지)
-    const dateLimit = new Date(Date.now() - 90*24*3600*1000).toISOString();
+    // evaluations / voice_evals — limit 만 적용 (gte 필터는 인덱스 없으면 full scan → 522 위험)
     const corePromises = wantCore ? [
       orgEq(sbAdmin.from('users_safe').select(USERS_LITE_COLS).order('id')),
       orgEq(sbAdmin.from('videos').select('*').order('id')),
-      orgEq(sbAdmin.from('evaluations').select('*').gte('created_at', dateLimit).order('created_at', { ascending: false }).limit(200)),
-      orgEq(sbAdmin.from('voice_evals').select('*').gte('created_at', dateLimit).order('created_at', { ascending: false }).limit(200)),
+      orgEq(sbAdmin.from('evaluations').select('*').order('created_at', { ascending: false }).limit(500)),
+      orgEq(sbAdmin.from('voice_evals').select('*').order('created_at', { ascending: false }).limit(500)),
     ] : [null, null, null, null];
 
     const contentPromises = wantContent ? [
