@@ -6015,44 +6015,26 @@ function renderEduPage(){
   // 교육링크 (카드형 3개 가로)
   const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
   let lkHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
       <input type="text" id="edu-lk-url" placeholder="URL" style="flex:2;min-width:240px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="document.getElementById('edu-lk-thumb-input').click()">📷 썸네일 이미지 (선택)</button>
-      <input type="file" id="edu-lk-thumb-input" accept="image/*" style="display:none" onchange="onEduLinkThumbChange(this)">
-      <span id="edu-lk-thumb-name" style="font-size:11px;color:var(--t3)">YouTube URL은 자동 감지됩니다</span>
-      <div id="edu-lk-thumb-preview" style="display:none;width:48px;height:36px;border-radius:6px;background-size:cover;background-position:center;border:1px solid var(--bdr)"></div>
-      <button type="button" id="edu-lk-thumb-clear" style="display:none;font-size:11px;background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700" onclick="clearEduLinkThumb()">제거</button>
-      <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-left:auto" onclick="addEduLink()">등록</button>
+      <button class="btn btn-blue" style="padding:8px 18px;font-size:12px" onclick="addEduLink()">등록</button>
     </div>
   </div>`:'';
   lkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
   lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
     const bg=linkColors[i%linkColors.length];
-    let domain='';try{domain=new URL(lk.url).hostname;}catch(e){}
-    const ytId=getYouTubeId(lk.url||'');
-    const customThumb=lk.thumbnail_url||lk.thumbnailUrl||'';
-    const ytThumb=ytId?`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`:'';
-    const heroBg=customThumb||ytThumb;
-    // 외부 favicon 호출 제거 — 링크명 첫글자 큰 글씨로 (Slack·Notion 스타일)
-    //  · 한글이면 첫 글자 1자, 영문이면 2자
-    const nameRaw=(lk.name||'').trim();
-    const firstChars=/[가-힣]/.test(nameRaw)?(nameRaw[0]||'?'):(nameRaw.slice(0,2).toUpperCase()||'?');
-    // 미세한 그라데이션으로 카드 화려하게
+    // 카드 hero = 컬러 그라데이션 + 큰 외부링크 아이콘 (모든 카드 통일)
     const grad=`linear-gradient(135deg, ${bg} 0%, ${bg}dd 60%, ${bg}aa 100%)`;
-    const heroHtml=heroBg
-      ? `<div style="height:120px;background:#000 url('${heroBg.replace(/'/g,'%27')}') center/cover no-repeat;position:relative">
-           ${ytId?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:10px">▶ YouTube</div>`:''}
-         </div>`
-      : `<div style="height:120px;background:${grad};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
-           <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.18) 0%, transparent 60%);pointer-events:none"></div>
-           <span style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,.18);font-family:'LG글씨','LG Smart',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;z-index:1">${firstChars}</span>
-           <svg style="position:absolute;bottom:8px;right:8px;opacity:.55" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-         </div>`;
+    const heroHtml=`<div style="height:120px;background:${grad};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.2) 0%, transparent 60%);pointer-events:none"></div>
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.2));z-index:1">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+    </div>`;
     const adminControls=isAdmin?`
-      <button style="position:absolute;top:8px;right:36px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();editLinkThumb(${lk.id})" title="썸네일 변경">✎</button>
       <button style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
     return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
       ${adminControls}
@@ -6072,63 +6054,13 @@ function getYouTubeId(url){
   const m=String(url).match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
   return m?m[1]:'';
 }
-let _eduLinkThumbFile=null, _eduLinkThumbDataUrl='';
-function onEduLinkThumbChange(input){
-  const f=input?.files?.[0]; if(!f) return;
-  if(!/^image\//.test(f.type)){alert('이미지 파일만 가능');input.value='';return;}
-  if(f.size>3*1024*1024){alert('3MB 이하만 가능');input.value='';return;}
-  const r=new FileReader();
-  r.onload=e=>{
-    _eduLinkThumbFile=f; _eduLinkThumbDataUrl=e.target.result;
-    const nm=document.getElementById('edu-lk-thumb-name'); if(nm) nm.textContent=f.name;
-    const pv=document.getElementById('edu-lk-thumb-preview');
-    if(pv){pv.style.display='inline-block';pv.style.backgroundImage=`url('${_eduLinkThumbDataUrl}')`;}
-    const cl=document.getElementById('edu-lk-thumb-clear'); if(cl) cl.style.display='inline-block';
-  };
-  r.readAsDataURL(f);
-}
-function clearEduLinkThumb(){
-  _eduLinkThumbFile=null; _eduLinkThumbDataUrl='';
-  const nm=document.getElementById('edu-lk-thumb-name'); if(nm) nm.textContent='YouTube URL은 자동 감지됩니다';
-  const pv=document.getElementById('edu-lk-thumb-preview'); if(pv){pv.style.display='none';pv.style.backgroundImage='';}
-  const cl=document.getElementById('edu-lk-thumb-clear'); if(cl) cl.style.display='none';
-  const inp=document.getElementById('edu-lk-thumb-input'); if(inp) inp.value='';
-}
-async function uploadEduLinkThumb(file){
-  if(!file) return '';
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-  const path=`edu_link_thumbs/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const{error:ue}=await sb.storage.from('files').upload(path,file,{upsert:false,cacheControl:'31536000'});
-  if(ue){console.error('thumb upload',ue); return '';}
-  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-  return publicUrl||'';
-}
-async function editLinkThumb(id){
-  if(!(CU?.isAdmin||CU?.isSubAdmin)) return;
-  const lk=(D.learningLinks||[]).find(l=>l.id===id); if(!lk) return;
-  const inp=document.createElement('input');
-  inp.type='file'; inp.accept='image/*'; inp.style.display='none';
-  inp.onchange=async()=>{
-    const f=inp.files?.[0]; if(!f) return;
-    if(!/^image\//.test(f.type)){alert('이미지만 가능');return;}
-    if(f.size>3*1024*1024){alert('3MB 이하만 가능');return;}
-    const url=await uploadEduLinkThumb(f);
-    if(!url){alert('업로드 실패');return;}
-    const r=await sb.from('learning_links').update({thumbnail_url:url}).eq('id',id);
-    if(r.error){
-      const msg=(r.error.message||'').toLowerCase();
-      if(msg.includes('column') && msg.includes('thumbnail_url')){
-        alert('DB에 thumbnail_url 컬럼 없음 — ALTER TABLE learning_links ADD COLUMN thumbnail_url text;');
-        return;
-      }
-      alert('저장 실패: '+r.error.message); return;
-    }
-    await loadFromDB(); renderEduPage();
-    if(typeof showToast==='function') showToast('썸네일 변경 완료','#10b981');
-  };
-  document.body.appendChild(inp); inp.click();
-  setTimeout(()=>inp.remove(),60000);
-}
+// (제거됨) 썸네일 업로드 기능 — 모든 카드를 외부링크 아이콘으로 통일하므로 불필요
+// 호환 stub (다른 곳에서 참조해도 안 깨지게)
+let _eduLinkThumbFile=null;
+function onEduLinkThumbChange(){}
+function clearEduLinkThumb(){}
+async function uploadEduLinkThumb(){return '';}
+async function editLinkThumb(){}
 // ── 체크리스트 엑셀 파서 ─────────────────────────────
 // 컬럼 매핑: 대항목 / 세부항목 / 평가기준(체크리스트) / 배점 / 평가기준 상세
 window._parsedChecklistItems=null;
@@ -6401,25 +6333,9 @@ async function addEduLink(){
   const name=document.getElementById('edu-lk-name')?.value?.trim();
   const url=document.getElementById('edu-lk-url')?.value?.trim();
   if(!name||!url){showToast('링크명과 URL을 입력하세요','#f59e0b');return;}
-  let thumbUrl='';
-  if(_eduLinkThumbFile){
-    thumbUrl=await uploadEduLinkThumb(_eduLinkThumbFile);
-    if(!thumbUrl){showToast('썸네일 업로드 실패','#ef4444');return;}
-  }
   const payload={name,url,category:'학습',org_name:D.activeOrg||null};
-  if(thumbUrl) payload.thumbnail_url=thumbUrl;
-  let {error:lkErr}=await sb.from('learning_links').insert(payload);
-  if(lkErr){
-    const msg=(lkErr.message||'').toLowerCase();
-    if(thumbUrl && msg.includes('column') && msg.includes('thumbnail_url')){
-      console.warn('thumbnail_url 컬럼 없음 — 컬럼 제외 후 재시도');
-      const fallback={name,url,category:'학습',org_name:D.activeOrg||null};
-      ({error:lkErr}=await sb.from('learning_links').insert(fallback));
-      if(!lkErr) showToast('등록됨 — 썸네일 컬럼 미생성으로 썸네일은 저장 안됨','#f59e0b');
-    }
-    if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
-  }
-  clearEduLinkThumb();
+  const {error:lkErr}=await sb.from('learning_links').insert(payload);
+  if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
 }
 async function addEduCategory(type){
