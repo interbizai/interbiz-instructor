@@ -15887,6 +15887,18 @@ function openEditUserModal(id){
   document.body.appendChild(overlay);
 }
 async function submitEditUser(id){
+  const u=D.users.find(x=>x.id===id);
+  if(!u){alert('강사를 찾을 수 없습니다.');return;}
+  const newEmail=(v('eu-email')||'').trim().toLowerCase();
+  // 이메일 검증
+  if(newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)){
+    alert('이메일 형식이 올바르지 않습니다.');return;
+  }
+  // 이메일 중복 체크 (본인 제외)
+  if(newEmail && newEmail!==(u.email||'').toLowerCase()){
+    const dup=(D.users||[]).find(x=>x.id!==id && (x.email||'').toLowerCase()===newEmail);
+    if(dup){alert('이미 사용 중인 이메일입니다: '+dup.name);return;}
+  }
   const fields={
     orgName:v('eu-org').trim()||null,
     team:v('eu-team').trim()||null,
@@ -15899,11 +15911,24 @@ async function submitEditUser(id){
     channel:v('eu-ch').trim()||null,
     status:v('eu-status')||'근무'
   };
-  await dbUpdateUser(id,fields);
-  const u=D.users.find(x=>x.id===id);
-  if(u) Object.assign(u,fields);
+  // 이메일 변경 시에만 fields 에 포함
+  if(newEmail && newEmail!==(u.email||'').toLowerCase()){
+    fields.email=newEmail;
+  }
+  try{
+    await dbUpdateUser(id,fields);
+  }catch(e){
+    alert('저장 실패: '+(e?.message||e));
+    return;
+  }
+  Object.assign(u,fields);
   document.getElementById('edit-user-overlay')?.remove();
   renderAdmin();
+  if(fields.email){
+    alert('✅ 저장 완료\n\n⚠ 이메일(아이디)이 변경되었습니다. 해당 강사는 새 이메일로 다시 로그인해야 합니다.');
+  } else {
+    if(typeof showToast==='function') showToast('✓ 저장 완료','#10b981');
+  }
 }
 // 전체 강사 영구 삭제 (3단계 확인)
 async function purgeAllUsers(){
