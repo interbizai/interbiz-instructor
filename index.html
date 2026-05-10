@@ -6036,14 +6036,20 @@ function renderEduPage(){
     const customThumb=lk.thumbnail_url||lk.thumbnailUrl||'';
     const ytThumb=ytId?`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`:'';
     const heroBg=customThumb||ytThumb;
-    const faviconUrl=domain?`https://www.google.com/s2/favicons?domain=${domain}&sz=128`:'';
+    // 외부 favicon 호출 제거 — 링크명 첫글자 큰 글씨로 (Slack·Notion 스타일)
+    //  · 한글이면 첫 글자 1자, 영문이면 2자
+    const nameRaw=(lk.name||'').trim();
+    const firstChars=/[가-힣]/.test(nameRaw)?(nameRaw[0]||'?'):(nameRaw.slice(0,2).toUpperCase()||'?');
+    // 미세한 그라데이션으로 카드 화려하게
+    const grad=`linear-gradient(135deg, ${bg} 0%, ${bg}dd 60%, ${bg}aa 100%)`;
     const heroHtml=heroBg
       ? `<div style="height:120px;background:#000 url('${heroBg.replace(/'/g,'%27')}') center/cover no-repeat;position:relative">
            ${ytId?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:10px">▶ YouTube</div>`:''}
          </div>`
-      : `<div style="height:120px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-           ${faviconUrl?`<img src="${faviconUrl}" style="width:40px;height:40px;border-radius:8px;background:#fff;padding:4px" onerror="this.style.display='none'">`:''}
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      : `<div style="height:120px;background:${grad};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+           <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.18) 0%, transparent 60%);pointer-events:none"></div>
+           <span style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,.18);font-family:'LG글씨','LG Smart',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;z-index:1">${firstChars}</span>
+           <svg style="position:absolute;bottom:8px;right:8px;opacity:.55" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
          </div>`;
     const adminControls=isAdmin?`
       <button style="position:absolute;top:8px;right:36px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();editLinkThumb(${lk.id})" title="썸네일 변경">✎</button>
