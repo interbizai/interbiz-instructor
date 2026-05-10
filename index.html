@@ -5388,7 +5388,8 @@ function updateHeaderUI(){
   const now=new Date();
   const monthTxt=`${now.getFullYear()}년 ${now.getMonth()+1}월`;
   document.querySelectorAll('.hdr-month').forEach(e=>{e.textContent=monthTxt;e.style.cursor='pointer';e.onclick=()=>openCalendar();});
-  const photo=CU?.isAdmin?'assets/logo/image.png':(()=>{const u=D.users.find(x=>x.id===CU?.id);return u?.photo||CU?.photo||'';})();
+  // image.png 가 실제 파일 없어 404 발생 → 관리자도 일반 photo 또는 initial 사용
+  const photo=(()=>{const u=D.users.find(x=>x.id===CU?.id);return u?.photo||CU?.photo||'';})();
   const initial=CU?.name?CU.name[0]:'?';
   document.querySelectorAll('.hdr-av').forEach(av=>{
     if(photo){av.innerHTML=`<img src="${photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;av.style.overflow='hidden';}
