@@ -1,12 +1,13 @@
-// 프로필 사진 업데이트 (서비스 키 우회) — RLS 정책 미설정 환경에서도 동작
-// 클라이언트가 직접 sb.from('users').update 시 RLS 로 막힐 경우 폴백 경로
+// 프로필 사진 업데이트 — base64 → Supabase Storage 업로드 → URL 저장
+// (이전: DB users.photo 에 base64 저장 → 5MB 한도/응답 폭증)
+// (현재: Storage 'user_photos/{userId}.{ext}' 업로드 → 공개 URL 만 DB 저장)
 
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 
 export const config = {
-  maxDuration: 15,
-  api: { bodyParser: { sizeLimit: '6mb' } }, // base64 이미지(최대 ~4MB) 수용
+  maxDuration: 30,
+  api: { bodyParser: { sizeLimit: '6mb' } },
 };
 
 const SB_URL = process.env.SUPABASE_URL;
@@ -16,6 +17,24 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const sbAdmin = SB_URL && SB_SERVICE_KEY
   ? createClient(SB_URL, SB_SERVICE_KEY, { auth: { persistSession: false } })
   : null;
+
+const BUCKET = 'user_photos';
+
+// dataURL → Buffer + mime
+function parseDataUrl(dataUrl) {
+  const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || '');
+  if (!m) return null;
+  const mime = m[1];
+  const buf = Buffer.from(m[2], 'base64');
+  return { mime, buf };
+}
+
+function extFromMime(mime) {
+  if (/png/.test(mime)) return 'png';
+  if (/webp/.test(mime)) return 'webp';
+  if (/gif/.test(mime)) return 'gif';
+  return 'jpg';
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
@@ -34,48 +53,79 @@ export default async function handler(req, res) {
     const { photo } = req.body || {};
     if (!decoded.sub || decoded.sub === 0) return res.status(403).json({ ok: false, error: '본인 계정만 변경 가능' });
 
-    // photo: null 또는 dataURL 문자열만 허용
-    if (photo !== null && photo !== '' && typeof photo !== 'string') {
+    // photo: null / 빈 문자열 → 사진 제거
+    if (photo === null || photo === '') {
+      const { error: upErr } = await sbAdmin
+        .from('users')
+        .update({ photo: null })
+        .eq('id', decoded.sub);
+      if (upErr) return res.status(500).json({ ok: false, error: upErr.message });
+      return res.status(200).json({ ok: true, saved: false, photoUrl: null });
+    }
+
+    if (typeof photo !== 'string') {
       return res.status(400).json({ ok: false, error: 'photo 형식 오류' });
     }
-    if (typeof photo === 'string' && photo.length > 0 && !photo.startsWith('data:image/')) {
-      return res.status(400).json({ ok: false, error: 'photo 는 data:image/... 형식만 허용' });
+
+    // 기존 URL 형식이면 그대로 저장 (마이그레이션 호환)
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      const { error: upErr } = await sbAdmin
+        .from('users')
+        .update({ photo })
+        .eq('id', decoded.sub);
+      if (upErr) return res.status(500).json({ ok: false, error: upErr.message });
+      return res.status(200).json({ ok: true, saved: true, photoUrl: photo, length: photo.length });
     }
-    if (typeof photo === 'string' && photo.length > 6 * 1024 * 1024) {
-      return res.status(413).json({ ok: false, error: 'photo 가 너무 큽니다 (6MB 초과)' });
+
+    // dataURL 인 경우 → Storage 에 업로드 후 URL 저장
+    const parsed = parseDataUrl(photo);
+    if (!parsed) return res.status(400).json({ ok: false, error: 'photo 는 data:image/... 또는 https:// URL 만 허용' });
+
+    if (parsed.buf.length > 3 * 1024 * 1024) {
+      return res.status(413).json({ ok: false, error: '이미지가 너무 큽니다 (3MB 초과)' });
     }
 
-    const newPhoto = (photo === null || photo === '') ? null : photo;
+    const ext = extFromMime(parsed.mime);
+    // 사용자 ID 기반 고정 경로 — 새 사진 업로드 시 자동 덮어쓰기 (upsert)
+    const path = `${decoded.sub}/${decoded.sub}.${ext}`;
 
-    const { error: upErr } = await sbAdmin
-      .from('users')
-      .update({ photo: newPhoto })
-      .eq('id', decoded.sub);
-
+    const { error: upErr } = await sbAdmin.storage
+      .from(BUCKET)
+      .upload(path, parsed.buf, {
+        contentType: parsed.mime,
+        upsert: true,
+        cacheControl: '3600',
+      });
     if (upErr) {
-      // photo 컬럼 없으면 자동 추가 후 재시도
-      const msg = (upErr.message || '').toLowerCase();
-      if (msg.includes('column') && msg.includes('photo')) {
-        return res.status(500).json({ ok: false, error: 'users.photo 컬럼이 없습니다. ALTER TABLE public.users ADD COLUMN photo text; 실행 필요' });
-      }
-      console.error('[update-photo] update error:', upErr);
-      return res.status(500).json({ ok: false, error: upErr.message || '사진 저장 실패' });
+      console.error('[update-photo] storage upload:', upErr);
+      return res.status(500).json({ ok: false, error: 'Storage 업로드 실패: ' + upErr.message });
     }
 
-    // 검증 — 실제로 저장된 길이 반환
-    const { data: verify } = await sbAdmin
+    const { data: pub } = sbAdmin.storage.from(BUCKET).getPublicUrl(path);
+    const photoUrl = pub?.publicUrl || '';
+    if (!photoUrl) return res.status(500).json({ ok: false, error: 'Public URL 발급 실패' });
+
+    // 캐시 무효화 — 같은 경로 재업로드 시 즉시 갱신
+    const versionedUrl = photoUrl + '?v=' + Date.now();
+
+    const { error: dbErr } = await sbAdmin
       .from('users')
-      .select('id, photo')
-      .eq('id', decoded.sub)
-      .maybeSingle();
+      .update({ photo: versionedUrl })
+      .eq('id', decoded.sub);
+    if (dbErr) {
+      console.error('[update-photo] db update:', dbErr);
+      return res.status(500).json({ ok: false, error: 'DB 저장 실패: ' + dbErr.message });
+    }
 
     return res.status(200).json({
       ok: true,
-      saved: !!verify?.photo,
-      length: verify?.photo?.length || 0,
+      saved: true,
+      photoUrl: versionedUrl,
+      length: versionedUrl.length,
+      bytes: parsed.buf.length,
     });
   } catch (e) {
     console.error('[update-photo] unexpected:', e);
-    return res.status(500).json({ ok: false, error: '사진 처리 중 오류' });
+    return res.status(500).json({ ok: false, error: e.message || '사진 처리 중 오류' });
   }
 }
