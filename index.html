@@ -4921,7 +4921,7 @@ async function loadUserPhotosLazy(force){
     // CU.photo 도 갱신
     if(CU?.id && photoMap[CU.id]){
       CU.photo=photoMap[CU.id];
-      try{localStorage.setItem('ib_user',JSON.stringify(CU));}catch(_){}
+      try{saveStoredUser(CU);}catch(_){}
     }
     window._photosLoaded=true;
     // 현재 페이지 재렌더
@@ -5012,6 +5012,30 @@ const SEED = {
 ════════════════════════════════ */
 let D = { users:[], videos:[], criteria:[], refVideos:{} };
 let CU = JSON.parse(localStorage.getItem('ib_user')||'null');
+// ⚡ localStorage 안전 저장 — photo(base64 1~3MB) 제외 + quota 초과 방지
+function saveStoredUser(u){
+  if(!u) return;
+  try{
+    // photo·scores 같은 큰 필드는 localStorage 에 굳이 저장 안 함 (DB 가 원본)
+    const{photo, scores, maxes, habits, habit_counts, engagement_gaps, ...lite} = u;
+    localStorage.setItem('ib_user', JSON.stringify(lite));
+  }catch(e){
+    // quota 초과 시 더 강한 절감 — 핵심 필드만 (id·name·email·role)
+    console.warn('saveStoredUser: 1차 저장 실패 — 핵심 필드만 저장 시도', e?.message);
+    try{
+      const minimal={id:u.id, name:u.name, email:u.email, channel:u.channel,
+        team:u.team, position:u.position, orgName:u.orgName,
+        isAdmin:!!u.isAdmin, isSubAdmin:!!u.isSubAdmin};
+      localStorage.setItem('ib_user', JSON.stringify(minimal));
+    }catch(e2){
+      console.error('saveStoredUser: 핵심 필드도 저장 실패 — localStorage 정리 필요', e2);
+      // 최후 — 다른 큰 데이터 비우고 재시도
+      try{localStorage.removeItem('sc_coach_state_v1');}catch(_){}
+      try{localStorage.removeItem('interbiz_eduTypes');}catch(_){}
+      try{localStorage.setItem('ib_user', JSON.stringify({id:u.id, name:u.name, email:u.email, isAdmin:!!u.isAdmin}));}catch(_){}
+    }
+  }
+}
 // 부관리자는 관리자 메뉴 접근 가능 — 페이지 reload 시에도 보장
 if(CU?.isSubAdmin && !CU.isAdmin) CU.isAdmin=true;
 let curLectId = null;
@@ -5556,7 +5580,7 @@ async function doLogin(){
   // ① 토큰만 받으면 즉시 CU 설정 + 메인 표시 (DB 로드는 백그라운드)
   CU=j.user;
   if(CU?.isSubAdmin) CU.isAdmin=true;
-  localStorage.setItem('ib_user',JSON.stringify(CU));
+  saveStoredUser(CU);
   hideLoginLoading();
   initHome(); showPage('page-pick');
   startNotifPolling();
@@ -5567,7 +5591,7 @@ async function doLogin(){
       if(fresh){
         CU=fresh;
         if(CU?.isSubAdmin) CU.isAdmin=true;
-        localStorage.setItem('ib_user',JSON.stringify(CU));
+        saveStoredUser(CU);
       }
     }
     if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
@@ -5839,7 +5863,7 @@ async function doRegister(){
   pendingPhoto=null;
   await loadFromDB();
   CU=D.users.find(x=>x.id===result.id);
-  localStorage.setItem('ib_user',JSON.stringify(CU));
+  saveStoredUser(CU);
   initHome(); showPage('page-pick');
 }
 /* ── PW visibility toggle ── */
@@ -15183,7 +15207,7 @@ function changeProfilePhoto(uid,input){
     await dbUpdateUser(uid,{photo:e.target.result});
     const u=D.users.find(x=>x.id===uid);
     if(u) u.photo=e.target.result;
-    if(CU&&CU.id===uid){ CU.photo=e.target.result; localStorage.setItem('ib_user',JSON.stringify(CU)); }
+    if(CU&&CU.id===uid){ CU.photo=e.target.result; saveStoredUser(CU); }
     el('prof-photo-display').innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
   };
   reader.readAsDataURL(input.files[0]);
@@ -15336,7 +15360,7 @@ async function saveEditProfile(){
       if(!j.ok){ el('ep-err').textContent='비밀번호 변경 실패: '+(j.error||''); return; }
     }catch(e){ el('ep-err').textContent='네트워크 오류'; return; }
   }
-  if(CU&&CU.id===editProfileId){ CU.name=u.name; CU.channel=u.channel; localStorage.setItem('ib_user',JSON.stringify(CU)); }
+  if(CU&&CU.id===editProfileId){ CU.name=u.name; CU.channel=u.channel; saveStoredUser(CU); }
   closeOverlay('edit-profile-overlay');
   openLecturer(editProfileId, lectFromPage);
   alert(pw ? '✅ 정보 및 비밀번호가 저장되었습니다.' : '✅ 저장되었습니다.');
@@ -16546,7 +16570,7 @@ async function saveProfile(){
   const name=v('mp-name').trim(), phone=v('mp-phone').trim();
   if(!name){alert('성명을 입력하세요.');return;}
   await dbUpdateUser(u.id,{name,phone});
-  u.name=name;u.phone=phone;CU=u;localStorage.setItem('ib_user',JSON.stringify(CU));
+  u.name=name;u.phone=phone;CU=u;saveStoredUser(CU);
   alert('✅ 프로필이 저장되었습니다.');
 }
 // 마이페이지 사진 업로드 — 항상 서비스 키 API 우회 (RLS silent-block 회피)
@@ -16580,7 +16604,7 @@ async function uploadMyPhoto(input){
       const u=D.users.find(x=>x.id===CU.id);
       if(u) u.photo=dataUrl;
       CU.photo=dataUrl;
-      localStorage.setItem('ib_user',JSON.stringify(CU));
+      saveStoredUser(CU);
       try{document.querySelectorAll('.hdr-av,.tn-profile-photo').forEach(av=>{av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;});}catch(_){}
       if(typeof showToast==='function') showToast(`✓ 사진 저장 완료`,'#10b981');
       renderMyProfile();
@@ -16606,7 +16630,7 @@ async function removeMyPhoto(){
     const u=D.users.find(x=>x.id===CU.id);
     if(u) u.photo=null;
     CU.photo=null;
-    localStorage.setItem('ib_user',JSON.stringify(CU));
+    saveStoredUser(CU);
     try{document.querySelectorAll('.hdr-av,.tn-profile-photo').forEach(av=>{av.innerHTML=CU.name?.[0]||'?';});}catch(_){}
     if(typeof showToast==='function') showToast('프로필 사진 제거됨','#6b7280');
     renderMyProfile();
