@@ -62,6 +62,19 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: '비밀번호 변경 실패' });
     }
 
+    // silent fail 차단 — DB 에서 실제로 새 hash 가 저장됐는지 검증
+    const { data: verify } = await sbAdmin.from('users').select('pw').eq('id', user.id).maybeSingle();
+    if (!verify || !verify.pw) {
+      console.error('[change-password] verify read: empty pw after update');
+      return res.status(500).json({ ok: false, error: '저장 검증 실패 — DB 에서 pw 가 비어있음' });
+    }
+    // 새 비밀번호로 한 번 더 매칭 확인 (저장된 hash 와 입력한 새 비밀번호가 매치 되어야 정상)
+    const verifyMatch = await bcrypt.compare(newPwStr, verify.pw);
+    if (!verifyMatch) {
+      console.error('[change-password] verify bcrypt: new pw does not match stored hash');
+      return res.status(500).json({ ok: false, error: '저장 검증 실패 — hash 불일치' });
+    }
+
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[change-password] unexpected error:', e);

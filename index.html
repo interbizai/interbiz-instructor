@@ -16517,7 +16517,7 @@ function renderMyProfile(){
   showPage('page-myprofile');
 }
 async function changeMyPassword(){
-  if(!CU||!CU.id) return;
+  if(!CU||!CU.id){alert('로그인 정보가 없습니다.');return;}
   const oldPw=v('mp-pw-old'), newPw=v('mp-pw-new'), newPw2=v('mp-pw-new2');
   if(!oldPw){alert('현재 비밀번호를 입력하세요.');return;}
   if(!newPw||newPw.length<4){alert('새 비밀번호는 4자 이상이어야 합니다.');return;}
@@ -16527,10 +16527,17 @@ async function changeMyPassword(){
   try{
     const r=await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({oldPassword:oldPw,newPassword:newPw})});
     const j=await r.json().catch(()=>({}));
-    if(!j.ok){ alert('❌ '+(j.error||'비밀번호 변경 실패')); return; }
+    if(!r.ok || !j.ok){
+      alert('❌ 비밀번호 변경 실패\n\n원인: '+(j.error||'알 수 없음')+'\nstatus: '+r.status);
+      return;
+    }
     el('mp-pw-old').value='';el('mp-pw-new').value='';el('mp-pw-new2').value='';
-    alert('✅ 비밀번호가 변경되었습니다.');
-  }catch(e){ alert('네트워크 오류'); }
+    alert('✅ 비밀번호가 변경되었습니다.\n\n다음 로그인 시 새 비밀번호를 사용하세요.\n\n(보안을 위해 자동 로그아웃됩니다)');
+    // 비밀번호 변경 후 강제 로그아웃 — 다른 기기 세션도 자연스럽게 만료
+    setTimeout(()=>doLogout(), 800);
+  }catch(e){
+    alert('네트워크 오류: '+(e?.message||e));
+  }
 }
 async function saveProfile(){
   if(!CU||!CU.id) return;
