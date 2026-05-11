@@ -5042,6 +5042,38 @@ let curLectId = null;
 let curVidId = null;
 function save(){ /* DB 저장은 각 함수에서 직접 처리 */ }
 
+// ════════════════════════════════════════════════════════════
+// 렌더 캐시 (A1) — 데이터 변경 없으면 동일 페이지 재렌더 skip
+//   key: 함수명 + dataVersion + 필터 hash
+//   dataVersion: D.users/videos 등 변경 시 ++ → 자동 무효화
+// ════════════════════════════════════════════════════════════
+window._renderCache = {};
+window._dataVersion = 0;
+function bumpDataVersion(){ window._dataVersion++; window._renderCache = {}; }
+function renderCached(key, computeFn){
+  const cacheKey = key + ':' + window._dataVersion;
+  const cached = window._renderCache[cacheKey];
+  if(cached !== undefined){ return cached; }
+  const result = computeFn();
+  window._renderCache[cacheKey] = result;
+  return result;
+}
+// loadFromDB 가 D 갱신 시 자동 호출되도록 후처리
+(function setupCacheInvalidation(){
+  const _origLoadFromDB = window.loadFromDB;
+  // loadFromDB 가 아직 정의 안 됐을 수도 → window.load 시점에 hook
+  window.addEventListener('load', ()=>{
+    if(typeof loadFromDB === 'function'){
+      const orig = loadFromDB;
+      window.loadFromDB = async function(...args){
+        const result = await orig.apply(this, args);
+        bumpDataVersion();
+        return result;
+      };
+    }
+  });
+})();
+
 /* ════════════════════════════════
    TOP PROGRESS BAR (페이지 전환·네트워크 로딩 시각 신호)
 ════════════════════════════════ */
@@ -6724,7 +6756,7 @@ function renderPickPhotoCollage(){
   const placeholderHtml=`<div class="pick-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>추가 예정</div>`;
   const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const cardHtml=(u)=>u?.photo
-    ? `<div class="pick-photo-card"><img class="pick-portrait" src="${u.photo}" alt="" onerror="this.remove()"/></div>`
+    ? `<div class="pick-photo-card"><img class="pick-portrait" src="${u.photo}" alt="" loading="lazy" decoding="async" onerror="this.remove()"/></div>`
     : `<div class="pick-photo-card">${placeholderHtml}</div>`;
 
   if(users.length===0){
@@ -6890,7 +6922,7 @@ function renderPick(){
       ${eduTypeChip}
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;min-width:0">
-        <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
+        <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden;border:3px solid rgba(0,0,0,.06)">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
         <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</span><span style="font-size:14px;flex-shrink:0">${medals2[i]}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.office,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
@@ -7099,7 +7131,7 @@ function openPickRankingModal(){
     return `<div style="border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('pick-ranking-overlay').classList.remove('show');openLecturer(${u.id},'page-pick')">
       <div style="display:flex;align-items:center;gap:14px">
         <div style="font-size:18px;font-weight:900;color:var(--t3);width:30px;text-align:center">${i<3?medals[i]:(i+1)}</div>
-        <div style="width:44px;height:44px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+        <div style="width:44px;height:44px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:800">${u.name} <span style="font-size:11px;color:var(--t3);font-weight:500">${[u.office,u.team,u.position].filter(Boolean).join(' · ')}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px">평가 ${u.evalCount}건 · AI ${u.pickScore}점 · 성장 <span style="color:${growthColor}">${growthTxt}</span></div>
@@ -14387,7 +14419,7 @@ function openLecturer(id, fromPage){
       <!-- 사진 + Lv 뱃지 -->
       <div style="text-align:center;flex-shrink:0;min-width:200px;padding:0 24px">
         <div style="position:relative;width:130px;height:130px;margin:0 auto 8px">
-          <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);${isOwner?'cursor:pointer':'cursor:default'}" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} id="prof-photo-display">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+          <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);${isOwner?'cursor:pointer':'cursor:default'}" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} id="prof-photo-display">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
           ${isOwner?`<input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">`:''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
@@ -16536,7 +16568,7 @@ function renderMyProfile(){
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
           <div style="position:relative;flex-shrink:0">
             <div id="mp-photo-circle" style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--t2);cursor:pointer;border:2px solid var(--bdr)" onclick="document.getElementById('mp-photo-input').click()" title="클릭하여 사진 변경">
-              ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover">`:u.name?.[0]||'?'}
+              ${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name?.[0]||'?'}
             </div>
             <button onclick="document.getElementById('mp-photo-input').click()" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:var(--blue);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18)" title="사진 등록/변경">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>

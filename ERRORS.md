@@ -253,3 +253,148 @@ NOTIFY pgrst, 'reload schema';
 6. **NOTICE 메시지 한국어 주의**
    → Supabase SQL Editor 가 한국어 NOTICE 출력을 SQL 로 재파싱할 수 있음
    → DO 블록 내 RAISE 보다 단순 SELECT 검증 권장
+
+---
+
+## 🚨 에러 #9: localStorage QuotaExceeded — 로그인 무한 로딩 (2026-05-11)
+
+**증상**:
+- 특정 강사 (사진 등록자) 로그인 시 화면이 "로그인 중" 영원히
+- API 자체는 200 OK 정상 응답
+- 콘솔: `QuotaExceededError: Failed to execute 'setItem' on 'Storage'`
+
+**원인**:
+- `localStorage.setItem('ib_user', JSON.stringify(CU))` 시 user 객체가 5MB 초과
+- CU.photo 가 base64 (1~3MB), scores·habits 등 다른 큰 필드 누적
+- setItem throw → doLogin 의 hideLoginLoading 호출 전 멈춤
+
+**해결**:
+```js
+function saveStoredUser(u){
+  // photo·scores 등 큰 필드 제외 후 저장 (3단계 폴백)
+  const{photo, scores, maxes, habits, ...lite}=u;
+  localStorage.setItem('ib_user', JSON.stringify(lite));
+}
+// 모든 ib_user 저장처(9곳) → saveStoredUser() 로 통일
+```
+
+**근본 fix**: 사진을 base64 가 아닌 Storage URL 로 저장 (에러 #11 참조)
+
+**재발 방지**:
+- [ ] localStorage 에는 큰 데이터(>100KB) 저장 금지
+- [ ] 사용자 정보는 핵심 필드만 (id·name·email·역할)
+- [ ] 큰 데이터는 DB / Storage / sessionStorage 사용
+
+---
+
+## 🚨 에러 #10: 화면 입력 칸 있는데 저장 안 됨 (silent fail · 다중 발생)
+
+**증상 패턴**:
+- 관리자 → 강사 수정 → 이메일 입력 → 저장 → "성공" 알림 → 실제 변경 안 됨
+- 마이페이지 사진 등록 → "저장" → 새로고침 시 사라짐
+- 영상 분석 등록 → 결과 안 보임
+
+**원인 (모두 동일 패턴)**:
+- 입력 칸은 모달에 만들었는데 저장 함수 fields 객체에 해당 필드 누락
+- `submitEditUser`: email 입력 칸 있는데 fields 에 email 없음
+- `dbUpdateUser`: error console.error 만 하고 return → 호출자가 실패 인지 못 함
+- `dbCreateVideo`: error 시 null 반환 → 호출자가 null 검증 안 함
+
+**해결 (공통)**:
+1. 모달 입력 칸과 저장 함수 fields 객체 1:1 매핑 확인
+2. dbUpdate 후 select 로 검증 read
+3. 실패 시 즉시 alert + 정확한 원인
+
+**적용한 6가지 silent fail fix (2026-05-08~11)**:
+| # | 기능 | 검증 |
+|---|---|---|
+| 1 | saveEvaluation | DB read 로 row 확인 |
+| 2 | uploadMyPhoto | API saved:true + view read |
+| 3 | submitEditUser (관리자 강사 수정) | select 로 email 변경 확인 |
+| 4 | resetPw (관리자 PW 초기화) | pw 컬럼 확인 |
+| 5 | changeMyPassword (마이페이지) | bcrypt.compare 매칭 |
+| 6 | runAnalysis (영상 등록) | vidRow.id null 검증 |
+
+**재발 방지**:
+- [ ] 모든 모달 저장 후 → select 로 DB 재확인
+- [ ] dbUpdate 류 함수는 결과 객체 또는 throw (silent return 금지)
+- [ ] silent fail = console.error 만 하고 호출자 모르게 return 하는 패턴
+
+---
+
+## 🚨 에러 #11: 사진 base64 DB 저장 → API 응답 폭증·504
+
+**증상**:
+- /api/db/load 응답 60MB+ → 페이지 진입 2~5초
+- localStorage 5MB 한도 초과로 무한 로딩 (에러 #9 와 연동)
+- 일부 사진은 3MB 초과로 업로드 자체 실패
+
+**원인**:
+- users.photo 컬럼에 base64 (data:image/...) 저장
+- 1명당 1~3MB → 17명 × 평균 1MB = 17MB
+- /api/db/load 가 photo 포함 SELECT * → 응답 본문 폭증
+
+**해결 (2026-05-11)**:
+1. **Supabase Storage `user_photos` 버킷 생성** (13MB 상한, public, CDN)
+2. **`/api/auth/update-photo`** 가 dataURL 받으면 → Storage 업로드 → 공개 URL 만 DB 저장
+3. **`/api/admin/migrate-photos`** 1회 호출로 기존 17명 일괄 이전
+4. **클라이언트 자동 압축** (`compressImage`): 1MB 초과 사진 → Canvas 로 자동 축소 (800px 한도, JPEG 0.3~0.85 품질)
+5. **`<img loading="lazy">`** 적용: viewport 들어올 때만 로드
+
+**결과**:
+- API 응답: 17MB → ~1.5KB (99.99% 감소)
+- 페이지 진입: 3~5초 → 1~2초
+- localStorage quota 문제 자동 해결
+- 사진은 Supabase CDN (글로벌 분산)
+
+**재발 방지**:
+- [ ] **DB 컬럼에 base64 이미지 절대 저장 금지** — 항상 Storage URL
+- [ ] 신규 이미지 업로드는 항상 클라이언트 압축 후 (1MB 이하)
+- [ ] DB SELECT * 시 큰 컬럼은 명시적 제외 또는 별도 엔드포인트
+
+---
+
+## 🚨 에러 #12: 일관성 결함 — 이메일 대소문자·공백
+
+**증상**:
+- 'User@Example.COM' 으로 등록 → 'user@example.com' 로 로그인 시도 → "이메일 없음" 거부
+
+**원인**:
+- DB 와 입력값 비교 시 case-sensitive
+
+**해결 (2026-05-11)**:
+- `login.js`: `email.toLowerCase()` + ilike 검색
+- `create-user.js`: 등록 시 `email.toLowerCase()`
+- `submitEditUser`: 이메일 변경 시 `toLowerCase()`
+
+**재발 방지**:
+- [ ] 모든 식별자(email·username) 는 DB 저장·비교 시 lowercase 통일
+- [ ] 비교 전 trim() + toLowerCase()
+
+---
+
+## 📋 일반 원칙 (Hard Lessons — 추가됨)
+
+7. **DB 컬럼에 큰 바이너리(base64·blob) 저장 금지**
+   → 항상 Storage URL · CDN 활용
+   → SELECT * 시 응답 폭증 원천 차단
+
+8. **localStorage 는 핵심 메타 정보만**
+   → 사용자 정보 = id·name·email·역할
+   → 큰 데이터 (사진·캐시) 는 sessionStorage / IndexedDB / DB
+
+9. **모든 저장 작업은 검증 read**
+   → "성공 응답 받음" ≠ "실제 저장됨"
+   → 응답 후 1회 더 select 로 확인
+
+10. **silent fail 패턴 박멸**
+    → console.error 만 하고 return 절대 금지
+    → throw 또는 결과 객체 반환 ({ok, error})
+
+11. **이메일·아이디 정규화 일관성**
+    → 저장·비교 모두 lowercase + trim
+    → 등록·로그인·변경 시 동일 규칙
+
+12. **이미지 자동 압축**
+    → 사용자가 큰 사진 올려도 클라이언트에서 자동 축소
+    → Canvas API + 점진 품질 (0.85→0.3) 로 1MB 이하 보장
