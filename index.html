@@ -4585,7 +4585,8 @@ async function dbUpdateUser(id,fields){
   if('status' in fields) map.status=fields.status;
   if('position' in fields) map.position=fields.position;
   const {error}=await sb.from('users').update(map).eq('id',id);
-  if(error) console.error('dbUpdateUser:',error);
+  if(error){ console.error('dbUpdateUser:',error); return {ok:false, error:error.message||String(error)}; }
+  return {ok:true};
 }
 // 교육종류 목록 (조직별 분리 · Supabase)
 // org_name = NULL 인 행은 레거시(공통) 으로 취급되어 모든 조직에서 노출
@@ -4647,7 +4648,7 @@ async function dbCreateVideo(v){
     if(!error) return data;
   }
   console.error('dbCreateVideo:',error);
-  return null;
+  return {_error: error?.message || '영상 등록 실패 (DB)'};
 }
 // 영상 업데이트
 async function dbUpdateVideo(id,fields){
@@ -4657,7 +4658,8 @@ async function dbUpdateVideo(id,fields){
   if('solution' in fields) map.solution=fields.solution;
   if('status' in fields) map.status=fields.status;
   const {error}=await sb.from('videos').update(map).eq('id',id);
-  if(error) console.error('dbUpdateVideo:',error);
+  if(error){ console.error('dbUpdateVideo:',error); return {ok:false, error:error.message||String(error)}; }
+  return {ok:true};
 }
 // 타임스탬프 추가
 async function dbAddTimestamp(videoId,ts){
@@ -5486,7 +5488,7 @@ function topSearchHandler(q){
   if(users.length){
     html+=`<div style="padding:6px 14px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">강사 (${users.length})</div>`;
     html+=users.slice(0,5).map((u,i)=>`<div class="tn-dd-item" onclick="openLecturer(${u.id},'page-pick');toggleTopSearch()">
-      <div style="width:28px;height:28px;border-radius:50%;background:${colors[i%6]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:${colors[i%6]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0">${u.photo?'<img src="'+u.photo+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
       <div><div style="font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${[u.office,u.team,u.position].filter(Boolean).join(' · ')}</div></div>
     </div>`).join('');
   }
@@ -5593,7 +5595,7 @@ function renderRecommendedVideos(){
       const onclick=v.url?`window.open('${v.url}','_blank')`:(v.file_url?`window.open('${v.file_url}','_blank')`:'');
       return `<div class="r-vid-card" style="position:relative" onclick="${onclick}">
         ${isAdmin?`<button style="position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteRecVideo(${v.id})">×</button>`:''}
-        <div class="r-vid-thumb">${thumb?`<img src="${thumb}">`:'<span style="font-size:11px">미리보기 없음</span>'}<div class="r-vid-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+        <div class="r-vid-thumb">${thumb?`<img src="${thumb}" loading="lazy" decoding="async">`:'<span style="font-size:11px">미리보기 없음</span>'}<div class="r-vid-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21"/></svg></div></div>
         <div class="r-vid-info"><div class="r-vid-title">${v.title||'—'}</div><div class="r-vid-meta">${v.created_by||'관리자'} · ${v.created_at?.slice(0,10)||''}</div></div>
       </div>`;
     }).join('');
@@ -6070,7 +6072,7 @@ function pwaDismiss(){
     r.innerHTML=users.map((u,i)=>{
       const bg=colors[(u.id-1)%6];
       return `<div class="home-search-item" onclick="event.stopPropagation();openLecturer(${u.id},'page-pick');document.getElementById('home-search-results').classList.remove('show');document.getElementById('home-search-input').value='';">
-        <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
+        <div class="hs-photo" style="background:${bg};overflow:hidden">${u.photo?'<img src="'+u.photo+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':u.name[0]}</div>
         <div class="hs-info"><div class="hs-name">${u.name} <span style="font-size:10px;font-weight:500;color:var(--t3);margin-left:4px">${u.office||''}</span></div><div class="hs-meta">${[u.team,u.position].filter(Boolean).join(' · ')}</div></div>
         <svg class="hs-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
       </div>`;
@@ -7578,7 +7580,7 @@ function renderPickVideos(){
     const selShadow=isSel?'0 8px 22px rgba(239,68,68,.22)':'none';
     return `<div style="position:relative;border:${selBorder};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .25s;background:${selBg};box-shadow:${selShadow}" onclick="selectPickVideo(${vid.id})" onmouseover="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'}" onmouseout="if(${vid.id}!==PICK_SELECTED_VID){this.style.transform='';this.style.boxShadow='none'}">
       <div style="aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
-        ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:videoSrc?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${videoSrc}#t=1"></video>`:'<span style="font-size:12px;color:var(--t3)">미리보기 없음</span>'}
+        ${thumb?`<img src="${thumb}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:videoSrc?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${videoSrc}#t=1"></video>`:'<span style="font-size:12px;color:var(--t3)">미리보기 없음</span>'}
         ${isAdmin?'<span style="position:absolute;top:8px;left:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(245,158,11,.95);color:#fff">★ 관리자</span>':''}
         <span style="position:absolute;top:8px;right:8px;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(16,185,129,.92);color:#fff">총점 ${score}점</span>
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div>
@@ -7667,7 +7669,7 @@ function renderPickDetail(){
       <div style="position:relative;display:flex;align-items:stretch;gap:18px;padding:16px;border-radius:12px;background:#fff;border:1px solid rgba(248,113,113,.22);margin-bottom:18px;box-shadow:0 2px 8px rgba(248,113,113,.06)">
         <!-- 큰 썸네일 -->
         <div class="pick-hero-thumb" style="width:150px;height:94px;border-radius:10px;background:#000;flex-shrink:0;overflow:hidden;position:relative;cursor:pointer" onclick="openVideo(${vid.id})">
-          ${thumb?`<img src="${thumb}" style="width:100%;height:100%;object-fit:cover">`:vid.filePath?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${vid.filePath}#t=1"></video>`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px">미리보기 없음</div>'}
+          ${thumb?`<img src="${thumb}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:vid.filePath?`<video muted preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"><source src="${vid.filePath}#t=1"></video>`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:11px">미리보기 없음</div>'}
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);transition:background .2s"><div style="width:46px;height:46px;border-radius:50%;background:rgba(220,38,38,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21"/></svg></div></div>
         </div>
         <!-- 텍스트 영역 (축약 배너 스타일) -->
@@ -9688,7 +9690,7 @@ function runAnalysis(){
 
   // 영상 미니 썸네일
   const miniEl=el('an-player-mini');
-  if(miniEl&&window._anYtId) miniEl.innerHTML=`<img src="https://img.youtube.com/vi/${window._anYtId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover">`;
+  if(miniEl&&window._anYtId) miniEl.innerHTML=`<img src="https://img.youtube.com/vi/${window._anYtId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`;
   // 영상 플레이어 풀 (숨김)
   const playerFull=el('an-player-full');
   if(playerFull) playerFull.style.display='none';
@@ -10868,9 +10870,10 @@ async function autoSaveAnalysis(resultJson){
       channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
       eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
     });
-    if(result && resultJson.timestamps?.length){
+    if(result && !result._error && resultJson.timestamps?.length){
       for(const ts of resultJson.timestamps){ await dbAddTimestamp(result.id,ts); }
     }
+    if(result?._error){ console.error('autoSaveAnalysis: dbCreateVideo 실패:', result._error); }
     await loadFromDB();
   }catch(e){console.error('auto save error:',e);}
 }
@@ -10888,6 +10891,7 @@ async function saveAnalysisVideo(){
     channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
     eduFileUrl:window._anEduFileUrl||'', productName:window._anProduct||''
   });
+  if(result?._error){ alert('❌ 영상 저장 실패: '+result._error); return; }
   if(result && window._anTimestamps?.length){
     for(const ts of window._anTimestamps){ await dbAddTimestamp(result.id,ts); }
     await loadFromDB();
@@ -12461,7 +12465,8 @@ async function saveStreamVideo(){
     checklistUrl:document.getElementById('st-cl-url')?.value||'',
     productName:document.getElementById('st-prod-select')?.value||''
   });
-  if(result){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:'',videoType:v('st-type')||'',eduType:v('st-edu-type')||''}); }
+  if(result?._error){ alert('❌ 영상 저장 실패\n\n원인: '+result._error+'\n\nDB 또는 권한 확인 필요'); return; }
+  if(result && result.id){ D.videos.push({id:result.id,userId:CU.id,title:v('st-title'),youtube:'',filePath:streamBlob?URL.createObjectURL(streamBlob):'',date:v('st-date'),duration:dur,studentCount:parseInt(v('st-count'))||0,status:'분석완료',timestamps:[],solution:'',videoType:v('st-type')||'',eduType:v('st-edu-type')||''}); }
   alert('영상이 저장되었습니다!');
   showPage('page-pick');
 }
@@ -12930,7 +12935,7 @@ function renderGrid(users){
     const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][i%6];
     return `<div class="lect-card neu" onclick="openLecturer(${u.id},'page-pick')" style="animation-delay:${i*.07}s">
       <div class="lect-card-top">
-        <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
+        <div class="lect-photo" style="background:${bg};overflow:hidden">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.name[0]}</div>
         <div class="lect-info">
           <span class="lect-name">${u.name}</span>
           <div class="lect-meta">${u.office}<span style="margin-left:4px;color:var(--t3)">${u.team}</span></div>
@@ -13918,10 +13923,10 @@ async function scRunAI(){
       if(!f){ if(item.url) uploaded.push({url:item.url,mime:item.mime||'',name:item.name||''}); continue; }
       try{
         setScLoadingStep(`교육자료 업로드 중: ${f.name}`);
-        const sRes=await fetch('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
+        const sRes=await fetchWithRetry('/api/gcs-upload-url',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},body:JSON.stringify({filename:f.name,contentType:f.type||'application/octet-stream'})});
         const sData=await sRes.json();
         if(sData.signed_url){
-          await fetch(sData.signed_url,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
+          await fetchWithRetry(sData.signed_url,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
           item.url=sData.public_url||'';item.mime=f.type||'';
           uploaded.push({url:item.url,mime:item.mime,name:f.name});
         }
@@ -13933,7 +13938,7 @@ async function scRunAI(){
     setScLoadingStage('context','done');
     setScLoadingStage('coach','active');setScLoadingStep('AI 코칭 분석 중 (세계적 가전 전문 강사 시점)...');
     const primary=uploaded[0]||{url:'',mime:''};
-    const res=await fetch('/api/vertex-analyze',{
+    const res=await fetchWithRetry('/api/vertex-analyze',{
       method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
       body:JSON.stringify({
         mode:'scenario_coach',
@@ -15540,7 +15545,7 @@ function renderCompareResults(myId){
   el('cmp-results').innerHTML=list.map((u,i)=>{
     const bg=colors[i%6];
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.18);cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='#f8f8f8'" onmouseout="this.style.background=''" onclick="doCompare(${myId},${u.id})">
-      <div style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden">${u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden">${u.photo?'<img src="'+u.photo+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">':u.name[0]}</div>
       <div style="flex:1"><div style="font-size:13px;font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--t3)">${u.office} · ${u.team} · ${u.score}점</div></div>
       <span class="grade-badge g-${u.grade}" style="display:inline-flex">${u.grade}</span>
       <span style="font-size:11px;color:var(--blue);font-weight:700">비교 →</span>
@@ -15570,13 +15575,13 @@ function doCompare(myId,otherId){
     <div style="border:1px solid rgba(0,0,0,.18);border-radius:var(--r2);padding:18px;background:#fff">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px;flex:1">
-          <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${me.photo?'<img src="'+me.photo+'" style="width:100%;height:100%;object-fit:cover">':me.name[0]}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${me.photo?'<img src="'+me.photo+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">':me.name[0]}</div>
           <div><div style="font-size:13px;font-weight:800">${me.name}</div><div style="font-size:10px;color:var(--t3)">${me.score}점</div></div>
         </div>
         <span style="font-size:16px;font-weight:900;color:var(--t3)">VS</span>
         <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end">
           <div><div style="font-size:13px;font-weight:800;text-align:right">${other.name}</div><div style="font-size:10px;color:var(--t3);text-align:right">${other.score}점</div></div>
-          <div style="width:32px;height:32px;border-radius:50%;background:${otBg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${other.photo?'<img src="'+other.photo+'" style="width:100%;height:100%;object-fit:cover">':other.name[0]}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:${otBg};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;overflow:hidden">${other.photo?'<img src="'+other.photo+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">':other.name[0]}</div>
         </div>
       </div>
       <div style="text-align:center;margin-bottom:16px;padding:8px;background:rgba(0,0,0,.03);border-radius:8px">
@@ -15693,7 +15698,7 @@ function openVideo(id){
 
   // 영상 미니 썸네일
   const miniEl2=el('an-player-mini');
-  if(miniEl2&&window._anYtId) miniEl2.innerHTML=`<img src="https://img.youtube.com/vi/${window._anYtId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover">`;
+  if(miniEl2&&window._anYtId) miniEl2.innerHTML=`<img src="https://img.youtube.com/vi/${window._anYtId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`;
   const playerFull2=el('an-player-full');
   if(playerFull2) playerFull2.style.display='none';
 
@@ -15891,7 +15896,8 @@ async function openRegisterVideo(userId){
   const date=prompt('강의 날짜 (예: 2026-04-01):') || new Date().toISOString().split('T')[0];
   const sc=prompt('교육생 인원수:') || '0';
   const result=await dbCreateVideo({userId,title,date,duration:'—',studentCount:parseInt(sc)||0});
-  if(result){ D.videos.push({id:result.id,userId,title,youtube:'',filePath:'',date,duration:'—',studentCount:parseInt(sc)||0,status:'등록완료',timestamps:[],solution:''}); }
+  if(result?._error){ alert('❌ 영상 등록 실패\n\n원인: '+result._error); return; }
+  if(result && result.id){ D.videos.push({id:result.id,userId,title,youtube:'',filePath:'',date,duration:'—',studentCount:parseInt(sc)||0,status:'등록완료',timestamps:[],solution:''}); }
   alert('영상이 등록되었습니다.');
   openLecturer(userId,'page-dashboard');
 }
@@ -16217,7 +16223,11 @@ async function submitEditUser(id){
     fields.email=newEmail;
   }
   try{
-    await dbUpdateUser(id,fields);
+    const upRes=await dbUpdateUser(id,fields);
+    if(upRes && upRes.ok===false){
+      alert('❌ 저장 실패\n\n원인: '+(upRes.error||'알 수 없음')+'\n\n다음 확인:\n· DB 권한 (GRANT)\n· users 테이블 RLS 상태\n· email unique constraint');
+      return;
+    }
   }catch(e){
     alert('저장 실패: '+(e?.message||e));
     return;
@@ -16846,7 +16856,8 @@ async function saveProfile(){
   if(!u) return;
   const name=v('mp-name').trim(), phone=v('mp-phone').trim();
   if(!name){alert('성명을 입력하세요.');return;}
-  await dbUpdateUser(u.id,{name,phone});
+  const upRes=await dbUpdateUser(u.id,{name,phone});
+  if(upRes && upRes.ok===false){ alert('❌ 저장 실패\n\n원인: '+(upRes.error||'알 수 없음')); return; }
   u.name=name;u.phone=phone;CU=u;saveStoredUser(CU);
   alert('✅ 프로필이 저장되었습니다.');
 }
