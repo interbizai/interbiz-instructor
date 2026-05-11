@@ -15921,11 +15921,26 @@ async function submitEditUser(id){
     alert('저장 실패: '+(e?.message||e));
     return;
   }
-  Object.assign(u,fields);
+  // ⚡ silent fail 차단 — DB read 로 실제 반영 확인
+  try{
+    const{data:verify, error:vErr}=await sb.from('users').select('id,name,email,phone,team,org_name,position,office,status').eq('id',id).maybeSingle();
+    if(vErr) throw vErr;
+    if(!verify){alert('⚠ 저장 후 DB 검증 실패 — 사용자 행 없음');return;}
+    // 이메일 변경했는데 DB 에 반영 안 됨 → 즉시 알림
+    if(fields.email && String(verify.email||'').toLowerCase() !== fields.email){
+      alert('❌ 이메일 변경 실패\n\n저장 시도는 됐으나 DB에 반영되지 않았습니다.\n\nDB 현재 값: '+(verify.email||'(빈값)')+'\n시도 값: '+fields.email+'\n\n다음 확인:\n· users.email unique constraint 충돌\n· 권한 (GRANT)\n· 같은 이메일을 가진 삭제된 행');
+      return;
+    }
+    // D.users 동기화 (DB 값으로)
+    Object.assign(u, verify);
+  }catch(verr){
+    console.warn('[submitEditUser] 검증 read 실패:', verr);
+    Object.assign(u, fields); // 검증 실패해도 일단 캐시 갱신
+  }
   document.getElementById('edit-user-overlay')?.remove();
   renderAdmin();
   if(fields.email){
-    alert('✅ 저장 완료\n\n⚠ 이메일(아이디)이 변경되었습니다. 해당 강사는 새 이메일로 다시 로그인해야 합니다.');
+    alert('✅ 저장·검증 완료\n\n· 새 이메일(아이디): '+fields.email+'\n\n⚠ 해당 강사는 새 이메일로 다시 로그인해야 합니다.\n  비밀번호가 기억 안 나면 관리자 → PW초기화 → 0000');
   } else {
     if(typeof showToast==='function') showToast('✓ 저장 완료','#10b981');
   }

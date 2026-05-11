@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
     const full = {
       name: u.name,
-      email: u.email,
+      email: String(u.email).trim().toLowerCase(),  // 이메일 정규화 (대소문자 미스매치 방지)
       pw: hashedPw,
       channel: u.channel || '',
       team: u.team || '',

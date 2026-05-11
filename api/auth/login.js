@@ -65,17 +65,20 @@ export default async function handler(req, res) {
 
   try {
     const { email = '', password = '' } = req.body || {};
-    const em = String(email).trim();
+    const em = String(email).trim().toLowerCase();  // 이메일 정규화 — 대소문자 미스매치 방지
     const pw = String(password).trim();
     if (!em || !pw) return res.status(400).json({ ok: false, error: '이메일/비밀번호 필요' });
 
-    if (em === ADMIN_EMAIL && ADMIN_PIN && pw === ADMIN_PIN) {
+    if (em === String(ADMIN_EMAIL).toLowerCase() && ADMIN_PIN && pw === ADMIN_PIN) {
       const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL, grade: 'A', channel: '', isAdmin: true };
       const token = signToken({ sub: 0, email: ADMIN_EMAIL, isAdmin: true });
       return res.status(200).json({ ok: true, token, user: adminUser });
     }
 
-    const { data: user, error } = await sbAdmin.from('users').select('*').eq('email', em).maybeSingle();
+    // 대소문자 무관 검색 — DB 컬럼 ilike 사용 (정확한 일치)
+    let { data: user, error } = await sbAdmin.from('users').select('*').ilike('email', em).maybeSingle();
+    // ilike 가 와일드카드처럼 동작 가능 — 추가 검증: 실제 이메일이 정확히 일치하는지
+    if (user && String(user.email||'').trim().toLowerCase() !== em) user = null;
     if (error) {
       console.error('[login] DB query error:', error);
       return res.status(500).json({ ok: false, error: '로그인 처리 중 오류' });
