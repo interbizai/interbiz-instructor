@@ -5157,6 +5157,128 @@ document.addEventListener('visibilitychange', ()=>{
 });
 
 /* ════════════════════════════════
+   W4: Supabase Realtime 구독 — 다른 사용자 변경을 즉시 인지
+   - users·videos·evaluations·notifications INSERT/UPDATE/DELETE 구독
+   - D 배열 in-place 갱신 + bumpDataVersion + 활성 페이지 재렌더
+   - 단일 채널·단일 websocket 으로 50명 동시 안전 (Supabase 무료 한도: 200)
+════════════════════════════════ */
+let _realtimeChannel = null;
+let _realtimeRerenderTimer = null;
+
+function _scheduleRerender(){
+  // 짧은 시간에 여러 이벤트 합치기 (debounce 200ms)
+  clearTimeout(_realtimeRerenderTimer);
+  _realtimeRerenderTimer = setTimeout(()=>{
+    try{ if(typeof bumpDataVersion==='function') bumpDataVersion(); }catch(_){}
+    const active = document.querySelector('.page.active')?.id || '';
+    try{
+      if(active==='page-admin' && typeof renderAdmin==='function') renderAdmin();
+      else if(active==='page-pick' && typeof renderPick==='function') renderPick();
+      else if(active==='page-edu' && typeof renderEduPage==='function') renderEduPage();
+      else if(active==='page-mypage' && typeof renderMyProfile==='function') renderMyProfile();
+    }catch(e){ console.warn('[realtime] re-render failed:', e); }
+  }, 200);
+}
+
+function _applyUsersChange(payload){
+  if(!D.users) return;
+  const ev = payload.eventType;
+  const row = payload.new || payload.old || {};
+  const id = row.id;
+  if(!id) return;
+  // server 컬럼명(snake_case) → 클라 모델로 정규화 (D.users 와 동일 형태로)
+  const norm = (r)=>({
+    ...r,
+    orgName: r.org_name ?? r.orgName,
+    hireDate: r.hire_date ?? r.hireDate,
+    birthDate: r.birth_date ?? r.birthDate,
+    birthYear: r.birth_year ?? r.birthYear,
+    isSubAdmin: r.is_sub_admin ?? r.isSubAdmin,
+    deleted: r.deleted_at ? true : !!r.deleted,
+  });
+  if(ev==='DELETE'){
+    D.users = D.users.filter(u=>u.id!==id);
+  } else if(ev==='INSERT'){
+    if(!D.users.find(u=>u.id===id)) D.users.push(norm(payload.new));
+  } else if(ev==='UPDATE'){
+    const idx = D.users.findIndex(u=>u.id===id);
+    if(idx>=0) D.users[idx] = {...D.users[idx], ...norm(payload.new)};
+    // 본인 정보가 바뀌면 CU 도 즉시 갱신
+    if(CU && CU.id===id){
+      const nu = norm(payload.new);
+      Object.assign(CU, nu);
+      try{ saveStoredUser(CU); }catch(_){}
+    }
+  }
+  _scheduleRerender();
+}
+
+function _applyVideosChange(payload){
+  if(!D.videos) return;
+  const ev = payload.eventType;
+  const row = payload.new || payload.old || {};
+  const id = row.id;
+  if(!id) return;
+  if(ev==='DELETE'){
+    D.videos = D.videos.filter(v=>v.id!==id);
+  } else if(ev==='INSERT'){
+    if(!D.videos.find(v=>v.id===id)) D.videos.push({...payload.new, userId: payload.new.user_id});
+  } else if(ev==='UPDATE'){
+    const idx = D.videos.findIndex(v=>v.id===id);
+    if(idx>=0) D.videos[idx] = {...D.videos[idx], ...payload.new, userId: payload.new.user_id};
+  }
+  _scheduleRerender();
+}
+
+function _applyEvaluationsChange(payload){
+  if(!D.evaluations) D.evaluations = [];
+  const ev = payload.eventType;
+  const row = payload.new || payload.old || {};
+  const id = row.id;
+  if(!id) return;
+  if(ev==='DELETE') D.evaluations = D.evaluations.filter(e=>e.id!==id);
+  else if(ev==='INSERT'){ if(!D.evaluations.find(e=>e.id===id)) D.evaluations.push(payload.new); }
+  else if(ev==='UPDATE'){
+    const idx = D.evaluations.findIndex(e=>e.id===id);
+    if(idx>=0) D.evaluations[idx] = {...D.evaluations[idx], ...payload.new};
+  }
+  _scheduleRerender();
+}
+
+function _applyNotificationsChange(payload){
+  // INSERT 만 의미 있음 — 본인 알림이면 뱃지 즉시 갱신
+  if(payload.eventType !== 'INSERT') return;
+  const n = payload.new || {};
+  if(CU && (n.user_id===CU.id || n.target_user_id===CU.id)){
+    try{ if(typeof refreshNotifBadge==='function') refreshNotifBadge(); }catch(_){}
+  }
+}
+
+function setupRealtime(){
+  if(!sb || !CU) return;
+  // 중복 구독 방지
+  try{ if(_realtimeChannel) sb.removeChannel(_realtimeChannel); }catch(_){}
+  _realtimeChannel = sb.channel('interpick_main')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'users' },         _applyUsersChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'videos' },        _applyVideosChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'evaluations' },   _applyEvaluationsChange)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, _applyNotificationsChange)
+    .subscribe((status)=>{
+      if(status==='SUBSCRIBED') console.log('[W4] Realtime 구독 활성 (users/videos/evaluations/notifications)');
+      else if(status==='CHANNEL_ERROR') console.warn('[W4] Realtime 채널 오류 — publication 미설정 의심');
+      else if(status==='TIMED_OUT') console.warn('[W4] Realtime 연결 시간 초과 — 재시도 권장');
+    });
+}
+
+function teardownRealtime(){
+  if(_realtimeChannel){
+    try{ sb.removeChannel(_realtimeChannel); }catch(_){}
+    _realtimeChannel = null;
+  }
+  clearTimeout(_realtimeRerenderTimer);
+}
+
+/* ════════════════════════════════
    TOP PROGRESS BAR (페이지 전환·네트워크 로딩 시각 신호)
 ════════════════════════════════ */
 let _progressTimer=null, _progressActive=0;
@@ -5698,6 +5820,7 @@ async function doLogin(){
   hideLoginLoading();
   initHome(); showPage('page-pick');
   startNotifPolling();
+  setupRealtime();  // W4: 다른 사용자 변경 즉시 인지
   // ② Staged 로딩: core(즉시 필요) → content(백그라운드)
   loadFromDB('core').then(()=>{
     if(j.user?.id !== 0){
@@ -5719,7 +5842,7 @@ async function doLogin(){
     loadUserPhotosLazy(true).catch(e=>console.warn('photo lazy:',e));
   }).catch(e=>{console.warn('core 로드 실패:',e);});
 }
-function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } }
+function doLogout(){ CU=null; localStorage.removeItem('ib_user'); localStorage.removeItem('ib_token'); localStorage.removeItem('ib_last_page'); localStorage.removeItem('ib_active_org'); hideGlobalSidebar(); showPage('page-login'); if(window._notifBadgeTimer){ clearInterval(window._notifBadgeTimer); window._notifBadgeTimer=null; } try{ teardownRealtime(); }catch(_){} }
 
 /* ════════════════════════════════
    통합 알림 시스템 (notifications)
@@ -16995,6 +17118,7 @@ window.showPage=function(id){
 
 window.addEventListener('load',async ()=>{
   if(CU){
+    setupRealtime();  // W4: 자동 복원 시점에도 Realtime 연결
     // ① 즉시 마지막 페이지 표시 (껍데기만 — 데이터는 비어있음)
     const lastPage=localStorage.getItem('ib_last_page');
     let ctx=null;
