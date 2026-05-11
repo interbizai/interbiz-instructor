@@ -15206,16 +15206,22 @@ async function saveMemo(uid){
   if(u) u.memo=memo;
   alert('메모가 저장되었습니다.');
 }
-function changeProfilePhoto(uid,input){
+async function changeProfilePhoto(uid,input){
   if(!input.files||!input.files[0]) return;
-  const file=input.files[0];
+  let file=input.files[0];
   if(!/^image\//.test(file.type)){alert('이미지 파일만 업로드 가능합니다.');input.value='';return;}
-  if(file.size>3*1024*1024){alert('3MB 이하 이미지만 업로드 가능합니다.');input.value='';return;}
   // 본인 사진만 변경 가능 (관리자는 다른 강사 사진을 직접 못 바꿈 — 보안)
   if(!CU || CU.id !== uid){
     alert('본인 사진만 변경 가능합니다. (관리자가 다른 강사 사진 변경은 차단)');
     return;
   }
+  // 자동 압축 — 1MB 초과 시
+  if(file.size > 1024*1024){
+    const origSize=(file.size/1024/1024).toFixed(1);
+    file = await compressImage(file);
+    console.log(`📸 자동 압축: ${origSize}MB → ${(file.size/1024/1024).toFixed(2)}MB`);
+  }
+  if(file.size>3*1024*1024){alert('압축 후에도 3MB 초과. 다른 사진을 선택해주세요.');input.value='';return;}
   const reader=new FileReader();
   reader.onload=async e=>{
     const dataUrl=e.target.result;
@@ -16608,12 +16614,56 @@ async function saveProfile(){
   alert('✅ 프로필이 저장되었습니다.');
 }
 // 마이페이지 사진 업로드 — 항상 서비스 키 API 우회 (RLS silent-block 회피)
+// 이미지 자동 압축 — 큰 사진을 1MB 이하로 줄여 Storage 부담 최소화
+async function compressImage(file, maxBytes=1024*1024, maxDim=800){
+  // 작은 파일은 그대로
+  if(file.size <= maxBytes && file.size <= 3*1024*1024) return file;
+  return new Promise((resolve)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let {width:w, height:h}=img;
+      // 긴 변이 maxDim 넘으면 비율 유지하며 축소
+      if(w>maxDim || h>maxDim){
+        if(w>h){h=Math.round(h*maxDim/w); w=maxDim;}
+        else{w=Math.round(w*maxDim/h); h=maxDim;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      // 압축 품질 자동 조정 — 1MB 이하 될 때까지
+      const tryQuality=(q)=>new Promise(r=>canvas.toBlob(b=>r(b), 'image/jpeg', q));
+      (async()=>{
+        for(const q of [0.85, 0.7, 0.55, 0.4, 0.3]){
+          const blob=await tryQuality(q);
+          if(blob && blob.size<=maxBytes){
+            resolve(new File([blob], (file.name||'photo').replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}));
+            return;
+          }
+        }
+        // 최저 품질로도 안 되면 마지막 결과 반환
+        const last=await tryQuality(0.3);
+        resolve(new File([last], (file.name||'photo').replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}));
+      })();
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url); resolve(file);};
+    img.src=url;
+  });
+}
 async function uploadMyPhoto(input){
   if(!CU||!CU.id){alert('로그인 정보가 없습니다.');return;}
-  const file=input?.files?.[0];
+  let file=input?.files?.[0];
   if(!file) return;
   if(!/^image\//.test(file.type)){alert('이미지 파일만 업로드 가능합니다.');input.value='';return;}
-  if(file.size>3*1024*1024){alert('3MB 이하 이미지만 업로드 가능합니다.');input.value='';return;}
+  // 자동 압축 — 1MB 초과 시 자동으로 작게
+  if(file.size > 1024*1024){
+    const origSize=(file.size/1024/1024).toFixed(1);
+    file = await compressImage(file);
+    const newSize=(file.size/1024/1024).toFixed(2);
+    console.log(`📸 자동 압축: ${origSize}MB → ${newSize}MB`);
+  }
+  if(file.size>3*1024*1024){alert('압축 후에도 3MB 초과. 다른 사진을 선택해주세요.');input.value='';return;}
   const reader=new FileReader();
   reader.onload=async e=>{
     const dataUrl=e.target.result;
