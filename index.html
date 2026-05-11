@@ -6282,7 +6282,6 @@ function renderEduPage(){
   }
   clArea.innerHTML=clHtml;
   // 교육링크 (카드형 3개 가로)
-  const linkColors=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899'];
   let lkHtml=isAdmin?`<div style="margin-bottom:16px;padding:14px;border:1px solid var(--bdr);border-radius:12px;background:#fafafa">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
@@ -6290,32 +6289,96 @@ function renderEduPage(){
       <button class="btn btn-blue" style="padding:8px 18px;font-size:12px" onclick="addEduLink()">등록</button>
     </div>
   </div>`:'';
-  lkHtml+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+  lkHtml+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
   lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
-    const bg=linkColors[i%linkColors.length];
-    // 카드 hero = 컬러 그라데이션 + 큰 외부링크 아이콘 (모든 카드 통일)
-    const grad=`linear-gradient(135deg, ${bg} 0%, ${bg}dd 60%, ${bg}aa 100%)`;
-    const heroHtml=`<div style="height:120px;background:${grad};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
-      <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.2) 0%, transparent 60%);pointer-events:none"></div>
-      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.2));z-index:1">
-        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-        <polyline points="15 3 21 3 21 9"/>
-        <line x1="10" y1="14" x2="21" y2="3"/>
-      </svg>
-    </div>`;
+    const brand=getLinkBrand(lk.url);
+    const ytId=brand.youtubeId;
+    // YouTube 면 실제 썸네일, 아니면 도메인 favicon (Google s2 서비스)
+    const previewHtml = ytId
+      ? `<div style="height:140px;background:#000;position:relative;overflow:hidden">
+           <img src="https://i.ytimg.com/vi/${ytId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;opacity:.95" onerror="this.style.display='none'">
+           <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6) 100%);pointer-events:none"></div>
+           <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:#FF0000;color:#fff;font-size:10px;font-weight:800;letter-spacing:.3px">▶ YouTube</div>
+         </div>`
+      : `<div style="height:120px;background:linear-gradient(135deg, ${brand.color} 0%, ${shadeColor(brand.color,-12)} 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+           <div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 25%, rgba(255,255,255,.18) 0%, transparent 55%);pointer-events:none"></div>
+           <div style="width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:1">
+             <img src="${brand.favicon}" loading="lazy" decoding="async" style="width:38px;height:38px;object-fit:contain;border-radius:6px" onerror="this.outerHTML='<span style=&quot;font-size:22px;font-weight:900;color:${brand.color}&quot;>${(lk.name||'?')[0]}</span>'">
+           </div>
+           <div style="position:absolute;left:12px;bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
+         </div>`;
     const adminControls=isAdmin?`
-      <button style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:2" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
-    return `<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
+    return `<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04)" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 28px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,.04)'">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${brand.color};z-index:2"></div>
       ${adminControls}
-      ${heroHtml}
-      <div style="padding:10px 12px">
-        <div style="font-size:13px;font-weight:700;color:var(--t1)">${lk.name}</div>
-        <div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${lk.url}</div>
+      ${previewHtml}
+      <div style="padding:12px 14px 14px 18px">
+        <div style="font-size:14px;font-weight:800;color:var(--t1);line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${lk.name||'(이름 없음)'}</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--t3)">
+          <img src="${brand.favicon}" loading="lazy" decoding="async" style="width:13px;height:13px;border-radius:3px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${brand.domain || lk.url}</span>
+        </div>
       </div>
     </div>`;
   }).join('')||'<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--t3)">등록된 교육링크가 없습니다</div>';
   lkHtml+='</div>';
   lkArea.innerHTML=lkHtml;
+}
+
+/* ════════════════════════════════
+   링크 카드 헬퍼 — 도메인별 브랜드 컬러·favicon·YouTube 썸네일
+════════════════════════════════ */
+function shadeColor(hex, percent){
+  // hex 컬러를 percent(-100~100) 만큼 밝게/어둡게
+  const m=/^#?([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})$/i.exec(hex||'');
+  if(!m) return hex;
+  const adj=(c)=>{ const n=Math.round(parseInt(c,16)*(100+percent)/100); return Math.max(0,Math.min(255,n)).toString(16).padStart(2,'0'); };
+  return '#'+adj(m[1])+adj(m[2])+adj(m[3]);
+}
+function getLinkBrand(url){
+  let domain='', host='';
+  try{ const u=new URL(url); host=u.hostname.replace(/^www\./,''); domain=host; }catch(_){ domain=(url||'').slice(0,40); }
+  // YouTube ID 추출 (videos·playlists 모두)
+  let youtubeId=null;
+  const ytMatch=/^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?(?:.*&)?v=|embed\/|v\/|playlist\?list=|shorts\/)?([A-Za-z0-9_-]{6,})/i.exec(url||'');
+  if(ytMatch && /youtu/i.test(url)){
+    // playlist 면 첫 영상 썸네일 못 받으니 video id 형태일 때만 썸네일 표시
+    if(/[?&]v=([A-Za-z0-9_-]{6,})/.test(url)){ youtubeId=RegExp.$1; }
+    else if(/youtu\.be\/([A-Za-z0-9_-]{6,})/.test(url)){ youtubeId=RegExp.$1; }
+  }
+  // 도메인별 컬러·라벨 매핑 — 미정의 도메인은 도메인 해시 기반 컬러
+  const brands={
+    'youtube.com':   { color:'#FF0000', label:'YouTube' },
+    'youtu.be':      { color:'#FF0000', label:'YouTube' },
+    'naver.com':     { color:'#03C75A', label:'Naver' },
+    'gmail.com':     { color:'#EA4335', label:'Gmail' },
+    'mail.google.com':{ color:'#EA4335', label:'Gmail' },
+    'worksmobile.com':{ color:'#00C300', label:'웍스모바일' },
+    'works.do':      { color:'#00C300', label:'웍스모바일' },
+    'kakao.com':     { color:'#FEE500', label:'카카오' },
+    'singlex.com':   { color:'#0066FF', label:'싱글렉스' },
+    'edumadang.singlex.com':{ color:'#0066FF', label:'배움마당' },
+    'notion.so':     { color:'#000000', label:'Notion' },
+    'github.com':    { color:'#181717', label:'GitHub' },
+    'slack.com':     { color:'#4A154B', label:'Slack' },
+    'figma.com':     { color:'#A259FF', label:'Figma' },
+    'zoom.us':       { color:'#2D8CFF', label:'Zoom' },
+    'meet.google.com':{ color:'#00897B', label:'Google Meet' },
+    'docs.google.com':{ color:'#4285F4', label:'Google Docs' },
+    'drive.google.com':{ color:'#1FA463', label:'Google Drive' },
+  };
+  let brand=brands[host];
+  if(!brand){
+    // 미정의 도메인 — 해시 기반 컬러 풀 (일관성 있음)
+    const pool=['#0078C8','#E21E26','#10b981','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#64748b'];
+    let h=0; for(const ch of host) h=((h<<5)-h+ch.charCodeAt(0))|0;
+    brand={ color: pool[Math.abs(h)%pool.length], label: host.split('.').slice(-2,-1)[0]?.toUpperCase() || '링크' };
+  }
+  brand.domain=domain;
+  brand.favicon=host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : '';
+  brand.youtubeId=youtubeId;
+  return brand;
 }
 // 공용 YouTube ID 추출
 function getYouTubeId(url){
