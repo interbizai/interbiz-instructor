@@ -222,6 +222,52 @@ SELECT id, name, org_name, channel, team FROM public.users WHERE email='...';
 
 ---
 
+## ⚠ 핵심 원칙 — 회귀 방지 (Regression Prevention)
+
+> "한번 잘 고친 건 다음부터 다시 깨지지 않게"
+
+매 변경 전 **3가지 의무 점검**:
+
+### A. 기능 영향 검토 (Pre-flight Checklist)
+
+변경 commit 전 반드시 답해야 할 질문:
+- [ ] **이번 변경이 어디서 호출되나?** (grep 으로 호출처 전수 확인)
+- [ ] **호출처 모두 새 시그니처 호환되나?**
+- [ ] **이전 동작과 다른 점이 있다면, 사용자가 인지할 변화인가?**
+- [ ] **롤백 가능한가?** (1 commit = 1 fix 원칙)
+
+### B. 알려진 함정 회피 (Known Anti-Patterns)
+
+ERRORS.md 의 모든 사건은 **재발 가능**. 변경 시 매번 점검:
+
+| 안티패턴 | 점검 |
+|---|---|
+| if/else 짝 끊기 (#5) | 한 줄짜리 if/else 분리 시 양쪽 다 처리 |
+| RLS 함부로 켜기 (#2, #7) | 이 코드베이스는 RLS off 가 원칙 |
+| GRANT 누락 (#3) | 새 테이블·컬럼 추가 시 GRANT 즉시 부여 |
+| VIEW 컬럼 누락 (#4) | users_safe 등 view 갱신 시 SELECT 가 어디서 사용되는지 점검 |
+| Silent block (#6) | INSERT/UPDATE 후 검증 read 필수 |
+| dashboard.html 혼동 (#1) | index.html 만 배포본 |
+| photo column 페이로드 (#8) | 큰 컬럼은 SELECT * 에서 제외 + 별도 lazy 엔드포인트 |
+
+### C. 테스트 시나리오 — 매 배포 후 자체 점검
+
+**필수 (Smoke Test, 1분)**:
+- [ ] 로그인 (강사 계정 + 관리자 계정 각 1회)
+- [ ] F5 새로고침 → 같은 페이지 유지
+- [ ] 콘솔 에러 0개 (404 정적 자원 외)
+
+**상황별 (변경 영역에 따라)**:
+- 평가 관련 변경 → 영상 분석 1건 직접 실행 → DB 검증
+- DB 스키마 변경 → 진단 SQL 1번 실행 (모든 테이블 RLS=OFF, GRANT 정상)
+- API 변경 → 응답 시간 ≤ 3초 (X-Timing 헤더)
+
+### D. 변경 후 ERRORS.md 갱신
+
+새 패턴 발견 시 즉시 추가. **알려진 패턴이 다시 발생하면 자동 P1 (긴급).**
+
+---
+
 ## 5. 본 문서의 사용
 
 1. 장애 보고 받음 → 본 문서 1·2 절 따라 진단
