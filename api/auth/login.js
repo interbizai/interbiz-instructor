@@ -41,8 +41,11 @@ function envHealthCheck() {
   return null;
 }
 
+// 토큰 만료: 7일 + 사용자별 ±12시간 jitter → 50명 동시 만료 폭주 방지 (F4)
 function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  const baseSeconds = 7 * 24 * 60 * 60;            // 7일
+  const jitter = Math.floor(Math.random() * (12 * 60 * 60));  // 0~12h
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: baseSeconds + jitter });
 }
 
 function stripSensitive(user) {

@@ -27,6 +27,28 @@ function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, ed
   return h.digest('hex');
 }
 
+// F3: Vertex AI rate-limit 보호 — 429/RESOURCE_EXHAUSTED 시 지수 백오프 재시도
+//      (50명이 동시 분석 시작 시 Vertex 한도 초과 완화)
+async function generateContentWithBackoff(gm, request, maxAttempts = 4) {
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await gm.generateContent(request);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e || '');
+      const isRateLimit = /429|RESOURCE_EXHAUSTED|quota|rate.?limit/i.test(msg);
+      if (!isRateLimit || attempt === maxAttempts - 1) throw e;
+      // 백오프: 2s → 5s → 12s → 30s + jitter (사용자별 분산)
+      const base = [2000, 5000, 12000, 30000][attempt] || 30000;
+      const jitter = Math.floor(Math.random() * 2000);
+      console.warn(`[vertex] rate-limit detected, attempt ${attempt + 1}/${maxAttempts}, backoff ${base + jitter}ms`);
+      await new Promise((r) => setTimeout(r, base + jitter));
+    }
+  }
+  throw lastErr;
+}
+
 function verifyAuth(req) {
   if (!JWT_SECRET) return { ok: false, error: '서버 설정 오류' };
   const auth = req.headers.authorization || '';
@@ -478,7 +500,7 @@ export default async function handler(req, res) {
         }) + eduInlineText,
     });
 
-    const result = await gm.generateContent({
+    const result = await generateContentWithBackoff(gm, {
       contents: [{ role: 'user', parts }],
     });
 
@@ -526,7 +548,7 @@ export default async function handler(req, res) {
     // 1차 파싱 실패 시 두 번까지 재시도
     for (let i = 0; i < 2 && !parsed; i++) {
       try {
-        const retry = await gm.generateContent({ contents: [{ role: 'user', parts }] });
+        const retry = await generateContentWithBackoff(gm, { contents: [{ role: 'user', parts }] });
         const rText = retry.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         parsed = tryParse(rText);
       } catch (e) {}
@@ -685,7 +707,7 @@ ${axesText || '  (축 미지정 — 공통 7축으로 평가)'}
       }],
     };
 
-    const result = await gm.generateContent(request);
+    const result = await generateContentWithBackoff(gm, request);
     const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let parsed;
     try {

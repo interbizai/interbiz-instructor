@@ -4901,7 +4901,7 @@ async function loadUserPhotosLazy(force){
     const token=localStorage.getItem('ib_token')||'';
     // ⚡ 자동 호출은 항상 빈 body 로 — 모든 photo 받아 D.users 와 ID 매칭으로 머지
     //    (서버 측 org 필터는 D.users 와 어긋날 수 있어 클라이언트 측 ID 매칭이 안전)
-    const r=await fetch('/api/users/photos',{
+    const r=await fetchWithRetry('/api/users/photos',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body:JSON.stringify({})
@@ -5073,6 +5073,88 @@ function renderCached(key, computeFn){
     }
   });
 })();
+
+/* ════════════════════════════════
+   F2: 네트워크 재시도 헬퍼 (50명 동시 사용 안정성)
+   - 5xx 또는 network 오류만 재시도, 4xx 는 즉시 반환
+   - 지수 백오프 600ms → 1.5s → 4s, 총 3회
+════════════════════════════════ */
+async function fetchWithRetry(url, options={}, maxAttempts=3){
+  let lastErr;
+  for(let attempt=0; attempt<maxAttempts; attempt++){
+    try{
+      const r=await fetch(url, options);
+      // 4xx 는 영구 오류 — 재시도해도 의미 없음 (인증·검증 실패 등)
+      if(r.status>=400 && r.status<500) return r;
+      // 5xx 또는 success 면 그대로 반환 (success 면 성공, 5xx 면 마지막 시도 결과)
+      if(r.ok) return r;
+      // 5xx 만 재시도
+      lastErr=new Error('HTTP '+r.status);
+      if(attempt<maxAttempts-1){
+        await new Promise(res=>setTimeout(res, [600,1500,4000][attempt]||4000));
+        continue;
+      }
+      return r; // 마지막 시도 결과 반환
+    }catch(e){
+      // 네트워크 오류 (TypeError: Failed to fetch 등)
+      lastErr=e;
+      if(attempt<maxAttempts-1){
+        await new Promise(res=>setTimeout(res, [600,1500,4000][attempt]||4000));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
+/* ════════════════════════════════
+   F4: 토큰 사전 갱신 (50명 동시 만료 폭주 방지)
+   - 토큰 exp 가 24h 이내면 /api/auth/refresh 호출
+   - 페이지 활성 상태에서 1시간마다 체크
+════════════════════════════════ */
+function decodeJwtExp(token){
+  try{
+    const part=token.split('.')[1];
+    if(!part) return 0;
+    const pad='='.repeat((4-part.length%4)%4);
+    const b64=part.replace(/-/g,'+').replace(/_/g,'/')+pad;
+    const json=atob(b64);
+    return (JSON.parse(json).exp||0)*1000;  // ms
+  }catch(_){return 0;}
+}
+async function refreshTokenIfNeeded(){
+  const token=localStorage.getItem('ib_token')||'';
+  if(!token) return;
+  const expMs=decodeJwtExp(token);
+  if(!expMs) return;
+  const remainMs=expMs - Date.now();
+  // 만료 24시간 이내 — 갱신 (이미 만료 시는 그냥 두면 다음 API 콜에서 401 → 재로그인)
+  if(remainMs < 24*60*60*1000 && remainMs > 0){
+    try{
+      const r=await fetchWithRetry('/api/auth/refresh',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token}
+      });
+      const j=await r.json().catch(()=>({}));
+      if(r.ok && j.ok && j.token){
+        localStorage.setItem('ib_token', j.token);
+        console.log('[F4] 토큰 사전 갱신 완료');
+      }
+    }catch(e){
+      console.warn('[F4] 토큰 갱신 실패 (무시):', e.message);
+    }
+  }
+}
+// 페이지 로드 시 1회 + 매시간 체크
+window.addEventListener('load', ()=>{
+  setTimeout(refreshTokenIfNeeded, 5000);  // 페이지 안정화 후 5초 뒤
+  setInterval(refreshTokenIfNeeded, 60*60*1000);  // 1시간마다
+});
+// 탭 활성화 시 한번 더 체크 (다른 탭에서 만료된 토큰일 가능성)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible') refreshTokenIfNeeded();
+});
 
 /* ════════════════════════════════
    TOP PROGRESS BAR (페이지 전환·네트워크 로딩 시각 신호)
@@ -5601,7 +5683,7 @@ async function doLogin(){
   showLoginLoading();
   let r;
   try{
-    r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
+    r=await fetchWithRetry('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
   }catch(e){ hideLoginLoading(); el('li-err').textContent='네트워크 오류'; return; }
   const j=await r.json().catch(()=>({}));
   if(!r.ok||!j.ok){ hideLoginLoading(); el('li-err').textContent=j.error||'로그인 실패'; return; }
@@ -15262,7 +15344,7 @@ async function changeProfilePhoto(uid,input){
     if(disp) disp.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
     try{
       const token=localStorage.getItem('ib_token')||'';
-      const r=await fetch('/api/auth/update-photo',{
+      const r=await fetchWithRetry('/api/auth/update-photo',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
         body:JSON.stringify({photo:dataUrl})  // Storage 업로드 후 URL 반환
@@ -16705,7 +16787,7 @@ async function uploadMyPhoto(input){
     try{
       const token=localStorage.getItem('ib_token')||'';
       if(!token){throw new Error('로그인 토큰 없음 — 다시 로그인하세요');}
-      const r=await fetch('/api/auth/update-photo',{
+      const r=await fetchWithRetry('/api/auth/update-photo',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
         body:JSON.stringify({photo:dataUrl})  // 서버가 dataUrl → Storage 업로드 → URL 저장
@@ -16742,7 +16824,7 @@ async function removeMyPhoto(){
   if(!confirm('프로필 사진을 제거할까요?')) return;
   try{
     const token=localStorage.getItem('ib_token')||'';
-    const r=await fetch('/api/auth/update-photo',{
+    const r=await fetchWithRetry('/api/auth/update-photo',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body:JSON.stringify({photo:null})
