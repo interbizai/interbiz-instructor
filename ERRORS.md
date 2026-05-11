@@ -398,3 +398,25 @@ function saveStoredUser(u){
 12. **이미지 자동 압축**
     → 사용자가 큰 사진 올려도 클라이언트에서 자동 축소
     → Canvas API + 점진 품질 (0.85→0.3) 로 1MB 이하 보장
+
+13. **네트워크 재시도 — POST 의 idempotency 구분**
+    → 5xx·network 오류만 재시도 (4xx 즉시 반환)
+    → 읽기·idempotent POST (login, update-photo, refresh) 만 재시도 OK
+    → 생성·결제·분석같은 비-idempotent POST 는 재시도 금지 (중복 실행 위험)
+    → fetchWithRetry 헬퍼 사용 (index.html, 5078~5109)
+
+14. **토큰 만료 동시 폭주 차단**
+    → 고정 24h 만료 → 같은 시각 로그인한 사용자들이 같은 시각 동시 만료
+    → 해법: 만료 시간에 ±12h jitter 추가 (login.js signToken)
+    → 추가: 클라이언트가 만료 24h 전에 /api/auth/refresh 사전 호출
+
+15. **외부 AI(Vertex) 호출은 항상 백오프 wrapper**
+    → generateContent 직접 호출 금지
+    → generateContentWithBackoff(gm, request, maxAttempts) 사용
+    → 429/RESOURCE_EXHAUSTED 시 지수 백오프 + jitter (vertex-analyze.js)
+
+16. **메모이제이션·캐시 — 무효화 시점이 정확해야 함**
+    → renderCached 사용 시 cache key 에 모든 의존 입력 포함
+    → 데이터 직접 수정(Object.assign(u, fields)) 후 renderXXX 호출 패턴이면
+      bumpDataVersion() 도 함께 호출하지 않으면 stale 표시
+    → 의심스러우면 메모이제이션 적용 안 하는 게 안전
