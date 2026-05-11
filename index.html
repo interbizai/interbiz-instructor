@@ -9679,7 +9679,13 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
       channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
       eduFileUrl:eduFileUrl||'', productName:window._anProduct||''
     });
-    const videoId=vidRow?.id||null;
+    if(!vidRow || !vidRow.id){
+      showAiLoading(false);
+      alert('❌ 영상 등록 실패\n\n영상 파일은 분석 완료됐으나 DB 등록 단계에서 실패했습니다.\n\n가능한 원인:\n- 인증 만료 (재로그인)\n- DB 권한 누락\n- 네트워크 오류\n\n로그 콘솔(F12) 의 dbCreateVideo: ... 에러 메시지를 관리자에게 전달해주세요.');
+      console.error('runAnalysis: dbCreateVideo returned null/undefined', vidRow);
+      return;
+    }
+    const videoId=vidRow.id;
     // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장 — 각 평가별 실제 사용 체크리스트 id 기록
     const aiSaveCid=aiClId||critClId;  // AI 독자는 AI 체크리스트 id, 없으면 폴백
     const saveTasks=[saveEvaluation({videoId,checklistId:aiSaveCid,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
