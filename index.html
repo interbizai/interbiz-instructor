@@ -4030,6 +4030,12 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:700;color:var(--t3)">조직:</span>
       <select class="form-input" id="admin-org-filter" onchange="renderAdmin()" style="width:160px;padding:7px 12px;font-size:12px"></select>
+      <div style="position:relative;width:240px">
+        <input type="text" id="admin-search" placeholder="성명·팀·연락처·메일·사무실 검색" oninput="onAdminSearch()" style="width:100%;padding:7px 32px 7px 30px;border:1px solid var(--bdr);border-radius:8px;font-size:12px;background:#fff">
+        <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <button id="admin-search-clear" onclick="clearAdminSearch()" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:rgba(0,0,0,.08);border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px;color:var(--t2);line-height:1" title="지우기">×</button>
+      </div>
+      <span id="admin-search-count" style="font-size:11px;color:var(--t3);font-weight:600"></span>
       <div style="flex:1"></div>
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700" onclick="downloadUserTemplate()">📥 엑셀 양식</button>
       <label class="btn btn-ghost" style="padding:6px 12px;font-size:12px;font-weight:700;color:var(--green);cursor:pointer;margin:0">
@@ -15992,6 +15998,18 @@ function renderAdminCreditBanner(){
   </div>`;
 }
 
+// 검색 입력 — debounce 150ms 로 키 입력마다 재렌더
+let _adminSearchTimer=null;
+function onAdminSearch(){
+  clearTimeout(_adminSearchTimer);
+  _adminSearchTimer=setTimeout(()=>{ renderAdmin(); }, 150);
+}
+function clearAdminSearch(){
+  const s=el('admin-search'); if(s){ s.value=''; }
+  renderAdmin();
+  el('admin-search')?.focus();
+}
+
 function renderAdmin(){
   // 조직 필터 드롭다운 채우기 (현재 존재하는 org_name들 + 기본값 유지)
   const orgSel=el('admin-org-filter');
@@ -16010,16 +16028,41 @@ function renderAdmin(){
   }
   const selectedOrg=orgSel?.value||'';
   // 선택된 조직만 필터
-  const filtered=(D.users||[]).filter(u=>{
+  let filtered=(D.users||[]).filter(u=>{
     if(selectedOrg==='__NONE__') return !u.orgName;
     return u.orgName===selectedOrg;
   });
+  // 검색어 필터 — 성명·팀·사무실·연락처·메일·직군 다중 매칭
+  const searchEl=el('admin-search');
+  const kw=(searchEl?.value||'').trim().toLowerCase();
+  const totalOrg=filtered.length;
+  if(kw){
+    filtered=filtered.filter(u=>{
+      return (u.name||'').toLowerCase().includes(kw)
+          || (u.team||'').toLowerCase().includes(kw)
+          || (u.office||'').toLowerCase().includes(kw)
+          || (u.phone||'').toLowerCase().includes(kw)
+          || (u.email||'').toLowerCase().includes(kw)
+          || (u.position||'').toLowerCase().includes(kw)
+          || (u.channel||'').toLowerCase().includes(kw);
+    });
+  }
+  // 검색 카운트·지우기 버튼 표시
+  const cntEl=el('admin-search-count');
+  if(cntEl) cntEl.textContent = kw ? `${filtered.length} / ${totalOrg}명` : `${totalOrg}명`;
+  const clrBtn=el('admin-search-clear');
+  if(clrBtn) clrBtn.style.display = kw ? '' : 'none';
   // User table (정렬)
   const sortedUsers=[...filtered].sort((a,b)=>{
     let va=(a[adminSortKey]||'').toString(), vb=(b[adminSortKey]||'').toString();
     if(adminSortKey==='birthYear'){va=parseInt(va)||0;vb=parseInt(vb)||0;return adminSortAsc?va-vb:vb-va;}
     return adminSortAsc?va.localeCompare(vb):vb.localeCompare(va);
   });
+  // 검색 결과 0건 시 안내
+  if(kw && !sortedUsers.length){
+    el('admin-user-tbody').innerHTML = `<tr><td colspan="13" style="padding:32px;text-align:center;color:var(--t3);font-size:13px">"<b style="color:var(--t1)">${kw}</b>" 검색 결과 없음 · <a href="#" onclick="event.preventDefault();clearAdminSearch();" style="color:var(--blue);text-decoration:underline">검색 지우기</a></td></tr>`;
+    return;
+  }
   el('admin-user-tbody').innerHTML=sortedUsers.map(u=>{
     const isSubAdmin=u.isSubAdmin;
     const deletedStyle=u.deleted?'background:rgba(239,68,68,.04)':'';
