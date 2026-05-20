@@ -2455,9 +2455,6 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 <nav class="topnav" id="topnav">
   <!-- Left: favicon + logo + back -->
   <div class="tn-left">
-    <button id="tn-back" onclick="goBack()" title="뒤로 (Alt+←)" style="display:none;border:none;background:transparent;cursor:pointer;width:32px;height:32px;border-radius:50%;align-items:center;justify-content:center;padding:0;margin-right:2px;color:var(--t2);transition:background .15s,color .15s" onmouseover="this.style.background='rgba(0,120,200,.1)';this.style.color='var(--blue)'" onmouseout="this.style.background='';this.style.color='var(--t2)'">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
     <div class="tn-favicon" onclick="showPage('page-pick')"><img src="assets/logo/파비콘/1-Photoroom.ico" alt=""></div>
     <img class="tn-logo" src="assets/logo/logo_1.png" alt="interbiz" onclick="showPage('page-pick')">
     <select id="org-switch" class="org-switch" onchange="switchOrg(this.value)" style="display:none"></select>
@@ -17335,49 +17332,42 @@ function setAnResultMeta(opts){
 // (제거) 사진 lazy 로드 ensurePhotoMerge — /api/db/load 가 photo 다시 포함하므로 불필요
 
 // Override showPage for profile (재귀 방지: _renderingMyProfile 가드)
-// + 페이지 내비 스택 (뒤로가기) 관리
+// + 브라우저 history 통합 — 일반 브라우저 ←/→ 버튼과 모바일 스와이프·마우스 4번 버튼·Alt+← 모두 지원
 const _showPage=showPage;
 let _renderingMyProfile=false;
-window._pageStack=window._pageStack||[];
-window._navigatingBack=false;
-const _backIgnored=new Set(['page-login','page-register']);
-function _updateBackBtn(){
-  const btn=document.getElementById('tn-back');
-  if(!btn) return;
-  btn.style.display = (window._pageStack.length>0) ? 'inline-flex' : 'none';
-}
-window.goBack=function(){
-  if(!window._pageStack.length) return;
-  const prev=window._pageStack.pop();
-  if(!prev) return;
-  window._navigatingBack=true;
-  try{ window.showPage(prev); }finally{ window._navigatingBack=false; }
-  _updateBackBtn();
-};
-window.addEventListener('keydown',(e)=>{
-  if(e.altKey && e.key==='ArrowLeft'){ e.preventDefault(); window.goBack(); }
-});
+window._navigatingFromHistory=false;
+const _historyIgnored=new Set(['page-login','page-register']);
 window.showPage=function(id){
   if(id==='page-myprofile' && !_renderingMyProfile){
     _renderingMyProfile=true;
     try{ renderMyProfile(); }finally{ _renderingMyProfile=false; }
     return;
   }
-  // 스택 푸시 — 뒤로가기 중이 아니고, 현재 페이지가 다른 페이지일 때만
-  if(!window._navigatingBack){
-    const current=document.querySelector('.page.active')?.id || '';
-    if(current && current!==id && !_backIgnored.has(current) && !_backIgnored.has(id)){
-      window._pageStack.push(current);
-      if(window._pageStack.length>30) window._pageStack.shift();  // 최대 30단계
+  // 브라우저 history 푸시 — popstate 로 인한 호출이거나, 같은 페이지면 skip
+  if(!window._navigatingFromHistory && !_historyIgnored.has(id)){
+    const currentState = history.state || {};
+    if(currentState.pageId !== id){
+      try{ history.pushState({pageId:id}, '', '#'+id); }catch(_){}
     }
-    // 로그인/등록 페이지로 가면 스택 초기화
-    if(_backIgnored.has(id)) window._pageStack=[];
   }
   _showPage(id);
-  _updateBackBtn();
 };
+// 브라우저 ← / → 또는 모바일 스와이프 → popstate
+window.addEventListener('popstate', (e)=>{
+  const pageId = e.state?.pageId;
+  if(!pageId) return;
+  window._navigatingFromHistory=true;
+  try{ window.showPage(pageId); }finally{ window._navigatingFromHistory=false; }
+});
 
 window.addEventListener('load',async ()=>{
+  // 초기 history state — 첫 페이지에 pageId 부여 (없으면 popstate 첫 클릭 시 무시됨)
+  try{
+    const active = document.querySelector('.page.active')?.id || 'page-pick';
+    if(!history.state || !history.state.pageId){
+      history.replaceState({pageId:active}, '', '#'+active);
+    }
+  }catch(_){}
   if(CU){
     setupRealtime();  // W4: 자동 복원 시점에도 Realtime 연결
     // ① 즉시 마지막 페이지 표시 (껍데기만 — 데이터는 비어있음)
