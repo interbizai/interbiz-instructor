@@ -420,3 +420,11 @@ function saveStoredUser(u){
     → 데이터 직접 수정(Object.assign(u, fields)) 후 renderXXX 호출 패턴이면
       bumpDataVersion() 도 함께 호출하지 않으면 stale 표시
     → 의심스러우면 메모이제이션 적용 안 하는 게 안전
+
+17. **Vercel 함수 maxDuration — 플랜 한도 절대 초과 금지**
+    → HOBBY 60s · PRO 300s · ENTERPRISE 900s
+    → 결제 안 한 상태에서 `maxDuration: 300` 설정해도 HOBBY 60s 한도가 강제됨
+    → 함수 내부 재시도/백오프 총 합이 (maxDuration - 첫 호출 예상 시간) 미만이어야 함
+    → 예: 60s 한도 + Vertex 호출 평균 20s → 백오프 합 < 40s 안전, 권장 < 10s
+    → 504 FUNCTION_INVOCATION_TIMEOUT 이 떴다면 백오프 시간 합부터 의심
+    → 사례 (2026-05-28): generateContentWithBackoff 백오프 합 49s → 504 → 합 4s 로 단축

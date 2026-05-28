@@ -6,7 +6,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-export const config = { maxDuration: 300 };
+// Vercel HOBBY 플랜 한도: 60초 (PRO 는 300초)
+// 결제 전까지 60초로 명시 — 그 안에서 안전하게 동작하도록 백오프 설계
+export const config = { maxDuration: 60 };
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SB_URL = process.env.SUPABASE_URL;
@@ -27,9 +29,10 @@ function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, ed
   return h.digest('hex');
 }
 
-// F3: Vertex AI rate-limit 보호 — 429/RESOURCE_EXHAUSTED 시 지수 백오프 재시도
-//      (50명이 동시 분석 시작 시 Vertex 한도 초과 완화)
-async function generateContentWithBackoff(gm, request, maxAttempts = 4) {
+// F3 v2: Vertex AI rate-limit 보호 — 60초 maxDuration 안에서 안전한 짧은 백오프
+//   기존 합 49초 → 504 timeout 원인. 합 4초로 단축, 재시도 4회 → 2회
+//   첫 시도 실패 시 1회만 짧게 재시도. 그래도 안 되면 클라이언트가 재시도 (callVertexAnalyze 에 자체 retry 있음)
+async function generateContentWithBackoff(gm, request, maxAttempts = 2) {
   let lastErr;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -39,9 +42,9 @@ async function generateContentWithBackoff(gm, request, maxAttempts = 4) {
       const msg = String(e?.message || e || '');
       const isRateLimit = /429|RESOURCE_EXHAUSTED|quota|rate.?limit/i.test(msg);
       if (!isRateLimit || attempt === maxAttempts - 1) throw e;
-      // 백오프: 2s → 5s → 12s → 30s + jitter (사용자별 분산)
-      const base = [2000, 5000, 12000, 30000][attempt] || 30000;
-      const jitter = Math.floor(Math.random() * 2000);
+      // 백오프 1.5초 + jitter (총 합 2.5초 이내) — 60초 한도 안에서 안전
+      const base = 1500;
+      const jitter = Math.floor(Math.random() * 1000);
       console.warn(`[vertex] rate-limit detected, attempt ${attempt + 1}/${maxAttempts}, backoff ${base + jitter}ms`);
       await new Promise((r) => setTimeout(r, base + jitter));
     }
