@@ -6,9 +6,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// Vercel HOBBY 플랜 한도: 60초 (PRO 는 300초)
-// 결제 전까지 60초로 명시 — 그 안에서 안전하게 동작하도록 백오프 설계
-export const config = { maxDuration: 60 };
+// Vercel PRO 플랜 — 300초 한도 (5분)
+export const config = { maxDuration: 300 };
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SB_URL = process.env.SUPABASE_URL;

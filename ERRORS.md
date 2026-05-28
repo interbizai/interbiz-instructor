@@ -421,10 +421,13 @@ function saveStoredUser(u){
       bumpDataVersion() 도 함께 호출하지 않으면 stale 표시
     → 의심스러우면 메모이제이션 적용 안 하는 게 안전
 
-17. **Vercel 함수 maxDuration — 플랜 한도 절대 초과 금지**
-    → HOBBY 60s · PRO 300s · ENTERPRISE 900s
-    → 결제 안 한 상태에서 `maxDuration: 300` 설정해도 HOBBY 60s 한도가 강제됨
-    → 함수 내부 재시도/백오프 총 합이 (maxDuration - 첫 호출 예상 시간) 미만이어야 함
-    → 예: 60s 한도 + Vertex 호출 평균 20s → 백오프 합 < 40s 안전, 권장 < 10s
-    → 504 FUNCTION_INVOCATION_TIMEOUT 이 떴다면 백오프 시간 합부터 의심
-    → 사례 (2026-05-28): generateContentWithBackoff 백오프 합 49s → 504 → 합 4s 로 단축
+17. **Vercel 함수 maxDuration 과 일시 장애 처리**
+    → 인터픽 = **Vercel PRO 플랜** (vertex-analyze maxDuration: 300s, 다른 함수 60s 이하 충분)
+    → 504 FUNCTION_INVOCATION_TIMEOUT 가 떴다면 다음 순서로 진단:
+       1. 함수 내부 백오프 합 < (maxDuration - 첫 호출 예상 시간) 인지
+       2. Vertex/외부 API 자체가 응답 안 했는지 (Google Cloud 일시 장애)
+       3. 입력 파일 크기 (큰 영상/음성은 처리 시간 길어짐)
+    → **클라이언트 재시도 패턴에 반드시 포함**: 429·500·502·503·504·FUNCTION_INVOCATION_TIMEOUT·timeout·deployment·gateway
+    → 재시도 안 함 (영구 실패): 인증 만료(401)·검증 실패(400)·권한(403)·NOT_FOUND(404)
+    → 다중 모델/fps 시도 패턴(스피치 분석) 도 동일 일시 장애 정규식으로 통일
+    → 사례 (2026-05-28): callVertexAnalyze 가 504 응답을 일시 장애로 인식 못 해 첫 시도 후 즉시 throw → 사용자 alert. 정규식에 504/timeout/deployment 패턴 추가 + JSON 파싱 실패 시도 status code 기반 판단.

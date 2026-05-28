@@ -8923,9 +8923,9 @@ function normalizeVertexResult(raw){
   const overall=totalMax>0?Math.round(totalScore/totalMax*100):0;
   return {...raw, categories, overall_score:overall};
 }
-// /api/vertex-analyze 호출 (429 자동 재시도, 최대 3회)
+// /api/vertex-analyze 호출 — 일시 장애(429/503/504/timeout) 자동 재시도, 최대 4회
 async function callVertexAnalyze(payload){
-  const delays=[0,6000,15000,30000];
+  const delays=[0,5000,12000,25000];
   let lastErr=null;
   const normalizeErr=e=>{
     if(e==null) return '';
@@ -8935,20 +8935,37 @@ async function callVertexAnalyze(payload){
     if(e.details) return String(e.details);
     try{ return JSON.stringify(e).slice(0,300); }catch(_){ return String(e); }
   };
+  const isTransient=(status, msg)=>{
+    if([429,500,502,503,504].includes(status)) return true;
+    return /429|RESOURCE_EXHAUSTED|503|504|Too Many Requests|overloaded|FUNCTION_INVOCATION_TIMEOUT|timeout|deployment|gateway/i.test(msg||'');
+  };
   for(let i=0;i<delays.length;i++){
     if(delays[i]>0) await new Promise(r=>setTimeout(r,delays[i]));
-    const resp=await fetch('/api/vertex-analyze',{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
-      body:JSON.stringify(payload)
-    });
+    let resp;
+    try{
+      resp=await fetch('/api/vertex-analyze',{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
+        body:JSON.stringify(payload)
+      });
+    }catch(netErr){
+      // 네트워크 자체 실패 (오프라인·DNS) — 일시 장애로 간주
+      lastErr=new Error('네트워크 오류: '+(netErr?.message||netErr));
+      if(i<delays.length-1) continue;
+      break;
+    }
     const raw=await resp.text();
     let data=null;
-    try{data=JSON.parse(raw);}catch(e){lastErr=new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`); continue;}
+    try{data=JSON.parse(raw);}catch(e){
+      // JSON 파싱 실패 (Vercel 504 HTML 페이지 등) — status 코드로 재시도 판단
+      lastErr=new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`);
+      if(isTransient(resp.status, raw) && i<delays.length-1) continue;
+      break;
+    }
     if(resp.ok&&data.ok) return data.result;
-    // data.error가 object/string/null 무엇이든 안전하게 문자열로 변환 → [object Object] 방지
     const errMsg=normalizeErr(data.error)||('HTTP '+resp.status);
     lastErr=new Error(errMsg);
-    if(!/429|RESOURCE_EXHAUSTED|503|Too Many Requests|overloaded/i.test(errMsg)) break;
+    // 일시 장애만 재시도, 그 외 (인증·검증 실패 등) 즉시 break
+    if(!isTransient(resp.status, errMsg)) break;
   }
   throw lastErr||new Error('분석 호출 실패');
 }
@@ -11585,10 +11602,12 @@ async function runVoiceAnalysis(){
         });
       }catch(e){
         lastErr=e;
-        if(!/input token count|INVALID_ARGUMENT|RESOURCE_EXHAUSTED/i.test(e.message||'')) throw e;
+        // 일시 장애 (504/timeout/rate limit) → 다음 모델·fps 시도
+        // 인증 만료 등 영구 오류는 즉시 throw
+        if(!/input token count|INVALID_ARGUMENT|RESOURCE_EXHAUSTED|504|FUNCTION_INVOCATION_TIMEOUT|deployment|timeout|503|overloaded|네트워크/i.test(e.message||'')) throw e;
       }
     }
-    if(!aiResRaw) throw new Error('모든 모델/fps 조합으로 시도했으나 실패. '+(lastErr?.message||''));
+    if(!aiResRaw) throw new Error('일시적인 서버 부하로 분석 실패. 잠시 후 다시 시도해주세요. ('+(lastErr?.message||'')+')');
     setAiLoadingStage('ai','done');
     setAiLoadingStage('save','active');
     const aiRes=normalizeVertexResult(aiResRaw);
