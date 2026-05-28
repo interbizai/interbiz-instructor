@@ -7398,10 +7398,12 @@ function openPickRankingModal(){
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
   const prevMonth=thisMonth===0?11:thisMonth-1;
   const prevYear=thisMonth===0?thisYear-1:thisYear;
-  const monthVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
-  const monthVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
-  const prevVids=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
-  const prevVoice=(D.voiceEvals||[]).filter(v=>{const d=new Date(v.eval_date||v.created_at);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  // ▼ Top 3 (이달의 인터PICK 강사) 와 동일 로직 — 영상 평가만 + 동일 필터 적용 ▼
+  const f=pickActiveFilter();
+  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthVids=applyPickFilter(monthVidsRaw,f);
+  const prevVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  const prevVids=applyPickFilter(prevVidsRaw,f);
   // 영상 평가 점수 — 평가안기준(교육맞춤평가) 우선, AI독자 차순, 폴백 timestamp
   const videoEvalMap={};
   (D.evaluations||[]).forEach(e=>{ if(e.video_id && e.overall_score>0){ videoEvalMap[e.video_id+'_'+e.eval_type]=e.overall_score; } });
@@ -7413,14 +7415,13 @@ function openPickRankingModal(){
   };
   const allScored=(D.users||[]).filter(u=>!u.deleted).map(u=>{
     const uV=monthVids.filter(v=>v.userId===u.id);
-    const uVo=monthVoice.filter(v=>v.user_id===u.id);
-    const sc=[...uV.map(vidScore),...uVo.map(v=>v.score||0)];
+    const sc=uV.map(vidScore);
     const avg=sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length):0;
-    const pV=prevVids.filter(v=>v.userId===u.id);const pVo=prevVoice.filter(v=>v.user_id===u.id);
-    const pSc=[...pV.map(vidScore),...pVo.map(v=>v.score||0)];
+    const pV=prevVids.filter(v=>v.userId===u.id);
+    const pSc=pV.map(vidScore);
     const pAvg=pSc.length?(pSc.reduce((a,b)=>a+b,0)/pSc.length):0;
     const growth=pAvg>0?Math.round((avg-pAvg)/pAvg*100):0;
-    const vidList=[...uV.map(v=>({title:v.title||'—',date:v.date,score:vidScore(v)})),...uVo.map(v=>({title:v.title||'음성 분석',date:v.eval_date||v.created_at?.slice(0,10),score:v.score||0}))];
+    const vidList=uV.map(v=>({title:v.title||'—',date:v.date,score:vidScore(v)}));
     return {...u,pickScore:Math.round(avg*10)/10,evalCount:sc.length,growth,vidList};
   }).filter(u=>u.evalCount>0).sort((a,b)=>b.pickScore-a.pickScore);
 
@@ -14732,7 +14733,7 @@ function openLecturer(id, fromPage){
       <!-- 사진 + Lv 뱃지 -->
       <div style="text-align:center;flex-shrink:0;min-width:200px;padding:0 24px">
         <div style="position:relative;width:170px;height:215px;margin:0 auto 10px">
-          <div style="width:170px;height:215px;border-radius:18px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);${isOwner?'cursor:pointer':'cursor:default'};transition:transform .25s,box-shadow .25s" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.18),0 3px 8px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06)'" id="prof-photo-display">${u.photo?`<img src="${u.photo}" decoding="async" style="width:100%;height:100%;object-fit:contain;background:${bg};image-rendering:auto">`:u.name[0]}</div>
+          <div style="width:170px;height:215px;border-radius:18px;background:${u.photo?'transparent':bg};display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:#fff;overflow:hidden;${u.photo?'':'box-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);'}${isOwner?'cursor:pointer':'cursor:default'};transition:transform .25s,box-shadow .25s" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''" id="prof-photo-display">${u.photo?`<img src="${u.photo}" decoding="async" style="width:100%;height:100%;object-fit:contain;background:transparent;image-rendering:auto">`:u.name[0]}</div>
           ${isOwner?`<input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">`:''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
