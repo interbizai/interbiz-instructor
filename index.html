@@ -14731,8 +14731,8 @@ function openLecturer(id, fromPage){
       })()}
       <!-- 사진 + Lv 뱃지 -->
       <div style="text-align:center;flex-shrink:0;min-width:200px;padding:0 24px">
-        <div style="position:relative;width:130px;height:130px;margin:0 auto 8px">
-          <div style="width:130px;height:130px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;overflow:hidden;border:4px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.12);${isOwner?'cursor:pointer':'cursor:default'}" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} id="prof-photo-display">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+        <div style="position:relative;width:170px;height:170px;margin:0 auto 10px">
+          <div style="width:170px;height:170px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);${isOwner?'cursor:pointer':'cursor:default'};transition:transform .25s,box-shadow .25s" ${isOwner?`onclick="document.getElementById('prof-photo-input').click()" title="클릭하여 사진 변경"`:''} onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.18),0 3px 8px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06)'" id="prof-photo-display">${u.photo?`<img src="${u.photo}" decoding="async" style="width:100%;height:100%;object-fit:cover;image-rendering:auto">`:u.name[0]}</div>
           ${isOwner?`<input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(${u.id},this)">`:''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
@@ -17078,8 +17078,8 @@ async function saveProfile(){
   alert('✅ 프로필이 저장되었습니다.');
 }
 // 마이페이지 사진 업로드 — 항상 서비스 키 API 우회 (RLS silent-block 회피)
-// 이미지 자동 압축 — 큰 사진을 1MB 이하로 줄여 Storage 부담 최소화
-async function compressImage(file, maxBytes=1024*1024, maxDim=800){
+// 이미지 자동 압축 — 큰 사진을 1.5MB 이하로 줄이며 프로필 화질은 유지 (maxDim 1200)
+async function compressImage(file, maxBytes=1536*1024, maxDim=1200){
   // 작은 파일은 그대로
   if(file.size <= maxBytes && file.size <= 3*1024*1024) return file;
   return new Promise((resolve)=>{
@@ -17095,11 +17095,15 @@ async function compressImage(file, maxBytes=1024*1024, maxDim=800){
       }
       const canvas=document.createElement('canvas');
       canvas.width=w; canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      // 압축 품질 자동 조정 — 1MB 이하 될 때까지
+      const ctx=canvas.getContext('2d');
+      // 고품질 보간 (다운스케일 시 부드러움)
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality='high';
+      ctx.drawImage(img,0,0,w,h);
+      // 압축 품질 자동 조정 — maxBytes 이하 될 때까지 (높은 품질부터)
       const tryQuality=(q)=>new Promise(r=>canvas.toBlob(b=>r(b), 'image/jpeg', q));
       (async()=>{
-        for(const q of [0.85, 0.7, 0.55, 0.4, 0.3]){
+        for(const q of [0.92, 0.85, 0.7, 0.55, 0.4, 0.3]){
           const blob=await tryQuality(q);
           if(blob && blob.size<=maxBytes){
             resolve(new File([blob], (file.name||'photo').replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}));
