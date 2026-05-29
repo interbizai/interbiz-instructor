@@ -7224,7 +7224,7 @@ function renderPick(){
       ${eduTypeChip}
       <!-- 상단: 사진 + 이름 -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;min-width:0">
-        <div style="position:relative;flex-shrink:0;width:64px;height:64px"><div style="width:64px;height:64px;border-radius:50%;background:${u.photo?'transparent':bg};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;overflow:hidden">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div></div>
+        <div style="position:relative;flex-shrink:0;width:76px;height:76px"><div style="width:76px;height:76px;border-radius:14px;background:${u.photo?'transparent':bg};display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;overflow:hidden">${u.photo?`<img src="${u.photo}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain">`:u.name[0]}</div></div>
         <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}</span><span style="font-size:14px;flex-shrink:0">${medals2[i]}</span></div>
           <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[u.office,u.team,u.position].filter(Boolean).join(' · ')||'—'}</div>
