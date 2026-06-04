@@ -14552,31 +14552,53 @@ async function deleteCareerItem(id,userId){
   renderCareerList(userId);
 }
 
-// ── 포트폴리오 CRUD ──
+// ── 포트폴리오 CRUD — 이미지 그리드(3열) + 파일/링크 카드 통합 ──
+const _isImageExt=(ext)=>['jpg','jpeg','png','gif','webp','bmp','svg','avif','heic'].includes((ext||'').toLowerCase());
+const _isImageUrl=(url)=>typeof url==='string' && /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic)(\?|$)/i.test(url);
+
 function renderPortfolioList(userId){
   const listEl=document.getElementById('portfolio-list-'+userId);
   if(!listEl) return;
   const items=(D.portfolio||[]).filter(p=>p.user_id===userId);
   const isOwner=CU&&(CU.id===userId||CU.isAdmin);
   if(!items.length){listEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px 0">등록된 포트폴리오가 없습니다</div>';return;}
-  const typeIcons={'pdf':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-    'xlsx':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-    'link':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'};
-  listEl.innerHTML=items.map(p=>{
+  const typeIcons={
+    'pdf':'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E21E26" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'xlsx':'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'docx':'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0078C8" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'pptx':'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    'link':'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
+  };
+  const cards=items.map(p=>{
     const ext=(p.file_name||'').split('.').pop()?.toLowerCase()||'';
-    const icon=typeIcons[ext]||typeIcons['link'];
     const url=p.file_url||'';
+    const isImg = _isImageExt(ext) || _isImageUrl(url);
     const isNew=p.created_at&&(Date.now()-new Date(p.created_at).getTime()<7*24*60*60*1000);
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.04)${url?';cursor:pointer':''}" ${url?`onclick="window.open('${url}','_blank')"`:''}>
-      <div style="flex-shrink:0">${icon}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--t1)">${p.title}${p.subtitle?' — <span style="font-weight:400;color:var(--t2)">'+p.subtitle+'</span>':''}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${p.upload_date||p.created_at?.slice(0,10)||''}${p.file_name?' · '+p.file_name:''}</div>
-      </div>
-      ${isNew?'<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(16,185,129,.1);color:#10b981">NEW</span>':''}
-      ${isOwner?`<button style="border:none;background:none;cursor:pointer;color:var(--red);font-size:12px;padding:4px" onclick="event.stopPropagation();deletePortfolioItem(${p.id},${userId})">×</button>`:''}
-    </div>`;
+    const titleHtml = `${(p.title||'').replace(/</g,'&lt;')}${p.subtitle?'<span style="font-weight:400;color:var(--t3);margin-left:4px">'+(p.subtitle.replace(/</g,'&lt;'))+'</span>':''}`;
+    const newChip = isNew?'<span style="position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:800;background:rgba(16,185,129,.95);color:#fff;z-index:2">NEW</span>':'';
+    const delBtn = isOwner?`<button style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3" onclick="event.stopPropagation();deletePortfolioItem(${p.id},${userId})" title="삭제">×</button>`:'';
+    if(isImg){
+      // 이미지: 큰 썸네일 카드
+      return `<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--bdr);background:#000;cursor:pointer;transition:transform .22s,box-shadow .22s;aspect-ratio:4/3" ${url?`onclick="window.open('${url}','_blank')"`:''} onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 18px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        ${newChip}${delBtn}
+        <img src="${url}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.7));color:#fff">
+          <div style="font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleHtml}</div>
+          <div style="font-size:9px;opacity:.85;margin-top:1px">${p.upload_date||p.created_at?.slice(0,10)||''}</div>
+        </div>
+      </div>`;
+    } else {
+      // 파일/링크: 아이콘 카드
+      const icon = typeIcons[ext] || typeIcons['link'];
+      return `<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--bdr);background:#fafafa;cursor:${url?'pointer':'default'};transition:transform .22s,box-shadow .22s;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px" ${url?`onclick="window.open('${url}','_blank')"`:''} onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 18px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        ${newChip}${delBtn}
+        <div style="margin-bottom:8px">${icon}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--t1);text-align:center;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3">${titleHtml}</div>
+        <div style="font-size:9px;color:var(--t3);margin-top:4px">${p.upload_date||p.created_at?.slice(0,10)||''}${p.file_name?' · '+p.file_name.replace(/</g,'&lt;'):''}</div>
+      </div>`;
+    }
   }).join('');
+  listEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${cards}</div>`;
 }
 
 async function addPortfolioItem(userId){
@@ -14584,17 +14606,30 @@ async function addPortfolioItem(userId){
   if(!title){alert('제목을 입력하세요');return;}
   const subtitle=document.getElementById('pf-subtitle-'+userId)?.value?.trim()||'';
   const urlInput=document.getElementById('pf-url-'+userId)?.value?.trim()||'';
-  const file=document.getElementById('pf-file-'+userId)?.files?.[0];
+  let file=document.getElementById('pf-file-'+userId)?.files?.[0];
   let fileUrl='',fileName='';
   if(file){
-    const ext=file.name.split('.').pop()||'file';
-    const path=`portfolio/${Date.now()}.${ext}`;
-    const{error:ue}=await sb.storage.from('files').upload(path,file);
-    if(ue){alert('파일 업로드 실패');return;}
+    // 이미지 파일이면 자동 압축 (포트폴리오는 더 큰 maxDim 허용 — 화질 우선)
+    if(/^image\//i.test(file.type) && typeof compressImage==='function'){
+      try{
+        const orig=(file.size/1024/1024).toFixed(1);
+        if(file.size>1.5*1024*1024){
+          file = await compressImage(file, 2*1024*1024, 1600);  // 포트폴리오: 2MB·1600px
+          const next=(file.size/1024/1024).toFixed(2);
+          console.log(`📸 포트폴리오 자동 압축: ${orig}MB → ${next}MB`);
+        }
+      }catch(e){ console.warn('compressImage 실패 (원본 업로드):',e); }
+    }
+    const ext=(file.name||'file').split('.').pop()||'file';
+    const path=`portfolio/${userId}/${Date.now()}.${ext}`;
+    const{error:ue}=await sb.storage.from('files').upload(path,file,{contentType:file.type||undefined,upsert:false});
+    if(ue){alert('파일 업로드 실패\n\n원인: '+ue.message);return;}
     const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
     fileUrl=publicUrl;fileName=file.name;
   } else if(urlInput){
     fileUrl=urlInput;
+  } else {
+    alert('파일 또는 URL 중 하나를 입력하세요'); return;
   }
   const{error}=await sb.from('portfolio').insert({user_id:userId,title,subtitle,file_url:fileUrl||null,file_name:fileName||null,upload_date:new Date().toISOString().slice(0,10)});
   if(error){alert('등록 실패');return;}
@@ -14981,7 +15016,14 @@ function openLecturer(id, fromPage){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
         <!-- 강사 경력 이력 -->
         <div>
-          <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">강사 경력</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">강사 경력</div>
+            <div style="display:inline-flex;align-items:center;gap:6px">
+              ${u.lgCareerStart?`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;background:rgba(226,30,38,.08);color:#E21E26;font-size:10px;font-weight:800">LG경력 ${calcCareer(u.lgCareerStart)}</span>`:''}
+              ${u.teachCareerStart?`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;background:rgba(0,120,200,.08);color:var(--blue);font-size:10px;font-weight:800">강의경력 ${calcCareer(u.teachCareerStart)}</span>`:''}
+              ${(!u.lgCareerStart&&!u.teachCareerStart)?'<span style="font-size:10px;color:var(--t3)">경력 미설정</span>':''}
+            </div>
+          </div>
           <div style="border:1px solid var(--bdr);border-radius:14px;padding:20px">
             <div id="career-list-${u.id}" style="position:relative;padding-left:20px"></div>
             ${isOwner?`<div id="career-add-form-${u.id}" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:#fafafa">
@@ -15009,13 +15051,14 @@ function openLecturer(id, fromPage){
                 <input type="text" id="pf-title-${u.id}" placeholder="제목" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
                 <input type="text" id="pf-subtitle-${u.id}" placeholder="부제목 (선택)" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
               </div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="file" id="pf-file-${u.id}" style="display:none" onchange="document.getElementById('pf-fname-${u.id}').textContent=this.files[0]?.name||''">
-                <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('pf-file-${u.id}').click()">파일</button>
-                <span id="pf-fname-${u.id}" style="font-size:9px;color:var(--t3)"></span>
-                <input type="text" id="pf-url-${u.id}" placeholder="또는 URL" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="pf-file-${u.id}" accept="image/*,.pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt" style="display:none" onchange="document.getElementById('pf-fname-${u.id}').textContent=this.files[0]?.name||''">
+                <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="document.getElementById('pf-file-${u.id}').click()" title="사진(JPG·PNG) / PDF / Excel / Word / PPT">📎 파일</button>
+                <span id="pf-fname-${u.id}" style="font-size:9px;color:var(--t3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                <input type="text" id="pf-url-${u.id}" placeholder="또는 URL" style="flex:1;min-width:140px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:11px">
                 <button class="btn btn-blue" style="padding:4px 12px;font-size:10px" onclick="addPortfolioItem(${u.id})">등록</button>
               </div>
+              <div style="font-size:9px;color:var(--t3);margin-top:6px">💡 사진 등록 시 가로 3장씩 그리드로 보입니다 · 큰 사진은 자동 압축</div>
             </div>`:''}
           </div>
         </div>
