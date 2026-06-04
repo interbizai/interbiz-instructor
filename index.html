@@ -9420,6 +9420,68 @@ function openHabitTimestamps(idx){
   document.body.appendChild(overlay);
 }
 
+// 타임스탬프 항목 수정 저장 — 항목값 반영 + 카테고리·전체점수 자동 재계산 + DB 업데이트 + 화면 반영
+async function saveSubItemEdit(i){
+  const ov=document.getElementById('sub-item-video-overlay');
+  if(!ov) return;
+  const subItem=document.getElementById('sivm-edit-subitem')?.value?.trim()||'';
+  const analysis=document.getElementById('sivm-edit-analysis')?.value||'';
+  const solution=document.getElementById('sivm-edit-solution')?.value||'';
+  const timestamp=document.getElementById('sivm-edit-timestamp')?.value?.trim()||'';
+  const score=parseInt(document.getElementById('sivm-edit-score')?.value)||0;
+  const max=parseInt(document.getElementById('sivm-edit-max')?.value)||0;
+  const level=document.getElementById('sivm-edit-level')?.value||'normal';
+  const ctx=ov._editCtx; if(!ctx){ alert('저장 컨텍스트 없음 — 모달을 다시 열어주세요.'); return; }
+  const {which,raw,itemsInCat,evalId}=ctx;
+  const target=itemsInCat[i];
+  if(!target){ alert('항목을 찾지 못했습니다.'); return; }
+  // ① 항목 값 반영 (raw.sub_scores 참조 갱신)
+  target.sub_item=subItem;
+  target.analysis=analysis;
+  target.solution=solution;
+  target.timestamp=timestamp;
+  target.score=score;
+  target.max=max;
+  target.level=level;
+  // ② 정규화 — sub_scores 기반으로 categories/overall_score 자동 재계산
+  try{ normalizeVertexResult(raw); }catch(e){ console.warn('normalize 실패:', e); }
+  // ③ window._lastVertexResult 갱신
+  if(which==='ai') window._lastVertexResult.ai=raw;
+  else             window._lastVertexResult.crit=raw;
+  // ④ DB 업데이트 — evaluations 행 (sub_scores·categories·overall_score 동시)
+  if(evalId){
+    try{
+      const payload={
+        sub_scores: raw.sub_scores||[],
+        categories: raw.categories||[],
+        overall_score: raw.overall_score||0
+      };
+      const {error}=await sb.from('evaluations').update(payload).eq('id', evalId);
+      if(error){
+        alert('❌ DB 저장 실패\n\n원인: '+error.message+'\n\n메모리 갱신은 되어 있어 화면은 정상이나, 새로고침 시 사라질 수 있습니다.');
+        console.error('saveSubItemEdit DB:',error);
+      }
+    }catch(e){
+      alert('❌ DB 저장 실패: '+(e?.message||e));
+      console.error('saveSubItemEdit:',e);
+    }
+  } else {
+    console.warn('evalId 없음 — DB 업데이트 skip (메모리만)');
+  }
+  // ⑤ 분석 결과 화면 전체 재렌더 (총 점수·카테고리 점수도 같이 반영)
+  try{
+    if(typeof mapVertexToLegacy==='function' && typeof renderAnalysisResult==='function'){
+      const mapped=mapVertexToLegacy(window._lastVertexResult.crit, window._lastVertexResult.ai);
+      const studentCount=parseInt(v('an-count'))||0;
+      renderAnalysisResult(mapped, true, studentCount);
+    }
+  }catch(e){ console.warn('render 재호출 실패:', e); }
+  // ⑥ 모달 카드 보기 모드로 전환
+  if(ov._pick) ov._pick(i, false);
+  // 토스트
+  if(typeof showToast==='function') showToast('✓ 저장 완료 — 총 점수까지 자동 반영','#10b981');
+}
+
 // 세부항목 행 클릭 → 영상 + 타임라인 리치 모달
 function openSubItemVideoModal(which,categoryName,subIndex){
   const raw=which==='ai'?window._lastVertexResult?.ai:window._lastVertexResult?.crit;
@@ -9434,6 +9496,9 @@ function openSubItemVideoModal(which,categoryName,subIndex){
   const firstSec=parseTimestampToSeconds(active.timestamp);
   const levelColor={good:'#10b981',normal:'#f59e0b',bad:'#ef4444',na:'#9ca3af'};
   const levelLabel={good:'잘함',normal:'보통',bad:'미흡',na:'해당없음'};
+  // 수정 권한: 관리자/부관리자만
+  const canEdit = !!(CU?.isAdmin || CU?.isSubAdmin);
+  const evalId = which==='ai' ? window._anAiEvalId : window._anCritEvalId;
   // 기존 모달이 있으면 제거
   document.getElementById('sub-item-video-overlay')?.remove();
   const overlay=document.createElement('div');
@@ -9464,28 +9529,61 @@ function openSubItemVideoModal(which,categoryName,subIndex){
   </div>`;
   document.body.appendChild(overlay);
 
-  function pickItem(i){
+  function pickItem(i, editMode){
     const it=itemsInCat[i]; if(!it) return;
+    overlay._currentIdx=i;
+    overlay._editMode=!!editMode;
     const sec=parseTimestampToSeconds(it.timestamp);
     const v=document.getElementById('sivm-video');
-    if(v){try{v.currentTime=sec;v.play();}catch(e){}}
+    if(v && !editMode){try{v.currentTime=sec;v.play();}catch(e){}}
     document.getElementById('sivm-active-title').textContent=it.sub_item||'';
     const scoreTxt=`${it.score||0}/${it.max||0}`;
     const card=document.getElementById('sivm-active-card');
-    if(card){
+    if(!card) return;
+    if(editMode){
+      // 편집 모드 — 모든 필드 입력 가능
+      const lvOpts=['good','normal','bad','na'];
+      card.innerHTML=`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.06);color:var(--t2)">${it.category||''}</span>
+          <input id="sivm-edit-subitem" type="text" value="${(it.sub_item||'').replace(/"/g,'&quot;')}" style="flex:1;min-width:160px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:700;color:var(--t1)">
+          <input id="sivm-edit-score" type="number" min="0" max="100" step="1" value="${it.score||0}" style="width:62px;padding:5px 6px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:800;text-align:center">
+          <span style="font-size:11px;color:var(--t3);font-weight:700">/</span>
+          <input id="sivm-edit-max" type="number" min="0" max="100" step="1" value="${it.max||0}" style="width:62px;padding:5px 6px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:800;text-align:center">
+          <select id="sivm-edit-level" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:11px;font-weight:700">
+            ${lvOpts.map(l=>`<option value="${l}" ${it.level===l?'selected':''}>${levelLabel[l]}</option>`).join('')}
+          </select>
+        </div>
+        <label style="display:block;font-size:10px;color:var(--t3);font-weight:700;margin-bottom:4px">분석 (파란 박스)</label>
+        <textarea id="sivm-edit-analysis" rows="4" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;line-height:1.6;color:var(--t2);background:rgba(59,130,246,.04);font-family:inherit;resize:vertical;margin-bottom:10px">${(it.analysis||'').replace(/</g,'&lt;')}</textarea>
+        <label style="display:block;font-size:10px;color:var(--t3);font-weight:700;margin-bottom:4px">솔루션 (분홍 박스)</label>
+        <textarea id="sivm-edit-solution" rows="3" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;line-height:1.6;color:var(--t2);background:rgba(239,68,68,.04);font-family:inherit;resize:vertical;margin-bottom:10px">${(it.solution||'').replace(/</g,'&lt;')}</textarea>
+        <label style="display:block;font-size:10px;color:var(--t3);font-weight:700;margin-bottom:4px">영상 시점 (MM:SS 또는 MM:SS-MM:SS)</label>
+        <input id="sivm-edit-timestamp" type="text" value="${(it.timestamp||'').replace(/"/g,'&quot;')}" placeholder="예: 02:17-02:33" style="width:200px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:11px;color:var(--t2);margin-bottom:14px">
+        <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid #e5e7eb">
+          <button class="btn" style="padding:7px 16px;font-size:12px;font-weight:800;background:#10b981;color:#fff" onclick="saveSubItemEdit(${i})">✓ 저장</button>
+          <button class="btn btn-ghost" style="padding:7px 16px;font-size:12px;font-weight:800" onclick="(function(){const ov=document.getElementById('sub-item-video-overlay');ov&&ov._pick&&ov._pick(${i},false);})()">취소</button>
+        </div>
+      `;
+    } else {
+      // 보기 모드
+      const editBtn = canEdit && evalId
+        ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;font-weight:700;margin-left:4px" onclick="(function(){const ov=document.getElementById('sub-item-video-overlay');ov&&ov._pick&&ov._pick(${i},true);})()" title="관리자만 수정 가능">✏ 수정</button>`
+        : '';
       card.innerHTML=`
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.06);color:var(--t2)">${it.category||''}</span>
           <span style="font-size:14px;font-weight:800;color:var(--t1)">${it.sub_item||''}</span>
           <span style="margin-left:auto;font-size:13px;font-weight:900;color:${levelColor[it.level]||'var(--t3)'}">${scoreTxt}</span>
           <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[it.level]||'#eee'};color:#fff">${levelLabel[it.level]||'-'}</span>
+          ${editBtn}
         </div>
-        <div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #3b82f6;background:rgba(59,130,246,.06);border-radius:4px;margin-bottom:8px">${it.analysis||'-'}</div>
-        ${it.solution?`<div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #ef4444;background:rgba(239,68,68,.06);border-radius:4px">${it.solution}</div>`:''}
+        <div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #3b82f6;background:rgba(59,130,246,.06);border-radius:4px;margin-bottom:8px">${(it.analysis||'-').replace(/</g,'&lt;')}</div>
+        ${it.solution?`<div style="font-size:12px;color:var(--t2);line-height:1.6;padding:10px 12px;border-left:3px solid #ef4444;background:rgba(239,68,68,.06);border-radius:4px">${(it.solution||'').replace(/</g,'&lt;')}</div>`:''}
         ${it.timestamp?`<div style="margin-top:10px;font-size:10px;color:var(--t3)">영상 시점 · <strong>${it.timestamp}</strong></div>`:''}
       `;
     }
-    // 타임라인 활성 하이라이트
+    // 타임라인 활성 하이라이트 + 텍스트 업데이트
     document.querySelectorAll('#sivm-timeline [data-idx]').forEach(n=>{n.style.background=n.dataset.idx==String(i)?'rgba(59,130,246,.08)':'';n.style.borderLeftColor=n.dataset.idx==String(i)?'#3b82f6':'transparent';});
   }
   const tl=document.getElementById('sivm-timeline');
@@ -9497,7 +9595,8 @@ function openSubItemVideoModal(which,categoryName,subIndex){
     </div>`).join('');
   }
   overlay._pick=pickItem;
-  pickItem(subIndex);
+  overlay._editCtx={which, raw, itemsInCat, evalId};
+  pickItem(subIndex, false);
 }
 
 // 타임스탬프(MM:SS 또는 MM:SS-MM:SS) → 시작 초
