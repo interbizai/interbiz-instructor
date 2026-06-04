@@ -7131,10 +7131,14 @@ function renderPick(){
   // 현재 필터 (교육종류 다중 + 제품)
   const f=pickActiveFilter();
 
-  // 당월 기준 데이터 — 영상 평가만 (+ 필터 적용)
+  // 당월 + 이전 달 누적 (2개월) — 영상 평가만 (+ 필터 적용)
+  // 글자는 "이번 달" 그대로 유지, 데이터 범위만 누적 (2026-06-04 사장님 요청)
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
   const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
-  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const cumPrevMonth=thisMonth===0?11:thisMonth-1;
+  const cumPrevYear=thisMonth===0?thisYear-1:thisYear;
+  const cumStart=new Date(cumPrevYear,cumPrevMonth,1,0,0,0);
+  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d>=cumStart && d<=monthEnd;});
   const monthVids=applyPickFilter(monthVidsRaw,f);
   const totalEvals=monthVids.length;
 
@@ -7399,10 +7403,18 @@ function openPickRankingModal(){
   const prevMonth=thisMonth===0?11:thisMonth-1;
   const prevYear=thisMonth===0?thisYear-1:thisYear;
   // ▼ Top 3 (이달의 인터PICK 강사) 와 동일 로직 — 영상 평가만 + 동일 필터 적용 ▼
+  // 누적 2개월 (이전 달 + 이번 달) — 메인과 동일 범위
   const f=pickActiveFilter();
-  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
+  const cumStart=new Date(prevYear,prevMonth,1,0,0,0);
+  const monthVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d>=cumStart && d<=monthEnd;});
   const monthVids=applyPickFilter(monthVidsRaw,f);
-  const prevVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear;});
+  // 비교용 이전 2개월 (그 앞 2개월 평균) — 성장률 계산
+  const prev2Month=prevMonth===0?11:prevMonth-1;
+  const prev2Year=prevMonth===0?prevYear-1:prevYear;
+  const prevStart=new Date(prev2Year,prev2Month,1,0,0,0);
+  const prevEnd=new Date(prevYear,prevMonth,0,23,59,59);
+  const prevVidsRaw=(D.videos||[]).filter(v=>{const d=new Date(v.date);return d>=prevStart && d<=prevEnd;});
   const prevVids=applyPickFilter(prevVidsRaw,f);
   // 영상 평가 점수 — 평가안기준(교육맞춤평가) 우선, AI독자 차순, 폴백 timestamp
   const videoEvalMap={};
