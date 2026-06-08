@@ -11918,7 +11918,17 @@ async function runVoiceAnalysis(){
       try{
         aiResRaw=await callVertexAnalyze({
           video_url:audioUrl, video_gcs_uri:audioGcsUri, video_mime:audioMime, fps:a.fps,
-          checklist_items:checklistItems.length?checklistItems:[{category:'스피치',sub_item:'전체',criterion:'스피치 전반 평가',max_score:100,detail:'',sort_order:0}],
+          // 체크리스트 없을 때 풍부한 기본 평가 기준 (8개 항목, 4개 카테고리) — AI 차트가 단조롭게 나오는 문제 해결
+          checklist_items:checklistItems.length?checklistItems:[
+            {category:'발성',sub_item:'발성 안정성',criterion:'고른 발성과 호흡 안정성',max_score:100,detail:'',sort_order:0},
+            {category:'발성',sub_item:'음성 품질',criterion:'발성 크기·맑기·울림',max_score:100,detail:'',sort_order:1},
+            {category:'발음',sub_item:'발음 명확도',criterion:'자음·모음의 정확한 전달',max_score:100,detail:'',sort_order:2},
+            {category:'발음',sub_item:'억양 자연성',criterion:'문장 흐름에 따른 자연스러운 억양 변화',max_score:100,detail:'',sort_order:3},
+            {category:'전달력',sub_item:'속도 적절성',criterion:'경청 가능한 속도 (200~230 WPM 권장)',max_score:100,detail:'',sort_order:4},
+            {category:'전달력',sub_item:'간격·호흡',criterion:'문장 사이 적절한 휴식과 끊김',max_score:100,detail:'',sort_order:5},
+            {category:'표현력',sub_item:'강조·변화',criterion:'중요 부분의 강조와 단조롭지 않은 변화',max_score:100,detail:'',sort_order:6},
+            {category:'표현력',sub_item:'신뢰·몰입',criterion:'청자가 받는 전반적 신뢰감과 몰입도',max_score:100,detail:'',sort_order:7}
+          ],
           eval_type:'AI독자',
           edu_file_url:eduFileUrl||undefined,
           model:a.model

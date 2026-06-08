@@ -421,6 +421,18 @@ function saveStoredUser(u){
       bumpDataVersion() 도 함께 호출하지 않으면 stale 표시
     → 의심스러우면 메모이제이션 적용 안 하는 게 안전
 
+18. **AI 평가 결과가 단조로우면 → 기본 체크리스트 풍부도 점검**
+    → 체크리스트 없이 AI 분석 호출 시 기본 항목이 1~2개면 → 결과 카테고리도 1~2개 (차트 일직선)
+    → 최소 6~8개 항목 / 3~4개 카테고리 의 기본값 제공해야 다각형 차트가 의미있게 나옴
+    → 사례 (2026-06-08): runVoiceAnalysis 의 fallback checklist 1개 → 발성 안정성·음성 품질 2개만 출력 → 8개로 확장
+
+19. **신규 테이블 추가 시 RLS 비활성화 누락 점검**
+    → 인터픽 운영 정책: core 테이블 모두 RLS OFF (#2, #7)
+    → notifications, app_settings, learning_links 같은 신규/누락 테이블 발견 시 즉시 ALTER ... DISABLE ROW LEVEL SECURITY + GRANT
+    → 증상: "new row violates row-level security policy" 콘솔 경고
+    → 알림 안 보내져도 본 기능 진행은 됨 — 그러나 사용자 경험 저하 → 즉시 마이그레이션
+    → 사례 (2026-06-08): notifications 테이블 RLS 가 enabled 상태 → notifyAdminsOfUpload 모두 실패
+
 17. **Vercel 함수 maxDuration 과 일시 장애 처리**
     → 인터픽 = **Vercel PRO 플랜** (vertex-analyze maxDuration: 300s, 다른 함수 60s 이하 충분)
     → 504 FUNCTION_INVOCATION_TIMEOUT 가 떴다면 다음 순서로 진단:
