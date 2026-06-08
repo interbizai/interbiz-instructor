@@ -6356,9 +6356,8 @@ function renderEduPage(){
       </div>`;
     }
     const adminControls=isAdmin?`
-      <button style="position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();document.getElementById('edu-lk-change-image-${lk.id}').click()" title="대표 이미지 변경">🖼</button>
-      <input type="file" id="edu-lk-change-image-${lk.id}" accept="image/*" style="display:none" onchange="changeEduLinkImage(${lk.id}, this)">
-      <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
+      <button style="position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();openEduLinkImagePicker(${lk.id});return false;" title="대표 이미지 변경">🖼</button>
+      <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();deleteLink(${lk.id});return false;" title="삭제">×</button>`:'';
     return `<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04)" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 28px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,.04)'">
       <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${brand.color};z-index:2"></div>
       ${adminControls}
@@ -6751,6 +6750,18 @@ async function addEduLink(){
   const imgInput=document.getElementById('edu-lk-image'); if(imgInput) imgInput.value='';
   const imgName=document.getElementById('edu-lk-image-name'); if(imgName) imgName.textContent='';
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
+}
+
+// 대표 이미지 변경 버튼 → 카드 외부에 file input 생성해서 사진첩/파일 선택
+// (카드 내부에 input 두면 .click() 이벤트가 카드 onclick 으로 전파되어 URL 이동 발생)
+function openEduLinkImagePicker(linkId){
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='image/*';
+  inp.style.display='none';
+  inp.onchange=()=>{ changeEduLinkImage(linkId, inp); setTimeout(()=>inp.remove(),100); };
+  document.body.appendChild(inp);
+  inp.click();
 }
 
 // 기존 링크 대표 이미지 변경 (관리자 전용)
