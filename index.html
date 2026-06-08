@@ -7028,26 +7028,32 @@ async function loadHeroText(){
   await loadHeroImage();
 }
 
-// 히어로 이미지 로드 — app_settings.hero_image 에서 URL 가져옴
+// 히어로 이미지/영상 로드 — app_settings.hero_image 에서 URL 가져옴
 async function loadHeroImage(){
   const wrap=document.getElementById('pick-hero-image-wrap');
   const textWrap=document.getElementById('pick-hero-text-wrap');
-  const imgEl=document.getElementById('pick-hero-image');
   const tools=document.getElementById('pick-hero-image-tools');
-  if(!wrap||!imgEl) return;
+  if(!wrap) return;
   let url='';
   try{
     const {data}=await sb.from('app_settings').select('value').eq('key','hero_image').maybeSingle();
     url=(data?.value||'').trim();
   }catch(_){}
-  // localStorage 폴백
   if(!url){ try{ url=localStorage.getItem('hero_image')||''; }catch(_){} }
   const canEdit=!!(CU?.isAdmin||CU?.isSubAdmin);
   if(url){
-    imgEl.src=url;
+    // 영상이면 <video> autoplay loop muted, 아니면 <img> (GIF 자동 재생)
+    const isVideo=/\.(mp4|webm|mov)(\?|$)/i.test(url);
+    const inner = isVideo
+      ? `<video src="${url}" autoplay loop muted playsinline style="display:block;width:100%;height:auto;border-radius:14px"></video>`
+      : `<img id="pick-hero-image" src="${url}" alt="" style="display:block;width:100%;height:auto;border-radius:14px">`;
+    // tools 보존 (위치 유지)
+    wrap.innerHTML = inner + (tools ? tools.outerHTML : '');
     wrap.style.display='';
     if(textWrap) textWrap.style.display='none';
-    if(tools) tools.style.display=canEdit?'flex':'none';
+    // tools 다시 참조 (innerHTML 교체했으니)
+    const newTools = wrap.querySelector('#pick-hero-image-tools');
+    if(newTools) newTools.style.display = canEdit ? 'flex' : 'none';
   } else {
     wrap.style.display='none';
     if(textWrap) textWrap.style.display='';
@@ -7056,32 +7062,41 @@ async function loadHeroImage(){
 }
 
 // 히어로 이미지 추가/변경 — 카드 외부 file input 으로 click 격리
+//   GIF / animated WebP / 영상(MP4) 도 허용 — 압축 없이 원본 그대로 업로드
 function changeHeroImage(){
   if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자만 가능합니다.'); return; }
   const inp=document.createElement('input');
-  inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+  inp.type='file';
+  inp.accept='image/*,video/mp4,video/webm';  // 정적 이미지 + GIF + 영상
+  inp.style.display='none';
   inp.onchange=async ()=>{
     const file=inp.files?.[0];
     setTimeout(()=>inp.remove(),100);
     if(!file) return;
     try{
+      const mime=file.type||'';
+      // GIF / animated WebP / 영상은 압축 skip (애니메이션·프레임 보존)
+      const skipCompress = /^(image\/(gif|webp|svg|avif)|video\/)/i.test(mime);
       let upload=file;
-      if(upload.size>1.5*1024*1024 && typeof compressImage==='function'){
+      if(!skipCompress && upload.size>1.5*1024*1024 && typeof compressImage==='function'){
         try{ upload=await compressImage(upload, 2*1024*1024, 1600); }catch(_){}
+      }
+      // 크기 한도 안내 (Storage 무료 한도 50MB 권장)
+      if(upload.size>50*1024*1024){
+        if(!confirm('파일이 '+(upload.size/1024/1024).toFixed(1)+'MB 입니다.\n50MB 이상은 로딩이 느려질 수 있습니다. 계속할까요?')) return;
       }
       const ext=(upload.name||file.name||'hero.jpg').split('.').pop()||'jpg';
       const path=`hero/${Date.now()}.${ext}`;
-      const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:upload.type||'image/jpeg', upsert:false});
+      const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:mime||'image/jpeg', upsert:false});
       if(ue) throw new Error(ue.message);
       const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-      // app_settings 에 저장
       const {error:upErr}=await sb.from('app_settings').upsert({key:'hero_image', value:publicUrl});
       if(upErr) throw new Error(upErr.message);
       try{ localStorage.setItem('hero_image', publicUrl); }catch(_){}
       await loadHeroImage();
-      if(typeof showToast==='function') showToast('✓ 히어로 이미지 등록 완료','#10b981');
+      if(typeof showToast==='function') showToast('✓ 히어로 '+(mime.startsWith('video')?'영상':'이미지')+' 등록 완료','#10b981');
     }catch(e){
-      alert('이미지 등록 실패: '+(e?.message||e));
+      alert('등록 실패: '+(e?.message||e));
     }
   };
   document.body.appendChild(inp);
