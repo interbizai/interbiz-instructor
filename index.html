@@ -12091,11 +12091,26 @@ function openCalendar(){
 async function loadCalEvents(){
   // /api/db/load에서 이미 받은 데이터 사용 (조직 필터 적용됨)
   const all=D.calendarEvents||[];
-  // 관리자: 전체 / 일반: pick_visible + 본인
+  // 관리자(메인): 전체 표시
+  // 그 외: pick_visible(공개) + 본인이 등록한 것 + 같은 조직 관리자/부관리자가 등록한 것
+  const myOrg=CU?.orgName||CU?.channel||null;
+  // 같은 조직의 관리자·부관리자 ID 목록
+  const sameOrgAdminIds=new Set(
+    (D.users||[])
+      .filter(u=>!u.deleted && u.isSubAdmin && (u.orgName||u.channel)===myOrg)
+      .map(u=>u.id)
+  );
   calEvents=all.filter(e=>{
-    if(CU?.isAdmin) return true;
+    // 메인 관리자(id=0) 또는 부관리자 본인은 본인 + 본인 조직 모두 봄
+    if(CU?.email==='admin') return true;  // 진짜 관리자(슈퍼) 모든 일정 봄
+    // pick_visible 인 일정은 모두 보임 (관리자가 인터픽 노출용으로 등록)
     if(e.pick_visible) return true;
-    if(e.user_id && CU?.id && e.user_id==CU.id) return true;
+    // 본인이 등록한 것
+    if(e.user_id && CU?.id && String(e.user_id)===String(CU.id)) return true;
+    // 같은 조직의 관리자/부관리자가 등록한 것
+    if(e.user_id && sameOrgAdminIds.has(e.user_id)) return true;
+    // 또는 같은 조직 일정 (org_name 기반)
+    if(myOrg && e.org_name && e.org_name===myOrg && CU?.isSubAdmin) return true;
     return false;
   }).map(e=>({...e,start_time:new Date(e.start_time),end_time:new Date(e.end_time)}));
   renderCalendar();
@@ -16262,9 +16277,33 @@ function buildLectSummary(userId){
   });
   const evals=Object.values(byVidScore).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
   const voiceEvals=Object.values(byVidVoice);
-  const scores=evals.map(e=>Number(e.overall_score||0)).filter(s=>s>0);
+  // overall_score 가 0/null 이면 sub_scores 합산으로 폴백 계산
+  const scores=evals.map(e=>{
+    let s=Number(e.overall_score||0);
+    if(s<=0){
+      const subs=safeArr(e.sub_scores).filter(x=>x.level!=='na');
+      if(subs.length){
+        const ts=subs.reduce((a,x)=>{
+          let sc=Number(x.score||0);
+          if(sc<=0 && Number(x.max||0)<=0){
+            // max=0 인 옛 데이터: level 로 추정
+            if(x.level==='good') sc=5;
+            else if(x.level==='normal') sc=3;
+          }
+          return a+sc;
+        },0);
+        const tm=subs.reduce((a,x)=>{
+          const m=Number(x.max||0);
+          return a+(m>0?m:5);
+        },0);
+        s = tm>0 ? Math.round(ts/tm*100) : 0;
+      }
+    }
+    return s;
+  }).filter(s=>s>0);
   const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
   const evalCount=scores.length;
+  console.log('[총평] overall_score 평균:'+Math.round(avg)+', 유효 점수:'+evalCount+'건');
 
   // 빈 상태
   const filterChipText=hasFilter?[catFilter,prodFilter].filter(Boolean).join(' · ')+' 기준':'전체 기준';
