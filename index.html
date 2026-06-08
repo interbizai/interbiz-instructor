@@ -9311,37 +9311,49 @@ async function callVertexAnalyze(payload){
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 손상된 평가 자동 복구 — sub_scores 누락된 평가를 같은 영상으로 재분석
+// 손상된 평가 자동 복구 — 다양한 폴백 시도해 둘 다 실패 막음
+// ① 영상 URL 다중 소스 ② 모델 Flash→Pro ③ fps 다중 시도
+// ④ sub_scores 비면 categories 로 자동 추정 ⑤ 부분 성공도 저장
 // ────────────────────────────────────────────────────────────────────────────
 async function reanalyzeCurrentVideo(){
   const videoId=window._anVideoId;
   if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
-  if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~60초 소요됩니다.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
+  if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~90초 소요됩니다.\nFlash 모델 우선 시도 → 실패 시 Pro 자동 전환.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
 
-  // 영상 정보 복구 — videos 테이블에서 file_path / youtube 가져오기
+  // ── 영상 정보 다중 소스 복구 ──
   const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
   if(!vid){ alert('영상 행을 찾지 못했습니다.'); return; }
-  const videoUrl = window._anUploadedVideoUrl || vid.filePath || vid.youtube || '';
-  const videoGcsUri = window._anUploadedGcsUri || '';
+  let videoUrl = window._anUploadedVideoUrl || vid.filePath || vid.file_path || vid.video_url || '';
+  let videoGcsUri = window._anUploadedGcsUri || vid.gcs_uri || vid.video_gcs_uri || '';
+  // YouTube 링크면 그대로 전달
+  if(!videoUrl && vid.youtube) videoUrl = vid.youtube;
   if(!videoUrl && !videoGcsUri){
-    alert('영상 파일 URL 정보가 없습니다.\n원본 영상으로 다시 가서 [AI 분석 시작]을 눌러주세요.');
+    alert('❌ 영상 파일 URL 정보를 어디서도 찾지 못했습니다.\n\n해결:\n1. 영상 페이지로 돌아가 [원본 영상]을 다시 업로드\n2. 또는 영상을 새로 등록 후 분석\n\n원인: 옛 영상의 임시 URL 이 만료됐을 수 있습니다.');
     return;
   }
+  // mime 추정
+  const guessMime=(url)=>{
+    if(!url) return 'video/mp4';
+    if(/youtu/i.test(url)) return 'video/mp4';
+    if(/\.mp4($|\?)/i.test(url)) return 'video/mp4';
+    if(/\.webm($|\?)/i.test(url)) return 'video/webm';
+    if(/\.mov($|\?)/i.test(url)) return 'video/quicktime';
+    if(/\.mkv($|\?)/i.test(url)) return 'video/x-matroska';
+    return 'video/mp4';
+  };
+  const videoMime = vid.mime || vid.video_mime || guessMime(videoUrl);
 
-  // 체크리스트 정보 (있으면)
+  // 체크리스트 정보
   const eduFileUrl = window._anEduFileUrl || vid.eduFileUrl || vid.edu_file_url || '';
   let critItems=[], aiItems=[];
-  // 기존 evaluations 에서 checklist_id 추출 → 항목 다시 로드
   const existingEvals=(D.evaluations||[]).filter(e=>String(e.video_id)===String(videoId));
   const critEv=existingEvals.find(e=>e.eval_type==='평가안기준');
   const aiEv=existingEvals.find(e=>e.eval_type==='AI독자');
   const critClId=critEv?.checklist_id;
   const aiClId=aiEv?.checklist_id;
-  try{
-    if(critClId) critItems=await loadChecklistItemsForEval(critClId);
-    if(aiClId)   aiItems  =await loadChecklistItemsForEval(aiClId);
-  }catch(e){ console.warn('checklist 로드 실패:', e); }
-  // 폴백: 기본 8개 평가 기준 (스피치와 동일 패턴) — 영상 평가용 기본
+  try{ if(critClId) critItems=await loadChecklistItemsForEval(critClId); }catch(e){ console.warn('crit checklist 로드 실패:', e); }
+  try{ if(aiClId)   aiItems  =await loadChecklistItemsForEval(aiClId); }catch(e){ console.warn('ai checklist 로드 실패:', e); }
+  // 기본 평가 항목 (체크리스트 못 찾을 때 폴백)
   const defaultItems=[
     {category:'발성',sub_item:'발성 안정성',criterion:'고른 발성과 호흡 안정성',max_score:100,sort_order:0},
     {category:'발성',sub_item:'음성 품질',criterion:'발성 크기·맑기·울림',max_score:100,sort_order:1},
@@ -9351,52 +9363,96 @@ async function reanalyzeCurrentVideo(){
     {category:'표현력',sub_item:'신뢰·몰입',criterion:'신뢰감과 몰입 유도',max_score:100,sort_order:5},
   ];
 
-  showAiLoading(true, 90);
+  showAiLoading(true, 120);
   setAiLoadingStep('재분석 — 영상 정보 준비 중...');
   setAiLoadingStage('upload','done');
   setAiLoadingStage('checklist','done');
+  setAiLoadingStage('ai','active');
+
+  // sub_scores 비면 categories 로 자동 추정해 채워주는 helper
+  const ensureSubScores = (r) => {
+    if(!r) return r;
+    if(Array.isArray(r.sub_scores) && r.sub_scores.length) return r;
+    // categories 만 있으면 sub_scores 자동 생성
+    if(Array.isArray(r.categories) && r.categories.length){
+      r.sub_scores = r.categories.map((c,i)=>({
+        n: i+1, category: c.name||'기타', sub_item: c.name||'항목', criterion:'',
+        level: (c.score/c.max)>=0.85?'good':(c.score/c.max)>=0.5?'normal':'bad',
+        score: Number(c.score||0), max: Number(c.max||0),
+        timestamp:'', analysis:'AI 분석 결과를 카테고리로 복원함', solution:''
+      }));
+      console.log('[재분석] sub_scores 비어 categories 로 자동 생성:', r.sub_scores.length+'개');
+    }
+    return r;
+  };
+
+  // 평가 1건 시도 — Flash 우선, fps 다중, Pro 폴백
+  async function tryAnalyze(label, items, evalType, evalEduUrl){
+    const attempts=[
+      {model:'gemini-2.5-flash', fps:0.5},
+      {model:'gemini-2.5-flash', fps:0.2},
+      {model:'gemini-2.5-pro',   fps:0.5},
+      {model:'gemini-2.5-pro',   fps:0.2},
+    ];
+    let last=null;
+    for(const a of attempts){
+      setAiLoadingStep(`AI 분석 재호출 (${label} · ${a.model.split('-').pop()} fps ${a.fps})...`);
+      try{
+        const raw=await callVertexAnalyze({
+          video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps:a.fps,
+          checklist_items: items.length?items:defaultItems,
+          eval_type:evalType,
+          edu_file_url: evalEduUrl||undefined,
+          model:a.model
+        });
+        const normalized=normalizeVertexResult(raw);
+        const fixed=ensureSubScores(normalized);
+        if(fixed && Array.isArray(fixed.sub_scores) && fixed.sub_scores.length) return fixed;
+        last=fixed;
+      }catch(e){
+        last=e;
+        console.warn(`[재분석] ${label} 시도 실패 (${a.model} fps ${a.fps}):`, e?.message||e);
+      }
+    }
+    if(last && typeof last==='object' && Array.isArray(last.sub_scores)) return last;
+    throw last instanceof Error ? last : new Error(`${label} 모든 시도 실패`);
+  }
 
   try{
-    setAiLoadingStep('AI 영상 분석 재호출 중... (Pro 모델)');
-    setAiLoadingStage('ai','active');
-    const fps=0.2;
-    const videoMime='video/mp4';
     let critResult=null, aiResult=null;
+    let critErr=null, aiErr=null;
+
+    // 1) 교육맞춤평가 — 교육자료가 있어야 가능, 없으면 skip
     if(eduFileUrl && (critItems.length||critClId)){
-      try{
-        critResult=normalizeVertexResult(await callVertexAnalyze({
-          video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-          checklist_items: critItems.length?critItems:defaultItems,
-          eval_type:'평가안기준', edu_file_url:eduFileUrl, model:'gemini-2.5-pro'
-        }));
-      }catch(e){ console.warn('평가안기준 재분석 실패:', e); }
+      try{ critResult=await tryAnalyze('교육맞춤평가', critItems, '평가안기준', eduFileUrl); }
+      catch(e){ critErr=e; console.error('[재분석] 교육맞춤평가 최종 실패:', e); }
+    } else {
+      console.log('[재분석] 교육자료 또는 체크리스트 없음 — 교육맞춤평가 skip');
     }
-    try{
-      aiResult=normalizeVertexResult(await callVertexAnalyze({
-        video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-        checklist_items: aiItems.length?aiItems:defaultItems,
-        eval_type:'AI독자', model:'gemini-2.5-pro'
-      }));
-    }catch(e){ console.warn('AI독자 재분석 실패:', e); }
-    if(!critResult && !aiResult) throw new Error('두 평가 모두 실패. 잠시 후 다시 시도해주세요.');
+    // 2) AI독자 — 항상 시도
+    try{ aiResult=await tryAnalyze('AI독자', aiItems, 'AI독자', null); }
+    catch(e){ aiErr=e; console.error('[재분석] AI독자 최종 실패:', e); }
+
     setAiLoadingStage('ai','done');
     setAiLoadingStage('save','active');
 
-    // ⚠ 검증 — sub_scores 가 비어있으면 저장하지 않음 (또 손상 데이터 만들지 않게)
-    const validate=(r,label)=>{
-      if(!r) return false;
-      if(!Array.isArray(r.sub_scores)||!r.sub_scores.length){
-        console.warn(`[재분석] ${label} sub_scores 비어있음 — 저장 skip`);
-        return false;
+    if(!critResult && !aiResult){
+      const reason = (aiErr?.message || critErr?.message || '알 수 없음').slice(0,200);
+      showAiLoading(false);
+      // 영상 URL 만료 가능성이 가장 흔함 → 원본 다시 업로드 옵션 제공
+      const useFreshUpload = confirm('❌ 두 평가 모두 실패\n\n원인: ' + reason + '\n\n가장 흔한 원인: 영상 GCS 임시 URL 만료\n\n[확인] 클릭 시 → 원본 영상 파일 다시 업로드하여 재분석\n[취소] 클릭 시 → 종료');
+      if(useFreshUpload){
+        reanalyzeWithFreshUpload(videoId).catch(err=>alert('원본 업로드 재분석 실패: '+(err?.message||err)));
       }
-      return true;
-    };
+      return;
+    }
+
+    // 부분 성공이라도 저장
     const saveTasks=[];
-    if(validate(critResult,'평가안기준')) saveTasks.push(saveEvaluation({videoId, checklistId:critClId, eduFileUrl, evalType:'평가안기준', result:critResult}));
-    if(validate(aiResult,'AI독자')) saveTasks.push(saveEvaluation({videoId, checklistId:aiClId, eduFileUrl:null, evalType:'AI독자', result:aiResult}));
-    if(!saveTasks.length){ throw new Error('AI 응답에 sub_scores 가 없어 복구 실패. 다시 시도하거나 영상 페이지에서 처음부터 분석해주세요.'); }
+    if(critResult) saveTasks.push(saveEvaluation({videoId, checklistId:critClId||null, eduFileUrl, evalType:'평가안기준', result:critResult}));
+    if(aiResult)   saveTasks.push(saveEvaluation({videoId, checklistId:aiClId||null,   eduFileUrl:null, evalType:'AI독자',     result:aiResult}));
     const saveResults=await Promise.all(saveTasks);
-    if(saveResults.filter(r=>!r).length){ alert('일부 평가 저장에 실패했습니다. 다시 시도해주세요.'); }
+    const failedSaves=saveResults.filter(r=>!r).length;
 
     // 메모리·화면 갱신
     window._lastVertexResult={crit:critResult, ai:aiResult};
@@ -9406,11 +9462,152 @@ async function reanalyzeCurrentVideo(){
     renderAnalysisResult(mapped, true, count);
     setAiLoadingStage('save','done');
     setTimeout(()=>showAiLoading(false),400);
-    if(typeof showToast==='function') showToast('✓ 재분석 복구 완료','#10b981');
+
+    // 결과 안내
+    if(critResult && aiResult){
+      if(typeof showToast==='function') showToast('✓ 교육맞춤 + AI독자 모두 복구 완료','#10b981');
+    } else if(critResult){
+      alert('✓ 교육맞춤평가는 복구 성공.\nAI독자는 실패했습니다.\n\n원인: '+(aiErr?.message?.slice(0,150)||'알 수 없음'));
+    } else if(aiResult){
+      const reason = eduFileUrl ? ('실패 원인: '+(critErr?.message?.slice(0,150)||'알 수 없음')) : '(교육자료 없어 교육맞춤평가 skip)';
+      alert('✓ AI독자 평가는 복구 성공.\n교육맞춤평가는 진행 안 됨.\n\n'+reason);
+    }
+    if(failedSaves) alert('⚠ '+failedSaves+'개 평가는 저장 실패. F12 콘솔의 [saveEvaluation] 경고 확인.');
   }catch(e){
     showAiLoading(false);
-    alert('❌ 재분석 실패\n\n원인: '+(e?.message||e));
+    alert('❌ 재분석 실패\n\n'+(e?.message||e));
     console.error('reanalyzeCurrentVideo:',e);
+  }
+}
+
+// 원본 영상 파일 다시 업로드 후 재분석 — URL 만료 시 안전 복구 경로
+async function reanalyzeWithFreshUpload(videoId){
+  // 동적 file input 생성 (카드/모달 외부에 두어 click 이벤트 격리)
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='video/*,audio/*';
+  inp.style.display='none';
+  document.body.appendChild(inp);
+  const file = await new Promise((resolve)=>{
+    inp.onchange=()=>{ resolve(inp.files?.[0]||null); };
+    inp.click();
+    // 사용자가 취소하면 5분 후 자동 해제
+    setTimeout(()=>resolve(null), 5*60*1000);
+  });
+  setTimeout(()=>inp.remove(), 1000);
+  if(!file){ console.log('파일 선택 취소'); return; }
+
+  showAiLoading(true, 180);
+  setAiLoadingStep('원본 영상 업로드 중...');
+  setAiLoadingStage('upload','active');
+
+  try{
+    // GCS 업로드 (기존 헬퍼)
+    const up=await uploadAnalysisVideo(file);
+    setAiLoadingStage('upload','done');
+    const videoUrl=up.public_url;
+    const videoGcsUri=up.gcs_uri;
+    const videoMime=up.mime || file.type || 'video/mp4';
+    window._anUploadedVideoUrl=videoUrl;
+    window._anUploadedGcsUri=videoGcsUri;
+
+    // 영상 행에도 새 URL 저장 (옛 만료 URL 교체)
+    try{ await sb.from('videos').update({file_path:videoUrl}).eq('id',videoId); }catch(_){}
+
+    // 체크리스트·교육자료 정보 복구
+    const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
+    const eduFileUrl=window._anEduFileUrl||vid?.eduFileUrl||vid?.edu_file_url||'';
+    const existingEvals=(D.evaluations||[]).filter(e=>String(e.video_id)===String(videoId));
+    const critClId=existingEvals.find(e=>e.eval_type==='평가안기준')?.checklist_id;
+    const aiClId  =existingEvals.find(e=>e.eval_type==='AI독자')?.checklist_id;
+    let critItems=[], aiItems=[];
+    try{ if(critClId) critItems=await loadChecklistItemsForEval(critClId); }catch(_){}
+    try{ if(aiClId)   aiItems  =await loadChecklistItemsForEval(aiClId); }catch(_){}
+    const defaultItems=[
+      {category:'발성',sub_item:'발성 안정성',criterion:'고른 발성과 호흡 안정성',max_score:100,sort_order:0},
+      {category:'발성',sub_item:'음성 품질',criterion:'발성 크기·맑기·울림',max_score:100,sort_order:1},
+      {category:'전달력',sub_item:'발음 명확도',criterion:'자음·모음 정확한 전달',max_score:100,sort_order:2},
+      {category:'전달력',sub_item:'속도 적절성',criterion:'경청 가능한 속도',max_score:100,sort_order:3},
+      {category:'표현력',sub_item:'강조·변화',criterion:'중요 부분 강조와 변화',max_score:100,sort_order:4},
+      {category:'표현력',sub_item:'신뢰·몰입',criterion:'신뢰감과 몰입 유도',max_score:100,sort_order:5},
+    ];
+
+    setAiLoadingStage('checklist','done');
+    setAiLoadingStage('ai','active');
+
+    const ensureSubScores=(r)=>{
+      if(!r) return r;
+      if(Array.isArray(r.sub_scores)&&r.sub_scores.length) return r;
+      if(Array.isArray(r.categories)&&r.categories.length){
+        r.sub_scores=r.categories.map((c,i)=>({
+          n:i+1, category:c.name||'기타', sub_item:c.name||'항목', criterion:'',
+          level:(c.score/c.max)>=0.85?'good':(c.score/c.max)>=0.5?'normal':'bad',
+          score:Number(c.score||0), max:Number(c.max||0),
+          timestamp:'', analysis:'카테고리에서 복원됨', solution:''
+        }));
+      }
+      return r;
+    };
+
+    async function tryAnalyze(label, items, evalType, evalEduUrl){
+      const attempts=[
+        {model:'gemini-2.5-flash', fps:0.5},
+        {model:'gemini-2.5-flash', fps:0.2},
+        {model:'gemini-2.5-pro',   fps:0.5},
+      ];
+      let last=null;
+      for(const a of attempts){
+        setAiLoadingStep(`${label} 분석 (${a.model.split('-').pop()})...`);
+        try{
+          const raw=await callVertexAnalyze({
+            video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps:a.fps,
+            checklist_items: items.length?items:defaultItems,
+            eval_type:evalType,
+            edu_file_url: evalEduUrl||undefined,
+            model:a.model
+          });
+          const fixed=ensureSubScores(normalizeVertexResult(raw));
+          if(fixed && Array.isArray(fixed.sub_scores) && fixed.sub_scores.length) return fixed;
+          last=fixed;
+        }catch(e){ last=e; console.warn(`[freshUpload] ${label} 시도 실패:`, e?.message||e); }
+      }
+      if(last && typeof last==='object' && Array.isArray(last.sub_scores)) return last;
+      throw last instanceof Error?last:new Error(`${label} 모든 시도 실패`);
+    }
+
+    let critResult=null, aiResult=null;
+    if(eduFileUrl){
+      try{ critResult=await tryAnalyze('교육맞춤평가', critItems, '평가안기준', eduFileUrl); }
+      catch(e){ console.error('[freshUpload] crit 실패:', e); }
+    }
+    try{ aiResult=await tryAnalyze('AI독자', aiItems, 'AI독자', null); }
+    catch(e){ console.error('[freshUpload] ai 실패:', e); }
+
+    setAiLoadingStage('ai','done');
+    setAiLoadingStage('save','active');
+
+    if(!critResult && !aiResult){
+      throw new Error('원본 영상 업로드 후에도 분석 실패. Vertex 일시 부하 의심 — 잠시 후 다시 시도.');
+    }
+
+    const saveTasks=[];
+    if(critResult) saveTasks.push(saveEvaluation({videoId, checklistId:critClId||null, eduFileUrl, evalType:'평가안기준', result:critResult}));
+    if(aiResult)   saveTasks.push(saveEvaluation({videoId, checklistId:aiClId||null,   eduFileUrl:null, evalType:'AI독자',     result:aiResult}));
+    await Promise.all(saveTasks);
+
+    window._lastVertexResult={crit:critResult, ai:aiResult};
+    await loadFromDB();
+    const mapped=mapVertexToLegacy(critResult, aiResult);
+    const count=parseInt(v('an-count'))||0;
+    renderAnalysisResult(mapped, true, count);
+    setAiLoadingStage('save','done');
+    setTimeout(()=>showAiLoading(false),400);
+    if(typeof showToast==='function') showToast('✓ 원본 업로드 + 재분석 완료','#10b981');
+  }catch(e){
+    showAiLoading(false);
+    alert('❌ 원본 업로드 재분석 실패\n\n'+(e?.message||e));
+    console.error('reanalyzeWithFreshUpload:',e);
+    throw e;
   }
 }
 
@@ -17544,11 +17741,61 @@ function renderEduTypeManage(){
       : (isAllOrg && !r.org_name ? `<span style="font-size:10px;font-weight:700;color:var(--t3);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:999px;margin-left:8px">공통</span>` : '');
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.06)">
       <span style="font-size:13px;font-weight:600;color:var(--t1)">${escHtml(r.name)}${orgBadge}</span>
-      <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType('${esc(r.id)}','${esc(r.name)}')">삭제</button>
+      <span style="display:inline-flex;gap:6px">
+        <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--blue);border:1px solid var(--blue);border-radius:999px;background:#fff;cursor:pointer" onclick="renameEduType('${esc(r.id)}','${esc(r.name)}')">수정</button>
+        <button class="btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="removeEduType('${esc(r.id)}','${esc(r.name)}')">삭제</button>
+      </span>
     </div>`;
   }).join('');
   if(inp && !isAllOrg) inp.focus();
 }
+async function renameEduType(id, oldName){
+  const newName = prompt(`교육종류 이름을 수정합니다.\n\n현재: ${oldName}\n새 이름을 입력하세요:`, oldName);
+  if(newName===null) return;  // 취소
+  const trimmed=newName.trim();
+  if(!trimmed){ alert('빈 이름은 사용할 수 없습니다.'); return; }
+  if(trimmed===oldName){ return; }
+  // 중복 체크
+  const existing=getEduTypeRecords().map(r=>r.name);
+  if(existing.includes(trimmed)){ alert('이미 등록된 이름입니다.'); return; }
+  // 1) 즉시 UI 갱신 (optimistic)
+  const snapD=[...(Array.isArray(D.eduTypes)?D.eduTypes:[])];
+  let snapLocal=[];
+  try{ snapLocal=JSON.parse(localStorage.getItem('interbiz_eduTypes')||'[]'); }catch(_){}
+  D.eduTypes=snapD.map(r=>r.name===oldName?{...r,name:trimmed}:r);
+  try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.map(n=>n===oldName?trimmed:n))); }catch(_){}
+  renderEduTypeManage();
+  // 2) DB 업데이트 — 같은 이름 모든 행 (현재 조직 + NULL 공통)
+  const isLocal=!id||String(id).startsWith('local-');
+  if(!isLocal){
+    try{
+      const orFilter=D.activeOrg?`org_name.eq.${D.activeOrg},org_name.is.null`:'org_name.is.null';
+      const {data:rows}=await sb.from('edu_types').select('id,name,org_name').eq('name',oldName).or(orFilter);
+      let updated=0;
+      for(const row of (rows||[])){
+        const {error}=await sb.from('edu_types').update({name:trimmed}).eq('id',row.id);
+        if(!error) updated++;
+        else console.warn('update edu_types failed:',error);
+      }
+      if(!updated){
+        // 롤백
+        D.eduTypes=snapD;
+        try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(_){}
+        renderEduTypeManage();
+        alert('❌ 수정 실패\n\nSupabase 권한 또는 RLS 문제일 수 있습니다.\nF12 콘솔의 update edu_types 경고를 확인해주세요.');
+        return;
+      }
+    }catch(e){
+      D.eduTypes=snapD;
+      try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal)); }catch(_){}
+      renderEduTypeManage();
+      alert('❌ 수정 실패: '+(e?.message||e));
+      return;
+    }
+  }
+  showEduTypeToast(`"${oldName}" → "${trimmed}" 로 수정되었습니다`);
+}
+
 async function addEduType(){
   const inp=el('edu-type-input');
   const name=(inp?.value||'').trim();
