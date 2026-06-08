@@ -6335,10 +6335,9 @@ function renderEduPage(){
     // 우선순위: 관리자 등록 이미지 > YouTube 썸네일 > 도메인 favicon
     let previewHtml;
     if(customImg){
-      previewHtml = `<div style="height:160px;background:#f1f5f9;position:relative;overflow:hidden">
-        <img src="${customImg}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.35) 100%);pointer-events:none"></div>
-        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.4);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
+      previewHtml = `<div style="background:#fff;position:relative;overflow:hidden;line-height:0">
+        <img src="${customImg}" loading="lazy" decoding="async" style="display:block;width:100%;height:auto" onerror="this.style.display='none'">
+        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px);z-index:2;line-height:1.2">${brand.label}</div>
       </div>`;
     } else if(ytId){
       previewHtml = `<div style="height:140px;background:#000;position:relative;overflow:hidden">
