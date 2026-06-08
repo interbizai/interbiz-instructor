@@ -9588,11 +9588,10 @@ async function addCriteriaEvaluation(){
   const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
   if(!vid){ alert('영상 행을 찾지 못했습니다.'); return; }
 
-  // 체크리스트 선택 — 영상 eduType 매칭 우선
+  // 체크리스트 후보 — 평가안 type (standard·speech 제외)
   const eduType=vid.eduType||vid.edu_type||'';
-  const all=(D.checklists||[]).filter(c=>!c.deleted);
-  // 평가안 후보 (체크리스트 타입이 standard 가 아닌 것 = 교육맞춤평가)
-  let candidates=all.filter(c=>{
+  let candidates=(D.checklists||[]).filter(c=>{
+    if(c.deleted) return false;
     const t=(c.type||'').toLowerCase();
     return !t.includes('standard') && !t.includes('speech');
   });
@@ -9600,29 +9599,66 @@ async function addCriteriaEvaluation(){
     alert('등록된 평가안(체크리스트)이 없습니다.\n교육 콘텐츠 → 체크리스트 등록 후 다시 시도해주세요.');
     return;
   }
-  // eduType 매칭 우선 정렬
   candidates.sort((a,b)=>{
     const am = (a.category||'').includes(eduType) || (a.name||'').includes(eduType) ? 0 : 1;
     const bm = (b.category||'').includes(eduType) || (b.name||'').includes(eduType) ? 0 : 1;
     return am-bm;
   });
-  // 사용자에게 선택 (간단 prompt — 추후 모달로 발전 가능)
-  const pickedIdx = parseInt(prompt(
-    '평가안(체크리스트) 을 선택하세요 (번호 입력):\n\n'+
-    candidates.map((c,i)=>`${i+1}. ${c.name||'(이름 없음)'}${c.category?' [카테고리: '+c.category+']':''}`).join('\n')+
-    '\n\n번호:'
-  ), 10);
-  if(!Number.isFinite(pickedIdx) || pickedIdx<1 || pickedIdx>candidates.length){
-    if(pickedIdx===0||isNaN(pickedIdx)) return;  // 취소
-    alert('잘못된 번호입니다.'); return;
-  }
-  const checklist=candidates[pickedIdx-1];
-  const checklistId=checklist.id;
+  const defaultEduUrl = vid.eduFileUrl || vid.edu_file_url || '';
 
-  // 교육자료 URL — 영상 eduFileUrl 우선, 없으면 체크리스트 file_url
-  const eduFileUrl = vid.eduFileUrl || vid.edu_file_url || checklist.file_url || '';
+  // 모달로 평가안·교육자료 입력 받기 (영상 등록 UI 와 동일 스타일)
+  const result = await new Promise((resolve)=>{
+    document.getElementById('crit-add-overlay')?.remove();
+    const ov=document.createElement('div');
+    ov.id='crit-add-overlay';
+    ov.className='overlay show';
+    ov.style.zIndex='10100';
+    ov.onclick=e=>{ if(e.target===ov){ ov.remove(); resolve(null); } };
+    const optsHtml = candidates.map(c=>{
+      const cat = c.category?`[${c.category}] `:'';
+      const safeName=(c.name||'(이름 없음)').replace(/</g,'&lt;');
+      return `<option value="${c.id}">${cat}${safeName}</option>`;
+    }).join('');
+    ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:min(560px,92vw);padding:24px 26px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px">
+        <div>
+          <div style="font-size:17px;font-weight:900;color:var(--t1)">평가안기준 평가 추가</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">교육자료와 평가안 기반으로 AI 가 추가 평가를 진행합니다 · 30~60초 소요</div>
+        </div>
+        <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px" onclick="document.getElementById('crit-add-overlay').remove()">✕</button>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">평가안(체크리스트) <span style="color:#dc2626">*</span></div>
+        <select id="crit-add-cl" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-size:13px;font-weight:600;color:var(--t1);background:#fff;cursor:pointer">
+          ${optsHtml}
+        </select>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">영상의 교육종류 ${eduType?'"'+eduType+'"':''}와 매칭되는 체크리스트가 위에 정렬됨</div>
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">교육자료 URL <span style="color:var(--t3);font-weight:500">(선택)</span></div>
+        <input id="crit-add-edu-url" type="text" value="${defaultEduUrl.replace(/"/g,'&quot;')}" placeholder="https:// 또는 비워두면 교육자료 없이 평가" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-size:12px;font-family:'Noto Sans KR',monospace;box-sizing:border-box">
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${defaultEduUrl?'영상 등록 시 사용한 교육자료가 자동 입력됨':'교육자료를 첨부하면 더 정확한 평가가 가능합니다'}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" style="padding:10px 22px;font-size:12px;font-weight:700" onclick="document.getElementById('crit-add-overlay').remove()">취소</button>
+        <button class="btn btn-blue" style="padding:10px 22px;font-size:12px;font-weight:800" id="crit-add-go">평가 시작 →</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('crit-add-go').onclick=()=>{
+      const cid = parseInt(document.getElementById('crit-add-cl').value)||0;
+      const eduUrl = (document.getElementById('crit-add-edu-url').value||'').trim();
+      ov.remove();
+      resolve({checklistId: cid, eduFileUrl: eduUrl});
+    };
+  });
+  if(!result) return;  // 취소
+  const checklistId = result.checklistId;
+  const eduFileUrl = result.eduFileUrl;
+  const checklist = candidates.find(c=>c.id===checklistId);
+  if(!checklist){ alert('체크리스트를 찾을 수 없습니다.'); return; }
   if(!eduFileUrl){
-    if(!confirm('이 영상에 교육자료가 연결되어 있지 않습니다.\n교육자료 없이도 평가안기준 분석을 진행할까요?')) return;
+    if(!confirm('교육자료 URL 이 비어있습니다.\n교육자료 없이도 평가안기준 분석을 진행할까요?')) return;
   }
 
   // 체크리스트 항목 로드
