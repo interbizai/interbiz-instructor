@@ -9318,7 +9318,7 @@ async function callVertexAnalyze(payload){
 async function reanalyzeCurrentVideo(){
   const videoId=window._anVideoId;
   if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
-  if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~90초 소요됩니다.\nFlash 모델 우선 시도 → 실패 시 Pro 자동 전환.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
+  if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~90초 소요됩니다.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
 
   // ── 영상 정보 다중 소스 복구 ──
   const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
@@ -9396,7 +9396,7 @@ async function reanalyzeCurrentVideo(){
     ];
     let last=null;
     for(const a of attempts){
-      setAiLoadingStep(`AI 분석 재호출 (${label} · ${a.model.split('-').pop()} fps ${a.fps})...`);
+      setAiLoadingStep(`AI 분석 재호출 중 (${label})...`);
       try{
         const raw=await callVertexAnalyze({
           video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps:a.fps,
@@ -9557,7 +9557,7 @@ async function reanalyzeWithFreshUpload(videoId){
       ];
       let last=null;
       for(const a of attempts){
-        setAiLoadingStep(`${label} 분석 (${a.model.split('-').pop()})...`);
+        setAiLoadingStep(`${label} 분석 중...`);
         try{
           const raw=await callVertexAnalyze({
             video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps:a.fps,
@@ -12345,11 +12345,11 @@ async function runVoiceAnalysis(){
     setAiLoadingStep('AI 스피치 분석 중...');
     let aiResRaw=null;
     const attempts=[
-      {model:'gemini-2.5-flash', fps:fps, label:'Flash'},
-      {model:'gemini-2.5-flash', fps:0.1, label:'Flash (fps 0.1)'},
-      {model:'gemini-2.5-flash', fps:0.04, label:'Flash (fps 0.04)'},
-      {model:'gemini-2.5-pro', fps:0.5, label:'Pro (1M 컨텍스트)'},
-      {model:'gemini-2.5-pro', fps:0.2, label:'Pro (안전 모드)'},
+      {model:'gemini-2.5-flash', fps:fps, label:'표준'},
+      {model:'gemini-2.5-flash', fps:0.1, label:'최적화 1'},
+      {model:'gemini-2.5-flash', fps:0.04, label:'최적화 2'},
+      {model:'gemini-2.5-pro', fps:0.5, label:'정밀'},
+      {model:'gemini-2.5-pro', fps:0.2, label:'정밀(안전)'},
     ];
     let lastErr=null;
     setAiLoadingStage('ai','active');
