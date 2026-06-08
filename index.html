@@ -7837,16 +7837,20 @@ function renderPickVideos(){
   const prodVal=v('pick-prod-filter');
   const now=new Date();
   const thisMonth=now.getMonth(),thisYear=now.getFullYear();
+  // 누적 2개월 (이전 달 + 이번 달) — 메인 통계·Top3 와 동일 범위
+  const cumPrevMonth=thisMonth===0?11:thisMonth-1;
+  const cumPrevYear=thisMonth===0?thisYear-1:thisYear;
+  const cumStart=new Date(cumPrevYear,cumPrevMonth,1,0,0,0);
+  const monthEnd=new Date(thisYear,thisMonth+1,0,23,59,59);
 
   // 평가 받은 영상 ID 집합 (영상 평가만)
   const evaledIds=new Set((D.evaluations||[]).filter(e=>e.video_id).map(e=>e.video_id));
 
-  // 기본 풀: 분석완료 + 당월 + 평가받은 영상
+  // 기본 풀: 분석완료 + 누적 2개월 범위
   let pool=(D.videos||[]).filter(vd=>{
     if(vd.status!=='분석완료') return false;
     const d=new Date(vd.date||vd.created_at||0);
-    if(d.getMonth()!==thisMonth||d.getFullYear()!==thisYear) return false;
-    // 평가받은 영상 우선 (없어도 표시 가능하지만 일관성 위해)
+    if(d<cumStart || d>monthEnd) return false;
     return true;
   });
   // 다중 교육종류 필터
@@ -16093,8 +16097,23 @@ function renderRadarChartFromEvals(userId){
       catAgg.set(c.name,a);
     });
   });
-  const cats=[...catAgg.values()];
-  if(!cats.length){renderRadarChart(userId); return;} // 실데이터 없으면 기존 폴백
+  let cats=[...catAgg.values()];
+  // categories 가 비어있으면 sub_scores 에서 카테고리 자동 추출 (옛 평가 데이터 호환)
+  if(!cats.length){
+    const subCatAgg=new Map();
+    latest.forEach(e=>{
+      (e.sub_scores||[]).forEach(s=>{
+        if(!s.category || s.level==='na') return;
+        const k=s.category;
+        const a=subCatAgg.get(k)||{name:k,score:0,max:0};
+        a.score+=Number(s.score||0);
+        a.max+=Number(s.max||0);
+        subCatAgg.set(k,a);
+      });
+    });
+    cats=[...subCatAgg.values()];
+  }
+  if(!cats.length){ renderRadarChart(userId); return; } // 그래도 없으면 옛 u.scores 폴백
   const items=cats.map(c=>({name:c.name,score:c.score,max:c.max||1}));
   const scores=cats.map(c=>c.max>0?Math.round(c.score/c.max*100):0);
   // 레이더 SVG 직접 그리기
