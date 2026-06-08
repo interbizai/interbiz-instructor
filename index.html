@@ -6320,28 +6320,44 @@ function renderEduPage(){
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="edu-lk-name" placeholder="링크명" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
       <input type="text" id="edu-lk-url" placeholder="URL" style="flex:2;min-width:240px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <input type="file" id="edu-lk-image" accept="image/*" style="display:none" onchange="document.getElementById('edu-lk-image-name').textContent=this.files[0]?.name||''">
+      <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px" onclick="document.getElementById('edu-lk-image').click()" title="대표 이미지 (선택) — 미선택 시 YouTube 썸네일·도메인 favicon 자동">🖼 이미지</button>
+      <span id="edu-lk-image-name" style="font-size:10px;color:var(--t3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
       <button class="btn btn-blue" style="padding:8px 18px;font-size:12px" onclick="addEduLink()">등록</button>
     </div>
+    <div style="font-size:10px;color:var(--t3);margin-top:6px">💡 이미지를 등록하면 카드 대표 사진으로 표시. 미등록 시 YouTube 영상은 썸네일, 그 외는 도메인 favicon 자동 표시.</div>
   </div>`:'';
   lkHtml+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
   lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
     const brand=getLinkBrand(lk.url);
     const ytId=brand.youtubeId;
-    // YouTube 면 실제 썸네일, 아니면 도메인 favicon (Google s2 서비스)
-    const previewHtml = ytId
-      ? `<div style="height:140px;background:#000;position:relative;overflow:hidden">
-           <img src="https://i.ytimg.com/vi/${ytId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;opacity:.95" onerror="this.style.display='none'">
-           <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6) 100%);pointer-events:none"></div>
-           <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:#FF0000;color:#fff;font-size:10px;font-weight:800;letter-spacing:.3px">▶ YouTube</div>
-         </div>`
-      : `<div style="height:120px;background:linear-gradient(135deg, ${brand.color} 0%, ${shadeColor(brand.color,-12)} 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
-           <div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 25%, rgba(255,255,255,.18) 0%, transparent 55%);pointer-events:none"></div>
-           <div style="width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:1">
-             <img src="${brand.favicon}" loading="lazy" decoding="async" style="width:38px;height:38px;object-fit:contain;border-radius:6px" onerror="this.outerHTML='<span style=&quot;font-size:22px;font-weight:900;color:${brand.color}&quot;>${(lk.name||'?')[0]}</span>'">
-           </div>
-           <div style="position:absolute;left:12px;bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
-         </div>`;
+    const customImg = lk.image_url || lk.thumbnail_url || '';
+    // 우선순위: 관리자 등록 이미지 > YouTube 썸네일 > 도메인 favicon
+    let previewHtml;
+    if(customImg){
+      previewHtml = `<div style="height:160px;background:#f1f5f9;position:relative;overflow:hidden">
+        <img src="${customImg}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.35) 100%);pointer-events:none"></div>
+        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.4);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
+      </div>`;
+    } else if(ytId){
+      previewHtml = `<div style="height:140px;background:#000;position:relative;overflow:hidden">
+        <img src="https://i.ytimg.com/vi/${ytId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;opacity:.95" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6) 100%);pointer-events:none"></div>
+        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:#FF0000;color:#fff;font-size:10px;font-weight:800;letter-spacing:.3px">▶ YouTube</div>
+      </div>`;
+    } else {
+      previewHtml = `<div style="height:120px;background:linear-gradient(135deg, ${brand.color} 0%, ${shadeColor(brand.color,-12)} 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 25%, rgba(255,255,255,.18) 0%, transparent 55%);pointer-events:none"></div>
+        <div style="width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:1">
+          <img src="${brand.favicon}" loading="lazy" decoding="async" style="width:38px;height:38px;object-fit:contain;border-radius:6px" onerror="this.outerHTML='<span style=&quot;font-size:22px;font-weight:900;color:${brand.color}&quot;>${(lk.name||'?')[0]}</span>'">
+        </div>
+        <div style="position:absolute;left:12px;bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
+      </div>`;
+    }
     const adminControls=isAdmin?`
+      <button style="position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();document.getElementById('edu-lk-change-image-${lk.id}').click()" title="대표 이미지 변경">🖼</button>
+      <input type="file" id="edu-lk-change-image-${lk.id}" accept="image/*" style="display:none" onchange="changeEduLinkImage(${lk.id}, this)">
       <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();deleteLink(${lk.id})" title="삭제">×</button>`:'';
     return `<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04)" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 28px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,.04)'">
       <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${brand.color};z-index:2"></div>
@@ -6699,10 +6715,74 @@ async function addEduLink(){
   const name=document.getElementById('edu-lk-name')?.value?.trim();
   const url=document.getElementById('edu-lk-url')?.value?.trim();
   if(!name||!url){showToast('링크명과 URL을 입력하세요','#f59e0b');return;}
+  // 이미지 (선택)
+  let imageUrl='';
+  const imgFile=document.getElementById('edu-lk-image')?.files?.[0];
+  if(imgFile){
+    try{
+      let upload=imgFile;
+      if(upload.size>1.5*1024*1024 && typeof compressImage==='function'){
+        try{ upload=await compressImage(upload, 2*1024*1024, 1600); }catch(_){}
+      }
+      const ext=(upload.name||imgFile.name||'cover.jpg').split('.').pop()||'jpg';
+      const path=`edu_links/${Date.now()}.${ext}`;
+      const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:upload.type||'image/jpeg', upsert:false});
+      if(ue) throw new Error(ue.message);
+      const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+      imageUrl=publicUrl;
+    }catch(e){
+      showToast('이미지 업로드 실패: '+(e?.message||e),'#ef4444');
+      return;
+    }
+  }
   const payload={name,url,category:'학습',org_name:D.activeOrg||null};
-  const {error:lkErr}=await sb.from('learning_links').insert(payload);
+  if(imageUrl) payload.image_url=imageUrl;
+  let {error:lkErr}=await sb.from('learning_links').insert(payload);
+  // image_url 컬럼이 없으면 폴백 (한 번 더 시도)
+  if(lkErr && /image_url|column/i.test(lkErr.message||'')){
+    console.warn('image_url 컬럼 미존재 → 마이그레이션 SQL 실행 필요. 일단 이미지 없이 등록.');
+    delete payload.image_url;
+    ({error:lkErr}=await sb.from('learning_links').insert(payload));
+  }
   if(lkErr){showToast('등록 실패: '+lkErr.message,'#ef4444');return;}
+  // 폼 초기화
+  document.getElementById('edu-lk-name').value='';
+  document.getElementById('edu-lk-url').value='';
+  const imgInput=document.getElementById('edu-lk-image'); if(imgInput) imgInput.value='';
+  const imgName=document.getElementById('edu-lk-image-name'); if(imgName) imgName.textContent='';
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
+}
+
+// 기존 링크 대표 이미지 변경 (관리자 전용)
+async function changeEduLinkImage(linkId, input){
+  const file=input?.files?.[0];
+  if(!file) return;
+  if(!/^image\//i.test(file.type)){ alert('이미지 파일만 가능합니다.'); input.value=''; return; }
+  try{
+    let upload=file;
+    if(upload.size>1.5*1024*1024 && typeof compressImage==='function'){
+      try{ upload=await compressImage(upload, 2*1024*1024, 1600); }catch(_){}
+    }
+    const ext=(upload.name||file.name||'cover.jpg').split('.').pop()||'jpg';
+    const path=`edu_links/${linkId}_${Date.now()}.${ext}`;
+    const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:upload.type||'image/jpeg', upsert:false});
+    if(ue) throw new Error(ue.message);
+    const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+    const {error:dbErr}=await sb.from('learning_links').update({image_url:publicUrl}).eq('id', linkId);
+    if(dbErr){
+      if(/image_url|column/i.test(dbErr.message||'')){
+        alert('image_url 컬럼이 없습니다.\n\n다음 SQL 을 Supabase SQL Editor 에서 실행해주세요:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS image_url TEXT;');
+        return;
+      }
+      throw new Error(dbErr.message);
+    }
+    await loadFromDB();
+    renderEduPage();
+    if(typeof showToast==='function') showToast('✓ 대표 이미지 변경 완료','#10b981');
+  }catch(e){
+    alert('이미지 변경 실패: '+(e?.message||e));
+  }
+  input.value='';
 }
 async function addEduCategory(type){
   type=(type==='cl'?'cl':'edu');
