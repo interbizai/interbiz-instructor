@@ -9588,25 +9588,29 @@ async function addCriteriaEvaluation(){
   const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
   if(!vid){ alert('영상 행을 찾지 못했습니다.'); return; }
 
-  // 체크리스트 후보 — 평가안 type (standard·speech 제외)
+  // 평가안 후보 — category='체크리스트' 인 것 중 AI독자(standard)·스피치(speech) 제외
   const eduType=vid.eduType||vid.edu_type||'';
   let candidates=(D.checklists||[]).filter(c=>{
     if(c.deleted) return false;
+    if((c.category||'')!=='체크리스트') return false;  // '체크리스트' 카테고리만
     const t=(c.type||'').toLowerCase();
     return !t.includes('standard') && !t.includes('speech');
   });
   if(!candidates.length){
-    alert('등록된 평가안(체크리스트)이 없습니다.\n교육 콘텐츠 → 체크리스트 등록 후 다시 시도해주세요.');
+    alert('등록된 평가안 체크리스트가 없습니다.\n\n교육 콘텐츠 → 체크리스트 등록 시 카테고리를 "체크리스트" 로 + 타입을 교육맞춤평가용 (edutype:XXX) 로 등록 후 다시 시도해주세요.');
     return;
   }
+  // 교육종류 매칭 우선 정렬 (type 의 'edutype:판매경쟁력상황실' 등을 영상 eduType 과 비교)
   candidates.sort((a,b)=>{
-    const am = (a.category||'').includes(eduType) || (a.name||'').includes(eduType) ? 0 : 1;
-    const bm = (b.category||'').includes(eduType) || (b.name||'').includes(eduType) ? 0 : 1;
+    const aType=(a.type||'').replace(/^edutype:/,'');
+    const bType=(b.type||'').replace(/^edutype:/,'');
+    const am = aType===eduType || (a.name||'').includes(eduType) ? 0 : 1;
+    const bm = bType===eduType || (b.name||'').includes(eduType) ? 0 : 1;
     return am-bm;
   });
   const defaultEduUrl = vid.eduFileUrl || vid.edu_file_url || '';
 
-  // 등록된 교육자료 후보 — category 가 '체크리스트' 가 아닌 모든 파일 (강의 자료)
+  // 등록된 교육자료 후보 — category 가 '체크리스트' 가 아닌 모든 파일 (교안·시나리오 등)
   const eduFileCandidates=(D.checklists||[]).filter(c=>!c.deleted && (c.category||'')!=='체크리스트' && c.file_url);
   // 교육종류 매칭 우선 정렬
   eduFileCandidates.sort((a,b)=>{
@@ -9750,8 +9754,18 @@ async function addCriteriaEvaluation(){
     if(typeof showToast==='function') showToast('✓ 평가안기준 평가 추가 완료','#10b981');
   }catch(e){
     showAiLoading(false);
-    alert('❌ 평가안기준 평가 추가 실패\n\n'+(e?.message||e));
+    const msg=(e?.message||String(e)||'');
     console.error('addCriteriaEvaluation:',e);
+    // 영상 URL 만료 / 크기 초과 가능성 → 원본 재업로드 옵션 자동 제공
+    const isSizeOrUrlIssue = /size|18MB|266MB|gs:\/\/|gcs|expired|404|not found|access denied|FUNCTION_INVOCATION_TIMEOUT/i.test(msg);
+    if(isSizeOrUrlIssue){
+      if(confirm('❌ 평가안기준 평가 실패\n\n원인: '+msg.slice(0,180)+'\n\n가장 흔한 원인: 영상 GCS 임시 URL 만료 또는 크기 초과\n\n[확인] → 원본 영상 다시 업로드 후 재평가\n[취소] → 종료')){
+        try{ await reanalyzeWithFreshUpload(videoId); }
+        catch(_){ /* 내부에서 처리 */ }
+      }
+    } else {
+      alert('❌ 평가안기준 평가 추가 실패\n\n원인: '+msg+'\n\n해결:\n· 영상이 너무 짧지 않은지 (1분 이상)\n· 잠시 후 다시 시도 (Vertex 일시 부하)\n· 영상 페이지로 돌아가 [원본 영상]을 다시 등록');
+    }
   }
 }
 
