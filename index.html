@@ -16149,27 +16149,74 @@ function renderRadarChartFromEvals(userId){
     if(cats.length) console.log('[radar] categories 비어 sub_scores 폴백 — '+cats.length+'개 카테고리 추출');
   }
 
-  // max=0 또는 score=max=0 인 항목 제외
-  cats=cats.filter(c=>c.max>0 && (c.score>0||c.max>0));
+  // 폴백 ②: 평가가 전혀 없는데 영상의 timestamps 만 있는 경우 (Top3 점수 출처와 동일)
+  // → 영상 자동 태깅(good/bad/tip) 비율로 임시 점수 추정. AI 평가 권유 메시지 같이 표시.
+  let usingTimestampFallback=false;
+  if(!cats.length){
+    const userVids=(D.videos||[]).filter(v=>String(v.userId||v.user_id)===String(userId));
+    const userVidsFiltered = (catFilter||prodFilter)
+      ? userVids.filter(v=>{
+          if(catFilter && (v.eduType||v.edu_type||'')!==catFilter) return false;
+          if(prodFilter && !(v.productName||v.product_name||'').includes(prodFilter)) return false;
+          return true;
+        })
+      : userVids;
+    let totalGood=0, totalBad=0, totalTip=0, totalNeutral=0;
+    userVidsFiltered.forEach(v=>{
+      (v.timestamps||[]).forEach(t=>{
+        if(t.type==='good') totalGood++;
+        else if(t.type==='bad') totalBad++;
+        else if(t.type==='tip') totalTip++;
+        else totalNeutral++;
+      });
+    });
+    const totalTs = totalGood+totalBad+totalTip+totalNeutral;
+    if(totalTs>0){
+      const ratio=(n)=>Math.round((n/totalTs)*100);
+      cats=[
+        {name:'잘한 점 (good)', score:totalGood, max:Math.max(totalGood,Math.ceil(totalTs/3))},
+        {name:'개선 필요 (bad)', score:Math.max(0,totalTs-totalBad), max:totalTs},
+        {name:'팁/주목 (tip)', score:totalTip, max:Math.max(totalTip,Math.ceil(totalTs/3))},
+        {name:'영상 등록량', score:Math.min(100,userVidsFiltered.length*20), max:100},
+        {name:'태깅 풍부도', score:Math.min(100,totalTs*5), max:100}
+      ];
+      usingTimestampFallback=true;
+      console.log('[radar] AI 평가 없음 → 영상 timestamps 폴백 ('+totalTs+'개 태그)');
+    }
+  }
 
-  // 그래도 비어있으면 명확한 진단 안내 (빈 차트 대신)
+  // max=0 또는 score=max=0 인 항목 제외
+  cats=cats.filter(c=>c.max>0);
+
+  // 그래도 비어있으면 명확한 진단 안내 + 강사 상태 요약
   if(!cats.length){
     const svgEl=document.getElementById('radar-chart-'+userId);
     const barsEl=document.getElementById('lect-skills-bars-'+userId);
-    let reason='AI 평가가 아직 진행되지 않았습니다';
-    if(evals.length===0){ reason='이 강사의 평가 데이터가 아직 없습니다'; }
-    else if(latest.length===0){ reason='평가 결과를 찾지 못했습니다'; }
-    else { reason='평가 결과에 점수 항목(categories·sub_scores) 이 비어있습니다'; }
+    const userVids=(D.videos||[]).filter(v=>String(v.userId||v.user_id)===String(userId));
+    const evalCnt=evals.length;
+    const vidCnt=userVids.length;
+    let reason='', actionHint='';
+    if(vidCnt===0){
+      reason='등록된 영상이 없습니다';
+      actionHint='영상을 등록하면 AI 가 자동 분석합니다';
+    } else if(evalCnt===0){
+      reason=`영상 ${vidCnt}건 등록됨 / AI 평가 0건`;
+      actionHint='영상 페이지에서 [AI 분석 시작] 클릭하면 평가됩니다';
+    } else {
+      reason=`평가 ${evalCnt}건 있으나 점수 항목이 모두 비어있음`;
+      actionHint='다시 분석하면 자동으로 점수가 채워집니다';
+    }
     if(svgEl){
-      svgEl.innerHTML=`<text x="200" y="200" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="700">평가 데이터 없음</text>
-                      <text x="200" y="220" text-anchor="middle" fill="#9ca3af" font-size="11">${reason}</text>
-                      <text x="200" y="245" text-anchor="middle" fill="#9ca3af" font-size="10">영상 등록 후 AI 분석 시 자동 채워집니다</text>`;
+      svgEl.innerHTML=`<text x="200" y="195" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="800">분석 데이터 부족</text>
+                      <text x="200" y="218" text-anchor="middle" fill="#6b7280" font-size="11">${reason}</text>
+                      <text x="200" y="245" text-anchor="middle" fill="#9ca3af" font-size="10">${actionHint}</text>`;
     }
     if(barsEl){
-      barsEl.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);font-size:12px;text-align:center;padding:20px">
-        <div style="font-size:32px;margin-bottom:8px">📊</div>
-        <div style="font-weight:700;margin-bottom:4px">평가 데이터 없음</div>
-        <div style="font-size:11px;color:var(--t3);line-height:1.5">${reason}</div>
+      barsEl.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);font-size:12px;text-align:center;padding:24px">
+        <div style="font-size:36px;margin-bottom:10px">📊</div>
+        <div style="font-weight:800;color:var(--t2);margin-bottom:6px">분석 데이터 부족</div>
+        <div style="font-size:11.5px;color:var(--t2);line-height:1.6;margin-bottom:4px"><strong>${reason}</strong></div>
+        <div style="font-size:10.5px;color:var(--t3);line-height:1.5">${actionHint}</div>
       </div>`;
     }
     return;
@@ -16181,10 +16228,16 @@ function renderRadarChartFromEvals(userId){
   if(!svgEl) return;
   svgEl.setAttribute('viewBox','0 0 500 440');
   svgEl.innerHTML=drawRadarSVG(items);
-  // 달성도 바
+  // 달성도 바 + (timestamp 폴백 시) 안내 배너
   const barsEl=document.getElementById('lect-skills-bars-'+userId);
   if(barsEl){
-    barsEl.innerHTML='<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'+
+    const fallbackBanner = usingTimestampFallback
+      ? `<div style="padding:10px 12px;margin-bottom:12px;border-radius:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);font-size:10.5px;color:#92400e;line-height:1.5">
+           💡 정식 AI 평가가 없어 영상 자동 태깅 기반 임시 분석입니다.<br>
+           영상 페이지에서 [AI 분석 시작] 클릭 시 정확한 점수로 자동 갱신됩니다.
+         </div>`
+      : '';
+    barsEl.innerHTML=fallbackBanner+'<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'+
       cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
         <span style="font-size:12.5px;font-weight:700;color:var(--t1);width:140px;flex-shrink:0">${c.name}</span>
         <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:5px;transition:width .8s"></div></div>
