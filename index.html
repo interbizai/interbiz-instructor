@@ -10983,7 +10983,31 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
 
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
   // 손상 감지: categories는 있으나 max 합계가 0 → 재분석 안내
-  const critValid=(r.criteriaScores||[]).some(c=>Number(c.max||0)>0);
+  let critValid=(r.criteriaScores||[]).some(c=>Number(c.max||0)>0);
+  // ⚠ 폴백: criteriaScores 가 없거나 max=0 인데 sub_scores 는 살아있을 때 — categories 자동 재계산
+  //   (평가 항목별 피드백 표는 보이는데 차트만 안 그려지는 경우 자동 복구)
+  if(!critValid){
+    const _subForCats = (critRaw?.sub_scores||[]).length ? critRaw.sub_scores
+                      : (aiRaw?.sub_scores||[]).length ? aiRaw.sub_scores : [];
+    if(_subForCats.length){
+      const _catMap=new Map();
+      const _order=[];
+      _subForCats.forEach(s=>{
+        if(s.level==='na') return;
+        const k=s.category||'기타';
+        if(!_catMap.has(k)){ _catMap.set(k,{name:k,score:0,max:0}); _order.push(k); }
+        const a=_catMap.get(k);
+        a.score+=Number(s.score||0);
+        a.max+=Number(s.max||0);
+      });
+      const _rebuilt = _order.map(k=>_catMap.get(k)).filter(c=>c.max>0);
+      if(_rebuilt.length){
+        r.criteriaScores = _rebuilt;
+        critValid = true;
+        console.log('[차트 복구] sub_scores 에서 categories 자동 재계산:', _rebuilt.length+'개');
+      }
+    }
+  }
   if(hasChecklist&&r.criteriaScores?.length&&critValid){
     const eduRadar=el('an-edu-radar');
     if(eduRadar) eduRadar.innerHTML=drawRadarSVG(r.criteriaScores,{clickable:true,which:'crit'});
@@ -16457,21 +16481,27 @@ function renderRadarChartFromEvals(userId){
   });
   let cats=[...catAgg.values()];
 
-  // 폴백 ①: sub_scores 에서 카테고리 자동 추출
-  if(!cats.length){
+  // 폴백 ①: categories 가 비어있거나 모두 max=0 이면 sub_scores 에서 카테고리 자동 재계산
+  //   (DB 에 categories=[] 또는 max:0 인 손상 평가가 있어도 자동 복구)
+  const hasValidCat = cats.some(c=>Number(c.max||0)>0);
+  if(!hasValidCat){
     const subCatAgg=new Map();
+    const order=[];
     latest.forEach(e=>{
       (e.sub_scores||[]).forEach(s=>{
         if(!s.category || s.level==='na') return;
         const k=s.category;
-        const a=subCatAgg.get(k)||{name:k,score:0,max:0};
+        if(!subCatAgg.has(k)){ subCatAgg.set(k,{name:k,score:0,max:0}); order.push(k); }
+        const a=subCatAgg.get(k);
         a.score+=Number(s.score||0);
         a.max+=Number(s.max||0);
-        subCatAgg.set(k,a);
       });
     });
-    cats=[...subCatAgg.values()];
-    if(cats.length) console.log('[radar] categories 비어 sub_scores 폴백 — '+cats.length+'개 카테고리 추출');
+    const subCats=order.map(k=>subCatAgg.get(k)).filter(c=>c.max>0);
+    if(subCats.length){
+      cats=subCats;
+      console.log('[radar] categories 무효(max=0) — sub_scores 로 자동 재계산: '+subCats.length+'개');
+    }
   }
 
   // 폴백 ②: 평가가 전혀 없는데 영상의 timestamps 만 있는 경우 (Top3 점수 출처와 동일)
