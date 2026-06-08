@@ -6337,13 +6337,10 @@ function renderEduPage(){
     if(customImg){
       previewHtml = `<div style="background:#fff;position:relative;overflow:hidden;line-height:0">
         <img src="${customImg}" loading="lazy" decoding="async" style="display:block;width:100%;height:auto" onerror="this.style.display='none'">
-        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px);z-index:2;line-height:1.2">${brand.label}</div>
       </div>`;
     } else if(ytId){
       previewHtml = `<div style="height:140px;background:#000;position:relative;overflow:hidden">
         <img src="https://i.ytimg.com/vi/${ytId}/mqdefault.jpg" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;opacity:.95" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6) 100%);pointer-events:none"></div>
-        <div style="position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:#FF0000;color:#fff;font-size:10px;font-weight:800;letter-spacing:.3px">▶ YouTube</div>
       </div>`;
     } else {
       previewHtml = `<div style="height:120px;background:linear-gradient(135deg, ${brand.color} 0%, ${shadeColor(brand.color,-12)} 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
@@ -6351,7 +6348,6 @@ function renderEduPage(){
         <div style="width:62px;height:62px;border-radius:14px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:1">
           <img src="${brand.favicon}" loading="lazy" decoding="async" style="width:38px;height:38px;object-fit:contain;border-radius:6px" onerror="this.outerHTML='<span style=&quot;font-size:22px;font-weight:900;color:${brand.color}&quot;>${(lk.name||'?')[0]}</span>'">
         </div>
-        <div style="position:absolute;left:12px;bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:700;backdrop-filter:blur(6px)">${brand.label}</div>
       </div>`;
     }
     const adminControls=isAdmin?`
