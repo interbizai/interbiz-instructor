@@ -9606,6 +9606,15 @@ async function addCriteriaEvaluation(){
   });
   const defaultEduUrl = vid.eduFileUrl || vid.edu_file_url || '';
 
+  // 등록된 교육자료 후보 — category 가 '체크리스트' 가 아닌 모든 파일 (강의 자료)
+  const eduFileCandidates=(D.checklists||[]).filter(c=>!c.deleted && (c.category||'')!=='체크리스트' && c.file_url);
+  // 교육종류 매칭 우선 정렬
+  eduFileCandidates.sort((a,b)=>{
+    const am=(a.category||'')===eduType?0:1;
+    const bm=(b.category||'')===eduType?0:1;
+    return am-bm;
+  });
+
   // 모달로 평가안·교육자료 입력 받기 (영상 등록 UI 와 동일 스타일)
   const result = await new Promise((resolve)=>{
     document.getElementById('crit-add-overlay')?.remove();
@@ -9619,11 +9628,20 @@ async function addCriteriaEvaluation(){
       const safeName=(c.name||'(이름 없음)').replace(/</g,'&lt;');
       return `<option value="${c.id}">${cat}${safeName}</option>`;
     }).join('');
-    ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:min(560px,92vw);padding:24px 26px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    const eduOptsHtml = eduFileCandidates.length
+      ? '<option value="">— 선택 안 함 (교육자료 없이 평가) —</option>'
+        + eduFileCandidates.map(f=>{
+            const cat=f.category?`[${f.category}] `:'';
+            const safeName=(f.name||'(이름 없음)').replace(/</g,'&lt;');
+            const selected = (defaultEduUrl && f.file_url===defaultEduUrl) ? ' selected' : '';
+            return `<option value="${f.file_url.replace(/"/g,'&quot;')}"${selected}>${cat}${safeName}</option>`;
+          }).join('')
+      : '<option value="">등록된 교육자료가 없습니다</option>';
+    ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:min(600px,92vw);padding:24px 26px;animation:scaleIn .25s cubic-bezier(.22,1,.36,1);max-height:88vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px">
         <div>
           <div style="font-size:17px;font-weight:900;color:var(--t1)">평가안기준 평가 추가</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:4px">교육자료와 평가안 기반으로 AI 가 추가 평가를 진행합니다 · 30~60초 소요</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">평가안과 교육자료 기반으로 AI 가 추가 평가를 진행합니다 · 30~60초 소요</div>
         </div>
         <button style="border:none;background:rgba(0,0,0,.06);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px" onclick="document.getElementById('crit-add-overlay').remove()">✕</button>
       </div>
@@ -9632,12 +9650,18 @@ async function addCriteriaEvaluation(){
         <select id="crit-add-cl" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-size:13px;font-weight:600;color:var(--t1);background:#fff;cursor:pointer">
           ${optsHtml}
         </select>
-        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">영상의 교육종류 ${eduType?'"'+eduType+'"':''}와 매칭되는 체크리스트가 위에 정렬됨</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">영상의 교육종류${eduType?' "'+eduType+'"':''}와 매칭되는 체크리스트가 위에 정렬됨</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">교육자료 <span style="color:var(--t3);font-weight:500">(등록된 자료에서 선택)</span></div>
+        <select id="crit-add-edu-pick" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-size:13px;font-weight:600;color:var(--t1);background:#fff;cursor:pointer" onchange="document.getElementById('crit-add-edu-url').value=this.value">
+          ${eduOptsHtml}
+        </select>
       </div>
       <div style="margin-bottom:18px">
-        <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">교육자료 URL <span style="color:var(--t3);font-weight:500">(선택)</span></div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--t2);margin-bottom:6px">또는 교육자료 URL 직접 입력 <span style="color:var(--t3);font-weight:500">(선택)</span></div>
         <input id="crit-add-edu-url" type="text" value="${defaultEduUrl.replace(/"/g,'&quot;')}" placeholder="https:// 또는 비워두면 교육자료 없이 평가" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-size:12px;font-family:'Noto Sans KR',monospace;box-sizing:border-box">
-        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${defaultEduUrl?'영상 등록 시 사용한 교육자료가 자동 입력됨':'교육자료를 첨부하면 더 정확한 평가가 가능합니다'}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">${defaultEduUrl?'영상 등록 시 사용한 교육자료가 자동 입력됨 — 위 드롭다운에서 다른 자료로 변경 가능':'위 드롭다운에서 교육자료를 선택하면 자동 채워짐'}</div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-ghost" style="padding:10px 22px;font-size:12px;font-weight:700" onclick="document.getElementById('crit-add-overlay').remove()">취소</button>
