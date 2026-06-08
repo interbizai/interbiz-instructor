@@ -2862,6 +2862,8 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
       <div class="video-player" id="an-player"></div>
     </div>
 
+    <!-- 평가안기준 없을 때 안내 박스 (관리자/부관리자만) -->
+    <div id="an-add-crit-box" style="display:none"></div>
     <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchAnTab('criteria',this)">교육맞춤평가</button>
@@ -3757,13 +3759,23 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
   <!-- ══ 메인 분할: 좌측 히어로(세로 중앙) + 우측 사진 스크롤(축소) ══ -->
   <div class="pick-main-split">
     <!-- 좌측: 히어로 세로 중앙 -->
-    <div class="pick-main-left" style="display:flex;align-items:center;justify-content:center">
-      <div class="pick-hero-wide" style="width:100%;background:transparent;box-shadow:none;padding:24px 8px">
+    <div class="pick-main-left" style="display:flex;align-items:center;justify-content:center;position:relative">
+      <!-- 히어로 이미지 영역 (있을 때만 노출) -->
+      <div id="pick-hero-image-wrap" style="display:none;width:100%;position:relative">
+        <img id="pick-hero-image" src="" alt="" style="display:block;width:100%;height:auto;border-radius:14px">
+        <div id="pick-hero-image-tools" style="display:none;position:absolute;top:10px;right:10px;gap:6px;z-index:5">
+          <button onclick="changeHeroImage()" style="padding:5px 12px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,120,200,.85);border:none;border-radius:8px;cursor:pointer;backdrop-filter:blur(6px)">🖼 수정</button>
+          <button onclick="removeHeroImage()" style="padding:5px 12px;font-size:11px;font-weight:700;color:#fff;background:rgba(220,38,38,.85);border:none;border-radius:8px;cursor:pointer;backdrop-filter:blur(6px)">× 삭제</button>
+        </div>
+      </div>
+      <!-- 히어로 글씨 영역 (이미지 없을 때만 노출) -->
+      <div class="pick-hero-wide" id="pick-hero-text-wrap" style="width:100%;background:transparent;box-shadow:none;padding:24px 8px">
         <div class="pick-hero-bg"></div>
         <div class="pick-hero-inner">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <h1 id="pick-hero-title" class="pick-hero-title">강사가 성장하면, 현장이 달라집니다</h1>
             <button id="pick-edit-title-btn" onclick="editHeroText('hero_title')" style="display:none;padding:6px 10px;font-size:11px;font-weight:700;color:var(--blue);background:rgba(0,120,200,.08);border:1px solid rgba(0,120,200,.2);border-radius:8px;cursor:pointer">✎ 제목 수정</button>
+            <button id="pick-add-hero-image-btn" onclick="changeHeroImage()" style="display:none;padding:6px 10px;font-size:11px;font-weight:700;color:#fff;background:#10b981;border:none;border-radius:8px;cursor:pointer">🖼 이미지로 변경</button>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px">
             <p id="pick-hero-sub" class="pick-hero-sub">수백 명의 판매 현장을 움직이는 건, 결국 당신의 역량입니다.</p>
@@ -7006,10 +7018,88 @@ async function loadHeroText(){
   applyHeroStyle(t,tCfg); applyHeroStyle(s,sCfg);
   window._heroCfg={hero_title:tCfg,hero_sub:sCfg};
   // 관리자/부관리자만 수정 버튼
-  const canEdit=CU?.isAdmin;
+  const canEdit=!!(CU?.isAdmin||CU?.isSubAdmin);
   const tb=el('pick-edit-title-btn'), sb2=el('pick-edit-sub-btn');
+  const addImgBtn=el('pick-add-hero-image-btn');
   if(tb) tb.style.display=canEdit?'':'none';
   if(sb2) sb2.style.display=canEdit?'':'none';
+  if(addImgBtn) addImgBtn.style.display=canEdit?'':'none';
+  // 히어로 이미지 로드
+  await loadHeroImage();
+}
+
+// 히어로 이미지 로드 — app_settings.hero_image 에서 URL 가져옴
+async function loadHeroImage(){
+  const wrap=document.getElementById('pick-hero-image-wrap');
+  const textWrap=document.getElementById('pick-hero-text-wrap');
+  const imgEl=document.getElementById('pick-hero-image');
+  const tools=document.getElementById('pick-hero-image-tools');
+  if(!wrap||!imgEl) return;
+  let url='';
+  try{
+    const {data}=await sb.from('app_settings').select('value').eq('key','hero_image').maybeSingle();
+    url=(data?.value||'').trim();
+  }catch(_){}
+  // localStorage 폴백
+  if(!url){ try{ url=localStorage.getItem('hero_image')||''; }catch(_){} }
+  const canEdit=!!(CU?.isAdmin||CU?.isSubAdmin);
+  if(url){
+    imgEl.src=url;
+    wrap.style.display='';
+    if(textWrap) textWrap.style.display='none';
+    if(tools) tools.style.display=canEdit?'flex':'none';
+  } else {
+    wrap.style.display='none';
+    if(textWrap) textWrap.style.display='';
+    if(tools) tools.style.display='none';
+  }
+}
+
+// 히어로 이미지 추가/변경 — 카드 외부 file input 으로 click 격리
+function changeHeroImage(){
+  if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자만 가능합니다.'); return; }
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+  inp.onchange=async ()=>{
+    const file=inp.files?.[0];
+    setTimeout(()=>inp.remove(),100);
+    if(!file) return;
+    try{
+      let upload=file;
+      if(upload.size>1.5*1024*1024 && typeof compressImage==='function'){
+        try{ upload=await compressImage(upload, 2*1024*1024, 1600); }catch(_){}
+      }
+      const ext=(upload.name||file.name||'hero.jpg').split('.').pop()||'jpg';
+      const path=`hero/${Date.now()}.${ext}`;
+      const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:upload.type||'image/jpeg', upsert:false});
+      if(ue) throw new Error(ue.message);
+      const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+      // app_settings 에 저장
+      const {error:upErr}=await sb.from('app_settings').upsert({key:'hero_image', value:publicUrl});
+      if(upErr) throw new Error(upErr.message);
+      try{ localStorage.setItem('hero_image', publicUrl); }catch(_){}
+      await loadHeroImage();
+      if(typeof showToast==='function') showToast('✓ 히어로 이미지 등록 완료','#10b981');
+    }catch(e){
+      alert('이미지 등록 실패: '+(e?.message||e));
+    }
+  };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+// 히어로 이미지 삭제 — 글씨로 복귀
+async function removeHeroImage(){
+  if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자만 가능합니다.'); return; }
+  if(!confirm('히어로 이미지를 삭제하고 글씨로 돌아갈까요?')) return;
+  try{
+    await sb.from('app_settings').delete().eq('key','hero_image');
+    try{ localStorage.removeItem('hero_image'); }catch(_){}
+    await loadHeroImage();
+    if(typeof showToast==='function') showToast('히어로 이미지 삭제 완료','#0078C8');
+  }catch(e){
+    alert('삭제 실패: '+(e?.message||e));
+  }
 }
 
 // 히어로 수정 모달 — 텍스트/색상/글꼴/두께/이탤릭
@@ -9231,7 +9321,8 @@ function normalizeVertexResult(raw){
     else if(level==='normal') score=Math.round(max*0.6);
     else if(level==='bad') score=0;
     else score=0; // na
-    return {...s, level, score};
+    // ⚠ max 도 반환 — 원본 s.max=0 인 경우 보정된 5 가 유지되도록 (이전 버그: max 안 넘김 → 0 그대로 저장)
+    return {...s, level, score, max};
   });
   // habits: occurrences 정규화 — 문자열 배열/객체 배열 혼재 대응 → timestamps[](MM:SS) + contexts[](문구)
   if(Array.isArray(raw.habits)){
@@ -9486,6 +9577,121 @@ async function reanalyzeCurrentVideo(){
     showAiLoading(false);
     alert('❌ 재분석 실패\n\n'+(e?.message||e));
     console.error('reanalyzeCurrentVideo:',e);
+  }
+}
+
+// 평가안기준 추가 평가 — AI 독자만 있는 영상에 평가안기준 평가를 추가로 진행
+async function addCriteriaEvaluation(){
+  if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자/부관리자만 가능합니다.'); return; }
+  const videoId=window._anVideoId;
+  if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
+  const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
+  if(!vid){ alert('영상 행을 찾지 못했습니다.'); return; }
+
+  // 체크리스트 선택 — 영상 eduType 매칭 우선
+  const eduType=vid.eduType||vid.edu_type||'';
+  const all=(D.checklists||[]).filter(c=>!c.deleted);
+  // 평가안 후보 (체크리스트 타입이 standard 가 아닌 것 = 교육맞춤평가)
+  let candidates=all.filter(c=>{
+    const t=(c.type||'').toLowerCase();
+    return !t.includes('standard') && !t.includes('speech');
+  });
+  if(!candidates.length){
+    alert('등록된 평가안(체크리스트)이 없습니다.\n교육 콘텐츠 → 체크리스트 등록 후 다시 시도해주세요.');
+    return;
+  }
+  // eduType 매칭 우선 정렬
+  candidates.sort((a,b)=>{
+    const am = (a.category||'').includes(eduType) || (a.name||'').includes(eduType) ? 0 : 1;
+    const bm = (b.category||'').includes(eduType) || (b.name||'').includes(eduType) ? 0 : 1;
+    return am-bm;
+  });
+  // 사용자에게 선택 (간단 prompt — 추후 모달로 발전 가능)
+  const pickedIdx = parseInt(prompt(
+    '평가안(체크리스트) 을 선택하세요 (번호 입력):\n\n'+
+    candidates.map((c,i)=>`${i+1}. ${c.name||'(이름 없음)'}${c.category?' [카테고리: '+c.category+']':''}`).join('\n')+
+    '\n\n번호:'
+  ), 10);
+  if(!Number.isFinite(pickedIdx) || pickedIdx<1 || pickedIdx>candidates.length){
+    if(pickedIdx===0||isNaN(pickedIdx)) return;  // 취소
+    alert('잘못된 번호입니다.'); return;
+  }
+  const checklist=candidates[pickedIdx-1];
+  const checklistId=checklist.id;
+
+  // 교육자료 URL — 영상 eduFileUrl 우선, 없으면 체크리스트 file_url
+  const eduFileUrl = vid.eduFileUrl || vid.edu_file_url || checklist.file_url || '';
+  if(!eduFileUrl){
+    if(!confirm('이 영상에 교육자료가 연결되어 있지 않습니다.\n교육자료 없이도 평가안기준 분석을 진행할까요?')) return;
+  }
+
+  // 체크리스트 항목 로드
+  let critItems=[];
+  try{ critItems=await loadChecklistItemsForEval(checklistId); }catch(e){ console.warn('체크리스트 항목 로드 실패:', e); }
+  if(!critItems.length){
+    alert('선택한 체크리스트에 평가 항목이 없습니다.\n다른 체크리스트를 선택하거나 항목을 먼저 등록해주세요.');
+    return;
+  }
+
+  // 영상 URL 복구
+  let videoUrl = window._anUploadedVideoUrl || vid.filePath || vid.file_path || vid.video_url || vid.youtube || '';
+  let videoGcsUri = window._anUploadedGcsUri || vid.gcs_uri || vid.video_gcs_uri || '';
+  if(!videoUrl && !videoGcsUri){
+    alert('영상 URL 정보가 없습니다.\n영상을 다시 등록한 후 시도해주세요.');
+    return;
+  }
+  const videoMime = vid.mime || 'video/mp4';
+
+  showAiLoading(true, 120);
+  setAiLoadingStep('평가안기준 평가 추가 중...');
+  setAiLoadingStage('upload','done');
+  setAiLoadingStage('checklist','done');
+  setAiLoadingStage('ai','active');
+
+  try{
+    const attempts=[
+      {model:'gemini-2.5-flash', fps:0.5},
+      {model:'gemini-2.5-flash', fps:0.2},
+      {model:'gemini-2.5-pro',   fps:0.5},
+    ];
+    let result=null, lastErr=null;
+    for(const a of attempts){
+      setAiLoadingStep('평가안기준 분석 중...');
+      try{
+        const raw=await callVertexAnalyze({
+          video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps:a.fps,
+          checklist_items:critItems, eval_type:'평가안기준',
+          edu_file_url:eduFileUrl||undefined, model:a.model
+        });
+        const normalized=normalizeVertexResult(raw);
+        if(normalized && Array.isArray(normalized.sub_scores) && normalized.sub_scores.length){
+          result=normalized; break;
+        }
+        lastErr=new Error('AI 응답에 sub_scores 없음');
+      }catch(e){ lastErr=e; console.warn('평가안기준 시도 실패:', e); }
+    }
+    if(!result) throw lastErr || new Error('모든 시도 실패');
+
+    setAiLoadingStage('ai','done');
+    setAiLoadingStage('save','active');
+
+    const ok=await saveEvaluation({videoId, checklistId, eduFileUrl, evalType:'평가안기준', result});
+    if(!ok) throw new Error('DB 저장 실패');
+
+    // 메모리·화면 갱신
+    window._lastVertexResult=window._lastVertexResult||{};
+    window._lastVertexResult.crit=result;
+    await loadFromDB();
+    const mapped=mapVertexToLegacy(result, window._lastVertexResult.ai);
+    const count=parseInt(v('an-count'))||0;
+    renderAnalysisResult(mapped, true, count);
+    setAiLoadingStage('save','done');
+    setTimeout(()=>showAiLoading(false),400);
+    if(typeof showToast==='function') showToast('✓ 평가안기준 평가 추가 완료','#10b981');
+  }catch(e){
+    showAiLoading(false);
+    alert('❌ 평가안기준 평가 추가 실패\n\n'+(e?.message||e));
+    console.error('addCriteriaEvaluation:',e);
   }
 }
 
@@ -10961,6 +11167,24 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     // 교육자료 없으면 AI독자 탭으로
     if(aiPane) aiPane.style.display='block';
     if(aiTabBtn) aiTabBtn.classList.add('active');
+  }
+  // 평가안기준 없을 때 — 관리자·부관리자에게 [평가안기준 추가 평가] 안내 박스 노출
+  const addCritBox=el('an-add-crit-box');
+  if(addCritBox){
+    const canEdit = !!(CU?.isAdmin || CU?.isSubAdmin);
+    if(!hasCrit && canEdit && window._anVideoId){
+      addCritBox.innerHTML=`<div style="margin-bottom:16px;padding:14px 18px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.06);border-radius:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-size:22px">🎯</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:2px">평가안기준 평가가 없습니다</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.5">교육자료와 체크리스트 기반으로 추가 평가를 진행하면 [교육맞춤평가] 탭이 활성화됩니다.</div>
+        </div>
+        <button class="btn btn-blue" style="padding:8px 18px;font-size:12px;font-weight:800" onclick="addCriteriaEvaluation()">+ 평가안기준 평가 추가</button>
+      </div>`;
+      addCritBox.style.display='';
+    } else {
+      addCritBox.style.display='none';
+    }
   }
   let pctScore = (typeof r.overallScore==='number' && r.overallScore>0) ? r.overallScore : 0;
   if(!pctScore){
@@ -16454,6 +16678,14 @@ async function editGrade(userId){
 // evaluations의 categories를 집계하여 레이더 그리기
 // 모든 가능 경로를 시도하고 빈 경우 명확한 진단 안내 표시
 function renderRadarChartFromEvals(userId){
+  // JSON string 으로 저장된 컬럼도 안전하게 array 로 반환
+  const safeArr = (val) => {
+    if(Array.isArray(val)) return val;
+    if(typeof val==='string'){
+      try{ const p=JSON.parse(val); return Array.isArray(p)?p:[]; }catch(_){ return []; }
+    }
+    return [];
+  };
   const catFilter=document.getElementById('lect-cat-filter')?.value||document.getElementById('radar-cat-filter')?.value||'';
   const prodFilter=document.getElementById('lect-prod-filter')?.value||document.getElementById('radar-prod-filter')?.value||'';
 
@@ -16499,10 +16731,10 @@ function renderRadarChartFromEvals(userId){
   });
   const latest=[...byVid.values(), ...voiceEvals];
 
-  // categories 집계
+  // categories 집계 (JSON string 도 안전 처리)
   const catAgg=new Map();
   latest.forEach(e=>{
-    (e.categories||[]).forEach(c=>{
+    safeArr(e.categories).forEach(c=>{
       if(!c.name) return;
       const a=catAgg.get(c.name)||{name:c.name,score:0,max:0,count:0};
       a.score+=Number(c.score||0); a.max+=Number(c.max||0); a.count++;
@@ -16512,25 +16744,38 @@ function renderRadarChartFromEvals(userId){
   let cats=[...catAgg.values()];
 
   // 폴백 ①: categories 가 비어있거나 모두 max=0 이면 sub_scores 에서 카테고리 자동 재계산
-  //   (DB 에 categories=[] 또는 max:0 인 손상 평가가 있어도 자동 복구)
+  //   max=0 이지만 sub_scores 의 level 별로 점수 추정도 시도 (normalize 안 거친 옛 데이터 호환)
   const hasValidCat = cats.some(c=>Number(c.max||0)>0);
   if(!hasValidCat){
     const subCatAgg=new Map();
     const order=[];
+    let evalsWithSubs=0;
     latest.forEach(e=>{
-      (e.sub_scores||[]).forEach(s=>{
+      const subs=safeArr(e.sub_scores);
+      if(subs.length) evalsWithSubs++;
+      subs.forEach(s=>{
         if(!s.category || s.level==='na') return;
         const k=s.category;
         if(!subCatAgg.has(k)){ subCatAgg.set(k,{name:k,score:0,max:0}); order.push(k); }
         const a=subCatAgg.get(k);
-        a.score+=Number(s.score||0);
-        a.max+=Number(s.max||0);
+        // max=0 이면 level 로 max·score 추정 (good=5/normal=3/bad=0)
+        let sScore=Number(s.score||0), sMax=Number(s.max||0);
+        if(sMax<=0){
+          sMax=5;
+          if(s.level==='good') sScore=5;
+          else if(s.level==='normal') sScore=3;
+          else sScore=0;
+        }
+        a.score+=sScore;
+        a.max+=sMax;
       });
     });
     const subCats=order.map(k=>subCatAgg.get(k)).filter(c=>c.max>0);
     if(subCats.length){
       cats=subCats;
-      console.log('[radar] categories 무효(max=0) — sub_scores 로 자동 재계산: '+subCats.length+'개');
+      console.log('[radar] categories 무효 → sub_scores 로 재계산: '+subCats.length+'개 ('+evalsWithSubs+'건 평가 활용)');
+    } else {
+      console.log('[radar] sub_scores 도 비어있음. latest 평가:'+latest.length+', sub_scores 보유:'+evalsWithSubs);
     }
   }
 
