@@ -4640,7 +4640,9 @@ async function dbCreateVideo(v){
     status:v.status||'등록완료', video_type:v.videoType||'', channel:v.channel||'',
     solution:v.solution||'', edu_file_url:v.eduFileUrl||'', product_name:v.productName||'',
     edu_type:v.eduType||null,
-    org_name:orgName
+    org_name:orgName,
+    // GCS URI 영구 보관 — Vertex 의 inline 18MB 한계 회피, 재분석 시 동일 영상 사용
+    video_gcs_uri: v.gcsUri || v.video_gcs_uri || ''
   };
   let {data,error}=await sb.from('videos').insert(full).select().single();
   if(!error) return data;
@@ -4657,6 +4659,13 @@ async function dbCreateVideo(v){
     console.warn('org_name 컬럼 없음 — 제외 후 재시도');
     const {org_name,...noOrg}=full;
     ({data,error}=await sb.from('videos').insert(noOrg).select().single());
+    if(!error) return data;
+  }
+  // video_gcs_uri 컬럼 없으면 제외 후 재시도 (옛 스키마 호환)
+  if((error?.message||'').toLowerCase().includes('video_gcs_uri')){
+    console.warn('video_gcs_uri 컬럼 없음 — 제외 후 재시도. schema_completeness.sql 실행 권장');
+    const {video_gcs_uri,...noGcs}=full;
+    ({data,error}=await sb.from('videos').insert(noGcs).select().single());
     if(!error) return data;
   }
   console.error('dbCreateVideo:',error);
@@ -9511,8 +9520,15 @@ async function reanalyzeWithFreshUpload(videoId){
     window._anUploadedVideoUrl=videoUrl;
     window._anUploadedGcsUri=videoGcsUri;
 
-    // 영상 행에도 새 URL 저장 (옛 만료 URL 교체)
-    try{ await sb.from('videos').update({file_path:videoUrl}).eq('id',videoId); }catch(_){}
+    // 영상 행에 새 URL + GCS URI 영구 저장 (옛 만료 URL 교체, 18MB 한계 회피)
+    try{
+      const upd={file_path:videoUrl};
+      if(videoGcsUri) upd.video_gcs_uri=videoGcsUri;
+      await sb.from('videos').update(upd).eq('id',videoId);
+    }catch(e){
+      // video_gcs_uri 컬럼 없으면 file_path 만 갱신
+      try{ await sb.from('videos').update({file_path:videoUrl}).eq('id',videoId); }catch(_){}
+    }
 
     // 체크리스트·교육자료 정보 복구
     const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
@@ -10778,6 +10794,7 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     if(!userId){alert('로그인 계정을 확인할 수 없습니다.');return;}
     const vidRow=await dbCreateVideo({
       userId, title, youtube:'', filePath:videoUrl,
+      gcsUri: videoGcsUri,  // GCS URI 영구 저장 — 재분석 시 18MB 한계 회피
       date:new Date().toISOString().split('T')[0], duration:'—',
       studentCount, status:'분석완료',
       channel:v('an-channel'), videoType:v('an-product')||'', eduType:v('an-edu-type')||'', solution:'AI 분석 완료',
@@ -10984,28 +11001,41 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   // ② 교육분석 레이더 (엑셀 기반 체크리스트 대항목)
   // 손상 감지: categories는 있으나 max 합계가 0 → 재분석 안내
   let critValid=(r.criteriaScores||[]).some(c=>Number(c.max||0)>0);
-  // ⚠ 폴백: criteriaScores 가 없거나 max=0 인데 sub_scores 는 살아있을 때 — categories 자동 재계산
-  //   (평가 항목별 피드백 표는 보이는데 차트만 안 그려지는 경우 자동 복구)
+  // ⚠ 다중 폴백: criteriaScores 무효 시 표(평가 항목별 피드백) 와 동일 데이터로 차트 자동 재구성
+  //   소스 우선순위: ① critRaw.sub_scores ② aiRaw.sub_scores ③ r.timestamps (표 데이터)
+  //   → 표가 보이는 한 차트도 항상 보임
   if(!critValid){
-    const _subForCats = (critRaw?.sub_scores||[]).length ? critRaw.sub_scores
-                      : (aiRaw?.sub_scores||[]).length ? aiRaw.sub_scores : [];
-    if(_subForCats.length){
-      const _catMap=new Map();
-      const _order=[];
-      _subForCats.forEach(s=>{
-        if(s.level==='na') return;
-        const k=s.category||'기타';
-        if(!_catMap.has(k)){ _catMap.set(k,{name:k,score:0,max:0}); _order.push(k); }
-        const a=_catMap.get(k);
-        a.score+=Number(s.score||0);
-        a.max+=Number(s.max||0);
+    const buildFromSubs = (arr, getCat, getScore, getMax, getLevel) => {
+      const map=new Map();
+      const order=[];
+      (arr||[]).forEach(s=>{
+        const lvl=getLevel(s);
+        if(lvl==='na') return;
+        const k=getCat(s)||'기타';
+        if(!map.has(k)){ map.set(k,{name:k,score:0,max:0}); order.push(k); }
+        const a=map.get(k);
+        a.score+=Number(getScore(s)||0);
+        a.max+=Number(getMax(s)||0);
       });
-      const _rebuilt = _order.map(k=>_catMap.get(k)).filter(c=>c.max>0);
-      if(_rebuilt.length){
-        r.criteriaScores = _rebuilt;
-        critValid = true;
-        console.log('[차트 복구] sub_scores 에서 categories 자동 재계산:', _rebuilt.length+'개');
-      }
+      return order.map(k=>map.get(k)).filter(c=>c.max>0);
+    };
+    // 소스 1: critRaw.sub_scores
+    let rebuilt = buildFromSubs(critRaw?.sub_scores, s=>s.category, s=>s.score, s=>s.max, s=>s.level);
+    let source='critRaw.sub_scores';
+    // 소스 2: aiRaw.sub_scores
+    if(!rebuilt.length){
+      rebuilt = buildFromSubs(aiRaw?.sub_scores, s=>s.category, s=>s.score, s=>s.max, s=>s.level);
+      source='aiRaw.sub_scores';
+    }
+    // 소스 3: r.timestamps (mapVertexToLegacy 결과, 표가 사용하는 데이터)
+    if(!rebuilt.length){
+      rebuilt = buildFromSubs(r.timestamps, t=>t.category, t=>t.score, t=>t.maxScore, t=>t.level);
+      source='r.timestamps (표 데이터)';
+    }
+    if(rebuilt.length){
+      r.criteriaScores = rebuilt;
+      critValid = true;
+      console.log('[차트 자동 복구] '+source+' 에서 '+rebuilt.length+'개 카테고리 재구성:', rebuilt);
     }
   }
   if(hasChecklist&&r.criteriaScores?.length&&critValid){

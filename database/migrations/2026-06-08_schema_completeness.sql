@@ -32,6 +32,13 @@ ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS tempo INTEGER;
 ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS org_name TEXT;
 
 -- ─────────────────────────────────────────────────────────────────
+-- 1-b) videos 의 video_gcs_uri 컬럼 (Vertex 18MB inline 한계 회피용)
+--      재분석 시 동일 GCS 영상 재사용 → 크기 무관 분석 가능
+-- ─────────────────────────────────────────────────────────────────
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS video_gcs_uri TEXT;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS mime TEXT;
+
+-- ─────────────────────────────────────────────────────────────────
 -- 2) voice_evals 누락 컬럼 보강
 -- ─────────────────────────────────────────────────────────────────
 ALTER TABLE voice_evals ADD COLUMN IF NOT EXISTS user_id BIGINT;
