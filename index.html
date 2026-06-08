@@ -12178,10 +12178,13 @@ function renderVoiceResult(r,hasCL,count,tone){
     window._lastVertexResult={crit:null,ai:aiRaw};
     const pdfBtn=el('va-pdf-btn');if(pdfBtn) pdfBtn.style.display='';
     const dbRaw=r.decibel, tpRaw=r.tempo;
-    const vDb=typeof dbRaw==='object'?(dbRaw?.current||0):(dbRaw||0);
-    const vTp=typeof tpRaw==='object'?(tpRaw?.wpm||0):(tpRaw||0);
-    const vDbSt=typeof dbRaw==='object'?(dbRaw?.status||''):(r.decibelStatus||'적정');
-    const vTpSt=typeof tpRaw==='object'?(tpRaw?.status||''):(r.tempoStatus||'적정');
+    let vDb=typeof dbRaw==='object'?(dbRaw?.current||0):(dbRaw||0);
+    let vTp=typeof tpRaw==='object'?(tpRaw?.wpm||0):(tpRaw||0);
+    // AI 가 0/누락 반환 시 안내 — 0 표시되면 사용자 혼란 → 명확한 미측정 표기
+    const vDbMissing = !vDb || vDb<=0;
+    const vTpMissing = !vTp || vTp<=0;
+    const vDbSt=vDbMissing ? '미측정' : (typeof dbRaw==='object'?(dbRaw?.status||'적정'):(r.decibelStatus||'적정'));
+    const vTpSt=vTpMissing ? '미측정' : (typeof tpRaw==='object'?(tpRaw?.status||'적정'):(r.tempoStatus||'적정'));
     const vHb=(r.habits||[]).reduce((a,h)=>a+(h.count||0),0);
     const vFit=vDb>=80?'20명+':vDb>=75?'15~20명':vDb>=70?'10~15명':vDb>=65?'5~10명':vDb>=60?'3~5명':'1~3명';
     let vMood='밝고 경쾌한';
@@ -16070,25 +16073,55 @@ async function editGrade(userId){
 }
 
 // evaluations의 categories를 집계하여 레이더 그리기
+// 모든 가능 경로를 시도하고 빈 경우 명확한 진단 안내 표시
 function renderRadarChartFromEvals(userId){
-  // 상단 프로필 영역 필터(lect-cat-filter / lect-prod-filter)로 통일
   const catFilter=document.getElementById('lect-cat-filter')?.value||document.getElementById('radar-cat-filter')?.value||'';
   const prodFilter=document.getElementById('lect-prod-filter')?.value||document.getElementById('radar-prod-filter')?.value||'';
-  let evals=(window._lectEvals||[]);
+
+  // 1) 1차 소스: _lectEvals (openLecturer 에서 세팅된 캐시)
+  let evals=Array.isArray(window._lectEvals)?window._lectEvals.slice():[];
+
+  // 2) 2차 소스 폴백: D.evaluations 에서 직접 필터 (캐시 누락 대비)
+  if(!evals.length){
+    const u=(D.users||[]).find(x=>x.id===userId);
+    const userVidIds=new Set((D.videos||[]).filter(v=>(v.userId||v.user_id)===userId).map(v=>v.id));
+    evals=(D.evaluations||[]).filter(e=>{
+      // video 기반 평가
+      if(e.video_id && userVidIds.has(e.video_id)) return true;
+      // user_id 직접 매칭 (스피치 평가 등)
+      if(e.user_id===userId) return true;
+      // voice_eval_id → voice_evals → user_id 매칭
+      if(e.voice_eval_id){
+        const ve=(D.voiceEvals||[]).find(x=>x.id===e.voice_eval_id);
+        if(ve && ve.user_id===userId) return true;
+      }
+      return false;
+    });
+    if(evals.length) console.log('[radar] _lectEvals 비어 D.evaluations 폴백 — '+evals.length+'건 발견');
+  }
+
+  // 카테고리·제품 필터 (선택된 경우)
   if(catFilter||prodFilter){
     const vidIds=new Set((D.videos||[]).filter(v=>{
       if(catFilter&&(v.eduType||v.edu_type||'')!==catFilter) return false;
       if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
       return true;
     }).map(v=>v.id));
-    evals=evals.filter(e=>vidIds.has(e.video_id));
+    evals=evals.filter(e=>!e.video_id || vidIds.has(e.video_id));
   }
-  // 영상별 최신 1건 (교육맞춤평가 우선, 없으면 AI독자)
+
+  // 영상별 최신 1건 (교육맞춤평가 우선, 없으면 AI독자) + 영상 없는 평가도 포함
   const byVid=new Map();
-  evals.forEach(e=>{if(!e.video_id) return; const ex=byVid.get(e.video_id); if(!ex||e.eval_type==='평가안기준') byVid.set(e.video_id,e);});
-  const latest=[...byVid.values()];
+  const voiceEvals=[];
+  evals.forEach(e=>{
+    if(!e.video_id){ voiceEvals.push(e); return; }
+    const ex=byVid.get(e.video_id);
+    if(!ex||e.eval_type==='평가안기준') byVid.set(e.video_id,e);
+  });
+  const latest=[...byVid.values(), ...voiceEvals];
+
   // categories 집계
-  const catAgg=new Map(); // name → {score,max,count}
+  const catAgg=new Map();
   latest.forEach(e=>{
     (e.categories||[]).forEach(c=>{
       if(!c.name) return;
@@ -16098,7 +16131,8 @@ function renderRadarChartFromEvals(userId){
     });
   });
   let cats=[...catAgg.values()];
-  // categories 가 비어있으면 sub_scores 에서 카테고리 자동 추출 (옛 평가 데이터 호환)
+
+  // 폴백 ①: sub_scores 에서 카테고리 자동 추출
   if(!cats.length){
     const subCatAgg=new Map();
     latest.forEach(e=>{
@@ -16112,8 +16146,34 @@ function renderRadarChartFromEvals(userId){
       });
     });
     cats=[...subCatAgg.values()];
+    if(cats.length) console.log('[radar] categories 비어 sub_scores 폴백 — '+cats.length+'개 카테고리 추출');
   }
-  if(!cats.length){ renderRadarChart(userId); return; } // 그래도 없으면 옛 u.scores 폴백
+
+  // max=0 또는 score=max=0 인 항목 제외
+  cats=cats.filter(c=>c.max>0 && (c.score>0||c.max>0));
+
+  // 그래도 비어있으면 명확한 진단 안내 (빈 차트 대신)
+  if(!cats.length){
+    const svgEl=document.getElementById('radar-chart-'+userId);
+    const barsEl=document.getElementById('lect-skills-bars-'+userId);
+    let reason='AI 평가가 아직 진행되지 않았습니다';
+    if(evals.length===0){ reason='이 강사의 평가 데이터가 아직 없습니다'; }
+    else if(latest.length===0){ reason='평가 결과를 찾지 못했습니다'; }
+    else { reason='평가 결과에 점수 항목(categories·sub_scores) 이 비어있습니다'; }
+    if(svgEl){
+      svgEl.innerHTML=`<text x="200" y="200" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="700">평가 데이터 없음</text>
+                      <text x="200" y="220" text-anchor="middle" fill="#9ca3af" font-size="11">${reason}</text>
+                      <text x="200" y="245" text-anchor="middle" fill="#9ca3af" font-size="10">영상 등록 후 AI 분석 시 자동 채워집니다</text>`;
+    }
+    if(barsEl){
+      barsEl.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);font-size:12px;text-align:center;padding:20px">
+        <div style="font-size:32px;margin-bottom:8px">📊</div>
+        <div style="font-weight:700;margin-bottom:4px">평가 데이터 없음</div>
+        <div style="font-size:11px;color:var(--t3);line-height:1.5">${reason}</div>
+      </div>`;
+    }
+    return;
+  }
   const items=cats.map(c=>({name:c.name,score:c.score,max:c.max||1}));
   const scores=cats.map(c=>c.max>0?Math.round(c.score/c.max*100):0);
   // 레이더 SVG 직접 그리기
