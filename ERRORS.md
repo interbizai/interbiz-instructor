@@ -426,6 +426,16 @@ function saveStoredUser(u){
     → 최소 6~8개 항목 / 3~4개 카테고리 의 기본값 제공해야 다각형 차트가 의미있게 나옴
     → 사례 (2026-06-08): runVoiceAnalysis 의 fallback checklist 1개 → 발성 안정성·음성 품질 2개만 출력 → 8개로 확장
 
+20. **AI 응답 저장 전 핵심 필드 검증 (sub_scores 누락 방지)**
+    → AI 응답이 비어있거나 핵심 필드(sub_scores)가 빈 배열인 채로 DB 저장되면
+      이후 화면에 손상 데이터 안내 + 차트 비어보임 → 사용자 혼란
+    → saveEvaluation 진입 시 `Array.isArray(result.sub_scores)&&result.sub_scores.length` 검증
+    → 검증 실패면 명확한 alert + 저장 거부 (또 손상 행 생성 차단)
+    → categories 비면 normalizeVertexResult 한 번 더 호출해 sub_scores 로부터 자동 재계산
+    → 손상된 옛 평가는 reanalyzeCurrentVideo() 로 복구 가능 (영상 URL+체크리스트 정보로 재호출)
+    → 사례 (2026-06-08): 사장님 화면 '평가안 레이더 생성 불가 / sub_scores 누락' 메시지
+      → 저장 시점 검증 추가 + 재분석 복구 버튼 도입
+
 19. **신규 테이블 추가 시 RLS 비활성화 누락 점검**
     → 인터픽 운영 정책: core 테이블 모두 RLS OFF (#2, #7)
     → notifications, app_settings, learning_links 같은 신규/누락 테이블 발견 시 즉시 ALTER ... DISABLE ROW LEVEL SECURITY + GRANT

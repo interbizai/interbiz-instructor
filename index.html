@@ -9309,9 +9309,125 @@ async function callVertexAnalyze(payload){
   }
   throw lastErr||new Error('분석 호출 실패');
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 손상된 평가 자동 복구 — sub_scores 누락된 평가를 같은 영상으로 재분석
+// ────────────────────────────────────────────────────────────────────────────
+async function reanalyzeCurrentVideo(){
+  const videoId=window._anVideoId;
+  if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
+  if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~60초 소요됩니다.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
+
+  // 영상 정보 복구 — videos 테이블에서 file_path / youtube 가져오기
+  const vid=(D.videos||[]).find(v=>String(v.id)===String(videoId));
+  if(!vid){ alert('영상 행을 찾지 못했습니다.'); return; }
+  const videoUrl = window._anUploadedVideoUrl || vid.filePath || vid.youtube || '';
+  const videoGcsUri = window._anUploadedGcsUri || '';
+  if(!videoUrl && !videoGcsUri){
+    alert('영상 파일 URL 정보가 없습니다.\n원본 영상으로 다시 가서 [AI 분석 시작]을 눌러주세요.');
+    return;
+  }
+
+  // 체크리스트 정보 (있으면)
+  const eduFileUrl = window._anEduFileUrl || vid.eduFileUrl || vid.edu_file_url || '';
+  let critItems=[], aiItems=[];
+  // 기존 evaluations 에서 checklist_id 추출 → 항목 다시 로드
+  const existingEvals=(D.evaluations||[]).filter(e=>String(e.video_id)===String(videoId));
+  const critEv=existingEvals.find(e=>e.eval_type==='평가안기준');
+  const aiEv=existingEvals.find(e=>e.eval_type==='AI독자');
+  const critClId=critEv?.checklist_id;
+  const aiClId=aiEv?.checklist_id;
+  try{
+    if(critClId) critItems=await loadChecklistItemsForEval(critClId);
+    if(aiClId)   aiItems  =await loadChecklistItemsForEval(aiClId);
+  }catch(e){ console.warn('checklist 로드 실패:', e); }
+  // 폴백: 기본 8개 평가 기준 (스피치와 동일 패턴) — 영상 평가용 기본
+  const defaultItems=[
+    {category:'발성',sub_item:'발성 안정성',criterion:'고른 발성과 호흡 안정성',max_score:100,sort_order:0},
+    {category:'발성',sub_item:'음성 품질',criterion:'발성 크기·맑기·울림',max_score:100,sort_order:1},
+    {category:'전달력',sub_item:'발음 명확도',criterion:'자음·모음 정확한 전달',max_score:100,sort_order:2},
+    {category:'전달력',sub_item:'속도 적절성',criterion:'경청 가능한 속도',max_score:100,sort_order:3},
+    {category:'표현력',sub_item:'강조·변화',criterion:'중요 부분 강조와 변화',max_score:100,sort_order:4},
+    {category:'표현력',sub_item:'신뢰·몰입',criterion:'신뢰감과 몰입 유도',max_score:100,sort_order:5},
+  ];
+
+  showAiLoading(true, 90);
+  setAiLoadingStep('재분석 — 영상 정보 준비 중...');
+  setAiLoadingStage('upload','done');
+  setAiLoadingStage('checklist','done');
+
+  try{
+    setAiLoadingStep('AI 영상 분석 재호출 중... (Pro 모델)');
+    setAiLoadingStage('ai','active');
+    const fps=0.2;
+    const videoMime='video/mp4';
+    let critResult=null, aiResult=null;
+    if(eduFileUrl && (critItems.length||critClId)){
+      try{
+        critResult=normalizeVertexResult(await callVertexAnalyze({
+          video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
+          checklist_items: critItems.length?critItems:defaultItems,
+          eval_type:'평가안기준', edu_file_url:eduFileUrl, model:'gemini-2.5-pro'
+        }));
+      }catch(e){ console.warn('평가안기준 재분석 실패:', e); }
+    }
+    try{
+      aiResult=normalizeVertexResult(await callVertexAnalyze({
+        video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
+        checklist_items: aiItems.length?aiItems:defaultItems,
+        eval_type:'AI독자', model:'gemini-2.5-pro'
+      }));
+    }catch(e){ console.warn('AI독자 재분석 실패:', e); }
+    if(!critResult && !aiResult) throw new Error('두 평가 모두 실패. 잠시 후 다시 시도해주세요.');
+    setAiLoadingStage('ai','done');
+    setAiLoadingStage('save','active');
+
+    // ⚠ 검증 — sub_scores 가 비어있으면 저장하지 않음 (또 손상 데이터 만들지 않게)
+    const validate=(r,label)=>{
+      if(!r) return false;
+      if(!Array.isArray(r.sub_scores)||!r.sub_scores.length){
+        console.warn(`[재분석] ${label} sub_scores 비어있음 — 저장 skip`);
+        return false;
+      }
+      return true;
+    };
+    const saveTasks=[];
+    if(validate(critResult,'평가안기준')) saveTasks.push(saveEvaluation({videoId, checklistId:critClId, eduFileUrl, evalType:'평가안기준', result:critResult}));
+    if(validate(aiResult,'AI독자')) saveTasks.push(saveEvaluation({videoId, checklistId:aiClId, eduFileUrl:null, evalType:'AI독자', result:aiResult}));
+    if(!saveTasks.length){ throw new Error('AI 응답에 sub_scores 가 없어 복구 실패. 다시 시도하거나 영상 페이지에서 처음부터 분석해주세요.'); }
+    const saveResults=await Promise.all(saveTasks);
+    if(saveResults.filter(r=>!r).length){ alert('일부 평가 저장에 실패했습니다. 다시 시도해주세요.'); }
+
+    // 메모리·화면 갱신
+    window._lastVertexResult={crit:critResult, ai:aiResult};
+    await loadFromDB();
+    const mapped=mapVertexToLegacy(critResult, aiResult);
+    const count=parseInt(v('an-count'))||0;
+    renderAnalysisResult(mapped, true, count);
+    setAiLoadingStage('save','done');
+    setTimeout(()=>showAiLoading(false),400);
+    if(typeof showToast==='function') showToast('✓ 재분석 복구 완료','#10b981');
+  }catch(e){
+    showAiLoading(false);
+    alert('❌ 재분석 실패\n\n원인: '+(e?.message||e));
+    console.error('reanalyzeCurrentVideo:',e);
+  }
+}
+
 // evaluations 테이블 저장
 async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalType,result}){
   if(!result) return false;
+  // ⚠ 저장 누락 방지 — sub_scores 가 비어있으면 저장하지 않고 명확히 실패 처리
+  //    (옛 손상 데이터처럼 sub_scores=[]·categories=[] 인 평가가 DB 에 또 들어가지 않게)
+  if(!Array.isArray(result.sub_scores) || !result.sub_scores.length){
+    console.warn('[saveEvaluation] sub_scores 비어있음 — 저장 거부:', evalType);
+    alert(`⚠️ ${evalType} 평가 저장 거부\n\n이유: AI 응답에 세부항목(sub_scores)이 비어있습니다.\n다음 분석에서 같은 결과가 나오면 영상이 너무 짧거나 음질이 불충분한 경우입니다.\n\n[잠시 후 다시 분석] 또는 [영상 다시 등록] 시도해주세요.`);
+    return false;
+  }
+  if(!Array.isArray(result.categories) || !result.categories.length){
+    // categories 비면 sub_scores 로 자동 재계산 (normalizeVertexResult 이미 해야 하지만 안전망)
+    try{ normalizeVertexResult(result); }catch(_){}
+  }
   // AI 응답에서 간혹 정수 컬럼에 이상치(예: 수십억)가 들어와 PostgreSQL integer 한계(2,147,483,647) 초과로 저장 실패하는 현상 방지
   const clampInt=(v,min,max)=>{
     if(v==null||v==='') return null;
@@ -10684,15 +10800,27 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
         </div>`;}).join('')+`</div>`;
     }
   } else if(hasChecklist){
-    const eduRadar=el('an-edu-radar');
-    if(eduRadar) eduRadar.innerHTML='';
+    // 손상된 평가 — 자동 재분석 버튼 + 명확한 안내
+    const reanalyzeBtnHtml = (window._anVideoId)
+      ? `<button class="btn btn-blue" style="margin-top:14px;padding:8px 20px;font-size:12px;font-weight:800" onclick="reanalyzeCurrentVideo()">🔄 자동 재분석으로 복구</button>
+         <div style="font-size:10px;color:var(--t3);margin-top:8px">⏱ 약 30~60초 소요 · AI 가 같은 영상을 다시 분석해 sub_scores 를 복구합니다</div>`
+      : '<div style="font-size:11px;color:var(--t3);margin-top:8px">영상 정보가 없어 자동 재분석 불가 — 영상 페이지에서 [AI 분석 시작]을 다시 눌러주세요</div>';
     const eduBars=el('an-edu-bars');
     if(eduBars){
-      eduBars.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">교육맞춤평가 세부 점수 데이터가 손상되었습니다.<br>영상을 다시 분석해주세요.</div>';
+      eduBars.innerHTML=`<div style="padding:30px 20px;text-align:center;color:var(--t2);font-size:13px;line-height:1.6">
+        <div style="font-size:32px;margin-bottom:10px">📊</div>
+        <div style="font-weight:800;margin-bottom:6px">교육맞춤평가 세부 점수 누락</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px">평가 결과의 sub_scores 가 비어있어 달성도 바를 그릴 수 없습니다.</div>
+        ${reanalyzeBtnHtml}
+      </div>`;
     }
     const eduRadarParent=el('an-edu-radar');
     if(eduRadarParent&&eduRadarParent.parentElement){
-      eduRadarParent.parentElement.innerHTML='<div style="padding:30px 20px;text-align:center;color:var(--t3);font-size:13px;line-height:1.6">📊 평가안 레이더 생성 불가<br><span style="font-size:11px">sub_scores 누락 — 재분석 필요</span></div>';
+      eduRadarParent.parentElement.innerHTML=`<div style="padding:30px 20px;text-align:center;color:var(--t2);font-size:13px;line-height:1.6">
+        <div style="font-size:32px;margin-bottom:8px">📈</div>
+        <div style="font-weight:800;margin-bottom:6px">평가안 레이더 생성 불가</div>
+        <div style="font-size:11px;color:var(--t3);line-height:1.5">데이터가 일부 손상된 옛 평가입니다.<br>우측 [🔄 자동 재분석] 버튼을 한 번 누르세요.</div>
+      </div>`;
     }
   }
 
