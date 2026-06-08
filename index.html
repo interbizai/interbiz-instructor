@@ -15825,8 +15825,8 @@ function openLecturer(id, fromPage){
   const bb=el('lect-back-btn');
   if(bb){ bb.setAttribute('onclick',`showPage('${lectFromPage}')`); }
   curLectId=id;
-  const u=D.users.find(x=>x.id===id);
-  const userVids=D.videos.filter(v=>v.userId===id);
+  const u=D.users.find(x=>String(x.id)===String(id));
+  const userVids=D.videos.filter(v=>String(v.userId||v.user_id||'')===String(id));
   const bg=['#E21E26','#0078C8','#10b981','#f59e0b','#8b5cf6','#ec4899'][(id-1)%6];
 
   // (기존 아코디언용 변수들은 탭 구조 변경으로 제거됨)
@@ -16226,6 +16226,8 @@ function _refreshLectStats(userId){
 
 // AI 역량 분석 총평 생성 — 6블록 (필터 연동 · 따뜻·격려 톤 · 관리자 ⑥ 노출)
 function buildLectSummary(userId){
+  // JSON string 안전화
+  const safeArr=(v)=>Array.isArray(v)?v:(typeof v==='string'?(()=>{try{const p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(_){return [];}})():[]);
   const u=(D.users||[]).find(x=>x.id===userId);
   const container=document.getElementById('lect-ai-summary-'+userId);
   if(!u||!container) return;
@@ -16234,8 +16236,9 @@ function buildLectSummary(userId){
   const prodFilter=document.getElementById('lect-prod-filter')?.value||'';
   const hasFilter=!!(catFilter||prodFilter);
 
-  // 필터 적용된 영상
-  const allUserVids=(D.videos||[]).filter(v=>v.userId===userId);
+  // 필터 적용된 영상 — type-safe 매칭 (userId 가 number/string 혼재 대응)
+  const userIdStr=String(userId);
+  const allUserVids=(D.videos||[]).filter(v=>String(v.userId||v.user_id||'')===userIdStr);
   const filteredVids=allUserVids.filter(v=>{
     if(catFilter&&(v.eduType||v.edu_type||v.videoType||v.video_type||'')!==catFilter) return false;
     if(prodFilter&&!(v.productName||v.product_name||'').includes(prodFilter)) return false;
@@ -16243,10 +16246,10 @@ function buildLectSummary(userId){
   });
   const vidIds=new Set(filteredVids.map(v=>v.id));
 
-  // 해당 영상의 평가 — 두 가지 dedupe 유지
-  // · scoreEvals: 평가 점수/항목은 '교육맞춤평가(평가안기준)' 우선 (사용자 기준 지표)
-  // · voiceEvals: 음성(dB/템포/반복어)·분위기는 'AI독자' 우선 (AI 평가 페이지와 일치)
-  const allEvals=(D.evaluations||[]).filter(e=>e.video_id&&vidIds.has(e.video_id));
+  // 해당 영상의 평가 — video_id 매칭 (string/number 호환)
+  const vidIdStrs=new Set([...vidIds].map(x=>String(x)));
+  const allEvals=(D.evaluations||[]).filter(e=>e.video_id && vidIdStrs.has(String(e.video_id)));
+  console.log('[총평] userId='+userId+', 영상 '+allUserVids.length+'건, 평가 '+allEvals.length+'건');
   const byVidScore={};
   const byVidVoice={};
   allEvals.forEach(e=>{
@@ -16276,10 +16279,29 @@ function buildLectSummary(userId){
     return;
   }
 
-  // 역량별 점수 집계
+  // 역량별 점수 집계 (categories JSON string 안전 처리)
   const catMap={};
   evals.forEach(e=>{
-    (e.categories||[]).forEach(c=>{
+    let cats=safeArr(e.categories);
+    // categories 비면 sub_scores 에서 자동 재계산
+    if(!cats.some(c=>Number(c.max||0)>0)){
+      const subCatAgg={};
+      safeArr(e.sub_scores).forEach(s=>{
+        if(!s.category||s.level==='na') return;
+        const k=s.category;
+        if(!subCatAgg[k]) subCatAgg[k]={name:k,score:0,max:0};
+        let sScore=Number(s.score||0), sMax=Number(s.max||0);
+        if(sMax<=0){
+          sMax=5;
+          if(s.level==='good') sScore=5;
+          else if(s.level==='normal') sScore=3;
+          else sScore=0;
+        }
+        subCatAgg[k].score+=sScore; subCatAgg[k].max+=sMax;
+      });
+      cats=Object.values(subCatAgg);
+    }
+    cats.forEach(c=>{
       const k=c.name||'';if(!k) return;
       if(!catMap[k]) catMap[k]={s:0,m:0,n:0};
       catMap[k].s+=Number(c.score||0); catMap[k].m+=Number(c.max||0); catMap[k].n++;
