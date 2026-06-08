@@ -4107,7 +4107,7 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
         </button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
       <div>
         <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)" id="admin-coach-vid-cnt">0건</span></div>
         <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-vid-list"></div>
@@ -4115,6 +4115,10 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
       <div>
         <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (스피치) <span style="font-size:11px;color:var(--t3)" id="admin-coach-voice-cnt">0건</span></div>
         <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-voice-list"></div>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (시나리오) <span style="font-size:11px;color:var(--t3)" id="admin-coach-sc-cnt">0건</span></div>
+        <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden;max-height:600px;overflow-y:auto" id="admin-coach-sc-list"></div>
       </div>
     </div>
   </div>
@@ -8771,6 +8775,114 @@ function renderAdminCoaching(){
       <button class="btn" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="event.stopPropagation();adminDeleteVoiceFromList(${vo.id},'${title}')">삭제</button>
     </div>`;
   }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 스피치 평가가 없습니다</div>';
+
+  // 시나리오 목록 렌더 (app_settings.key='sc_draft_user_{id}' 기반)
+  renderAdminCoachingScenarios({channel, team, nameQ, period, catV, prodV, uids});
+}
+
+// 시나리오 데이터 별도 로드 (debounce + 캐싱)
+async function loadAllScenarioDrafts(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('app_settings').select('key,value,updated_at,created_at').like('key','sc_draft_user_%');
+    if(error){ console.warn('loadAllScenarioDrafts:',error.message); D.scenarioDrafts=[]; return; }
+    D.scenarioDrafts=(data||[]).map(row=>{
+      const userId=parseInt(row.key.replace(/^sc_draft_user_/,''))||0;
+      let parsed={};
+      try{ parsed=typeof row.value==='string'?JSON.parse(row.value):(row.value||{}); }catch(_){ parsed={}; }
+      return {
+        user_id:userId,
+        draft:parsed.draft||'',
+        eduType:parsed.eduType||'',
+        product:parsed.product||'',
+        phase:parsed.phase||'',
+        customer:parsed.customer||'',
+        store:parsed.store||'',
+        updated_at:parsed.updated_at||row.updated_at||row.created_at||''
+      };
+    }).filter(s=>s.user_id>0 && (s.draft||s.eduType||s.product));
+  }catch(e){ console.warn('loadAllScenarioDrafts:',e); D.scenarioDrafts=[]; }
+}
+
+function renderAdminCoachingScenarios({channel, team, nameQ, period, catV, prodV, uids}){
+  const listEl=document.getElementById('admin-coach-sc-list');
+  const cntEl=document.getElementById('admin-coach-sc-cnt');
+  if(!listEl) return;
+  // 시나리오 데이터 미로드 시 자동 fetch (1회)
+  if(!D.scenarioDrafts){
+    listEl.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">시나리오 불러오는 중...</div>';
+    loadAllScenarioDrafts().then(()=>renderAdminCoachingScenarios({channel, team, nameQ, period, catV, prodV, uids}));
+    return;
+  }
+  // 필터 적용
+  let scs=(D.scenarioDrafts||[]).filter(s=>uids.has(s.user_id));
+  if(catV) scs=scs.filter(s=>s.eduType===catV);
+  if(prodV) scs=scs.filter(s=>(s.product||'').includes(prodV));
+  if(period){
+    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-parseInt(period));
+    scs=scs.filter(s=>s.updated_at && new Date(s.updated_at)>=cutoff);
+  }
+  scs.sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
+  if(cntEl) cntEl.textContent=scs.length+'건';
+  listEl.innerHTML = scs.length ? scs.map(sc=>{
+    const u=D.users?.find(x=>x.id===sc.user_id);
+    const preview=(sc.draft||'').slice(0,60).replace(/</g,'&lt;').replace(/\n/g,' ');
+    const titleBits=[sc.eduType, sc.product].filter(Boolean).join(' · ') || '시나리오 초안';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04)">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openScenarioDetailFromAdmin(${sc.user_id})">
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleBits.replace(/</g,'&lt;')}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${u?.name||'(삭제된 강사)'} · ${(sc.updated_at||'').slice(0,10)||'—'}${sc.draft?' · '+sc.draft.length+'자':''}</div>
+        ${preview?`<div style="font-size:10px;color:var(--t2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">"${preview}${sc.draft.length>60?'…':''}"</div>`:''}
+      </div>
+      <button class="btn" style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:999px;background:#fff;cursor:pointer" onclick="event.stopPropagation();adminDeleteScenarioFromList(${sc.user_id},'${(titleBits).replace(/'/g,"\\'")}')">삭제</button>
+    </div>`;
+  }).join('') : '<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 시나리오가 없습니다</div>';
+}
+
+// 시나리오 상세 — 모달로 표시 (수정은 강사 본인이 AI 코칭 페이지에서)
+function openScenarioDetailFromAdmin(userId){
+  const sc=(D.scenarioDrafts||[]).find(s=>s.user_id===userId);
+  if(!sc){ alert('시나리오를 찾지 못했습니다.'); return; }
+  const u=D.users?.find(x=>x.id===userId);
+  const overlay=document.createElement('div');
+  overlay.className='overlay show';
+  overlay.style.zIndex='10100';
+  overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
+  const safeText = (sc.draft||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;max-width:760px;width:92vw;max-height:88vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--t3);font-weight:600">시나리오 초안 · ${(sc.updated_at||'').slice(0,16).replace('T',' ')||'—'}</div>
+        <div style="font-size:17px;font-weight:900;margin-top:4px">${u?.name||'(삭제된 강사)'} <span style="font-size:11px;color:var(--t3);font-weight:500">${u?.team||''}${u?.position?' · '+u.position:''}</span></div>
+      </div>
+      <button style="border:none;background:none;cursor:pointer;font-size:22px;color:var(--t3)" onclick="this.closest('.overlay').remove()">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;font-size:11px">
+      ${['eduType','product','phase','customer','store'].map((k,i)=>{
+        const labels=['교육종류','제품','단계','고객','매장'];
+        return `<div style="padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;background:#fafafa"><div style="font-size:9px;color:var(--t3);margin-bottom:2px">${labels[i]}</div><div style="font-size:11px;font-weight:700">${(sc[k]||'—').replace(/</g,'&lt;')}</div></div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--t3);font-weight:700;margin-bottom:6px">시나리오 본문 ${sc.draft?'('+sc.draft.length+'자)':''}</div>
+    <div style="border:1px solid var(--bdr);border-radius:10px;padding:16px;background:#fafafa;font-size:13px;line-height:1.7;color:var(--t1);white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow-y:auto">${safeText||'<span style="color:var(--t3)">초안이 비어있습니다</span>'}</div>
+    <div style="margin-top:14px;font-size:10px;color:var(--t3)">💡 수정은 강사 본인이 AI 코칭 페이지의 시나리오 코치에서 진행합니다.</div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function adminDeleteScenarioFromList(userId, title){
+  if(!confirm(`시나리오 "${title}" 을(를) 삭제하시겠습니까?\n강사의 작성 중인 초안이 사라집니다.`)) return;
+  try{
+    const key='sc_draft_user_'+userId;
+    const {error}=await sb.from('app_settings').delete().eq('key', key);
+    if(error){ alert('삭제 실패: '+error.message); return; }
+    // 캐시 갱신
+    if(Array.isArray(D.scenarioDrafts)){
+      D.scenarioDrafts=D.scenarioDrafts.filter(s=>s.user_id!==userId);
+    }
+    renderAdminCoaching();
+    if(typeof showToast==='function') showToast('시나리오 삭제 완료','#10b981');
+  }catch(e){ alert('삭제 오류: '+(e?.message||e)); }
 }
 
 // 관리자 — AI 코칭 목록에서 바로 삭제
