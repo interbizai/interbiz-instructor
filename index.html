@@ -6383,12 +6383,21 @@ function renderEduPage(){
         </div>
       </div>`;
     }
-    // 순서 변경 화살표 — 첫 카드면 ↑ 비활성, 마지막 카드면 ↓ 비활성
-    const upDisabled = (i===0);
-    const downDisabled = (i===totalLinks-1);
-    const orderControls = isAdmin ? `
-      <button style="position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:${upDisabled?'not-allowed':'pointer'};font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;opacity:${upDisabled?'.35':'1'};transition:background .15s" ${upDisabled?'disabled':`onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'"`} onclick="event.stopPropagation();event.preventDefault();${upDisabled?'':`moveEduLinkOrder(${lk.id},-1)`};return false;" title="앞으로 이동">↑</button>
-      <button style="position:absolute;top:8px;left:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:${downDisabled?'not-allowed':'pointer'};font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;opacity:${downDisabled?'.35':'1'};transition:background .15s" ${downDisabled?'disabled':`onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'"`} onclick="event.stopPropagation();event.preventDefault();${downDisabled?'':`moveEduLinkOrder(${lk.id},1)`};return false;" title="뒤로 이동">↓</button>` : '';
+    // 순서 변경 — 4개 버튼: ⇈ 맨위 / ↑ 앞 / ↓ 뒤 / ⇊ 맨아래
+    const isFirst = (i===0);
+    const isLast = (i===totalLinks-1);
+    const mkBtn = (left, icon, action, disabled, title) => {
+      const css = `position:absolute;top:8px;left:${left}px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:${disabled?'not-allowed':'pointer'};font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3;opacity:${disabled?'.3':'1'};transition:background .15s`;
+      const hover = disabled?'':`onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'"`;
+      const onclick = disabled?'':`onclick="event.stopPropagation();event.preventDefault();${action};return false;"`;
+      return `<button style="${css}" ${hover} ${onclick} title="${title}">${icon}</button>`;
+    };
+    const orderControls = isAdmin ? (
+      mkBtn(8,  '⇈', `moveEduLinkOrder(${lk.id},'top')`,    isFirst, '맨 위로') +
+      mkBtn(36, '↑', `moveEduLinkOrder(${lk.id},-1)`,        isFirst, '앞으로') +
+      mkBtn(64, '↓', `moveEduLinkOrder(${lk.id},1)`,         isLast,  '뒤로') +
+      mkBtn(92, '⇊', `moveEduLinkOrder(${lk.id},'bottom')`,  isLast,  '맨 아래로')
+    ) : '';
     const adminControls=isAdmin?orderControls+`
       <button style="position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();openEduLinkImagePicker(${lk.id});return false;" title="대표 이미지 변경">🖼</button>
       <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();deleteLink(${lk.id});return false;" title="삭제">×</button>`:'';
@@ -6785,49 +6794,67 @@ async function addEduLink(){
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
 }
 
-// 교육링크 순서 변경 — sort_order 기반 인접 카드와 swap
-// dir: -1 (앞으로) | 1 (뒤로)
+// 교육링크 순서 변경 — 매번 모든 카드 1..N 로 깔끔 재정렬 (일관성 보장)
+// dir: -1 (앞으로) | 1 (뒤로) | 'top' (맨위) | 'bottom' (맨아래)
 async function moveEduLinkOrder(linkId, dir){
   if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자/부관리자만 가능합니다.'); return; }
-  // 현재 정렬 상태 동일하게 만들기
-  const sorted = [...(D.learningLinks||[])].sort((a,b)=>{
+  // 현재 정렬 상태
+  const list = [...(D.learningLinks||[])].sort((a,b)=>{
     const ao=(a.sort_order==null)?9999:Number(a.sort_order);
     const bo=(b.sort_order==null)?9999:Number(b.sort_order);
     if(ao!==bo) return ao-bo;
     return (a.created_at||'').localeCompare(b.created_at||'');
   });
-  const idx = sorted.findIndex(x=>x.id===linkId);
-  if(idx<0){ console.warn('[moveEduLinkOrder] link 못 찾음:', linkId); return; }
-  const swapIdx = idx + dir;
-  if(swapIdx<0 || swapIdx>=sorted.length){ console.warn('[moveEduLinkOrder] 경계 — 이동 불가'); return; }
-  const a = sorted[idx], b = sorted[swapIdx];
-  // sort_order 가 없으면 idx 사용 (자동 부여 효과)
-  const aOrder = (a.sort_order==null)?idx:Number(a.sort_order);
-  const bOrder = (b.sort_order==null)?swapIdx:Number(b.sort_order);
+  const idx = list.findIndex(x=>x.id===linkId);
+  if(idx<0) return;
+  // 새 위치 계산
+  let newIdx;
+  if(dir==='top') newIdx=0;
+  else if(dir==='bottom') newIdx=list.length-1;
+  else newIdx = idx + Number(dir);
+  if(newIdx<0 || newIdx>=list.length || newIdx===idx) return;
+  // 배열에서 이동
+  const [moved] = list.splice(idx, 1);
+  list.splice(newIdx, 0, moved);
+  // 모든 카드의 sort_order 를 1..N 로 재할당 (값이 다른 것만 업데이트)
+  const updates = [];
+  const rollback = [];
+  list.forEach((lk, i)=>{
+    const newOrder = i + 1;
+    const oldOrder = (lk.sort_order==null)?null:Number(lk.sort_order);
+    if(oldOrder !== newOrder){
+      rollback.push({id: lk.id, old: oldOrder});
+      lk.sort_order = newOrder;
+      updates.push({id: lk.id, order: newOrder});
+    }
+  });
   // 즉시 화면 반영 (optimistic)
-  a.sort_order = bOrder;
-  b.sort_order = aOrder;
   renderEduPage();
-  // DB 업데이트 — sort_order 컬럼 없으면 자동 폴백
+  // DB 일괄 업데이트
   try{
-    let {error:e1}=await sb.from('learning_links').update({sort_order: bOrder}).eq('id', a.id);
-    let {error:e2}=await sb.from('learning_links').update({sort_order: aOrder}).eq('id', b.id);
-    if(e1 || e2){
-      const msg=(e1?.message||e2?.message||'').toLowerCase();
+    const results = await Promise.all(
+      updates.map(u => sb.from('learning_links').update({sort_order: u.order}).eq('id', u.id))
+    );
+    const firstErr = results.find(r=>r.error);
+    if(firstErr){
+      const msg=(firstErr.error.message||'').toLowerCase();
       if(msg.includes('sort_order')||msg.includes('column')){
-        // 컬럼 없으면 안내 + 롤백
-        a.sort_order = aOrder;
-        b.sort_order = bOrder;
+        rollback.forEach(rb=>{
+          const lk=(D.learningLinks||[]).find(x=>x.id===rb.id);
+          if(lk) lk.sort_order=rb.old;
+        });
         renderEduPage();
-        alert("순서 컬럼이 DB 에 없습니다.\n\nSupabase SQL Editor 에서 다음 실행 후 다시 시도:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;\nNOTIFY pgrst, 'reload schema';");
+        alert("순서 컬럼이 DB 에 없습니다.\n\nSupabase SQL Editor 에서 다음 실행:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;\nNOTIFY pgrst, 'reload schema';");
         return;
       }
-      throw new Error(e1?.message||e2?.message);
+      throw new Error(firstErr.error.message);
     }
   }catch(e){
     // 다른 오류 → 롤백
-    a.sort_order = aOrder;
-    b.sort_order = bOrder;
+    rollback.forEach(rb=>{
+      const lk=(D.learningLinks||[]).find(x=>x.id===rb.id);
+      if(lk) lk.sort_order=rb.old;
+    });
     renderEduPage();
     alert('순서 변경 실패: '+(e?.message||e));
   }
