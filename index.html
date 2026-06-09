@@ -6353,7 +6353,15 @@ function renderEduPage(){
     <div style="font-size:10px;color:var(--t3);margin-top:6px">💡 이미지를 등록하면 카드 대표 사진으로 표시. 미등록 시 YouTube 영상은 썸네일, 그 외는 도메인 favicon 자동 표시.</div>
   </div>`:'';
   lkHtml+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
-  lkHtml+=(D.learningLinks||[]).map((lk,i)=>{
+  // sort_order 기준 정렬 — sort_order 없으면 created_at 폴백
+  const sortedLinks = [...(D.learningLinks||[])].sort((a,b)=>{
+    const ao=(a.sort_order==null)?9999:Number(a.sort_order);
+    const bo=(b.sort_order==null)?9999:Number(b.sort_order);
+    if(ao!==bo) return ao-bo;
+    return (a.created_at||'').localeCompare(b.created_at||'');
+  });
+  const totalLinks=sortedLinks.length;
+  lkHtml+=sortedLinks.map((lk,i)=>{
     const brand=getLinkBrand(lk.url);
     const ytId=brand.youtubeId;
     const customImg = lk.image_url || lk.thumbnail_url || '';
@@ -6375,7 +6383,13 @@ function renderEduPage(){
         </div>
       </div>`;
     }
-    const adminControls=isAdmin?`
+    // 순서 변경 화살표 — 첫 카드면 ↑ 비활성, 마지막 카드면 ↓ 비활성
+    const upDisabled = (i===0);
+    const downDisabled = (i===totalLinks-1);
+    const orderControls = isAdmin ? `
+      <button style="position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:${upDisabled?'not-allowed':'pointer'};font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;opacity:${upDisabled?'.35':'1'};transition:background .15s" ${upDisabled?'disabled':`onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'"`} onclick="event.stopPropagation();event.preventDefault();${upDisabled?'':`moveEduLinkOrder(${lk.id},-1)`};return false;" title="앞으로 이동">↑</button>
+      <button style="position:absolute;top:8px;left:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:${downDisabled?'not-allowed':'pointer'};font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;opacity:${downDisabled?'.35':'1'};transition:background .15s" ${downDisabled?'disabled':`onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'"`} onclick="event.stopPropagation();event.preventDefault();${downDisabled?'':`moveEduLinkOrder(${lk.id},1)`};return false;" title="뒤로 이동">↓</button>` : '';
+    const adminControls=isAdmin?orderControls+`
       <button style="position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(0,120,200,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();openEduLinkImagePicker(${lk.id});return false;" title="대표 이미지 변경">🖼</button>
       <button style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;transition:background .15s" onmouseover="this.style.background='rgba(220,38,38,.9)'" onmouseout="this.style.background='rgba(0,0,0,.55)'" onclick="event.stopPropagation();event.preventDefault();deleteLink(${lk.id});return false;" title="삭제">×</button>`:'';
     return `<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04)" onclick="window.open('${lk.url}','_blank')" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 28px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,.04)'">
@@ -6769,6 +6783,54 @@ async function addEduLink(){
   const imgInput=document.getElementById('edu-lk-image'); if(imgInput) imgInput.value='';
   const imgName=document.getElementById('edu-lk-image-name'); if(imgName) imgName.textContent='';
   await loadFromDB();renderEduPage();showToast(`"${name}" 등록되었습니다`);
+}
+
+// 교육링크 순서 변경 — sort_order 기반 인접 카드와 swap
+// dir: -1 (앞으로) | 1 (뒤로)
+async function moveEduLinkOrder(linkId, dir){
+  if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자/부관리자만 가능합니다.'); return; }
+  // 현재 정렬 상태 동일하게 만들기
+  const sorted = [...(D.learningLinks||[])].sort((a,b)=>{
+    const ao=(a.sort_order==null)?9999:Number(a.sort_order);
+    const bo=(b.sort_order==null)?9999:Number(b.sort_order);
+    if(ao!==bo) return ao-bo;
+    return (a.created_at||'').localeCompare(b.created_at||'');
+  });
+  const idx = sorted.findIndex(x=>x.id===linkId);
+  if(idx<0){ console.warn('[moveEduLinkOrder] link 못 찾음:', linkId); return; }
+  const swapIdx = idx + dir;
+  if(swapIdx<0 || swapIdx>=sorted.length){ console.warn('[moveEduLinkOrder] 경계 — 이동 불가'); return; }
+  const a = sorted[idx], b = sorted[swapIdx];
+  // sort_order 가 없으면 idx 사용 (자동 부여 효과)
+  const aOrder = (a.sort_order==null)?idx:Number(a.sort_order);
+  const bOrder = (b.sort_order==null)?swapIdx:Number(b.sort_order);
+  // 즉시 화면 반영 (optimistic)
+  a.sort_order = bOrder;
+  b.sort_order = aOrder;
+  renderEduPage();
+  // DB 업데이트 — sort_order 컬럼 없으면 자동 폴백
+  try{
+    let {error:e1}=await sb.from('learning_links').update({sort_order: bOrder}).eq('id', a.id);
+    let {error:e2}=await sb.from('learning_links').update({sort_order: aOrder}).eq('id', b.id);
+    if(e1 || e2){
+      const msg=(e1?.message||e2?.message||'').toLowerCase();
+      if(msg.includes('sort_order')||msg.includes('column')){
+        // 컬럼 없으면 안내 + 롤백
+        a.sort_order = aOrder;
+        b.sort_order = bOrder;
+        renderEduPage();
+        alert('순서 컬럼이 DB 에 없습니다.\n\nSupabase SQL Editor 에서 다음 실행 후 다시 시도:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;\nNOTIFY pgrst, \\'reload schema\\';');
+        return;
+      }
+      throw new Error(e1?.message||e2?.message);
+    }
+  }catch(e){
+    // 다른 오류 → 롤백
+    a.sort_order = aOrder;
+    b.sort_order = bOrder;
+    renderEduPage();
+    alert('순서 변경 실패: '+(e?.message||e));
+  }
 }
 
 // 대표 이미지 변경 버튼 → 카드 외부에 file input 생성해서 사진첩/파일 선택
