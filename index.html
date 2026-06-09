@@ -6819,7 +6819,7 @@ async function moveEduLinkOrder(linkId, dir){
         a.sort_order = aOrder;
         b.sort_order = bOrder;
         renderEduPage();
-        alert('순서 컬럼이 DB 에 없습니다.\n\nSupabase SQL Editor 에서 다음 실행 후 다시 시도:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;\nNOTIFY pgrst, \\'reload schema\\';');
+        alert("순서 컬럼이 DB 에 없습니다.\n\nSupabase SQL Editor 에서 다음 실행 후 다시 시도:\nALTER TABLE learning_links ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;\nNOTIFY pgrst, 'reload schema';");
         return;
       }
       throw new Error(e1?.message||e2?.message);
