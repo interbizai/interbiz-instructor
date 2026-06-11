@@ -6036,6 +6036,17 @@ let _pwaDeferredPrompt=null;
 
 // Service Worker 등록 (HTTPS / localhost 만)
 if('serviceWorker' in navigator){
+  // 이미 SW 제어 중인 페이지에서 새 SW가 제어를 넘겨받으면 = 업데이트 → 자동 1회 새로고침
+  // (최초 방문은 controller 가 없어 제외 → 불필요한 새로고침 방지)
+  let _swRefreshing=false;
+  if(navigator.serviceWorker.controller){
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(_swRefreshing) return;
+      _swRefreshing=true;
+      console.log('[PWA] 새 버전 적용 — 자동 새로고침');
+      window.location.reload();
+    });
+  }
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('/sw.js').then(reg=>{
       console.log('[PWA] SW 등록 완료', reg.scope);

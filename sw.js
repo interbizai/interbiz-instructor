@@ -1,5 +1,5 @@
 // 인터PICK Service Worker — PWA 캐싱 + 오프라인 지원
-const VERSION = 'v1.0.50';
+const VERSION = 'v1.0.51';
 const STATIC_CACHE = `interpick-static-${VERSION}`;
 const RUNTIME_CACHE = `interpick-runtime-${VERSION}`;
 
@@ -56,22 +56,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML / 네비게이션 — Stale-While-Revalidate
-  // (캐시 즉시 반환으로 첫 진입 빠르게 + 백그라운드에서 새 버전 받아 캐시 갱신 → 다음 새로고침 시 최신)
+  // HTML / 네비게이션 — Network-First
+  // (항상 최신 코드를 우선 받아 강사·관리자가 옛 화면을 보지 않게. 오프라인일 때만 캐시 폴백)
+  // ※ 평가/저장 기능은 최신 코드 일치가 중요 → 속도보다 정확성 우선
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const networkPromise = fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              const copy = res.clone();
-              caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
-            }
-            return res;
-          })
-          .catch(() => cached || caches.match('/index.html'));
-        return cached || networkPromise;
-      })
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/index.html')))
     );
     return;
   }
