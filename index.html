@@ -8250,18 +8250,22 @@ function demoScenariosForUsers(users,maxN){
 function makeDemoCritFromAi(ai){
   if(!ai) return null;
   let c; try{c=JSON.parse(JSON.stringify(ai));}catch(_){c={...ai};}
-  // 카테고리(축) 리라벨 — 등장 순서대로 교육맞춤 대항목 이름 매핑
-  const newCats=['제품 지식 정확도','교안 목표 부합도','시연·실습 구성','고객 응대 시나리오','핵심 메시지 전달','마무리·정리'];
+  // 카테고리(축) 리라벨 — 교육맞춤(교안 기준) 대항목 이름으로
+  const newCats=['제품 지식 정확도','교안 목표 부합도','시연·실습 구성','고객 응대 시나리오','핵심 메시지 전달','마무리·정리','현장 퍼포먼스 연계','변화 대응력'];
   const map={}; let n=0;
   (c.sub_scores||[]).forEach(s=>{const k=s.category||'기타';if(!(k in map)){map[k]=newCats[n]||k;n++;}});
   if(Array.isArray(c.sub_scores)) c.sub_scores=c.sub_scores.map(s=>({...s,category:map[s.category||'기타']||s.category}));
-  // 교육맞춤평가는 교안 기준이라 보통 더 높게 나옴 — normal 일부를 good 으로 상향 (점수 일관성 유지)
-  if(Array.isArray(c.sub_scores)){let up=0;c.sub_scores=c.sub_scores.map(s=>(s.level==='normal'&&(up++%2===0))?{...s,level:'good'}:s);}
+  // ⭐ 교안 기준은 '자료 대조' 평가라 AI 독자(자료 없이 청취)와 결과가 다름
+  //   → good 일부를 normal 로 낮춰 점수·모양에 차이를 줌 (교안에 명시됐는데 덜 전달된 항목 컨셉)
+  if(Array.isArray(c.sub_scores)){let dn=0;c.sub_scores=c.sub_scores.map((s,i)=>(s.level==='good'&&(i%3===0)&&dn++<4)?{...s,level:'normal'}:s);}
   delete c.categories; // 리라벨된 sub_scores 기준으로 재집계되도록
   try{ c=normalizeVertexResult(c); }catch(_){}
-  c.rubric_alignment_score=(typeof c.rubric_alignment_score==='number'&&c.rubric_alignment_score>0)?c.rubric_alignment_score:88;
-  c.rubric_alignment_reason=c.rubric_alignment_reason||'교안의 핵심 학습목표와 실제 강의 전개가 높은 수준으로 일치합니다. (데모)';
-  c.summary_opinion='교육목표 기준 항목 대부분을 충실히 달성했습니다. 도입부 동기부여와 마무리 요약을 보강하면 완성도가 더 높아집니다. (데모)';
+  c.rubric_alignment_score=88;
+  c.rubric_alignment_reason='교안의 핵심 학습목표·시나리오 흐름과 실제 강의를 대조한 결과입니다. (데모)';
+  c.summary_opinion='교안·시나리오 기준으로는 목표 부합도와 시연 구성이 강점입니다. 교육자료에 명시된 마무리 요약·현장 연계를 보강하면 완성도가 더 올라갑니다. (데모)';
+  c.good=[{title:'교안 목표를 정확히 짚은 전개',reason:'교안의 핵심 학습목표를 빠짐없이 다뤘습니다.'},{title:'시연·실습 구성의 완성도',reason:'교안 시나리오대로 시연 흐름이 자연스럽게 이어졌습니다.'}];
+  c.bad=[{title:'마무리 요약이 교안 대비 약함',reason:'교안상 정리 단계가 다소 짧게 처리됐습니다.'}];
+  c.upgrade=[{title:'현장 사례로 교안 연계 강화',reason:'교안 내용을 실제 매장 사례와 연결하면 체감도가 올라갑니다.'}];
   c.scenarios=demoScenarios(null);
   c.level_tips=demoTips(null);
   c.teaching_patterns=demoPatterns(null);
@@ -11855,22 +11859,27 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     cmpBody.innerHTML=`
       <div class="an-compare-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch">
         <div style="border:2px solid rgba(159,18,57,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(159,18,57,.03)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:14px;font-weight:800;color:#9f1239">교육맞춤평가 <span style="font-size:11px;color:var(--t3);font-weight:600">교안 기준</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+            <div style="font-size:14px;font-weight:800;color:#9f1239">교육맞춤평가</div>
             <div style="font-size:22px;font-weight:900;color:#9f1239">${pctScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
           </div>
+          <div style="font-size:10.5px;color:var(--t3);margin-bottom:8px">📋 교안·시나리오·체크리스트(추가 데이터)를 기준으로 <b style="color:#9f1239">"계획대로 전달됐는지"</b> 평가</div>
           ${critItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(critItems,{which:'crit'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
         </div>
         <div style="border:2px solid rgba(232,89,12,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(232,89,12,.03)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:14px;font-weight:800;color:#e8590c">AI 독자 분석 <span style="font-size:11px;color:var(--t3);font-weight:600">AI 기준</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+            <div style="font-size:14px;font-weight:800;color:#e8590c">AI 독자 분석</div>
             <div style="font-size:22px;font-weight:900;color:#e8590c">${aiScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
           </div>
+          <div style="font-size:10.5px;color:var(--t3);margin-bottom:8px">🎧 교육자료 <b>없이</b> 영상만 듣고 <b style="color:#e8590c">"AI가 받은 전달력·인상"</b>을 독자 평가</div>
           ${aiItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(aiItems,{which:'ai'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
         </div>
       </div>
-      <div style="margin-top:16px;padding:14px 18px;border:1px solid var(--bdr);border-radius:12px;background:#fff;font-size:12.5px;color:var(--t2);line-height:1.7">
-        <b style="color:var(--t1)">한눈에 비교</b> · 교안 기준 <b style="color:#9f1239">${pctScore}%</b> vs AI 독자 기준 <b style="color:#e8590c">${aiScore}%</b> (격차 ${diff}p). 같은 강의도 <b>평가 목적에 따라 AI가 다른 관점으로 코칭</b>합니다.
+      <div style="margin-top:16px;padding:16px 18px;border:1px solid var(--bdr);border-radius:12px;background:#fff;font-size:12.5px;color:var(--t2);line-height:1.8">
+        <div style="font-weight:800;color:var(--t1);margin-bottom:6px">두 평가가 왜 다를까요?</div>
+        <div>• <b style="color:#9f1239">교육맞춤평가</b>는 <b>교안·시나리오 같은 추가 데이터를 대조</b>합니다. 그래서 "교안 목표 부합도·시연 구성"처럼 <b>계획 대비 충실도</b>가 드러나고, 자료에 명시된 항목이 덜 전달되면 점수가 내려갑니다.</div>
+        <div>• <b style="color:#e8590c">AI 독자 분석</b>은 <b>그 자료 없이 영상만 듣고</b> 판단합니다. 그래서 "스피치·전달력·소통"처럼 <b>실제 청취 인상</b> 위주로 평가됩니다.</div>
+        <div style="margin-top:6px">→ 같은 강의도 <b style="color:#9f1239">${pctScore}%</b>(교안 기준) vs <b style="color:#e8590c">${aiScore}%</b>(독자 기준), <b>격차 ${diff}p</b>. 두 관점을 함께 보면 <b>'계획'과 '실제 전달'</b>을 모두 잡을 수 있습니다.</div>
       </div>`;
   }
   const aiBars=el('an-ai-bars');
@@ -13607,10 +13616,10 @@ function renderVoiceResult(r,hasCL,count,tone){
 }
 
 const _DEMO_SPEECH=[
-  {title:'25년 거점집합교육 냉장고',date:'2026-06-11'},
+  {title:'26년 거점집합교육 냉장고',date:'2026-06-11'},
   {title:'26년 구독 연습 정수기',date:'2026-06-09'},
   {title:'26년 현장코칭 워시타워',date:'2026-06-06'},
-  {title:'25년 RP 스타일러',date:'2026-06-04'},
+  {title:'26년 RP 스타일러',date:'2026-06-04'},
   {title:'26년 화상 교육 TV',date:'2026-06-02'},
 ];
 function renderUserVoiceList(userId){
@@ -15069,10 +15078,10 @@ function openLevelDetail(avgScore,evalCount,totalVids){
 }
 
 const _DEMO_VIDS=[
-  {title:'25년 거점집합교육 냉장고',cat:'거점집합교육',prod:'냉장고',date:'2026-06-12'},
+  {title:'26년 거점집합교육 냉장고',cat:'거점집합교육',prod:'냉장고',date:'2026-06-12'},
   {title:'26년 구독 연습 정수기',cat:'구독',prod:'정수기',date:'2026-06-10'},
   {title:'26년 현장코칭 스타일러',cat:'현장코칭',prod:'스타일러',date:'2026-06-08'},
-  {title:'25년 RP 에어컨',cat:'RP',prod:'에어컨',date:'2026-06-05'},
+  {title:'26년 RP 에어컨',cat:'RP',prod:'에어컨',date:'2026-06-05'},
   {title:'26년 화상 교육 공기청정기',cat:'화상 교육',prod:'공기청정기',date:'2026-06-03'},
   {title:'26년 판경상 식기세척기',cat:'판매경쟁력상황실',prod:'식기세척기',date:'2026-05-30'},
 ];
