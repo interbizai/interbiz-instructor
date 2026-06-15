@@ -8255,20 +8255,29 @@ function makeDemoCritFromAi(ai){
   const map={}; let n=0;
   (c.sub_scores||[]).forEach(s=>{const k=s.category||'기타';if(!(k in map)){map[k]=newCats[n]||k;n++;}});
   if(Array.isArray(c.sub_scores)) c.sub_scores=c.sub_scores.map(s=>({...s,category:map[s.category||'기타']||s.category}));
-  // ⭐ 교안 기준은 '자료 대조' 평가라 AI 독자(자료 없이 청취)와 결과가 다름
-  //   → good 일부를 normal 로 낮춰 점수·모양에 차이를 줌 (교안에 명시됐는데 덜 전달된 항목 컨셉)
-  if(Array.isArray(c.sub_scores)){let dn=0;c.sub_scores=c.sub_scores.map((s,i)=>(s.level==='good'&&(i%3===0)&&dn++<4)?{...s,level:'normal'}:s);}
+  // ⭐ 교안 기준 = 원본 점수 유지(높은 쪽). AI독자는 makeDemoAiLower 로 낮춰 차등.
   delete c.categories; // 리라벨된 sub_scores 기준으로 재집계되도록
   try{ c=normalizeVertexResult(c); }catch(_){}
-  c.rubric_alignment_score=88;
-  c.rubric_alignment_reason='교안의 핵심 학습목표·시나리오 흐름과 실제 강의를 대조한 결과입니다. (데모)';
-  c.summary_opinion='교안·시나리오 기준으로는 목표 부합도와 시연 구성이 강점입니다. 교육자료에 명시된 마무리 요약·현장 연계를 보강하면 완성도가 더 올라갑니다. (데모)';
-  c.good=[{title:'교안 목표를 정확히 짚은 전개',reason:'교안의 핵심 학습목표를 빠짐없이 다뤘습니다.'},{title:'시연·실습 구성의 완성도',reason:'교안 시나리오대로 시연 흐름이 자연스럽게 이어졌습니다.'}];
-  c.bad=[{title:'마무리 요약이 교안 대비 약함',reason:'교안상 정리 단계가 다소 짧게 처리됐습니다.'}];
+  c.rubric_alignment_score=93;
+  c.rubric_alignment_reason='교안의 핵심 학습목표·시나리오 흐름과 실제 강의가 높은 수준으로 일치합니다. (데모)';
+  c.summary_opinion='교안·시나리오 기준으로 목표 부합도와 시연 구성이 매우 우수합니다. 추가 데이터와 대조해 계획대로 충실히 전달했습니다. (데모)';
+  c.good=[{title:'교안 목표를 정확히 짚은 전개',reason:'교안의 핵심 학습목표를 빠짐없이 다뤘습니다.'},{title:'시연·실습 구성의 완성도',reason:'교안 시나리오대로 시연 흐름이 자연스럽게 이어졌습니다.'},{title:'추가 자료 활용 우수',reason:'교안·체크리스트 항목을 강의에 충실히 반영했습니다.'}];
+  c.bad=[{title:'마무리 요약 보강 여지',reason:'교안상 정리 단계를 조금 더 길게 가져가면 좋습니다.'}];
   c.upgrade=[{title:'현장 사례로 교안 연계 강화',reason:'교안 내용을 실제 매장 사례와 연결하면 체감도가 올라갑니다.'}];
   c.scenarios=demoScenarios(null);
   c.level_tips=demoTips(null);
   c.teaching_patterns=demoPatterns(null);
+  c._demo=true;
+  return c;
+}
+// 데모용 AI 독자 분석 — 자료 없이 영상만 청취 → 더 보수적(낮게). 교육맞춤과 점수 차등용
+function makeDemoAiLower(ai){
+  if(!ai) return ai;
+  let c; try{c=JSON.parse(JSON.stringify(ai));}catch(_){return ai;}
+  // good 일부를 normal 로 낮춰 총점 하향 (~87) + 모양 차이
+  if(Array.isArray(c.sub_scores)){let dn=0;c.sub_scores=c.sub_scores.map((s,i)=>(s.level==='good'&&(i%2===0)&&dn++<5)?{...s,level:'normal'}:s);}
+  delete c.categories;
+  try{ c=normalizeVertexResult(c); }catch(_){}
   c._demo=true;
   return c;
 }
@@ -11590,17 +11599,20 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   window._anRenderCtx={hasChecklist:!!hasChecklist,studentCount:studentCount||20};
   // ① 총점 배너 — overall_score(100점 만점) 우선, 없으면 criteriaScores 합산
   let critRaw=window._lastVertexResult?.crit;
-  const aiRaw=window._lastVertexResult?.ai;
+  let aiRaw=window._lastVertexResult?.ai;
   // 다단계 감지: sub_scores 또는 categories 또는 overall_score 중 하나라도 살아있으면 표시
   const _critHas=(c)=>!!c && (
     (Array.isArray(c.sub_scores) && c.sub_scores.length>0) ||
     (Array.isArray(c.categories) && c.categories.length>0) ||
     Number(c.overall_score||0) > 0
   );
-  // 데모 모드: 평가안기준 결과가 없으면 AI 결과 구조를 복제해 [교육맞춤평가] 탭도 채움
+  // 데모 모드: 평가안기준 결과가 없으면 AI 결과 구조로 [교육맞춤평가] 탭 채움
+  //   교육맞춤(교안 기준)=더 높게, AI독자(자료 없이 청취)=더 보수적(낮게) — 두 점수 차등
   if(IB_DEMO() && !_critHas(critRaw) && _critHas(aiRaw)){
-    critRaw=makeDemoCritFromAi(aiRaw);
-    if(window._lastVertexResult) window._lastVertexResult.crit=critRaw;
+    const _origAi=aiRaw;
+    critRaw=makeDemoCritFromAi(_origAi);     // 교안 기준 — 높게 (~95)
+    aiRaw=makeDemoAiLower(_origAi);           // 자료 없이 청취 — 낮게 (~87)
+    if(window._lastVertexResult){ window._lastVertexResult.crit=critRaw; window._lastVertexResult.ai=aiRaw; }
     hasChecklist=true; // 교육맞춤 레이더/달성도 바 렌더 활성화
     if(r){ r.criteriaScores=[]; if(critRaw&&critRaw.overall_score) r.overallScore=critRaw.overall_score; }
   }
