@@ -1,5 +1,5 @@
 // 인터PICK Service Worker — PWA 캐싱 + 오프라인 지원
-const VERSION = 'v1.0.51';
+const VERSION = 'v1.0.52';
 const STATIC_CACHE = `interpick-static-${VERSION}`;
 const RUNTIME_CACHE = `interpick-runtime-${VERSION}`;
 
@@ -8,10 +8,10 @@ const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/assets/logo/interpick-icon.png',
   '/assets/logo/1_white.png',
   '/assets/logo/logo_1.png',
   '/assets/logo/인터비즈로고.png',
-  '/assets/logo/파비콘/1-Photoroom.ico',
 ];
 
 // 설치 — 앱 셸 캐싱
