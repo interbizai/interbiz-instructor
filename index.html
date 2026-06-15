@@ -333,6 +333,7 @@ main{max-width:100%;margin:0 auto;padding:16px 24px 40px;box-sizing:border-box}
 .ts-modal-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
 @media(max-width:768px){.ts-modal-body{grid-template-columns:1fr}}
 @media(max-width:820px){.coaching-grid-3{grid-template-columns:1fr !important}}
+@media(max-width:760px){.an-compare-grid{grid-template-columns:1fr !important}}
 .ts-modal-video{background:#111;aspect-ratio:16/9;overflow:hidden}
 .ts-modal-video iframe,.ts-modal-video video{width:100%;height:100%;border:none}
 .ts-modal-text{padding:16px 20px;max-height:400px;overflow-y:auto;border-left:1px solid rgba(0,0,0,.06)}
@@ -2865,10 +2866,18 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 
     <!-- 평가안기준 없을 때 안내 박스 (관리자/부관리자만) -->
     <div id="an-add-crit-box" style="display:none"></div>
-    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 -->
+    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 | 비교 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchAnTab('criteria',this)">교육맞춤평가</button>
       <button class="tab-btn" onclick="switchAnTab('ai',this)">AI 독자 분석</button>
+      <button class="tab-btn" id="an-tab-btn-compare" onclick="switchAnTab('compare',this)" style="display:none">📊 비교 보기</button>
+    </div>
+
+    <!-- TAB: 비교 (두 평가 레이더 좌우 동시) -->
+    <div class="an-tab-pane" id="an-tab-compare" style="display:none">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육목표 기준 vs AI 독자 분석 — 동시 비교</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">같은 강의를 <b style="color:#9f1239">교육목표(교안) 기준</b>과 <b style="color:#e8590c">AI 독자 기준</b> 두 관점으로 동시에 분석한 결과입니다.</div>
+      <div id="an-compare-body"></div>
     </div>
 
     <!-- TAB: 교육맞춤평가 -->
@@ -8172,22 +8181,70 @@ function pickAIComment(score){
 (function(){try{const p=new URLSearchParams(location.search);if(p.get('demo')==='1')localStorage.setItem('ib_demo','1');else if(p.get('demo')==='0')localStorage.removeItem('ib_demo');}catch(_){}})();
 function IB_DEMO(){try{return localStorage.getItem('ib_demo')==='1';}catch(_){return false;}}
 function _demoProd(vid){return (vid&&(vid.videoType||vid.video_type||vid.productName||vid.product_name))||'제품';}
-function demoScenarios(vid){const p=_demoProd(vid);return [
-  {situation:'가격에 부담을 느끼는 고객',suggested_line:`"${p}의 절약 효과를 월 단위로 환산해 보면 오히려 더 경제적입니다. 함께 계산해 드릴까요?"`},
-  {situation:'타사 제품과 비교하는 고객',suggested_line:`"경쟁사 대비 ${p}의 결정적 차이는 바로 이 기능입니다. 직접 보여드리겠습니다."`},
-  {situation:'구매를 망설이는 고객',suggested_line:'"오늘 보신 것 중 가장 마음에 드신 부분이 무엇이었나요? 그 기준으로 정리해 드리겠습니다."'},
-];}
-function demoTips(vid){return [
-  {title:'도입 30초에 핵심 가치를 먼저 선언하세요',detail:'시연 전, 고객이 얻을 이득을 한 문장으로 제시하면 집중도가 크게 올라갑니다.'},
-  {title:'숫자는 반드시 비교 기준과 함께',detail:'"소비전력 OOW" 보다 "기존 대비 OO% 절감"처럼 비교 대상을 붙이면 설득력이 높아집니다.'},
-  {title:'2분마다 확인 질문으로 호흡을 만드세요',detail:'일방적 설명을 양방향 교육으로 전환해 교육생 참여를 끌어올립니다.'},
-];}
-function demoPatterns(vid){return [
-  {type:'공감',alternative:'고객님 입장에서는 그 부분이 가장 궁금하시죠. 충분히 그러실 수 있습니다.'},
-  {type:'확신',alternative:'이 기능만큼은 자신 있게 추천드립니다. 현장 반응이 가장 좋았던 포인트입니다.'},
-  {type:'비교',alternative:'기존 모델과 나란히 두고 보시면 차이가 한눈에 들어옵니다.'},
-  {type:'마무리',alternative:'오늘은 핵심 세 가지만 기억하시면 됩니다. 첫째, 둘째, 셋째로 정리해 드릴게요.'},
-];}
+function _demoHash(s){s=String(s||'');let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+// 제품별 특징 포인트 (시나리오·팁이 제품마다 다르게 보이도록)
+const _DEMO_PROD_FEAT={
+  '냉장고':'신선 보관 기술','김치냉장고':'정온 숙성 모드','전기레인지':'화력·안전 설계','식기세척기':'고온 살균 세척','정수기':'직수 위생 관리',
+  '워시타워':'세탁·건조 일체형','워시콤보':'올인원 세탁 동선','스타일러':'의류 케어·살균','청소기':'흡입력·먼지 배출','TV':'화질·사운드 몰입감',
+  '에어컨':'냉방 효율·공기질','공기청정기':'미세먼지 제거','하이드로타워':'가습·공기관리','환기/바스에어':'실내 환기·제습'
+};
+function _demoFeat(vid){const p=_demoProd(vid);return _DEMO_PROD_FEAT[p]||'핵심 기능';}
+function _pick3(arr,seed){const out=[],n=arr.length;for(let i=0;i<3&&i<n;i++)out.push(arr[(seed+i)%n]);return out;}
+function _pick(arr,cnt,seed){const out=[],n=arr.length;for(let i=0;i<cnt&&i<n;i++)out.push(arr[(seed+i)%n]);return out;}
+function demoScenarios(vid){const p=_demoProd(vid),f=_demoFeat(vid),seed=_demoHash(p);
+  const pool=[
+    {situation:'가격에 부담을 느끼는 고객',suggested_line:`"${p}의 ${f}을(를) 월 단위 절감으로 환산하면 오히려 더 경제적입니다. 함께 계산해 드릴까요?"`},
+    {situation:'타사 제품과 비교하는 고객',suggested_line:`"경쟁사 대비 ${p}의 결정적 차이는 ${f}입니다. 지금 직접 보여드리겠습니다."`},
+    {situation:'구매를 망설이는 고객',suggested_line:`"오늘 보신 ${p} 기능 중 가장 마음에 드신 부분을 기준으로 정리해 드릴게요."`},
+    {situation:'기능이 어렵다고 느끼는 고객',suggested_line:`"${p}는 버튼 하나로 끝납니다. 제가 옆에서 한 번만 같이 해보면 바로 익숙해지세요."`},
+    {situation:'필요성을 못 느끼는 고객',suggested_line:`"${f} 덕분에 매일 드는 손이 확 줄어듭니다. 하루 일과로 비교해 볼까요?"`},
+    {situation:'설치·관리가 걱정인 고객',suggested_line:`"${p}는 설치부터 관리까지 전담 케어가 따라갑니다. 신경 쓰실 게 거의 없어요."`},
+  ];
+  return _pick3(pool,seed);
+}
+function demoTips(vid){const p=_demoProd(vid),f=_demoFeat(vid),seed=_demoHash(p)+1;
+  const pool=[
+    {title:'도입 30초에 핵심 가치를 먼저 선언하세요',detail:`${p} 시연 전, 고객이 얻을 이득(${f})을 한 문장으로 제시하면 집중도가 크게 올라갑니다.`},
+    {title:'숫자는 반드시 비교 기준과 함께',detail:'"OOW" 보다 "기존 대비 OO% 절감"처럼 비교 대상을 붙이면 설득력이 높아집니다.'},
+    {title:'2분마다 확인 질문으로 호흡을 만드세요',detail:'일방적 설명을 양방향 교육으로 전환해 교육생 참여를 끌어올립니다.'},
+    {title:'직접 만지게 하는 체험 동선을 넣으세요',detail:`${p}의 ${f}은(는) 말보다 손으로 체험할 때 각인됩니다. 1분 실습 구간을 설계하세요.`},
+    {title:'경쟁사 비교는 사실 위주로 짧게',detail:'감정적 비교 대신 스펙·결과 중심으로 30초 안에 끝내야 신뢰가 쌓입니다.'},
+    {title:'마무리에 핵심 3가지를 다시 묶어주세요',detail:'교육 종료 전 요약 슬라이드 한 장으로 기억 잔존율이 크게 높아집니다.'},
+  ];
+  return _pick(pool,3,seed);
+}
+function demoPatterns(vid){const p=_demoProd(vid),seed=_demoHash(p)+2;
+  const pool=[
+    {type:'공감',alternative:'고객님 입장에서는 그 부분이 가장 궁금하시죠. 충분히 그러실 수 있습니다.'},
+    {type:'확신',alternative:`이 기능만큼은 자신 있게 추천드립니다. ${p} 중에서도 반응이 가장 좋았던 포인트입니다.`},
+    {type:'비교',alternative:'기존 모델과 나란히 두고 보시면 차이가 한눈에 들어옵니다.'},
+    {type:'마무리',alternative:'오늘은 핵심 세 가지만 기억하시면 됩니다. 첫째, 둘째, 셋째로 정리해 드릴게요.'},
+    {type:'질문',alternative:'혹시 지금 가장 불편하신 점이 무엇인가요? 거기서부터 풀어보겠습니다.'},
+    {type:'스토리',alternative:`실제로 한 고객님은 ${p} 바꾸고 나서 가사 시간이 절반으로 줄었다고 하셨어요.`},
+  ];
+  return _pick(pool,4,seed);
+}
+// 데모용 시나리오 기록 (관리자 AI코칭 목록 · 마이페이지에서 누르면 데이터 채워져 있게)
+const _DEMO_SC_PRODS=['식기세척기','스타일러','에어컨','냉장고','공기청정기'];
+const _DEMO_SC_EDU=['판매경쟁력상황실','현장코칭','RP','구독'];
+const _DEMO_SC_DATES=['2026-06-13','2026-06-11','2026-06-09','2026-06-05','2026-06-02'];
+function demoScenarioRecord(userId,userName,i){
+  const prod=_DEMO_SC_PRODS[i%_DEMO_SC_PRODS.length];
+  const edu=_DEMO_SC_EDU[i%_DEMO_SC_EDU.length];
+  const sc=demoScenarios({videoType:prod});
+  const body=sc.map(s=>`[${s.situation}]\n${s.suggested_line}`).join('\n\n');
+  return {key:'demo_sc_'+userId+'_'+i,user_id:userId,user_name:userName||'',eduType:edu,product:prod,
+    phase:'고객 응대',customer:'구매 검토 고객',store:'매장',
+    draft:body,revised:body,grade:['S','A','A','B'][i%4],score:[95,90,88,82][i%4],
+    finalized:true,finalized_at:_DEMO_SC_DATES[i%_DEMO_SC_DATES.length],updated_at:_DEMO_SC_DATES[i%_DEMO_SC_DATES.length],_demo:true};
+}
+function demoScenariosForUsers(users,maxN){
+  const out=[];(users||[]).slice(0,maxN||4).forEach((u,i)=>out.push(demoScenarioRecord(u.id,u.name,i)));
+  // 상세 모달(openScenarioDetailFromAdmin)이 캐시를 보므로 동기화
+  if(!Array.isArray(D.scenarioDrafts)) D.scenarioDrafts=[];
+  out.forEach(r=>{ if(!D.scenarioDrafts.find(s=>s.key===r.key)) D.scenarioDrafts.push(r); });
+  return out;
+}
 // 데모용 평가안기준(교육맞춤) 결과 — 검증된 AI 결과 구조를 복제하되,
 //   카테고리명을 '교육목표(체크리스트) 대항목'으로 리라벨해 AI독자 탭과 구분되게 함
 function makeDemoCritFromAi(ai){
@@ -8219,24 +8276,37 @@ function ibToggleDemo(){
   }catch(_){}
   location.reload();
 }
+function _demoBtnHidden(){try{return localStorage.getItem('ib_demo_btnhide')==='1';}catch(_){return false;}}
+function ibHideDemoBtn(){try{localStorage.setItem('ib_demo_btnhide','1');}catch(_){}_ensureDemoToggle();}
+function ibToggleDemoBtnVisible(){try{if(_demoBtnHidden())localStorage.removeItem('ib_demo_btnhide');else localStorage.setItem('ib_demo_btnhide','1');}catch(_){}_ensureDemoToggle();}
 function _ensureDemoToggle(){
   try{
     const isAdmin=!!(CU&&(CU.isAdmin||CU.isSubAdmin));
-    let b=document.getElementById('ib-demo-toggle');
-    if(!isAdmin){ if(b) b.remove(); return; }
+    let wrap=document.getElementById('ib-demo-toggle');
+    if(!isAdmin){ if(wrap) wrap.remove(); return; }
+    if(_demoBtnHidden()){ if(wrap) wrap.remove(); return; } // 녹화용 숨김 (Ctrl+Shift+D 로 복귀)
     const on=IB_DEMO();
-    if(!b){
-      b=document.createElement('button');b.id='ib-demo-toggle';
-      b.onclick=ibToggleDemo;
-      b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:99999;border:none;font-size:11px;font-weight:800;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;letter-spacing:.3px';
-      document.body.appendChild(b);
+    if(!wrap){
+      wrap=document.createElement('div');wrap.id='ib-demo-toggle';
+      wrap.style.cssText='position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;gap:6px;align-items:center';
+      const main=document.createElement('button');main.id='ib-demo-main';main.onclick=ibToggleDemo;
+      main.style.cssText='border:none;font-size:11px;font-weight:800;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;letter-spacing:.3px';
+      const hide=document.createElement('button');hide.id='ib-demo-hide';hide.onclick=ibHideDemoBtn;hide.textContent='✕';
+      hide.title='버튼 숨기기 (녹화용) · 다시 보려면 Ctrl+Shift+D';
+      hide.style.cssText='border:none;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:11px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+      wrap.appendChild(main);wrap.appendChild(hide);document.body.appendChild(wrap);
     }
-    b.textContent=on?'● 데모 ON (클릭=끄기)':'○ 데모 OFF (클릭=켜기)';
-    b.title=on?'시연/비딩용 데모 콘텐츠 표시 중 — 모든 영상에 교육맞춤평가·시나리오·팁·화법이 채워집니다':'데모 모드 꺼짐 — 실제 데이터만 표시';
-    b.style.background=on?'#dc2626':'#e5e7eb';
-    b.style.color=on?'#fff':'#374151';
+    const main=document.getElementById('ib-demo-main');
+    if(main){
+      main.textContent=on?'● 데모 ON (클릭=끄기)':'○ 데모 OFF (클릭=켜기)';
+      main.title=on?'시연/비딩용 데모 표시 중 — 모든 영상에 교육맞춤평가·시나리오·팁·화법이 채워집니다':'데모 모드 꺼짐 — 실제 데이터만 표시';
+      main.style.background=on?'#dc2626':'#e5e7eb';
+      main.style.color=on?'#fff':'#374151';
+    }
   }catch(_){}
 }
+// Ctrl+Shift+D — 데모 버튼 숨김/표시 토글 (녹화 중 복귀용)
+try{document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='D'||e.key==='d'||e.key==='ㅇ')){e.preventDefault();ibToggleDemoBtnVisible();} });}catch(_){}
 try{ if(document.readyState!=='loading') _ensureDemoToggle(); else document.addEventListener('DOMContentLoaded',_ensureDemoToggle); }catch(_){}
 
 function renderPickDetail(){
@@ -9140,6 +9210,12 @@ function renderAdminCoachingScenarios({channel, team, nameQ, period, catV, prodV
   if(period){
     const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-parseInt(period));
     scs=scs.filter(s=>s.updated_at && new Date(s.updated_at)>=cutoff);
+  }
+  // 데모 모드: 실제 시나리오 없으면 샘플로 채움
+  if(IB_DEMO() && !scs.length){
+    scs=demoScenariosForUsers((D.users||[]).filter(u=>uids.has(u.id)),4);
+    if(catV) scs=scs.map(s=>({...s,eduType:catV}));
+    if(prodV) scs=scs.map(s=>({...s,product:prodV}));
   }
   scs.sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
   if(cntEl) cntEl.textContent=scs.length+'건';
@@ -11507,6 +11583,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const critPane=el('an-tab-criteria');
   const aiPane=el('an-tab-ai');
   if(critTabBtn) critTabBtn.style.display=hasCrit?'':'none';
+  const cmpTabBtn=el('an-tab-btn-compare'); if(cmpTabBtn) cmpTabBtn.style.display=hasCrit?'':'none';
+  const cmpPane=el('an-tab-compare'); if(cmpPane) cmpPane.style.display='none';
   // 모든 패널 숨기고 기본 활성 탭만 표시 (재진입 시 이전 상태 잔존 방지)
   if(critPane) critPane.style.display='none';
   if(aiPane) aiPane.style.display='none';
@@ -11737,6 +11815,32 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     : (r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
   const aiRadar=el('an-ai-radar');
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems,{clickable:true,which:'ai'});
+  // 📊 비교 보기 — 교육맞춤 vs AI독자 레이더 좌우 동시
+  const cmpBody=el('an-compare-body');
+  if(cmpBody){
+    const critItems=(r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
+    const diff=Math.abs((pctScore||0)-(aiScore||0));
+    cmpBody.innerHTML=`
+      <div class="an-compare-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch">
+        <div style="border:2px solid rgba(159,18,57,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(159,18,57,.03)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:800;color:#9f1239">교육맞춤평가 <span style="font-size:11px;color:var(--t3);font-weight:600">교안 기준</span></div>
+            <div style="font-size:22px;font-weight:900;color:#9f1239">${pctScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+          ${critItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(critItems,{which:'crit'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
+        </div>
+        <div style="border:2px solid rgba(232,89,12,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(232,89,12,.03)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:800;color:#e8590c">AI 독자 분석 <span style="font-size:11px;color:var(--t3);font-weight:600">AI 기준</span></div>
+            <div style="font-size:22px;font-weight:900;color:#e8590c">${aiScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+          ${aiItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(aiItems,{which:'ai'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:14px 18px;border:1px solid var(--bdr);border-radius:12px;background:#fff;font-size:12.5px;color:var(--t2);line-height:1.7">
+        <b style="color:var(--t1)">한눈에 비교</b> · 교안 기준 <b style="color:#9f1239">${pctScore}%</b> vs AI 독자 기준 <b style="color:#e8590c">${aiScore}%</b> (격차 ${diff}p). 같은 강의도 <b>평가 목적에 따라 AI가 다른 관점으로 코칭</b>합니다 — 교안 충실도와 강의력 모두를 균형 있게 볼 수 있습니다.
+      </div>`;
+  }
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
@@ -13483,6 +13587,13 @@ async function renderUserScenarioList(userId, catVal, prodVal){
       D.scenarioDrafts=D.scenarioDrafts.filter(s=>s.user_id!==userId).concat(recs);
     }
   }catch(e){ console.warn('renderUserScenarioList:',e?.message||e); }
+  // 데모 모드: 실제 시나리오 없으면 본인 샘플 2건 채움
+  if(IB_DEMO() && !recs.length){
+    const nm=(D.users||[]).find(x=>x.id===userId)?.name||'';
+    recs=[demoScenarioRecord(userId,nm,0),demoScenarioRecord(userId,nm,1)];
+    if(!Array.isArray(D.scenarioDrafts)) D.scenarioDrafts=[];
+    recs.forEach(r=>{ if(!D.scenarioDrafts.find(s=>s.key===r.key)) D.scenarioDrafts.push(r); });
+  }
   if(catVal) recs=recs.filter(s=>(s.eduType||'')===catVal);
   if(prodVal) recs=recs.filter(s=>(s.product||'').includes(prodVal));
   recs.sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
