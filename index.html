@@ -6309,8 +6309,14 @@ function renderEduPage(){
     <button class="btn btn-blue" style="padding:6px 14px;font-size:12px" onclick="uploadEduChecklist()">등록</button>
   </div>`:'';
   // 카테고리별 그룹 + 최신순
-  const cats=catsAll;
-  const sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  let cats=catsAll;
+  let sorted=[...(D.checklists||[])].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  // 데모 모드: 다른 교육명·5·6월 자료로 채움 (실데이터와 함께 표시)
+  if(IB_DEMO()){
+    const demoCl=demoEduMaterials();
+    sorted=[...demoCl,...sorted].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+    cats=[...new Set([...demoCl.map(d=>d.category),...catsAll])];
+  }
   cats.forEach(cat=>{
     const items=sorted.filter(c=>(c.category||'체크리스트')===cat);
     if(!items.length) return;
@@ -6330,8 +6336,8 @@ function renderEduPage(){
         <div style="font-size:10px;color:var(--t3);margin-top:2px">${c.file_name||''} · ${c.created_at?.slice(0,10)||''}</div>
       </div>
       <a href="${c.file_url}" download class="btn btn-blue" style="padding:5px 12px;font-size:11px" onclick="showToast('다운로드: ${c.name.replace(/'/g,"\\'")}','#0078C8')">다운로드</a>
-      ${isAdmin&&isCl?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;color:var(--blue)" onclick="openChecklistReupload(${c.id})">파일 교체</button>`:''}
-      ${isAdmin?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
+      ${isAdmin&&isCl&&!c._demo?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;color:var(--blue)" onclick="openChecklistReupload(${c.id})">파일 교체</button>`:''}
+      ${isAdmin&&!c._demo?`<button class="btn btn-ghost" style="padding:5px 8px;font-size:10px;color:var(--red)" onclick="deleteChecklist(${c.id})">삭제</button>`:''}
     </div>`;}).join('');
     clHtml+='</div>';
   });
@@ -8244,6 +8250,20 @@ function demoScenariosForUsers(users,maxN){
   if(!Array.isArray(D.scenarioDrafts)) D.scenarioDrafts=[];
   out.forEach(r=>{ if(!D.scenarioDrafts.find(s=>s.key===r.key)) D.scenarioDrafts.push(r); });
   return out;
+}
+// 데모용 교육자료 (교육콘텐츠 페이지 — 다른 교육명 + 5·6월)
+function demoEduMaterials(){
+  const mk=(id,cat,name,file,date,type)=>({id:'demo_cl_'+id,category:cat,name,file_name:file,created_at:date,type:type||'',file_url:'javascript:void(0)',_demo:true});
+  return [
+    mk(1,'판경상 시나리오','판경상 시나리오 6월 식기세척기','식기세척기.docx','2026-06-12'),
+    mk(2,'판경상 시나리오','판경상 시나리오 5월 정수기','정수기.docx','2026-05-14'),
+    mk(3,'거점집합 시나리오','거점집합 시나리오 6월 냉장고','냉장고.pptx','2026-06-10'),
+    mk(4,'거점집합 시나리오','거점집합 시나리오 5월 워시타워','워시타워.docx','2026-05-20'),
+    mk(5,'현장코칭 교안','현장코칭 교안 6월 스타일러','스타일러.pdf','2026-06-08'),
+    mk(6,'현장코칭 교안','현장코칭 교안 5월 청소기','청소기.docx','2026-05-22'),
+    mk(7,'구독 시나리오','구독 시나리오 6월 공기청정기','공기청정기.docx','2026-06-05'),
+    mk(8,'RP 평가안','RP 평가안 5월 에어컨','에어컨.xlsx','2026-05-30'),
+  ];
 }
 // 데모용 평가안기준(교육맞춤) 결과 — 검증된 AI 결과 구조를 복제하되,
 //   카테고리명을 '교육목표(체크리스트) 대항목'으로 리라벨해 AI독자 탭과 구분되게 함
