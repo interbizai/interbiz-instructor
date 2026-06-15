@@ -13276,11 +13276,30 @@ function generateMockVoice(count,tone){
 }
 
 function renderVoiceResult(r,hasCL,count,tone){
-  // 데모 모드: 음성 데이터 비어있으면 샘플로 채움
+  // 데모 모드: 음성 데이터 — 빈 항목만 개별로 샘플 채움 (있는 값은 유지)
   if(IB_DEMO()){
-    const a0=window._lastVertexResult?.ai;
-    const empty=!a0||!(a0.sub_scores&&a0.sub_scores.length)||!(a0.overall_score>0);
-    if(empty){ const dv=makeDemoVoice(); window._lastVertexResult={crit:null,ai:dv.ai}; try{Object.assign(r,dv.r);}catch(_){}}
+    const dv=makeDemoVoice();
+    let a=window._lastVertexResult?.ai;
+    if(!a||!(a.sub_scores&&a.sub_scores.length)||!(a.overall_score>0)){
+      a=dv.ai; window._lastVertexResult={crit:null,ai:a};
+    } else {
+      if(!(a.good&&a.good.length)) a.good=dv.ai.good;
+      if(!(a.bad&&a.bad.length)) a.bad=dv.ai.bad;
+      if(!(a.upgrade&&a.upgrade.length)) a.upgrade=dv.ai.upgrade;
+      if(!(a.engagement_gaps_minutes&&a.engagement_gaps_minutes.length)) a.engagement_gaps_minutes=dv.ai.engagement_gaps_minutes;
+      if(!a.summary_opinion) a.summary_opinion=dv.ai.summary_opinion;
+    }
+    try{
+      const dbCur=typeof r.decibel==='object'?(r.decibel?.current||0):(r.decibel||0);
+      const tpCur=typeof r.tempo==='object'?(r.tempo?.wpm||0):(r.tempo||0);
+      if(!dbCur) r.decibel=dv.r.decibel;
+      if(!tpCur) r.tempo=dv.r.tempo;
+      if(!(r.habits&&r.habits.length)) r.habits=dv.r.habits;
+      const rep=Object.assign({},r.speech_report||{});
+      if(!(Array.isArray(rep.improvements)&&rep.improvements.length)&&!r.solution) rep.improvements=dv.r.speech_report.improvements;
+      if(!(Array.isArray(rep.training)&&rep.training.length)&&!r.training) rep.training=dv.r.speech_report.training;
+      r.speech_report=rep;
+    }catch(_){}
   }
   // 스피치: 평가안기준 X, AI독자 전용 구조로 렌더
   // 무조건 분할 구조 숨김 (구 UI 제거)
@@ -13588,10 +13607,11 @@ function renderVoiceResult(r,hasCL,count,tone){
 }
 
 const _DEMO_SPEECH=[
-  {title:'26년 판경상 식기세척기',date:'2026-06-12'},
-  {title:'26년 판경상 스타일러',date:'2026-06-10'},
-  {title:'26년 판경상 에어컨',date:'2026-06-07'},
-  {title:'26년 판경상 냉장고',date:'2026-06-03'},
+  {title:'25년 거점집합교육 냉장고',date:'2026-06-11'},
+  {title:'26년 구독 연습 정수기',date:'2026-06-09'},
+  {title:'26년 현장코칭 워시타워',date:'2026-06-06'},
+  {title:'25년 RP 스타일러',date:'2026-06-04'},
+  {title:'26년 화상 교육 TV',date:'2026-06-02'},
 ];
 function renderUserVoiceList(userId){
   const vaData=(D.voiceEvals||[]).map(v=>({id:v.id,userId:v.user_id,title:v.title,score:v.score,tone:v.tone,studentCount:v.student_count,date:v.eval_date}));
@@ -15049,10 +15069,12 @@ function openLevelDetail(avgScore,evalCount,totalVids){
 }
 
 const _DEMO_VIDS=[
-  {title:'26년 판경상 식기세척기',cat:'판매경쟁력상황실',prod:'식기세척기',date:'2026-06-12'},
-  {title:'26년 판경상 스타일러',cat:'현장코칭',prod:'스타일러',date:'2026-06-10'},
-  {title:'26년 판경상 에어컨',cat:'RP',prod:'에어컨',date:'2026-06-07'},
-  {title:'26년 판경상 공기청정기',cat:'구독',prod:'공기청정기',date:'2026-06-04'},
+  {title:'25년 거점집합교육 냉장고',cat:'거점집합교육',prod:'냉장고',date:'2026-06-12'},
+  {title:'26년 구독 연습 정수기',cat:'구독',prod:'정수기',date:'2026-06-10'},
+  {title:'26년 현장코칭 스타일러',cat:'현장코칭',prod:'스타일러',date:'2026-06-08'},
+  {title:'25년 RP 에어컨',cat:'RP',prod:'에어컨',date:'2026-06-05'},
+  {title:'26년 화상 교육 공기청정기',cat:'화상 교육',prod:'공기청정기',date:'2026-06-03'},
+  {title:'26년 판경상 식기세척기',cat:'판매경쟁력상황실',prod:'식기세척기',date:'2026-05-30'},
 ];
 function filterCoachingList(userId){
   const catVal=document.getElementById('coaching-cat-filter')?.value||'';
@@ -17573,6 +17595,15 @@ function renderRadarChartFromEvals(userId){
       </div>`;
     }
     return;
+  }
+  // 데모 모드: 비어있거나 전부 만점(부자연)일 때 → 현실감 있는 8대 역량으로 채움 (강사별 살짝 다르게)
+  if(IB_DEMO()){
+    const allMaxed=cats.length&&cats.every(c=>c.max>0&&(c.score/c.max)>=0.97);
+    if(!cats.length||allMaxed){
+      const off=(_demoHash((D.users.find(x=>x.id===userId)||{}).name||String(userId))%7)-3;
+      cats=[['내용 전문성',95],['교수설계 및 교수법',88],['스피치·전달력',92],['맞춤 코칭',84],['소통',90],['프리젠테이션',86],['현장 퍼포먼스 연계',82],['변화 대응력',89]]
+        .map(([name,sc])=>({name,score:Math.max(70,Math.min(99,sc+off)),max:100}));
+    }
   }
   const items=cats.map(c=>({name:c.name,score:c.score,max:c.max||1}));
   const scores=cats.map(c=>c.max>0?Math.round(c.score/c.max*100):0);
