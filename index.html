@@ -2866,10 +2866,18 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 
     <!-- 평가안기준 없을 때 안내 박스 (관리자/부관리자만) -->
     <div id="an-add-crit-box" style="display:none"></div>
-    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 -->
+    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 | 비교 보기 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchAnTab('criteria',this)">교육맞춤평가</button>
       <button class="tab-btn" onclick="switchAnTab('ai',this)">AI 독자 분석</button>
+      <button class="tab-btn" id="an-tab-btn-compare" onclick="switchAnTab('compare',this)" style="display:none">비교 보기</button>
+    </div>
+
+    <!-- TAB: 비교 보기 (두 평가 레이더 좌우 동시) -->
+    <div class="an-tab-pane" id="an-tab-compare" style="display:none">
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육목표 기준 vs AI 독자 분석 — 동시 비교</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">같은 강의를 <b style="color:#9f1239">교육목표(교안) 기준</b>과 <b style="color:#e8590c">AI 독자 기준</b> 두 관점으로 동시에 분석한 결과입니다.</div>
+      <div id="an-compare-body"></div>
     </div>
 
     <!-- TAB: 교육맞춤평가 -->
@@ -11607,6 +11615,8 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const critPane=el('an-tab-criteria');
   const aiPane=el('an-tab-ai');
   if(critTabBtn) critTabBtn.style.display=hasCrit?'':'none';
+  const cmpTabBtn=el('an-tab-btn-compare'); if(cmpTabBtn) cmpTabBtn.style.display=hasCrit?'':'none';
+  const cmpPane=el('an-tab-compare'); if(cmpPane) cmpPane.style.display='none';
   // 모든 패널 숨기고 기본 활성 탭만 표시 (재진입 시 이전 상태 잔존 방지)
   if(critPane) critPane.style.display='none';
   if(aiPane) aiPane.style.display='none';
@@ -11837,6 +11847,32 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     : (r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
   const aiRadar=el('an-ai-radar');
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems,{clickable:true,which:'ai'});
+  // 비교 보기 — 교육맞춤 vs AI독자 레이더 좌우 동시
+  const cmpBody=el('an-compare-body');
+  if(cmpBody){
+    const critItems=(r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
+    const diff=Math.abs((pctScore||0)-(aiScore||0));
+    cmpBody.innerHTML=`
+      <div class="an-compare-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch">
+        <div style="border:2px solid rgba(159,18,57,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(159,18,57,.03)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:800;color:#9f1239">교육맞춤평가 <span style="font-size:11px;color:var(--t3);font-weight:600">교안 기준</span></div>
+            <div style="font-size:22px;font-weight:900;color:#9f1239">${pctScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+          ${critItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(critItems,{which:'crit'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
+        </div>
+        <div style="border:2px solid rgba(232,89,12,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(232,89,12,.03)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:800;color:#e8590c">AI 독자 분석 <span style="font-size:11px;color:var(--t3);font-weight:600">AI 기준</span></div>
+            <div style="font-size:22px;font-weight:900;color:#e8590c">${aiScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+          ${aiItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(aiItems,{which:'ai'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:14px 18px;border:1px solid var(--bdr);border-radius:12px;background:#fff;font-size:12.5px;color:var(--t2);line-height:1.7">
+        <b style="color:var(--t1)">한눈에 비교</b> · 교안 기준 <b style="color:#9f1239">${pctScore}%</b> vs AI 독자 기준 <b style="color:#e8590c">${aiScore}%</b> (격차 ${diff}p). 같은 강의도 <b>평가 목적에 따라 AI가 다른 관점으로 코칭</b>합니다.
+      </div>`;
+  }
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
