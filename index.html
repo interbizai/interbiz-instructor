@@ -5416,6 +5416,7 @@ function showPage(id){
     // (page-home 삭제됨 — 항상 right panel 표시)
     showRightPanel();
   }
+  try{ _ensureDemoToggle(); }catch(_){}
   // 헤더 숨기기 (topnav가 대체)
   const page=document.getElementById(id);
   if(page && !noNav.includes(id)){
@@ -8197,6 +8198,8 @@ function makeDemoCritFromAi(ai){
   const map={}; let n=0;
   (c.sub_scores||[]).forEach(s=>{const k=s.category||'기타';if(!(k in map)){map[k]=newCats[n]||k;n++;}});
   if(Array.isArray(c.sub_scores)) c.sub_scores=c.sub_scores.map(s=>({...s,category:map[s.category||'기타']||s.category}));
+  // 교육맞춤평가는 교안 기준이라 보통 더 높게 나옴 — normal 일부를 good 으로 상향 (점수 일관성 유지)
+  if(Array.isArray(c.sub_scores)){let up=0;c.sub_scores=c.sub_scores.map(s=>(s.level==='normal'&&(up++%2===0))?{...s,level:'good'}:s);}
   delete c.categories; // 리라벨된 sub_scores 기준으로 재집계되도록
   try{ c=normalizeVertexResult(c); }catch(_){}
   c.rubric_alignment_score=(typeof c.rubric_alignment_score==='number'&&c.rubric_alignment_score>0)?c.rubric_alignment_score:88;
@@ -8208,17 +8211,33 @@ function makeDemoCritFromAi(ai){
   c._demo=true;
   return c;
 }
-// 데모 모드 표시 배지 (켜져 있을 때만)
-function _ensureDemoBadge(){
-  if(!IB_DEMO()){const ex=document.getElementById('ib-demo-badge');if(ex)ex.remove();return;}
-  if(document.getElementById('ib-demo-badge')) return;
-  const b=document.createElement('div');b.id='ib-demo-badge';
-  b.textContent='● 데모 모드';
-  b.title='시연/비딩용 데모 콘텐츠 표시 중 · 끄려면 주소에 ?demo=0';
-  b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:99999;background:#dc2626;color:#fff;font-size:11px;font-weight:800;padding:6px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(220,38,38,.35);cursor:default;letter-spacing:.3px';
-  document.body.appendChild(b);
+// 데모 모드 ON/OFF 토글 버튼 (관리자·부관리자만 노출) — 클릭 시 전환 후 새로고침
+function ibToggleDemo(){
+  try{
+    if(IB_DEMO()) localStorage.removeItem('ib_demo');
+    else localStorage.setItem('ib_demo','1');
+  }catch(_){}
+  location.reload();
 }
-try{ if(document.readyState!=='loading') _ensureDemoBadge(); else document.addEventListener('DOMContentLoaded',_ensureDemoBadge); }catch(_){}
+function _ensureDemoToggle(){
+  try{
+    const isAdmin=!!(CU&&(CU.isAdmin||CU.isSubAdmin));
+    let b=document.getElementById('ib-demo-toggle');
+    if(!isAdmin){ if(b) b.remove(); return; }
+    const on=IB_DEMO();
+    if(!b){
+      b=document.createElement('button');b.id='ib-demo-toggle';
+      b.onclick=ibToggleDemo;
+      b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:99999;border:none;font-size:11px;font-weight:800;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;letter-spacing:.3px';
+      document.body.appendChild(b);
+    }
+    b.textContent=on?'● 데모 ON (클릭=끄기)':'○ 데모 OFF (클릭=켜기)';
+    b.title=on?'시연/비딩용 데모 콘텐츠 표시 중 — 모든 영상에 교육맞춤평가·시나리오·팁·화법이 채워집니다':'데모 모드 꺼짐 — 실제 데이터만 표시';
+    b.style.background=on?'#dc2626':'#e5e7eb';
+    b.style.color=on?'#fff':'#374151';
+  }catch(_){}
+}
+try{ if(document.readyState!=='loading') _ensureDemoToggle(); else document.addEventListener('DOMContentLoaded',_ensureDemoToggle); }catch(_){}
 
 function renderPickDetail(){
   const detailEl=el('pick-video-detail');
