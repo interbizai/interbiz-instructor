@@ -2866,18 +2866,10 @@ body:not(.role-admin) .mobile-nav-item[onclick*="openAdminWithAuth"]{
 
     <!-- 평가안기준 없을 때 안내 박스 (관리자/부관리자만) -->
     <div id="an-add-crit-box" style="display:none"></div>
-    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 | 비교 -->
+    <!-- ▶ 탭: 교육맞춤평가 | AI 독자 분석 -->
     <div class="tab-bar" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="switchAnTab('criteria',this)">교육맞춤평가</button>
       <button class="tab-btn" onclick="switchAnTab('ai',this)">AI 독자 분석</button>
-      <button class="tab-btn" id="an-tab-btn-compare" onclick="switchAnTab('compare',this)" style="display:none">📊 비교 보기</button>
-    </div>
-
-    <!-- TAB: 비교 (두 평가 레이더 좌우 동시) -->
-    <div class="an-tab-pane" id="an-tab-compare" style="display:none">
-      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">교육목표 기준 vs AI 독자 분석 — 동시 비교</div>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">같은 강의를 <b style="color:#9f1239">교육목표(교안) 기준</b>과 <b style="color:#e8590c">AI 독자 기준</b> 두 관점으로 동시에 분석한 결과입니다.</div>
-      <div id="an-compare-body"></div>
     </div>
 
     <!-- TAB: 교육맞춤평가 -->
@@ -8268,6 +8260,38 @@ function makeDemoCritFromAi(ai){
   c._demo=true;
   return c;
 }
+// 데모용 스피치(음성) 분석 결과 — 비어있을 때 채움
+function makeDemoVoice(){
+  const cats=[
+    {name:'발성·성량',score:36,max:40},{name:'속도·리듬',score:33,max:40},
+    {name:'강조·억양',score:35,max:40},{name:'청중 교감',score:31,max:40},{name:'군더더기 절제',score:30,max:40},
+  ];
+  const subs=[
+    {category:'발성·성량',sub_item:'매장 환경 대비 적정 성량',criterion:'성량',level:'good',score:5,max:5,timestamp:'01:12',analysis:'매장 소음 위에서도 명료하게 전달되는 안정적 성량을 유지했습니다.'},
+    {category:'속도·리듬',sub_item:'핵심 구간 속도 조절',criterion:'속도',level:'good',score:5,max:5,timestamp:'03:40',analysis:'중요 포인트에서 의도적으로 속도를 늦춰 강조했습니다.'},
+    {category:'강조·억양',sub_item:'단조로움 회피',criterion:'억양',level:'normal',score:3,max:5,timestamp:'05:20',analysis:'전반적으로 양호하나 후반부 억양 변화가 다소 줄었습니다.'},
+    {category:'청중 교감',sub_item:'질문·호응 유도',criterion:'교감',level:'normal',score:3,max:5,timestamp:'07:05',analysis:'질문은 있었으나 답을 기다리는 여백이 짧았습니다.'},
+    {category:'군더더기 절제',sub_item:'습관어 빈도',criterion:'습관어',level:'normal',score:3,max:5,timestamp:'—',analysis:'"어/음" 등 습관어가 간헐적으로 관찰됩니다.'},
+  ];
+  const ai={
+    overall_score:90, categories:cats, sub_scores:subs,
+    summary_opinion:'안정적인 성량과 또렷한 발음으로 신뢰감을 주는 스피치입니다. 후반부 억양 변화와 습관어만 보완하면 한 단계 더 올라갑니다. (데모)',
+    good:[{title:'안정적 성량과 또렷한 발음',reason:'매장 소음 환경에서도 핵심 메시지가 명료하게 전달되었습니다.'},
+          {title:'핵심 구간 속도 완급 조절',reason:'중요 포인트에서 속도를 늦춰 교육생 이해를 도왔습니다.'}],
+    bad:[{title:'후반부 억양 단조로움',reason:'집중도가 떨어지기 쉬운 후반부에 억양 변화가 줄었습니다.'}],
+    upgrade:[{title:'질문 후 3초 여백 두기',reason:'호응을 유도한 뒤 답을 기다리는 침묵을 의도적으로 두면 참여가 올라갑니다.'}],
+    engagement_gaps_minutes:[12,26,39], _demo:true
+  };
+  const r={
+    decibel:{current:74,status:'적정'}, tempo:{wpm:148,status:'적정'},
+    habits:[{word:'어',count:8,context:'문장 전환 구간',replacement:'(0.5초 멈춤)'},{word:'음',count:5,context:'생각 정리 시',replacement:'(짧은 침묵)'},{word:'자',count:3,context:'화제 전환 시'}],
+    speech_report:{
+      improvements:[{title:'억양 변화 루틴',detail:'문단마다 핵심어 1개를 정해 톤을 한 단계 올려보세요.'},{title:'습관어 치환',detail:'"어/음" 대신 0.5초 침묵으로 대체하면 전문성이 올라갑니다.'}],
+      training:[{title:'복식호흡 발성 5분',detail:'녹음 후 성량 그래프 확인'},{title:'섀도잉 낭독',detail:'우수 강의 1분 구간 따라 말하기'}]
+    }
+  };
+  return {ai,r};
+}
 // 데모 모드 ON/OFF 토글 버튼 (관리자·부관리자만 노출) — 클릭 시 전환 후 새로고침
 function ibToggleDemo(){
   try{
@@ -11583,8 +11607,6 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const critPane=el('an-tab-criteria');
   const aiPane=el('an-tab-ai');
   if(critTabBtn) critTabBtn.style.display=hasCrit?'':'none';
-  const cmpTabBtn=el('an-tab-btn-compare'); if(cmpTabBtn) cmpTabBtn.style.display=hasCrit?'':'none';
-  const cmpPane=el('an-tab-compare'); if(cmpPane) cmpPane.style.display='none';
   // 모든 패널 숨기고 기본 활성 탭만 표시 (재진입 시 이전 상태 잔존 방지)
   if(critPane) critPane.style.display='none';
   if(aiPane) aiPane.style.display='none';
@@ -11815,32 +11837,6 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     : (r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
   const aiRadar=el('an-ai-radar');
   if(aiRadar) aiRadar.innerHTML=drawRadarSVG(aiItems,{clickable:true,which:'ai'});
-  // 📊 비교 보기 — 교육맞춤 vs AI독자 레이더 좌우 동시
-  const cmpBody=el('an-compare-body');
-  if(cmpBody){
-    const critItems=(r.criteriaScores||[]).map(c=>({name:c.name,score:c.score||0,max:c.max||1}));
-    const diff=Math.abs((pctScore||0)-(aiScore||0));
-    cmpBody.innerHTML=`
-      <div class="an-compare-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch">
-        <div style="border:2px solid rgba(159,18,57,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(159,18,57,.03)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:14px;font-weight:800;color:#9f1239">교육맞춤평가 <span style="font-size:11px;color:var(--t3);font-weight:600">교안 기준</span></div>
-            <div style="font-size:22px;font-weight:900;color:#9f1239">${pctScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
-          </div>
-          ${critItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(critItems,{which:'crit'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
-        </div>
-        <div style="border:2px solid rgba(232,89,12,.35);border-radius:16px;padding:18px 18px 8px;background:rgba(232,89,12,.03)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:14px;font-weight:800;color:#e8590c">AI 독자 분석 <span style="font-size:11px;color:var(--t3);font-weight:600">AI 기준</span></div>
-            <div style="font-size:22px;font-weight:900;color:#e8590c">${aiScore}<span style="font-size:11px;color:var(--t3)">%</span></div>
-          </div>
-          ${aiItems.length?`<svg viewBox="0 0 500 440" style="width:100%;height:auto">${drawRadarSVG(aiItems,{which:'ai'})}</svg>`:'<div style="padding:50px 0;text-align:center;color:var(--t3);font-size:12px">데이터 없음</div>'}
-        </div>
-      </div>
-      <div style="margin-top:16px;padding:14px 18px;border:1px solid var(--bdr);border-radius:12px;background:#fff;font-size:12.5px;color:var(--t2);line-height:1.7">
-        <b style="color:var(--t1)">한눈에 비교</b> · 교안 기준 <b style="color:#9f1239">${pctScore}%</b> vs AI 독자 기준 <b style="color:#e8590c">${aiScore}%</b> (격차 ${diff}p). 같은 강의도 <b>평가 목적에 따라 AI가 다른 관점으로 코칭</b>합니다 — 교안 충실도와 강의력 모두를 균형 있게 볼 수 있습니다.
-      </div>`;
-  }
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
@@ -13244,6 +13240,12 @@ function generateMockVoice(count,tone){
 }
 
 function renderVoiceResult(r,hasCL,count,tone){
+  // 데모 모드: 음성 데이터 비어있으면 샘플로 채움
+  if(IB_DEMO()){
+    const a0=window._lastVertexResult?.ai;
+    const empty=!a0||!(a0.sub_scores&&a0.sub_scores.length)||!(a0.overall_score>0);
+    if(empty){ const dv=makeDemoVoice(); window._lastVertexResult={crit:null,ai:dv.ai}; try{Object.assign(r,dv.r);}catch(_){}}
+  }
   // 스피치: 평가안기준 X, AI독자 전용 구조로 렌더
   // 무조건 분할 구조 숨김 (구 UI 제거)
   const split=document.getElementById('va-split');
@@ -13549,18 +13551,29 @@ function renderVoiceResult(r,hasCL,count,tone){
     </div>`;
 }
 
+const _DEMO_SPEECH=[
+  {title:'26년 판경상 식기세척기',date:'2026-06-12'},
+  {title:'26년 판경상 스타일러',date:'2026-06-10'},
+  {title:'26년 판경상 에어컨',date:'2026-06-07'},
+  {title:'26년 판경상 냉장고',date:'2026-06-03'},
+];
 function renderUserVoiceList(userId){
   const vaData=(D.voiceEvals||[]).map(v=>({id:v.id,userId:v.user_id,title:v.title,score:v.score,tone:v.tone,studentCount:v.student_count,date:v.eval_date}));
-  const userVoice=vaData.filter(v=>v.userId===userId);
+  let rows=vaData.filter(v=>v.userId===userId);
   const countEl=el('voice-count-'+userId);
   const listEl=el('voice-list-'+userId);
-  if(countEl) countEl.textContent=userVoice.length+'건';
   if(!listEl) return;
-  if(!userVoice.length){
+  // 데모 모드: 적으면 종류별 샘플로 채움 (클릭 시 실제 음성평가 1건이 데모 데이터로 표시)
+  if(IB_DEMO() && rows.length<3){
+    const realId=(D.voiceEvals||[]).find(v=>v.user_id===userId)?.id || (D.voiceEvals||[])[0]?.id || 0;
+    _DEMO_SPEECH.forEach(d=>rows.push({id:realId,title:d.title,date:d.date,_demo:true}));
+  }
+  if(countEl) countEl.textContent=rows.length+'건';
+  if(!rows.length){
     listEl.innerHTML='<p style="font-size:12px;color:var(--t3);padding:12px 0">등록된 음성 평가가 없습니다.</p>';
     return;
   }
-  listEl.innerHTML=userVoice.map(v=>`
+  listEl.innerHTML=rows.map(v=>`
     <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVoiceResult(${v.id})">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title||'—'}</div>
@@ -14862,7 +14875,7 @@ function renderRadarChart(userId){
   ];
 
   // 각 역량별 점수 계산
-  const scores6=cats6.map(cat=>{
+  let scores6=cats6.map(cat=>{
     let total=0,cnt=0;
     // 기존 점수 체계에서 매칭 (scores가 있을 때만)
     if(u.scores) Object.entries(u.scores).forEach(([k,v])=>{
@@ -14879,6 +14892,11 @@ function renderRadarChart(userId){
     }
     return cnt>0?Math.max(0,Math.min(100,Math.round(total/cnt))):0;
   });
+  // 데모 모드: 역량 데이터 없으면 샘플 그래프로 채움 (강사별로 살짝 다르게)
+  if(IB_DEMO() && scores6.every(s=>s===0)){
+    const base=[88,93,85,82,86,90], off=(_demoHash(u.name||String(userId))%7)-3;
+    scores6=base.map(v=>Math.max(60,Math.min(99,v+off)));
+  }
 
   const n=6,cx=200,cy=190,maxR=140;
   const angles=Array.from({length:n},(_,i)=>-Math.PI/2+(2*Math.PI*i/n));
@@ -14994,6 +15012,12 @@ function openLevelDetail(avgScore,evalCount,totalVids){
   document.getElementById('lv-detail-overlay').classList.add('show');
 }
 
+const _DEMO_VIDS=[
+  {title:'26년 판경상 식기세척기',cat:'판매경쟁력상황실',prod:'식기세척기',date:'2026-06-12'},
+  {title:'26년 판경상 스타일러',cat:'현장코칭',prod:'스타일러',date:'2026-06-10'},
+  {title:'26년 판경상 에어컨',cat:'RP',prod:'에어컨',date:'2026-06-07'},
+  {title:'26년 판경상 공기청정기',cat:'구독',prod:'공기청정기',date:'2026-06-04'},
+];
 function filterCoachingList(userId){
   const catVal=document.getElementById('coaching-cat-filter')?.value||'';
   const prodVal=document.getElementById('coaching-prod-filter')?.value||'';
@@ -15002,17 +15026,26 @@ function filterCoachingList(userId){
   if(prodVal) vids=vids.filter(v=>(v.productName||v.product_name||v.videoType||v.video_type||'').includes(prodVal));
   const listEl=document.getElementById('coaching-vid-list-'+userId);
   if(!listEl) return;
-  listEl.innerHTML=vids.length?vids.map(vid=>{
-    const vCat=vid.eduType||vid.edu_type||vid.videoType||vid.video_type||'';
-    const vProd=vid.productName||vid.product_name||'';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="openVideo(${vid.id})">
+  const row=(title,date,vCat,vProd,onclk)=>`<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onclick="${onclk}">
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${vid.title||'—'}</div>
-        <div style="font-size:10px;color:var(--t3);margin-top:2px">${vid.date}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title||'—'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${date||''}${vCat?' · '+vCat:''}${vProd?' · '+vProd:''}</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
-  }).join(''):'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+  let html=vids.map(vid=>row(vid.title,vid.date,(vid.eduType||vid.edu_type||vid.videoType||vid.video_type||''),(vid.productName||vid.product_name||''),`openVideo(${vid.id})`)).join('');
+  // 데모 모드: 적으면 종류별 샘플 영상으로 채움 (클릭 시 실제 영상 1건이 데모 데이터로 표시)
+  if(IB_DEMO() && vids.length<3){
+    const realId=(D.videos||[]).find(v=>v.userId===userId)?.id || (D.videos||[])[0]?.id || 0;
+    let dv=_DEMO_VIDS.slice();
+    if(catVal) dv=dv.map(d=>({...d,cat:catVal}));
+    if(prodVal) dv=dv.filter(d=>d.prod.includes(prodVal));
+    html+=dv.map(d=>row(d.title,d.date,d.cat,d.prod,realId?`openVideo(${realId})`:'void(0)')).join('');
+  }
+  listEl.innerHTML=html||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">해당 조건의 영상이 없습니다</div>';
+  // 영상 건수 갱신 (데모 포함)
+  const vcEl=document.getElementById('coaching-vid-count-'+userId);
+  if(vcEl){const shown=html?listEl.querySelectorAll(':scope > div').length:0;vcEl.textContent=shown+'건';}
   // 시나리오 목록도 동일 필터 적용
   if(typeof renderUserScenarioList==='function') renderUserScenarioList(userId, catVal, prodVal);
 }
@@ -16675,7 +16708,7 @@ function openLecturer(id, fromPage){
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px" class="coaching-grid-3">
         <!-- 영상 평가 목록 -->
         <div>
-          <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)">${userVids.length}건</span></div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:10px">평가 내역 (영상) <span style="font-size:11px;color:var(--t3)" id="coaching-vid-count-${u.id}">${userVids.length}건</span></div>
           <div style="border:1px solid var(--bdr);border-radius:12px;overflow:hidden" id="coaching-vid-list-${u.id}">
             ${userVids.length?userVids.map(vid=>{
               const vCat=vid.eduType||vid.edu_type||vid.videoType||vid.video_type||'';
@@ -16725,6 +16758,7 @@ function openLecturer(id, fromPage){
   });
   // 음성 목록 렌더링
   renderUserVoiceList(id);
+  if(IB_DEMO()) try{ filterCoachingList(id); }catch(_){}
   // 시나리오 코칭 목록 렌더링
   renderUserScenarioList(id);
   // ── 비동기: evaluations 로드 → 통계/레이더 실데이터 반영 ──
@@ -16802,20 +16836,29 @@ function _refreshLectStats(userId){
   const gradeColorMap={'S':'#dc2626','A':'#2563eb','B':'#10b981','C':'#f59e0b','D':'#9ca3af','—':'var(--t3)'};
   const gradeColor=gradeColorMap[autoGrade]||'var(--t3)';
 
+  // 데모 모드: 통계가 비거나 빈약하면 채움 (누적횟수·개선지수·등급)
+  let dAvg=avg, dCnt=cnt, dImpDisplay=impDisplay, dImpColor=impColor, dImpNote=(impIdx==null), dGrade=autoGrade, dGradeColor=gradeColor;
+  if(IB_DEMO() && cnt<3){
+    dAvg = avg>0?avg:92;
+    dCnt = cnt>0?Math.max(cnt,8):8;
+    dImpDisplay='3.4'; dImpColor='#f59e0b'; dImpNote=false;
+    dGrade = dAvg>=90?'S':dAvg>=80?'A':dAvg>=70?'B':dAvg>=60?'C':'D';
+    dGradeColor=gradeColorMap[dGrade]||'var(--t3)';
+  }
   const cards=document.querySelectorAll('#lect-stat-cards > div');
-  if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${cnt?avg.toFixed(1):'0.0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
-  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${cnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>`;
+  if(cards[0]) cards[0].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--blue)">${dCnt?dAvg.toFixed(1):'0.0'}<span style="font-size:10px;color:var(--t3)">/100</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">평가 점수</div>`;
+  if(cards[1]) cards[1].innerHTML=`<div style="font-size:22px;font-weight:900;color:var(--t1)">${dCnt}<span style="font-size:10px;color:var(--t3)">회</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">누적 평가횟수</div>`;
   if(cards[2]){
     cards[2].style.cursor='pointer';
     cards[2].title='클릭 시 평가 점수 추이 그래프';
     cards[2].onclick=()=>openImprovementChart(userId);
-    cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:${impColor}">${impDisplay}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">개선 지수</div>${impIdx==null?'<div style="font-size:8px;color:var(--t3);margin-top:2px">평가 2회↑ 필요</div>':''}`;
+    cards[2].innerHTML=`<div style="font-size:22px;font-weight:900;color:${dImpColor}">${dImpDisplay}<span style="font-size:10px;color:var(--t3)">/5.0</span></div><div style="font-size:9px;color:var(--t3);margin-top:3px">개선 지수</div>${dImpNote?'<div style="font-size:8px;color:var(--t3);margin-top:2px">평가 2회↑ 필요</div>':''}`;
   }
   if(cards[3]){
     cards[3].style.cursor='pointer';
     cards[3].title='클릭 시 등급 기준 보기';
-    cards[3].onclick=()=>openGradeCriteria(userId,avg,autoGrade);
-    cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${gradeColor}">${autoGrade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
+    cards[3].onclick=()=>openGradeCriteria(userId,dAvg,dGrade);
+    cards[3].innerHTML=`<div style="font-size:22px;font-weight:900;color:${dGradeColor}">${dGrade}</div><div style="font-size:9px;color:var(--t3);margin-top:3px">종합 등급</div>`;
   }
 
   // AI 역량 분석 총평 갱신 (6블록 · 필터 연동)
