@@ -9,6 +9,10 @@ const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin';
 const ADMIN_PIN = process.env.ADMIN_PIN || '';
+// 두 번째 메인 관리자 — 첫 번째와 완전히 동일한 효과 (id:0, isAdmin:true)
+// 값은 Vercel 환경변수로 설정: ADMIN_EMAIL_2 / ADMIN_PIN_2
+const ADMIN_EMAIL_2 = process.env.ADMIN_EMAIL_2 || '';
+const ADMIN_PIN_2 = process.env.ADMIN_PIN_2 || '';
 
 const sbAdmin = SB_URL && SB_SERVICE_KEY ? createClient(SB_URL, SB_SERVICE_KEY, { auth: { persistSession: false } }) : null;
 
@@ -31,6 +35,7 @@ function envHealthCheck() {
     ['SUPABASE_SERVICE_ROLE_KEY', SB_SERVICE_KEY],
     ['JWT_SECRET', JWT_SECRET],
     ['ADMIN_PIN', ADMIN_PIN],
+    ['ADMIN_PIN_2', ADMIN_PIN_2],
   ];
   for (const [name, val] of checks) {
     const bad = findNonAscii(val);
@@ -75,6 +80,13 @@ export default async function handler(req, res) {
     if (em === String(ADMIN_EMAIL).toLowerCase() && ADMIN_PIN && pw === ADMIN_PIN) {
       const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL, grade: 'A', channel: '', isAdmin: true };
       const token = signToken({ sub: 0, email: ADMIN_EMAIL, isAdmin: true });
+      return res.status(200).json({ ok: true, token, user: adminUser });
+    }
+
+    // 두 번째 메인 관리자 — 첫 번째와 완전히 동일한 효과
+    if (ADMIN_EMAIL_2 && em === String(ADMIN_EMAIL_2).toLowerCase() && ADMIN_PIN_2 && pw === ADMIN_PIN_2) {
+      const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL_2, grade: 'A', channel: '', isAdmin: true };
+      const token = signToken({ sub: 0, email: ADMIN_EMAIL_2, isAdmin: true });
       return res.status(200).json({ ok: true, token, user: adminUser });
     }
 
