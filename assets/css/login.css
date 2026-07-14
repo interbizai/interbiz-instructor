@@ -1,0 +1,133 @@
+/* ════════════════════════════════════════════════════════════
+   인터PICK 조직별 로그인 — 공용 스타일 (login.html / login-am.html / login-hicare.html)
+   Shadcn 스타일: 깔끔한 보더 + 넉넉한 여백 + 모던 타이포
+════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#f8f7f4;
+  --card:#ffffff;
+  --bdr:#e5e7eb;
+  --t1:#0f172a;
+  --t2:#475569;
+  --t3:#94a3b8;
+  --blue:#2563eb;
+  --teal:#0d9488;
+  --red:#ef4444;
+  --accent:var(--blue);
+  --accent-soft:rgba(37,99,235,.08);
+}
+body.org-hicare{ --accent:var(--teal); --accent-soft:rgba(13,148,136,.08); }
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--t1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 16px;
+  -webkit-font-smoothing:antialiased;
+}
+
+.login-wrap{width:100%;max-width:400px;animation:rise .45s cubic-bezier(.22,1,.36,1)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.login-logo{text-align:center;margin-bottom:22px}
+.login-logo img{height:52px;object-fit:contain}
+
+.login-card{
+  background:var(--card);
+  border:1px solid var(--bdr);
+  border-radius:18px;
+  padding:30px 28px 26px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03),0 12px 32px -12px rgba(15,23,42,.10);
+}
+
+.org-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;font-weight:800;color:var(--accent);
+  background:var(--accent-soft);
+  border:1px solid var(--accent-soft);
+  padding:6px 12px;border-radius:999px;margin-bottom:14px;
+}
+.org-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+
+.login-title{font-size:21px;font-weight:900;letter-spacing:-.4px;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--t2);margin-bottom:24px;line-height:1.55}
+
+.form-group{margin-bottom:14px}
+.form-lbl{display:block;font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px}
+.form-input{
+  width:100%;padding:11px 13px;
+  border:1px solid var(--bdr);border-radius:10px;
+  font-size:14px;font-family:inherit;color:var(--t1);
+  background:#fff;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.form-input::placeholder{color:var(--t3)}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+.pw-wrap{position:relative}
+.pw-wrap .form-input{padding-right:44px}
+.pw-toggle{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  border:none;background:none;cursor:pointer;color:var(--t3);
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;
+}
+.pw-toggle:hover{color:var(--t2);background:#f1f5f9}
+
+.login-err{min-height:18px;font-size:12.5px;color:var(--red);font-weight:600;margin:2px 0 10px}
+
+.btn-login{
+  width:100%;padding:13px;border:none;border-radius:10px;cursor:pointer;
+  background:var(--accent);color:#fff;font-size:15px;font-weight:800;font-family:inherit;
+  letter-spacing:-.2px;
+  transition:filter .15s, transform .1s;
+}
+.btn-login:hover{filter:brightness(1.07)}
+.btn-login:active{transform:scale(.985)}
+.btn-login:disabled{opacity:.6;cursor:default}
+
+.login-note{
+  margin-top:16px;font-size:12px;color:var(--t3);text-align:center;line-height:1.6;
+}
+.login-note a{color:var(--accent);font-weight:700;text-decoration:none}
+.login-note a:hover{text-decoration:underline}
+
+.session-note{
+  margin-bottom:14px;padding:9px 12px;border-radius:10px;
+  background:#fffbeb;border:1px solid #fde68a;color:#92400e;
+  font-size:12px;font-weight:600;line-height:1.5;display:none;
+}
+.session-note.show{display:block}
+
+/* ── 조직 선택(login.html) 전용 ── */
+.org-select-wrap{width:100%;max-width:460px;animation:rise .45s cubic-bezier(.22,1,.36,1)}
+.org-select-title{font-size:22px;font-weight:900;letter-spacing:-.4px;text-align:center;margin-bottom:8px}
+.org-select-sub{font-size:13.5px;color:var(--t2);text-align:center;margin-bottom:26px}
+.org-cards{display:flex;flex-direction:column;gap:14px}
+.org-card{
+  display:flex;align-items:center;gap:16px;
+  background:var(--card);border:1px solid var(--bdr);border-radius:16px;
+  padding:20px 22px;text-decoration:none;color:var(--t1);
+  transition:border-color .15s, box-shadow .15s, transform .12s;
+}
+.org-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px -10px rgba(15,23,42,.14)}
+.org-card.am:hover{border-color:var(--blue)}
+.org-card.hicare:hover{border-color:var(--teal)}
+.org-card .icon{
+  width:48px;height:48px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.org-card.am .icon{background:rgba(37,99,235,.09);color:var(--blue)}
+.org-card.hicare .icon{background:rgba(13,148,136,.09);color:var(--teal)}
+.org-card .name{font-size:16.5px;font-weight:900;letter-spacing:-.3px;margin-bottom:3px}
+.org-card .desc{font-size:12.5px;color:var(--t2)}
+.org-card .arrow{margin-left:auto;color:var(--t3);font-size:18px;transition:transform .15s}
+.org-card:hover .arrow{transform:translateX(3px)}
+
+.login-footer{margin-top:26px;font-size:11px;color:var(--t3);text-align:center}
+
+@media (max-width:480px){
+  .login-card{padding:24px 20px 22px;border-radius:16px}
+  .login-logo img{height:44px}
+}

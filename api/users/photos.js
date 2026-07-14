@@ -21,18 +21,25 @@ export default async function handler(req, res) {
   // 인증 (만료 토큰 차단)
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  try { jwt.verify(token, JWT_SECRET); }
+  let decoded;
+  try { decoded = jwt.verify(token, JWT_SECRET); }
   catch (e) { return res.status(401).json({ ok: false, error: '인증 만료' }); }
 
   try {
     const { ids, org } = req.body || {};
+    // 조직 강제 — 강사는 본인 소속, 관리자는 로그인 시 잠근 조직(토큰 org)으로 제한
+    let forceOrg = null;
+    if (decoded.sub === 0) {
+      forceOrg = decoded.org || org || null;
+    } else if (decoded.sub) {
+      const { data: me } = await sbAdmin.from('users').select('id, org_name').eq('id', decoded.sub).maybeSingle();
+      forceOrg = me?.org_name || null;
+    }
     let q = sbAdmin.from('users_safe').select('id,photo');
+    if (forceOrg) q = q.eq('org_name', forceOrg);
     if (Array.isArray(ids) && ids.length) {
       // 특정 사용자 ID 들만
       q = q.in('id', ids.slice(0, 200)); // 안전 상한
-    } else if (org) {
-      // 조직 단위
-      q = q.eq('org_name', org);
     }
     const { data, error } = await q;
     if (error) return res.status(500).json({ ok: false, error: error.message });

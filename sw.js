@@ -1,14 +1,33 @@
 // 인터PICK Service Worker — PWA 캐싱 + 오프라인 지원
-const VERSION = 'v1.0.56';
+const VERSION = 'v1.1.0';
 const STATIC_CACHE = `interpick-static-${VERSION}`;
 const RUNTIME_CACHE = `interpick-runtime-${VERSION}`;
 
 // 앱 셸 (오프라인에서도 즉시 띄울 정적 자원)
+// ※ 코드 분할(v1.1.0): CSS/JS 가 별도 파일로 분리됨 — index.html 이 참조하는 ?v 쿼리까지 동일하게 캐싱
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/login.html',
+  '/login-am.html',
+  '/login-hicare.html',
   '/manifest.json',
+  '/assets/css/app.css?v1.1.0',
+  '/assets/css/login.css',
+  '/assets/js/login.js',
+  '/assets/js/01-core-db.js?v1.1.0',
+  '/assets/js/02-state.js?v1.1.0',
+  '/assets/js/03-nav-auth.js?v1.1.0',
+  '/assets/js/04-admin-edu.js?v1.1.0',
+  '/assets/js/05-home-analysis.js?v1.1.0',
+  '/assets/js/06-voice-calendar.js?v1.1.0',
+  '/assets/js/07-dashboard-my.js?v1.1.0',
+  '/assets/js/08-lecturer.js?v1.1.0',
+  '/assets/js/09-admin-panel.js?v1.1.0',
+  '/assets/js/10-ui-init.js?v1.1.0',
+  '/assets/js/video-protect.js?v1.1.0',
   '/assets/logo/interpick-icon.png',
+  '/assets/logo/interpick-logo.png',
   '/assets/logo/1_white.png',
   '/assets/logo/logo_1.png',
   '/assets/logo/인터비즈로고.png',

@@ -41,20 +41,25 @@ export default async function handler(req, res) {
     if (!isRealAdmin && decoded.sub) {
       const { data: user } = await sbAdmin.from('users').select('id, org_name').eq('id', decoded.sub).maybeSingle();
       viewerOrg = user?.org_name || '';
+      // 조직 미지정 강사는 데이터 접근 차단 — 필터가 꺼져 전체 조직 데이터가 노출되는 것 방지
+      if (!viewerOrg) {
+        return res.status(403).json({ ok: false, error: '소속 조직이 지정되지 않은 계정입니다. 관리자에게 문의하세요.' });
+      }
     }
 
     const filterOrg = (req.body && req.body.org) || null;
-    const targetOrg = isRealAdmin ? filterOrg : viewerOrg;
+    // 관리자: 로그인 시 잠근 조직(토큰 org)이 있으면 그 조직으로 고정, 없으면(구 토큰) 클라이언트 필터 사용
+    const adminOrg = decoded.org ? String(decoded.org) : null;
+    const targetOrg = isRealAdmin ? (adminOrg || filterOrg) : viewerOrg;
 
     // tier — 'core'(첫 진입 필수만) / 'content'(콘텐츠/공지/달력) / 'full'(전부, 기본)
     const tier = (req.body && req.body.tier) || 'full';
     const wantCore    = tier === 'core' || tier === 'full';
     const wantContent = tier === 'content' || tier === 'full';
 
-    // 핵심 데이터 (users/videos/evaluations/voice_evals)는 강제 조직 매칭
+    // 모든 데이터 강제 조직 매칭 — 조직 분리 이후 NULL(공통) 개념 폐지 (레거시 NULL 은 가전AM 으로 확정 완료)
     const orgEq = (q) => targetOrg ? q.eq('org_name', targetOrg) : q;
-    // 콘텐츠/공지/달력 등은 NULL(공통 자료) + 본인 조직 모두 보이게
-    const orgOrNull = (q) => targetOrg ? q.or(`org_name.eq.${targetOrg},org_name.is.null`) : q;
+    const orgOrNull = orgEq;
 
     // ⚡ 핵심 최적화 — users_safe SELECT * 하되 photo 는 서버에서 잘라냄 (USERS_LITE_COLS 명시 시
     //   존재하지 않는 컬럼이 하나라도 있으면 전체 SELECT 실패 → users 0명 반환되는 버그 회피)

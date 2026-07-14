@@ -72,21 +72,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email = '', password = '' } = req.body || {};
+    const { email = '', password = '', org = '' } = req.body || {};
     const em = String(email).trim().toLowerCase();  // 이메일 정규화 — 대소문자 미스매치 방지
     const pw = String(password).trim();
+    // 조직별 로그인 페이지에서 전달되는 조직명 — 관리자는 이 조직으로 잠금, 강사는 소속 검증
+    const loginOrg = String(org || '').trim();
     if (!em || !pw) return res.status(400).json({ ok: false, error: '이메일/비밀번호 필요' });
 
     if (em === String(ADMIN_EMAIL).toLowerCase() && ADMIN_PIN && pw === ADMIN_PIN) {
-      const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL, grade: 'A', channel: '', isAdmin: true };
-      const token = signToken({ sub: 0, email: ADMIN_EMAIL, isAdmin: true });
+      const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL, grade: 'A', channel: '', isAdmin: true, org_name: loginOrg || null };
+      const token = signToken({ sub: 0, email: ADMIN_EMAIL, isAdmin: true, ...(loginOrg ? { org: loginOrg } : {}) });
       return res.status(200).json({ ok: true, token, user: adminUser });
     }
 
     // 두 번째 메인 관리자 — 첫 번째와 완전히 동일한 효과
     if (ADMIN_EMAIL_2 && em === String(ADMIN_EMAIL_2).toLowerCase() && ADMIN_PIN_2 && pw === ADMIN_PIN_2) {
-      const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL_2, grade: 'A', channel: '', isAdmin: true };
-      const token = signToken({ sub: 0, email: ADMIN_EMAIL_2, isAdmin: true });
+      const adminUser = { id: 0, name: '관리자', email: ADMIN_EMAIL_2, grade: 'A', channel: '', isAdmin: true, org_name: loginOrg || null };
+      const token = signToken({ sub: 0, email: ADMIN_EMAIL_2, isAdmin: true, ...(loginOrg ? { org: loginOrg } : {}) });
       return res.status(200).json({ ok: true, token, user: adminUser });
     }
 
@@ -115,6 +117,17 @@ export default async function handler(req, res) {
       }
     }
     if (!ok) return res.status(401).json({ ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+
+    // 조직 검증 — 조직별 로그인 페이지에서는 해당 조직 소속만 통과
+    if (loginOrg) {
+      const userOrg = String(user.org_name || '').trim();
+      if (!userOrg) {
+        return res.status(403).json({ ok: false, error: '소속 조직이 지정되지 않은 계정입니다. 관리자에게 문의하세요.' });
+      }
+      if (userOrg !== loginOrg) {
+        return res.status(403).json({ ok: false, error: `${loginOrg} 소속 계정이 아닙니다. 소속 조직 로그인 페이지를 이용해주세요.` });
+      }
+    }
 
     // DB 컬럼은 snake_case (is_sub_admin) — camelCase 별칭을 함께 살려서 클라이언트로 전달
     const isSub = !!(user.is_sub_admin || user.isSubAdmin);

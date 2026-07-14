@@ -35,9 +35,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: '토큰 만료/무효 — 다시 로그인 필요' });
   }
 
-  // 관리자(sub=0)는 사용자 조회 없이 즉시 갱신
+  // 관리자(sub=0)는 사용자 조회 없이 즉시 갱신 — 로그인 시 잠근 조직(org)도 그대로 유지
   if (decoded.isAdmin && decoded.sub === 0) {
-    const newToken = signToken({ sub: 0, email: decoded.email, isAdmin: true });
+    const newToken = signToken({ sub: 0, email: decoded.email, isAdmin: true, ...(decoded.org ? { org: decoded.org } : {}) });
     return res.status(200).json({ ok: true, token: newToken });
   }
 
