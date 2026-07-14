@@ -47,10 +47,13 @@ export default async function handler(req, res) {
       }
     }
 
-    const filterOrg = (req.body && req.body.org) || null;
-    // 관리자: 로그인 시 잠근 조직(토큰 org)이 있으면 그 조직으로 고정, 없으면(구 토큰) 클라이언트 필터 사용
+    // 관리자: 로그인 시 잠근 조직(토큰 org)으로 강제 고정.
+    // 구버전 토큰(org 없음)은 '전체 조직' 모드로 타 조직 데이터가 노출되므로 차단 — 재로그인 유도.
     const adminOrg = decoded.org ? String(decoded.org) : null;
-    const targetOrg = isRealAdmin ? (adminOrg || filterOrg) : viewerOrg;
+    if (isRealAdmin && !adminOrg) {
+      return res.status(403).json({ ok: false, error: '조직별 로그인 페이지에서 다시 로그인해주세요. (가전AM / 하이케어솔루션)' });
+    }
+    const targetOrg = isRealAdmin ? adminOrg : viewerOrg;
 
     // tier — 'core'(첫 진입 필수만) / 'content'(콘텐츠/공지/달력) / 'full'(전부, 기본)
     const tier = (req.body && req.body.tier) || 'full';

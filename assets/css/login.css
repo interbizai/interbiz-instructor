@@ -114,12 +114,6 @@ body{
 .org-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px -10px rgba(15,23,42,.14)}
 .org-card.am:hover{border-color:var(--blue)}
 .org-card.hicare:hover{border-color:var(--teal)}
-.org-card .icon{
-  width:48px;height:48px;border-radius:12px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:22px;
-}
-.org-card.am .icon{background:rgba(37,99,235,.09);color:var(--blue)}
-.org-card.hicare .icon{background:rgba(13,148,136,.09);color:var(--teal)}
 .org-card .name{font-size:16.5px;font-weight:900;letter-spacing:-.3px;margin-bottom:3px}
 .org-card .desc{font-size:12.5px;color:var(--t2)}
 .org-card .arrow{margin-left:auto;color:var(--t3);font-size:18px;transition:transform .15s}
