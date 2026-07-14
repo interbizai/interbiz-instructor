@@ -77,6 +77,17 @@ let D = { users:[], videos:[], criteria:[], refVideos:{} };
 let CU = JSON.parse(localStorage.getItem('ib_user')||'null');
 // 현재 조직 — 모든 저장(insert)에 조직 필수 첨부용. 조직 분리 이후 null 저장 금지 원칙.
 function curOrg(){ return D.activeOrg || CU?.orgName || CU?.org_name || CU?.channel || null; }
+// 조직별 수정요청 연락 이메일 — 하단 footer·앱설치 안내·QR 포스터에서 사용
+const ORG_CONTACT_EMAILS={ '가전AM':'miyeon1.kwon@interbiz.co.kr', '하이케어솔루션':'jieun0320@interbiz.co.kr' };
+function orgContactEmail(){
+  let org=curOrg();
+  if(!org){ try{ org=localStorage.getItem('ib_active_org')||''; }catch(_){} }
+  return ORG_CONTACT_EMAILS[org] || 'miyeon1.kwon@interbiz.co.kr';
+}
+function refreshOrgFooter(){
+  try{ document.querySelectorAll('.org-contact-email').forEach(e=>{ e.textContent=orgContactEmail(); }); }catch(_){}
+}
+try{ if(document.readyState!=='loading') refreshOrgFooter(); else document.addEventListener('DOMContentLoaded',refreshOrgFooter); }catch(_){}
 // ⚡ localStorage 안전 저장 — photo(base64 1~3MB) 제외 + quota 초과 방지
 function saveStoredUser(u){
   if(!u) return;

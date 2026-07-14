@@ -346,6 +346,7 @@ async function loadFromDB(tier){
       D.evaluations=D.evaluations||[]; D.voiceEvals=D.voiceEvals||[];
     }
     if(typeof refreshOrgSwitch==='function') refreshOrgSwitch();
+    if(typeof refreshOrgFooter==='function') refreshOrgFooter();
     if(typeof refreshAdminVisibility==='function') refreshAdminVisibility();
 
     // 보조 쿼리 — 'full' 에서만 모두, core/content 는 최소만
