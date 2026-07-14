@@ -39,6 +39,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'userId(number), grant(boolean) 필요' });
     }
 
+    // 조직 경계 검증 — 로그인한 조직의 계정에만 권한 부여/취소 가능
+    if (decoded.org) {
+      const { data: target } = await sbAdmin.from('users').select('org_name').eq('id', userId).maybeSingle();
+      if (target && String(target.org_name || '') !== String(decoded.org)) {
+        return res.status(403).json({ ok: false, error: '다른 조직의 계정에는 권한을 변경할 수 없습니다.' });
+      }
+    }
+
     const { error } = await sbAdmin
       .from('users')
       .update({ is_sub_admin: grant })

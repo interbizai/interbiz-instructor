@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export const config = { maxDuration: 10 };
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const sbAdmin = SB_URL && SB_SERVICE_KEY ? createClient(SB_URL, SB_SERVICE_KEY, { auth: { persistSession: false } }) : null;
 
@@ -16,14 +18,36 @@ function stripPw(user) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
-  if (!sbAdmin) {
-    console.error('[create-user] sbAdmin not initialized');
+  if (!sbAdmin || !JWT_SECRET) {
+    console.error('[create-user] env missing');
     return res.status(500).json({ ok: false, error: '서버 설정 오류' });
+  }
+
+  // 보안 잠금 (2026-07-14) — 관리자/부관리자 토큰 없이는 계정 생성 불가
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (e) {
+    return res.status(401).json({ ok: false, error: '인증 필요 — 관리자만 강사를 등록할 수 있습니다.' });
+  }
+  if (!decoded.isAdmin) {
+    return res.status(403).json({ ok: false, error: '관리자만 강사를 등록할 수 있습니다.' });
   }
 
   try {
     const u = req.body || {};
     if (!u.email || !u.name) return res.status(400).json({ ok: false, error: '이름/이메일 필요' });
+
+    // 조직 강제 — 새 계정은 생성자(관리자)가 로그인한 조직에 귀속 (타 조직 계정 생성 차단)
+    let creatorOrg = null;
+    if (decoded.sub === 0) {
+      creatorOrg = decoded.org || null;
+    } else if (decoded.sub) {
+      const { data: me } = await sbAdmin.from('users').select('org_name').eq('id', decoded.sub).maybeSingle();
+      creatorOrg = me?.org_name || null;
+    }
 
     const plainPw = String(u.pw || '1234');
     const hashedPw = await bcrypt.hash(plainPw, 10);
@@ -49,7 +73,7 @@ export default async function handler(req, res) {
       decibel: 0,
       tempo: 0,
       student_count: 0,
-      org_name: u.orgName || null,
+      org_name: creatorOrg || u.orgName || null,
       office: u.office || null,
       birth_date: u.birthDate || null,
       status: u.status || '근무',

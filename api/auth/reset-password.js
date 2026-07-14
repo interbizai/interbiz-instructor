@@ -34,6 +34,21 @@ export default async function handler(req, res) {
       return res.status(403).json({ ok: false, error: '관리자 또는 본인만 가능합니다.' });
     }
 
+    // 조직 경계 검증 — 관리자/부관리자는 같은 조직의 계정만 초기화 가능
+    if (decoded.sub !== userId) {
+      let actorOrg = null;
+      if (decoded.sub === 0) {
+        actorOrg = decoded.org || null;
+      } else {
+        const { data: me } = await sbAdmin.from('users').select('org_name').eq('id', decoded.sub).maybeSingle();
+        actorOrg = me?.org_name || null;
+      }
+      const { data: target } = await sbAdmin.from('users').select('org_name').eq('id', userId).maybeSingle();
+      if (actorOrg && target && String(target.org_name || '') !== String(actorOrg)) {
+        return res.status(403).json({ ok: false, error: '다른 조직의 계정은 초기화할 수 없습니다.' });
+      }
+    }
+
     const newPwStr = String(newPassword);
     const hash = await bcrypt.hash(newPwStr, 10);
     const { error } = await sbAdmin.from('users').update({ pw: hash }).eq('id', userId);

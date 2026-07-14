@@ -71,7 +71,8 @@ async function dbGetVideos(){
 // 유저 생성
 async function dbCreateUser(u){
   try{
-    const r=await fetch('/api/auth/create-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)});
+    const token=localStorage.getItem('ib_token')||'';
+    const r=await fetch('/api/auth/create-user',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(u)});
     const j=await r.json().catch(()=>({}));
     if(!j.ok) return {_error:j.error||'강사 추가 실패'};
     return j.user;

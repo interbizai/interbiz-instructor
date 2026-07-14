@@ -1972,8 +1972,10 @@ function pickAIComment(score){
 // 데모 모드 (비딩/시연용) — 주소에 ?demo=1 접속 시 ON, ?demo=0 으로 OFF
 //   실제 데이터가 비어있을 때만 "실제 느낌"의 샘플 콘텐츠를 채워 화면을 완성 (실데이터 있으면 그대로)
 // ───────────────────────────────────────────────
-(function(){try{const p=new URLSearchParams(location.search);if(p.get('demo')==='1')localStorage.setItem('ib_demo','1');else if(p.get('demo')==='0')localStorage.removeItem('ib_demo');}catch(_){}})();
-function IB_DEMO(){try{return localStorage.getItem('ib_demo')==='1';}catch(_){return false;}}
+// 데모 모드 영구 비활성 (2026-07-14 지시) — 시연용 가짜 자료가 실제 자료처럼 보이는 혼동 방지.
+// 과거에 켜둔 기기에서도 플래그를 지워 즉시 꺼지게 한다.
+(function(){try{localStorage.removeItem('ib_demo');}catch(_){}})();
+function IB_DEMO(){return false;}
 function _demoProd(vid){return (vid&&(vid.videoType||vid.video_type||vid.productName||vid.product_name))||'제품';}
 function _demoHash(s){s=String(s||'');let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
 // 제품별 특징 포인트 (시나리오·팁이 제품마다 다르게 보이도록)
@@ -2133,6 +2135,10 @@ function _demoBtnHidden(){try{return localStorage.getItem('ib_demo_btnhide')==='
 function ibHideDemoBtn(){try{localStorage.setItem('ib_demo_btnhide','1');}catch(_){}_ensureDemoToggle();}
 function ibToggleDemoBtnVisible(){try{if(_demoBtnHidden())localStorage.removeItem('ib_demo_btnhide');else localStorage.setItem('ib_demo_btnhide','1');}catch(_){}_ensureDemoToggle();}
 function _ensureDemoToggle(){
+  // 데모 모드 영구 비활성 — 토글 버튼도 렌더하지 않고 기존 버튼은 제거
+  try{ const w=document.getElementById('ib-demo-toggle'); if(w) w.remove(); }catch(_){}
+  return;
+  /* eslint-disable no-unreachable */
   try{
     const isAdmin=!!(CU&&(CU.isAdmin||CU.isSubAdmin));
     let wrap=document.getElementById('ib-demo-toggle');
