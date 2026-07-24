@@ -903,21 +903,27 @@ function applyHeroStyle(elx,cfg){
     inner.classList.add(`hero-align-${align}`);
   }
 }
+// 조직별 히어로 설정 키 — 조직마다 대표 사진/문구를 따로 저장 (한쪽 변경이 다른 조직에 번지지 않게)
+function heroSettingKey(base){
+  const org=(typeof curOrg==='function' && curOrg())||'';
+  return org ? base+'_'+org : base;
+}
 async function loadHeroText(){
   const t=el('pick-hero-title'), s=el('pick-hero-sub');
+  const kTitle=heroSettingKey('hero_title'), kSub=heroSettingKey('hero_sub');
   let tCfg={...HERO_DEFAULTS.hero_title}, sCfg={...HERO_DEFAULTS.hero_sub};
   // 1) localStorage 먼저 기본값으로 깔기 (DB 가 비어 있어도 커스텀 값 유지)
-  const lt=localStorage.getItem('hero_title'), ls=localStorage.getItem('hero_sub');
+  const lt=localStorage.getItem(kTitle), ls=localStorage.getItem(kSub);
   if(lt) tCfg=parseHeroValue(lt,HERO_DEFAULTS.hero_title);
   if(ls) sCfg=parseHeroValue(ls,HERO_DEFAULTS.hero_sub);
   // 2) Supabase 가 값이 있으면 덮어쓰기 (없으면 localStorage 유지)
   let usedLocal=!!(lt||ls);
   try{
-    const{data,error}=await sb.from('app_settings').select('key,value').in('key',['hero_title','hero_sub']);
+    const{data,error}=await sb.from('app_settings').select('key,value').in('key',[kTitle,kSub]);
     if(error) throw error;
     const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
-    if(map.hero_title){tCfg=parseHeroValue(map.hero_title,HERO_DEFAULTS.hero_title);usedLocal=false}
-    if(map.hero_sub){sCfg=parseHeroValue(map.hero_sub,HERO_DEFAULTS.hero_sub);usedLocal=false}
+    if(map[kTitle]){tCfg=parseHeroValue(map[kTitle],HERO_DEFAULTS.hero_title);usedLocal=false}
+    if(map[kSub]){sCfg=parseHeroValue(map[kSub],HERO_DEFAULTS.hero_sub);usedLocal=false}
   }catch(e){}
   window._heroLocalMode=usedLocal;
   applyHeroStyle(t,tCfg); applyHeroStyle(s,sCfg);
@@ -940,11 +946,12 @@ async function loadHeroImage(){
   const tools=document.getElementById('pick-hero-image-tools');
   if(!wrap) return;
   let url='';
+  const kImg=heroSettingKey('hero_image');
   try{
-    const {data}=await sb.from('app_settings').select('value').eq('key','hero_image').maybeSingle();
+    const {data}=await sb.from('app_settings').select('value').eq('key',kImg).maybeSingle();
     url=(data?.value||'').trim();
   }catch(_){}
-  if(!url){ try{ url=localStorage.getItem('hero_image')||''; }catch(_){} }
+  if(!url){ try{ url=localStorage.getItem(kImg)||''; }catch(_){} }
   const canEdit=!!(CU?.isAdmin||CU?.isSubAdmin);
   if(url){
     // 영상이면 <video> autoplay loop muted, 아니면 <img> (GIF 자동 재생)
@@ -995,9 +1002,9 @@ function changeHeroImage(){
       const {error:ue}=await sb.storage.from('files').upload(path, upload, {contentType:mime||'image/jpeg', upsert:false});
       if(ue) throw new Error(ue.message);
       const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
-      const {error:upErr}=await sb.from('app_settings').upsert({key:'hero_image', value:publicUrl});
+      const {error:upErr}=await sb.from('app_settings').upsert({key:heroSettingKey('hero_image'), value:publicUrl});
       if(upErr) throw new Error(upErr.message);
-      try{ localStorage.setItem('hero_image', publicUrl); }catch(_){}
+      try{ localStorage.setItem(heroSettingKey('hero_image'), publicUrl); }catch(_){}
       await loadHeroImage();
       if(typeof showToast==='function') showToast('✓ 히어로 '+(mime.startsWith('video')?'영상':'이미지')+' 등록 완료','#10b981');
     }catch(e){
@@ -1013,8 +1020,8 @@ async function removeHeroImage(){
   if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자만 가능합니다.'); return; }
   if(!confirm('히어로 이미지를 삭제하고 글씨로 돌아갈까요?')) return;
   try{
-    await sb.from('app_settings').delete().eq('key','hero_image');
-    try{ localStorage.removeItem('hero_image'); }catch(_){}
+    await sb.from('app_settings').delete().eq('key',heroSettingKey('hero_image'));
+    try{ localStorage.removeItem(heroSettingKey('hero_image')); }catch(_){}
     await loadHeroImage();
     if(typeof showToast==='function') showToast('히어로 이미지 삭제 완료','#0078C8');
   }catch(e){
@@ -1134,12 +1141,13 @@ async function saveHeroEdit(key){
   };
   if(!cfg.text.trim()){alert('텍스트를 입력하세요.');return;}
   const json=JSON.stringify(cfg);
+  const storeKey=heroSettingKey(key);  // 조직별 저장 — 다른 조직 화면에 영향 없음
   // 항상 localStorage 에 백업 저장 (DB 가 비어 있거나 RLS 로 막혀도 새로고침 후 유지)
-  try{localStorage.setItem(key,json);}catch(e){}
+  try{localStorage.setItem(storeKey,json);}catch(e){}
   // DB 저장 시도 (선택적)
   let dbOk=true;
   try{
-    const{error}=await sb.from('app_settings').upsert({key,value:json});
+    const{error}=await sb.from('app_settings').upsert({key:storeKey,value:json});
     if(error) throw error;
   }catch(e){
     dbOk=false;
