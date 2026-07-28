@@ -78,7 +78,7 @@ let CU = JSON.parse(localStorage.getItem('ib_user')||'null');
 // 현재 조직 — 모든 저장(insert)에 조직 필수 첨부용. 조직 분리 이후 null 저장 금지 원칙.
 function curOrg(){ return D.activeOrg || CU?.orgName || CU?.org_name || CU?.channel || null; }
 // 조직별 수정요청 연락 이메일 — 하단 footer·앱설치 안내·QR 포스터에서 사용
-const ORG_CONTACT_EMAILS={ '가전AM':'miyeon1.kwon@interbiz.co.kr', '하이케어솔루션':'jieun0320@interbiz.co.kr' };
+const ORG_CONTACT_EMAILS={ 'LG전자 강사':'miyeon1.kwon@interbiz.co.kr', '하이케어솔루션':'jieun0320@interbiz.co.kr' };
 function orgContactEmail(){
   let org=curOrg();
   if(!org){ try{ org=localStorage.getItem('ib_active_org')||''; }catch(_){} }

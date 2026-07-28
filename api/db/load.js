@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     // 구버전 토큰(org 없음)은 '전체 조직' 모드로 타 조직 데이터가 노출되므로 차단 — 재로그인 유도.
     const adminOrg = decoded.org ? String(decoded.org) : null;
     if (isRealAdmin && !adminOrg) {
-      return res.status(403).json({ ok: false, error: '조직별 로그인 페이지에서 다시 로그인해주세요. (가전AM / 하이케어솔루션)' });
+      return res.status(403).json({ ok: false, error: '조직별 로그인 페이지에서 다시 로그인해주세요. (LG전자 강사 / 하이케어솔루션)' });
     }
     const targetOrg = isRealAdmin ? adminOrg : viewerOrg;
 
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     const wantCore    = tier === 'core' || tier === 'full';
     const wantContent = tier === 'content' || tier === 'full';
 
-    // 모든 데이터 강제 조직 매칭 — 조직 분리 이후 NULL(공통) 개념 폐지 (레거시 NULL 은 가전AM 으로 확정 완료)
+    // 모든 데이터 강제 조직 매칭 — 조직 분리 이후 NULL(공통) 개념 폐지 (레거시 NULL 은 LG전자 강사(구 가전AM) 로 확정 완료)
     const orgEq = (q) => targetOrg ? q.eq('org_name', targetOrg) : q;
     const orgOrNull = orgEq;
 

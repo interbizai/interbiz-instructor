@@ -134,9 +134,9 @@ function renderAdmin(){
   if(orgSel){
     const currentVal=orgSel.value;
     const orgs=[...new Set((D.users||[]).map(u=>u.orgName).filter(Boolean))].sort();
-    // 기본값: 기존 선택 유지 → 없으면 '가전AM' → 없으면 첫 번째 조직 → 없으면 '(조직 미설정)'
+    // 기본값: 기존 선택 유지 → 없으면 'LG전자 강사' → 없으면 첫 번째 조직 → 없으면 '(조직 미설정)'
     let defaultOrg=currentVal && orgs.includes(currentVal) ? currentVal
-                  : orgs.includes('가전AM') ? '가전AM'
+                  : orgs.includes('LG전자 강사') ? 'LG전자 강사'
                   : orgs[0] || '';
     orgSel.innerHTML=orgs.length
       ? orgs.map(o=>`<option value="${o}"${o===defaultOrg?' selected':''}>${o}</option>`).join('')
@@ -261,7 +261,7 @@ function parseHireDate(v){
 // 엑셀 양식 다운로드
 function downloadUserTemplate(){
   const header=['조직명','팀명','사무실','직군','성명','연락처','생년월일','입사일','상권','메일(아이디)','상태'];
-  const sample=['가전AM','수도권1','서울','현장강사','홍길동','010-1234-5678','930113','2020-06-01','서울','hong@interbiz.co.kr','근무'];
+  const sample=['LG전자 강사','수도권1','서울','현장강사','홍길동','010-1234-5678','930113','2020-06-01','서울','hong@interbiz.co.kr','근무'];
   const ws=XLSX.utils.aoa_to_sheet([header,sample]);
   ws['!cols']=header.map(()=>({wch:18}));
   const wb=XLSX.utils.book_new();
@@ -345,7 +345,7 @@ function openAddUserModal(){
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${[
-        ['au-org','조직명',curOrg()||'가전AM'],['au-team','팀명','수도권1'],['au-office','사무실','서울'],
+        ['au-org','조직명',curOrg()||'LG전자 강사'],['au-team','팀명','수도권1'],['au-office','사무실','서울'],
         ['au-pos','직군','현장강사'],['au-name','성명 *',''],['au-phone','연락처','010-0000-0000'],
         ['au-birth','생년월일','YYYY-MM-DD 또는 YYMMDD'],['au-hire','입사일','YYYY-MM-DD'],
         ['au-ch','상권','서울'],['au-email','아이디 * (이메일 형식 아니어도 됨)','interbiz1989ai'],['au-pw','비밀번호 (비우면 1234)','영문·숫자·특수문자 가능']
@@ -829,7 +829,7 @@ async function removeEduType(id,name){
   try{ localStorage.setItem('interbiz_eduTypes',JSON.stringify(snapLocal.filter(n=>n!==name))); }catch(e){}
   renderEduTypeManage();
   // 2) DB에서 같은 이름의 모든 관련 행 한 번에 조회 (현재 조직 + NULL)
-  //    여러 시도를 통해 (ORG, 가전AM) + NULL 둘 다 있을 수 있으므로
+  //    여러 시도를 통해 (ORG, LG전자 강사) + NULL 둘 다 있을 수 있으므로
   let relatedRows=[];
   try{
     const orFilter=D.activeOrg?`org_name.eq.${D.activeOrg},org_name.is.null`:'org_name.is.null';
