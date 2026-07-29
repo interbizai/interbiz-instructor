@@ -67,6 +67,15 @@ body{
 }
 .form-input::placeholder{color:var(--t3)}
 .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+/* 크롬 자동완성이 입력창을 연파랑으로 칠하는 것 차단 — 흰 배경 유지 */
+input.form-input:-webkit-autofill,
+input.form-input:-webkit-autofill:hover,
+input.form-input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #fff inset;
+  box-shadow:0 0 0 1000px #fff inset;
+  -webkit-text-fill-color:var(--t1);
+  transition:background-color 99999s ease-in-out 0s;
+}
 
 .pw-wrap{position:relative}
 .pw-wrap .form-input{padding-right:44px}
