@@ -1129,7 +1129,7 @@ function renderRadarChartFromEvals(userId){
          </div>`
       : '';
     barsEl.innerHTML=fallbackBanner+'<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'+
-      cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
+      cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=scoreColorFromRatio(p/100);return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
         <span style="font-size:12.5px;font-weight:700;color:var(--t1);width:140px;flex-shrink:0">${c.name}</span>
         <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:5px;transition:width .8s"></div></div>
         <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:800;background:${cc};color:#fff;min-width:50px;text-align:center;flex-shrink:0">${p}%</span>

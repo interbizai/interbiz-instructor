@@ -378,6 +378,32 @@ async function removeMyPhoto(){
 ════════════════════════════════ */
 function el(id){ return document.getElementById(id)||null; }
 function v(id){ const e=el(id); return e?(e.value||''):''; }
+// ── 수기 점수 수정 즉시 반영용 헬퍼 ────────────────────
+// 재렌더가 어떤 이유로든 실패해도 '숫자만 바뀌고 색은 옛날 그대로' 인 상태가 남지 않도록
+// 점수 pill 색과 상단 요약(총점·링·%)을 직접 갱신한다.
+function repaintScorePill(which,subIdx,score,max){
+  const ratio=max?score/max:0;
+  const color=(typeof scoreColorFromRatio==='function')
+    ? scoreColorFromRatio(ratio)
+    : (ratio>=0.7?'#10b981':ratio>=0.5?'#f59e0b':'#ef4444');
+  document.querySelectorAll(`tr[data-ts-which="${which}"][data-ts-globalidx="${subIdx}"] .ts-score-edit`)
+    .forEach(pill=>{
+      pill.style.background=color+'18';
+      pill.style.color=color;
+      if(String(pill.textContent||'').trim()!==String(score)) pill.textContent=String(score);
+    });
+}
+// 상단 총점 배너 — 교육맞춤평가(crit) / AI 독자(ai) 각각의 점수·링·퍼센트
+function repaintScoreSummary(which,overall){
+  const pct=Math.max(0,Math.min(100,Math.round(Number(overall)||0)));
+  const isAi=which==='ai';
+  const scoreEl=document.getElementById(isAi?'an-ai-score':'an-total-score');
+  const pctEl=document.getElementById(isAi?'an-score-pct-ai':'an-score-pct');
+  const ringEl=document.getElementById(isAi?'an-score-ring-ai':'an-score-ring');
+  if(scoreEl) scoreEl.textContent=String(pct);
+  if(pctEl) pctEl.textContent=pct+'%';
+  if(ringEl) ringEl.setAttribute('stroke-dashoffset',String(264-(264*pct/100)));
+}
 // 관리자/부관리자용: 평가 항목별 피드백 인라인 수정 저장
 // (score / analysis / solution 필드를 해당 evaluations row의 sub_scores[subIdx]에 반영)
 async function saveSubScoreEdit(which,subIdx,field,newValue){
@@ -413,15 +439,18 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
       if(n<0) n=0;
       if(n===prev.score) return;
       subs[subIdx].score=n;
-      // level 자동 재지정 — 렌더 색상과 동일 기준, max별 임계값 적용
-      // max ≤ 5: good ≥80%, normal ≥60%, bad <60%
-      // max ≥ 6: good ≥90%, normal ≥70%, bad <70%
+      // ⚠ 수기 수정 표시 — 이 표시가 있어야 재렌더 시 AI 원점수로 되돌아가지 않는다
+      subs[subIdx].manual=true;
+      subs[subIdx].score_capped=false;
+      // level / 5단계 원점수 재지정 — 화면 색상과 동일한 하나의 기준 사용
+      //   70% 이상 초록(4~5점) · 50% 이상 주황(3점) · 그 미만 빨강(1~2점)
       const ratio=max?n/max:0;
-      const gTh=max<=5?0.8:0.9;
-      const nTh=max<=5?0.6:0.7;
-      if(ratio>=gTh) subs[subIdx].level='good';
-      else if(ratio>=nTh) subs[subIdx].level='normal';
-      else subs[subIdx].level='bad';
+      const ls=(typeof levelScoreFromRatio==='function')
+        ? levelScoreFromRatio(ratio)
+        : (ratio>=0.9?5:ratio>=0.7?4:ratio>=0.5?3:ratio>=0.3?2:1);
+      subs[subIdx].level_score=ls;
+      subs[subIdx].level_name=({5:'매우 우수',4:'우수',3:'보통',2:'미흡',1:'매우 미흡'})[ls]||'';
+      subs[subIdx].level=ls>=4?'good':ls===3?'normal':'bad';   // 해당없음 칸에 숫자를 넣으면 na 자동 해제
     } else if(field==='analysis'){
       const val=String(newValue||'').trim();
       if(val===String(prev.analysis||'').trim()) return;
@@ -444,18 +473,43 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
     if(window._lastVertexResult?.[rawKey]?.sub_scores&&window._lastVertexResult[rawKey].sub_scores[subIdx]){
       Object.assign(window._lastVertexResult[rawKey].sub_scores[subIdx],subs[subIdx]);
     }
-    // overall_score 재계산 (na 제외)
+    // overall_score + 대항목(categories) 재계산 (na 제외)
+    // ※ categories 를 같이 갱신해야 레이더/막대 그래프와 대항목 달성률이 총점과 어긋나지 않는다
     const valid=subs.filter(s=>s.level!=='na');
     const sumS=valid.reduce((a,s)=>a+(s.score||0),0);
     const sumM=valid.reduce((a,s)=>a+(s.max||0),0);
     if(sumM>0){
       const newOverall=Math.round(sumS/sumM*100);
-      await sb.from('evaluations').update({overall_score:newOverall}).eq('id',evalId);
+      // 대항목 집계 — 원본 등장 순서 유지
+      const order=[], cmap=new Map();
+      subs.forEach(s=>{
+        const k=s.category||'기타';
+        if(!order.includes(k)) order.push(k);
+        if(s.level==='na') return;
+        if(!cmap.has(k)) cmap.set(k,{name:k,score:0,max:0});
+        const c=cmap.get(k);
+        c.score+=Number(s.score||0);
+        c.max+=Number(s.max||0);
+      });
+      const newCats=order.filter(k=>cmap.has(k)).map(k=>{
+        const c=cmap.get(k);
+        return {name:k,score:c.score,max:c.max,achievement:c.max>0?Math.round(c.score/c.max*100):0};
+      });
+      await sb.from('evaluations').update({overall_score:newOverall,categories:newCats}).eq('id',evalId);
       row.overall_score=newOverall;
-      if(window._lastVertexResult?.[rawKey]) window._lastVertexResult[rawKey].overall_score=newOverall;
+      row.categories=newCats;
+      if(window._lastVertexResult?.[rawKey]){
+        window._lastVertexResult[rawKey].overall_score=newOverall;
+        window._lastVertexResult[rawKey].categories=newCats;
+      }
     }
     if(typeof showToast==='function') showToast(`저장됨 (${field==='score'?'점수':field==='analysis'?'분석':'솔루션'})`,'#10b981');
-    // 전체 분석 결과 재렌더 — 점수/색/총점/링/%/레이더/바 그래프 모두 동기화
+    // ① 점수 pill 색을 먼저 즉시 반영 — 재렌더가 실패해도 숫자와 색이 어긋나지 않게
+    if(field==='score'){
+      try{ repaintScorePill(which,subIdx,subs[subIdx].score,subs[subIdx].max||5); }catch(_){}
+    }
+    // ② 전체 분석 결과 재렌더 — 점수/색/총점/링/%/레이더/바 그래프 모두 동기화
+    let rerendered=false;
     try{
       const crit=window._lastVertexResult?.crit;
       const ai=window._lastVertexResult?.ai;
@@ -463,8 +517,13 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
         const mapped=mapVertexToLegacy(crit,ai);
         const ctx=window._anRenderCtx||{hasChecklist:true,studentCount:20};
         renderAnalysisResult(mapped,ctx.hasChecklist,ctx.studentCount);
+        rerendered=true;
       }
     }catch(rerr){ console.warn('재렌더 중 경고:',rerr); }
+    // ③ 재렌더가 안 됐으면 상단 요약(총점/링/%)만이라도 직접 갱신
+    if(!rerendered && field==='score'){
+      try{ repaintScoreSummary(which,row.overall_score); }catch(_){}
+    }
   }catch(e){
     console.error('saveSubScoreEdit exception:',e);
     if(typeof showToast==='function') showToast('저장 중 오류','#ef4444');

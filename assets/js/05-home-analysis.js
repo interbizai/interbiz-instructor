@@ -331,8 +331,22 @@ async function loadChecklistItemsForEval(checklistId){
 const LEVEL_RATIO={5:1,4:0.8,3:0.6,2:0.4,1:0.2};
 const LEVEL_NAME={5:'매우 우수',4:'우수',3:'보통',2:'미흡',1:'매우 미흡'};
 const LEVEL_TAG_COLOR={5:'#10b981',4:'#22c55e',3:'#f59e0b',2:'#f97316',1:'#ef4444'};
+// ── 점수 비율 → 5단계 · 색상 (모든 화면이 이 기준 하나만 쓴다) ──────
+// 환산표가 5:100% / 4:80% / 3:60% / 2:40% / 1:20% 이므로 경계는 각 중간값
+//   0.9 이상 → 5점 · 0.7 이상 → 4점 · 0.5 이상 → 3점 · 0.3 이상 → 2점 · 그 미만 → 1점
+function levelScoreFromRatio(ratio){
+  return ratio>=0.9?5:ratio>=0.7?4:ratio>=0.5?3:ratio>=0.3?2:1;
+}
+// 4~5점 초록 · 3점 주황 · 1~2점 빨강 (수기 수정 점수도 동일 기준으로 색이 바뀐다)
+function scoreColorFromRatio(ratio){
+  return ratio>=0.7?'#10b981':ratio>=0.5?'#f59e0b':'#ef4444';
+}
+function levelFromLevelScore(ls){
+  return ls>=4?'good':ls===3?'normal':'bad';
+}
 // 점수 칸 아래에 5단계 원점수 태그 (예: 4점 · 우수)
 function renderLevelScoreTag(s){
+  if(s?.manual) return `<div style="margin-top:2px;font-size:9px;font-weight:800;color:var(--blue);white-space:nowrap">수기 조정</div>`;
   const ls=Number(s?.level_score||0);
   if(!(ls>=1&&ls<=5)) return '';
   const capped=s.score_capped?' <span title="근거가 약해 분포 상한 규칙으로 조정된 항목">▾</span>':'';
@@ -349,6 +363,13 @@ function normalizeVertexResult(raw){
     const ana=String(s.analysis||'');
     const noTs=!ts||ts==='-'||ts==='—'||/^\s*$/.test(ts);
     const naKeywords=/(평가하기 어렵|평가가 어렵|판단하기 어렵|판단이 어렵|판단 불가|평가 불가|확인 불가|녹화된 강의이므로|평가 대상이 아님|해당 항목을 평가할 수 없)/;
+    // ── 관리자가 수기로 고친 항목 ── 점수를 절대 재계산하지 않는다.
+    //    (재계산하면 손으로 넣은 값이 AI 원점수로 되돌아가 '수정이 안 되는' 것처럼 보인다)
+    if(s.manual){
+      const mScore=Number(s.score||0);
+      const mLevel=s.level==='na'?'na':levelFromLevelScore(levelScoreFromRatio(max>0?mScore/max:0));
+      return {...s, level:mLevel, score:mScore, max};
+    }
     const isNa = s.level==='na' || (noTs && naKeywords.test(ana) && s.level!=='good' && s.level!=='normal');
     // ⚠ max 도 반환 — 원본 s.max=0 인 경우 보정된 5 가 유지되도록 (이전 버그: max 안 넘김 → 0 그대로 저장)
     if(isNa) return {...s, level:'na', level_score:0, level_name:'해당없음', score:0, max};
@@ -1699,10 +1720,8 @@ function openChecklistDetail(which){
         const max=s.max||0;
         const score=s.score||0;
         const p=max>0?Math.round(score/max*100):0;
-        // max ≤ 5: 80/60, max ≥ 6: 90/70
-        const gTh=max<=5?80:90;
-        const nTh=max<=5?60:70;
-        const cc=p>=gTh?'#10b981':p>=nTh?'#f59e0b':'#ef4444';
+        // 5단계 앵커 채점과 동일 기준 — 70% 이상 초록(4~5점) · 50% 이상 주황(3점) · 그 미만 빨강
+        const cc=scoreColorFromRatio(max>0?score/max:0);
         return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;max-width:540px;margin-left:auto;margin-right:auto;width:100%">
           <span style="font-size:11.5px;font-weight:600;width:140px;flex-shrink:0">${name}</span>
           <div style="flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px"></div></div>
@@ -2489,7 +2508,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
     const eduBars=el('an-edu-bars');
     if(eduBars){
       eduBars.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
-        r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
+        r.criteriaScores.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=scoreColorFromRatio(p/100);return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
           <span style="font-size:12.5px;font-weight:700;color:var(--t1);width:140px;flex-shrink:0">${c.name}</span>
           <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:5px;transition:width .8s"></div></div>
           <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:800;background:${cc};color:#fff;min-width:50px;text-align:center;flex-shrink:0">${p}%</span>
@@ -2639,7 +2658,7 @@ function renderAnalysisResult(r,hasChecklist,studentCount){
   const aiBars=el('an-ai-bars');
   if(aiBars){
     aiBars.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
-      aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
+      aiItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=scoreColorFromRatio(p/100);return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
         <span style="font-size:12.5px;font-weight:700;color:var(--t1);width:140px;flex-shrink:0">${c.name}</span>
         <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:5px;transition:width .8s"></div></div>
         <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:800;background:${cc};color:#fff;min-width:50px;text-align:center;flex-shrink:0">${p}%</span>
@@ -2852,13 +2871,12 @@ function renderTsTable(timestamps,which){
       const naText=/(해당 ?없|평가하기 어렵|평가가 어렵|판단하기 어렵|평가 불가|판단 불가|확인 불가|녹화된 강의이므로|해당 항목을 평가할 수 없|평가 대상이 아님)/.test((ts.text||'')+(ts.solution||''));
       const isNA=ts.level==='na'||ts.type==='na'||(noTs&&naText);
       const scoreRatio=ts.maxScore?ts.score/ts.maxScore:0;
-      // 색상 기준 — 배점(max)에 따라 임계값 다르게:
-      //  · max ≤ 5  : good ≥80% · normal ≥60% · bad <60% (max=5일 때 5·4 초록, 3 주황, ≤2 빨강)
-      //  · max ≥ 6  : good ≥90% · normal ≥70% · bad <70% (max=10일 때 9·10 초록, 7·8 주황 등)
-      const _maxForTh=ts.maxScore||5;
-      const _gTh=_maxForTh<=5?0.8:0.9;
-      const _nTh=_maxForTh<=5?0.6:0.7;
-      const scoreColor=isNA?'#94a3b8':scoreRatio>=_gTh?'#10b981':scoreRatio>=_nTh?'#f59e0b':'#ef4444';
+      // 색상 기준 — 5단계 앵커 채점과 동일 (배점 크기와 무관하게 하나의 기준)
+      //  · 70% 이상 → 초록 (4~5점: 우수·매우 우수)   예) 8/10, 4/5
+      //  · 50% 이상 → 주황 (3점: 보통)               예) 6/10, 3/5
+      //  · 그 미만  → 빨강 (1~2점: 미흡·매우 미흡)   예) 2/10, 2/5
+      // 수기로 점수를 고쳐도 이 기준으로 색이 함께 바뀐다.
+      const scoreColor=isNA?'#94a3b8':scoreColorFromRatio(scoreRatio);
       const rowBg=idx%2===0?'#ffffff':'#fafbfc';
       // 점수 pill (가점 있는 항목) — stopPropagation 제거, tbody 위임 핸들러가 contenteditable 감지 처리
       const scorePill=`<span class="ts-score-edit" data-sub-idx="${ts._subIdx}" data-max="${ts.maxScore||5}" ${canEdit?'contenteditable="true" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" onfocus="this.style.outline=\'2px dashed #0078C8\';this.style.outlineOffset=\'1px\'" onblur="this.style.outline=\'none\';saveSubScoreEdit(\''+srcWhich+'\','+ts._subIdx+',\'score\',this.textContent)"':''} style="display:inline-block;min-width:28px;padding:3px 10px;border-radius:999px;background:${scoreColor}18;color:${scoreColor};font-weight:800;font-size:${CELL_SIZE};font-family:${FONT};${canEdit?'cursor:text;':''}">${ts.score}</span>`;
@@ -2997,7 +3015,7 @@ function openCategoryRadar(which,categoryName){
       </div>
       <div style="border:1px solid var(--bdr);border-radius:12px;padding:20px;display:flex;flex-direction:column">
         <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
-        ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=p>=90?'#10b981':p>=70?'#f59e0b':'#ef4444';return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;max-width:540px;margin-left:auto;margin-right:auto;width:100%">
+        ${radarItems.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=scoreColorFromRatio(p/100);return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;max-width:540px;margin-left:auto;margin-right:auto;width:100%">
           <span style="font-size:12px;font-weight:700;width:140px;flex-shrink:0">${c.name}</span>
           <div style="flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:4px"></div></div>
           <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;font-weight:800;background:${cc};color:#fff;min-width:46px;text-align:center;flex-shrink:0">${p}%</span>
