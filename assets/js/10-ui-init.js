@@ -381,6 +381,23 @@ function v(id){ const e=el(id); return e?(e.value||''):''; }
 // ── 수기 점수 수정 즉시 반영용 헬퍼 ────────────────────
 // 재렌더가 어떤 이유로든 실패해도 '숫자만 바뀌고 색은 옛날 그대로' 인 상태가 남지 않도록
 // 점수 pill 색과 상단 요약(총점·링·%)을 직접 갱신한다.
+// 타이핑 중 즉시 색 변경 — 저장/재렌더를 기다리지 않는다
+function recolorScorePill(elm){
+  if(!elm) return;
+  const max=Number(elm.dataset?.max)||5;
+  const txt=String(elm.textContent||'').replace(/[^0-9-]/g,'');
+  if(!txt){ elm.style.background='transparent'; return; }
+  let n=parseInt(txt,10);
+  if(isNaN(n)) return;
+  if(n>max) n=max;
+  if(n<0) n=0;
+  const color=(typeof scoreColorFromRatio==='function')
+    ? scoreColorFromRatio(max?n/max:0)
+    : ((max?n/max:0)>=0.7?'#10b981':(max?n/max:0)>=0.5?'#f59e0b':'#ef4444');
+  elm.style.background=color+'18';
+  elm.style.color=color;
+  elm.style.fontWeight='800';
+}
 function repaintScorePill(which,subIdx,score,max){
   const ratio=max?score/max:0;
   const color=(typeof scoreColorFromRatio==='function')
@@ -404,6 +421,36 @@ function repaintScoreSummary(which,overall){
   if(pctEl) pctEl.textContent=pct+'%';
   if(ringEl) ringEl.setAttribute('stroke-dashoffset',String(264-(264*pct/100)));
 }
+// 레이더/대항목 막대는 전체 재렌더가 있어야 갱신된다.
+// 다만 재렌더는 표 DOM 을 통째로 교체하므로, 수정이 끝나고 잠잠해진 뒤에 한 번만 실행한다.
+// (수정 중에 실행하면 입력하던 칸이 사라져 다음 칸이 저장되지 않는다)
+let _graphRefreshTimer=null;
+function scheduleGraphRefresh(delay){
+  if(_graphRefreshTimer) clearTimeout(_graphRefreshTimer);
+  _graphRefreshTimer=setTimeout(()=>{
+    _graphRefreshTimer=null;
+    // 아직 어딘가를 편집 중이면 더 미룬다
+    const ae=document.activeElement;
+    if(ae&&ae.getAttribute&&ae.getAttribute('contenteditable')==='true'){ scheduleGraphRefresh(1500); return; }
+    // 표 스크롤 위치 보존 — 재렌더 후 같은 자리로 되돌린다
+    const feed=document.getElementById('an-ts-feed');
+    const findScroller=(rootEl)=>rootEl?Array.from(rootEl.querySelectorAll('*')).find(n=>n.scrollHeight>n.clientHeight+4):null;
+    const savedTop=findScroller(feed)?.scrollTop||0;
+    try{
+      const crit=window._lastVertexResult?.crit;
+      const ai=window._lastVertexResult?.ai;
+      if((crit||ai)&&typeof mapVertexToLegacy==='function'&&typeof renderAnalysisResult==='function'){
+        const mapped=mapVertexToLegacy(crit,ai);
+        const ctx=window._anRenderCtx||{hasChecklist:true,studentCount:20};
+        renderAnalysisResult(mapped,ctx.hasChecklist,ctx.studentCount);
+        if(savedTop>0) requestAnimationFrame(()=>{
+          const sc=findScroller(document.getElementById('an-ts-feed'));
+          if(sc) sc.scrollTop=savedTop;
+        });
+      }
+    }catch(e){ console.warn('그래프 갱신 경고:',e); }
+  }, typeof delay==='number'?delay:1500);
+}
 // 관리자/부관리자용: 평가 항목별 피드백 인라인 수정 저장
 // (score / analysis / solution 필드를 해당 evaluations row의 sub_scores[subIdx]에 반영)
 async function saveSubScoreEdit(which,subIdx,field,newValue){
@@ -421,23 +468,18 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
       let n=parseInt(rawInput.replace(/[^0-9-]/g,''),10);
       if(isNaN(n)) n=0;
       const max=prev.max||5;
-      // 배점(max)을 초과할 수 없음 — 초과 입력 시 저장 중단 + 토스트 안내
+      // 배점을 넘겨 입력하면 배점으로 맞춘다 (예전엔 저장을 취소하고 표 전체를 다시 그렸는데,
+      // 그 재렌더가 이어서 수정하던 칸을 날려버려 '첫 칸만 저장되는' 원인이었다)
       if(n>max){
-        if(typeof showToast==='function') showToast(`배점 ${max}점을 초과할 수 없습니다 (입력: ${n})`,'#ef4444');
-        // 재렌더로 원래 값 복원
-        try{
-          const crit=window._lastVertexResult?.crit;
-          const ai=window._lastVertexResult?.ai;
-          if((crit||ai)&&typeof mapVertexToLegacy==='function'&&typeof renderAnalysisResult==='function'){
-            const mapped=mapVertexToLegacy(crit,ai);
-            const ctx=window._anRenderCtx||{hasChecklist:true,studentCount:20};
-            renderAnalysisResult(mapped,ctx.hasChecklist,ctx.studentCount);
-          }
-        }catch(rerr){}
-        return;
+        if(typeof showToast==='function') showToast(`배점 ${max}점을 넘을 수 없어 ${max}점으로 맞췄습니다`,'#f59e0b');
+        n=max;
       }
       if(n<0) n=0;
-      if(n===prev.score) return;
+      if(n===prev.score){
+        // 값은 그대로여도 화면 색이 어긋나 있을 수 있으니 색만 다시 칠한다
+        try{ repaintScorePill(which,subIdx,n,max); }catch(_){}
+        return;
+      }
       subs[subIdx].score=n;
       // ⚠ 수기 수정 표시 — 이 표시가 있어야 재렌더 시 AI 원점수로 되돌아가지 않는다
       subs[subIdx].manual=true;
@@ -504,25 +546,14 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
       }
     }
     if(typeof showToast==='function') showToast(`저장됨 (${field==='score'?'점수':field==='analysis'?'분석':'솔루션'})`,'#10b981');
-    // ① 점수 pill 색을 먼저 즉시 반영 — 재렌더가 실패해도 숫자와 색이 어긋나지 않게
+    // ── 화면 반영 ──────────────────────────────────
+    // ⚠ 여기서 전체 재렌더(renderAnalysisResult)를 부르면 표 DOM 이 통째로 교체된다.
+    //    그러면 사장님이 다음 칸을 이어서 수정하는 중에 입력이 날아가고 blur 도 안 걸려
+    //    '첫 칸만 저장되는' 현상이 생긴다. → 바뀐 부분만 제자리에서 갱신한다.
     if(field==='score'){
       try{ repaintScorePill(which,subIdx,subs[subIdx].score,subs[subIdx].max||5); }catch(_){}
-    }
-    // ② 전체 분석 결과 재렌더 — 점수/색/총점/링/%/레이더/바 그래프 모두 동기화
-    let rerendered=false;
-    try{
-      const crit=window._lastVertexResult?.crit;
-      const ai=window._lastVertexResult?.ai;
-      if((crit||ai)&&typeof mapVertexToLegacy==='function'&&typeof renderAnalysisResult==='function'){
-        const mapped=mapVertexToLegacy(crit,ai);
-        const ctx=window._anRenderCtx||{hasChecklist:true,studentCount:20};
-        renderAnalysisResult(mapped,ctx.hasChecklist,ctx.studentCount);
-        rerendered=true;
-      }
-    }catch(rerr){ console.warn('재렌더 중 경고:',rerr); }
-    // ③ 재렌더가 안 됐으면 상단 요약(총점/링/%)만이라도 직접 갱신
-    if(!rerendered && field==='score'){
       try{ repaintScoreSummary(which,row.overall_score); }catch(_){}
+      try{ scheduleGraphRefresh(); }catch(_){}
     }
   }catch(e){
     console.error('saveSubScoreEdit exception:',e);
