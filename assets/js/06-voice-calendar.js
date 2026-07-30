@@ -493,6 +493,7 @@ function stopVoiceRec(){
 }
 
 async function runVoiceAnalysis(){
+  if(!requireAnalysisPermission('스피치 평가 분석')) return;
   const title=v('va-title').trim();
   if(!title){alert('강의 제목을 입력하세요.');return;}
   const hasFile=el('va-file').files?.length>0;
@@ -1638,6 +1639,7 @@ function onStreamChecklist(input){
 }
 
 function finishStreamRecord(){
+  if(!requireAnalysisPermission('AI 영상 평가 분석')) return;
   stopWaveform();
   if(streamStream){ streamStream.getTracks().forEach(t=>t.stop()); streamStream=null; }
 

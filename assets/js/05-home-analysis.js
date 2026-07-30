@@ -1,5 +1,46 @@
 /* 05-home-analysis.js — 홈(인터PICK) + 스트리밍 + 영상등록 분석(AI 평가)
    (index.html 9464~12601행에서 분리 · 로드 순서 유지 필수) */
+
+/* ════════════════════════════════
+   AI 평가 실행 권한 (관리자 전용)
+   ────────────────────────────────
+   AI 분석은 비용·시간이 큰 작업이라 관리자(부관리자 포함)만 실행할 수 있다.
+   강사 계정이 분석 버튼을 누르면 실행하지 않고 안내 모달만 띄운다.
+   ※ 이미 저장된 평가 결과 열람은 막지 않는다 — 실행만 제한.
+════════════════════════════════ */
+function canRunAnalysis(){
+  return !!(typeof CU!=='undefined' && CU && CU.isAdmin);
+}
+function showAdminOnlyNotice(featureName){
+  document.getElementById('admin-only-overlay')?.remove();
+  const ov=document.createElement('div');
+  ov.className='overlay show';
+  ov.id='admin-only-overlay';
+  const close=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) close(); };
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:32px 28px 24px;max-width:400px;width:88vw;text-align:center;animation:scaleIn .25s cubic-bezier(.22,1,.36,1);box-shadow:0 20px 60px rgba(0,0,0,.18)">
+    <div style="width:56px;height:56px;margin:0 auto 18px;border-radius:50%;background:rgba(0,120,200,.08);display:flex;align-items:center;justify-content:center">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+    <div style="font-size:17px;font-weight:900;color:var(--t1);margin-bottom:8px">관리자 권한이 필요합니다</div>
+    <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:22px">
+      ${featureName||'AI 평가 분석'}은 현재 관리자만 실행할 수 있습니다.<br>
+      평가가 필요하시면 관리자에게 요청해주세요.
+    </div>
+    <button class="btn btn-blue" id="admin-only-ok" style="width:100%;padding:11px;font-size:13px;font-weight:800">확인</button>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#admin-only-ok').onclick=close;
+}
+// 분석 실행 직전 호출 — 권한 없으면 안내 후 false 반환
+function requireAnalysisPermission(featureName){
+  if(canRunAnalysis()) return true;
+  showAdminOnlyNotice(featureName);
+  return false;
+}
 /* ════════════════════════════════
    HOME PAGE
 ════════════════════════════════ */
@@ -416,6 +457,7 @@ async function callVertexAnalyze(payload){
 // ④ sub_scores 비면 categories 로 자동 추정 ⑤ 부분 성공도 저장
 // ────────────────────────────────────────────────────────────────────────────
 async function reanalyzeCurrentVideo(){
+  if(!requireAnalysisPermission('AI 재분석')) return;
   const videoId=window._anVideoId;
   if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
   if(!confirm('같은 영상으로 AI 재분석을 실행할까요?\n\n약 30~90초 소요됩니다.\n이전 평가는 새 결과로 덮어쓰여집니다.')) return;
@@ -582,6 +624,7 @@ async function reanalyzeCurrentVideo(){
 
 // 평가안기준 추가 평가 — AI 독자만 있는 영상에 평가안기준 평가를 추가로 진행
 async function addCriteriaEvaluation(){
+  if(!requireAnalysisPermission('교육맞춤평가 추가 분석')) return;
   if(!CU?.isAdmin && !CU?.isSubAdmin){ alert('관리자/부관리자만 가능합니다.'); return; }
   const videoId=window._anVideoId;
   if(!videoId){ alert('영상 정보를 찾을 수 없습니다.'); return; }
@@ -793,6 +836,7 @@ async function addCriteriaEvaluation(){
 //   critOnly=true → 평가안기준만 평가 (AI독자 skip)
 //   checklistId, eduFileUrl → 강제 사용 (모달에서 선택한 값)
 async function reanalyzeWithFreshUpload(videoId, options={}){
+  if(!requireAnalysisPermission('AI 재분석')) return;
   // 동적 file input 생성 (카드/모달 외부에 두어 click 이벤트 격리)
   const inp=document.createElement('input');
   inp.type='file';
@@ -1895,6 +1939,7 @@ function initAnProdSelect(){
 }
 
 function runAnalysis(){
+  if(!requireAnalysisPermission('AI 영상 평가 분석')) return;
   const yt=v('an-youtube').trim();
   const file=el('an-file').files?.[0];
   const title=v('an-title').trim();
@@ -2040,6 +2085,8 @@ function showAiLoading(show,expectedSec){
 }
 
 async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
+  // 방어선 — 버튼 외 경로로 들어와도 권한 없으면 실행하지 않는다
+  if(!requireAnalysisPermission('AI 영상 평가 분석')){ try{ showAiLoading(false); }catch(_){} return; }
   // srcPrefix: 'an' (영상 분석, 기본) | 'st' (스트리밍) — 체크리스트/교육자료 입력 소스 선택
   const pfx=srcPrefix==='st'?'st':'an';
   const file=el('an-file').files?.[0];
