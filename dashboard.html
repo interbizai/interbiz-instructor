@@ -6957,13 +6957,13 @@ function normalizeVertexResult(raw){
     const ana=String(s.analysis||'');
     const noTs=!ts||ts==='-'||ts==='—'||/^\s*$/.test(ts);
     const naKeywords=/(평가하기 어렵|평가가 어렵|판단하기 어렵|판단이 어렵|판단 불가|평가 불가|확인 불가|녹화된 강의이므로|평가 대상이 아님|해당 항목을 평가할 수 없)/;
-    let isNa = s.level==='na' || (noTs && naKeywords.test(ana) && s.level!=='good' && s.level!=='normal');
+    const isNa = s.level==='na' || (noTs && naKeywords.test(ana) && s.level!=='good' && s.level!=='normal');
     if(isNa) return {...s, level:'na', level_score:0, level_name:'해당없음', score:0};
-    // ── level_score 확정 ── 없으면(구버전 응답) score/max 비율에서 역산
-    let ls=Math.round(Number(s.level_score));
+    const ls=Math.round(Number(s.level_score));
+    // ── 구버전 저장 데이터(level_score 없음) ── 점수를 건드리지 않고 그대로 표시
     if(!(ls>=1&&ls<=5)){
-      const ratio=max>0?(Number(s.score||0)/max):0;
-      ls=ratio>=0.95?5:ratio>=0.75?4:ratio>=0.55?3:ratio>=0.3?2:1;
+      const legacyLevel=['good','normal','bad'].includes(s.level)?s.level:'normal';
+      return {...s, level:legacyLevel, score:Number(s.score||0)};
     }
     const score=Math.round(max*(LEVEL_RATIO[ls]||0));
     const level=ls>=4?'good':ls===3?'normal':'bad';

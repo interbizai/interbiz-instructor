@@ -332,22 +332,31 @@ function onChecklistFileSelected(input){
 }
 function parseChecklistRows(rows){
   // 헤더 행 찾기
+  //  · max_score = 배점(가산점 반영) — 합계 100점이 되는 열
+  //  · scale_max = '배점' 열이 따로 있으면 그 값 (5단계 척도표면 5)
+  //  · levels    = '5점 (매우 우수)' ~ '1점 (매우 미흡)' 세부 기준 문장 열 → AI 채점 앵커
   let headerIdx=-1, colMap={};
   for(let i=0;i<Math.min(rows.length,10);i++){
     const r=rows[i].map(c=>String(c||'').trim());
     const find=(kws)=>r.findIndex(c=>kws.some(k=>c.includes(k)));
+    // '5점 (매우 우수)' / '5점' / '5 점' 형태의 레벨 기준 열 탐색
+    const findLevel=(n)=>r.findIndex(c=>new RegExp('^\\s*'+n+'\\s*점').test(c));
     const ci={
       category: find(['대항목','대분류']),
       sub_item: find(['세부항목','세부']),
       criterion: find(['평가기준','체크리스트','질문']),
       max_score: find(['배점','점수']),
       detail: find(['평가기준 상세','상세','기준 상세']),
+      scale_max: find(['배점']),
+      lv: [5,4,3,2,1].map(n=>findLevel(n)),
     };
     if(ci.category>=0 && ci.sub_item>=0 && ci.criterion>=0 && ci.max_score>=0){
       headerIdx=i; colMap=ci; break;
     }
   }
   if(headerIdx<0) throw new Error('헤더(대항목/세부항목/평가기준/배점) 컬럼을 찾지 못했습니다.');
+  // '배점' 열이 max_score 와 같은 열이면 별도 척도 열이 없는 것 → null 처리
+  const scaleCol=(colMap.scale_max>=0 && colMap.scale_max!==colMap.max_score)?colMap.scale_max:-1;
   const items=[];
   let sort=0;
   for(let i=headerIdx+1;i<rows.length;i++){
@@ -360,9 +369,37 @@ function parseChecklistRows(rows){
     if(!cat&&!sub&&!cri) continue;
     const score=parseInt(scoreRaw)||0;
     if(!cat||!sub||!cri||score<=0) continue;
-    items.push({category:cat,sub_item:sub,criterion:cri,max_score:score,detail,sort_order:sort++});
+    // 5단계 세부 기준 수집 — 2개 이상 채워져 있을 때만 유효한 기준표로 인정
+    let levels=null;
+    const lvTexts={};
+    [5,4,3,2,1].forEach((n,idx)=>{
+      const c=colMap.lv[idx];
+      if(c>=0){
+        const t=String(r[c]||'').trim();
+        if(t) lvTexts[String(n)]=t;
+      }
+    });
+    if(Object.keys(lvTexts).length>=2) levels=lvTexts;
+    const scaleMax=scaleCol>=0?(parseInt(r[scaleCol])||null):null;
+    items.push({category:cat,sub_item:sub,criterion:cri,max_score:score,detail,
+                scale_max:scaleMax,levels,sort_order:sort++});
   }
   return items;
+}
+// 파싱 결과 요약 — 5단계 세부 기준 인식 현황
+function summarizeChecklistLevels(items){
+  const withLv=items.filter(x=>x.levels&&Object.keys(x.levels).length>=2).length;
+  const full=items.filter(x=>x.levels&&[5,4,3,2,1].every(n=>x.levels[String(n)])).length;
+  return {withLv,full,total:items.length};
+}
+function checklistLevelBadge(items){
+  const s=summarizeChecklistLevels(items);
+  if(!s.withLv) return `<div style="font-size:11px;font-weight:700;color:var(--orange,#f59e0b)">⚠ 5단계 세부 기준표 없음 — AI가 자체 기준으로 채점합니다 (점수가 후해질 수 있음)</div>`;
+  const perfect=s.full===s.total;
+  return `<div style="font-size:11px;font-weight:700;color:${perfect?'var(--green)':'var(--orange,#f59e0b)'}">
+    ${perfect?'✓':'△'} 5단계 세부 기준표 인식: ${s.full}/${s.total} 항목 완전 · ${s.withLv}/${s.total} 항목 부분 이상
+    ${perfect?'— 이 기준 문장으로 엄격 채점됩니다':'— 비어 있는 항목은 AI 자체 기준으로 채점됩니다'}
+  </div>`;
 }
 function renderChecklistPreview(items){
   const el=document.getElementById('edu-cl-preview');
@@ -375,6 +412,7 @@ function renderChecklistPreview(items){
       <div style="font-size:12px;font-weight:700">파싱 미리보기 — ${items.length}개 항목</div>
       <div style="font-size:12px;font-weight:800;color:${ok?'var(--green)':'var(--red)'}">배점 합계: ${sum}점 ${ok?'✓':'(100점 필요)'}</div>
     </div>
+    <div style="margin-bottom:8px">${checklistLevelBadge(items)}</div>
     <div style="max-height:220px;overflow-y:auto;border:1px solid var(--bdr);border-radius:6px">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead style="background:#f8f9fa;position:sticky;top:0">
@@ -383,17 +421,25 @@ function renderChecklistPreview(items){
             <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">세부항목</th>
             <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준</th>
             <th style="padding:6px;text-align:center;border-bottom:1px solid var(--bdr);width:50px">배점</th>
+            <th style="padding:6px;text-align:center;border-bottom:1px solid var(--bdr);width:60px">5단계<br>기준</th>
             <th style="padding:6px;text-align:left;border-bottom:1px solid var(--bdr)">평가기준 상세</th>
           </tr>
         </thead>
         <tbody>
-          ${items.map(x=>`<tr>
+          ${items.map(x=>{
+            const lvN=x.levels?Object.keys(x.levels).length:0;
+            const lvHtml=lvN>=5?'<span style="color:var(--green);font-weight:800">5단계 ✓</span>'
+                        :lvN>0?`<span style="color:var(--orange,#f59e0b);font-weight:800">${lvN}단계</span>`
+                        :'<span style="color:var(--t3)">없음</span>';
+            const lvTip=x.levels?[5,4,3,2,1].filter(n=>x.levels[String(n)]).map(n=>`${n}점: ${x.levels[String(n)]}`).join('\n').replace(/"/g,'&quot;'):'';
+            return `<tr title="${lvTip}">
             <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);font-weight:600">${x.category}</td>
             <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04)">${x.sub_item}</td>
             <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);color:var(--t2)">${x.criterion}</td>
             <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);text-align:center;font-weight:700">${x.max_score}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);text-align:center;font-size:10px">${lvHtml}</td>
             <td style="padding:5px 6px;border-bottom:1px solid rgba(0,0,0,.04);color:var(--t3);font-size:10px">${x.detail||''}</td>
-          </tr>`).join('')}
+          </tr>`;}).join('')}
         </tbody>
       </table>
     </div>`;
@@ -457,6 +503,7 @@ function onChecklistReuploadFileSelected(input){
           <div style="font-size:12px;font-weight:700">파싱 미리보기 — ${items.length}개 항목</div>
           <div style="font-size:12px;font-weight:800;color:${sum===100?'var(--green)':'var(--red)'}">배점 합계: ${sum}점 ${sum===100?'✓':'(100점 필요)'}</div>
         </div>
+        <div style="margin-bottom:8px">${checklistLevelBadge(items)}</div>
         <div style="max-height:300px;overflow-y:auto;border:1px solid var(--bdr);border-radius:6px">
           <table style="width:100%;border-collapse:collapse;font-size:11px">
             <thead style="background:#f8f9fa;position:sticky;top:0">
@@ -465,16 +512,23 @@ function onChecklistReuploadFileSelected(input){
                 <th style="padding:6px;text-align:left">세부항목</th>
                 <th style="padding:6px;text-align:left">평가기준</th>
                 <th style="padding:6px;text-align:center;width:40px">배점</th>
+                <th style="padding:6px;text-align:center;width:56px">5단계</th>
                 <th style="padding:6px;text-align:left">상세</th>
               </tr>
             </thead>
-            <tbody>${items.map(x=>`<tr>
+            <tbody>${items.map(x=>{
+              const lvN=x.levels?Object.keys(x.levels).length:0;
+              const lvHtml=lvN>=5?'<span style="color:var(--green);font-weight:800">5 ✓</span>'
+                          :lvN>0?`<span style="color:var(--orange,#f59e0b);font-weight:800">${lvN}</span>`
+                          :'<span style="color:var(--t3)">—</span>';
+              return `<tr>
               <td style="padding:5px 6px;font-weight:600">${x.category}</td>
               <td style="padding:5px 6px">${x.sub_item}</td>
               <td style="padding:5px 6px;color:var(--t2)">${x.criterion}</td>
               <td style="padding:5px 6px;text-align:center;font-weight:700">${x.max_score}</td>
+              <td style="padding:5px 6px;text-align:center;font-size:10px">${lvHtml}</td>
               <td style="padding:5px 6px;color:var(--t3);font-size:10px">${x.detail||''}</td>
-            </tr>`).join('')}</tbody>
+            </tr>`;}).join('')}</tbody>
           </table>
         </div>`;
       if(saveBtn&&sum===100&&items.length){saveBtn.disabled=false;saveBtn.style.opacity='1';}
@@ -507,9 +561,17 @@ async function confirmChecklistReupload(){
   // 신규 항목 일괄 INSERT
   const payload=items.map(x=>({
     checklist_id:id, category:x.category, sub_item:x.sub_item,
-    criterion:x.criterion, max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order
+    criterion:x.criterion, max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order,
+    scale_max:x.scale_max||null, levels:x.levels||null
   }));
-  const{error:insErr}=await sb.from('checklist_items').insert(payload);
+  let{error:insErr}=await sb.from('checklist_items').insert(payload);
+  // 마이그레이션(2026-07-30) 미실행 환경 폴백 — 신규 컬럼 없이 재시도
+  if(insErr&&/scale_max|levels|column/i.test(insErr.message||'')){
+    console.warn('[checklist] scale_max/levels 컬럼 없음 → 마이그레이션 필요. 기본 컬럼만 저장합니다.');
+    const legacy=payload.map(({scale_max,levels,...rest})=>rest);
+    ({error:insErr}=await sb.from('checklist_items').insert(legacy));
+    if(!insErr) alert('저장은 됐지만 5단계 세부 기준은 빠졌습니다.\nSupabase SQL Editor에서 database/migrations/2026-07-30_checklist_5level_rubric.sql 을 1회 실행한 뒤 다시 업로드해주세요.');
+  }
   if(insErr){alert('항목 저장 실패: '+insErr.message);return;}
   document.getElementById('cl-reupload-overlay')?.remove();
   window._reuploadCLId=null;window._reuploadParsedItems=null;
@@ -552,9 +614,17 @@ async function uploadEduChecklist(){
     const itemsPayload=items.map(x=>({
       checklist_id:inserted.id,
       category:x.category, sub_item:x.sub_item, criterion:x.criterion,
-      max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order
+      max_score:x.max_score, detail:x.detail||null, sort_order:x.sort_order,
+      scale_max:x.scale_max||null, levels:x.levels||null
     }));
-    const{error:itErr}=await sb.from('checklist_items').insert(itemsPayload);
+    let{error:itErr}=await sb.from('checklist_items').insert(itemsPayload);
+    // 마이그레이션(2026-07-30) 미실행 환경 폴백 — 신규 컬럼 없이 재시도
+    if(itErr&&/scale_max|levels|column/i.test(itErr.message||'')){
+      console.warn('[checklist] scale_max/levels 컬럼 없음 → 마이그레이션 필요. 기본 컬럼만 저장합니다.');
+      const legacy=itemsPayload.map(({scale_max,levels,...rest})=>rest);
+      ({error:itErr}=await sb.from('checklist_items').insert(legacy));
+      if(!itErr) alert('저장은 됐지만 5단계 세부 기준은 빠졌습니다.\nSupabase SQL Editor에서 database/migrations/2026-07-30_checklist_5level_rubric.sql 을 1회 실행한 뒤 다시 업로드해주세요.');
+    }
     if(itErr){alert('항목 저장 실패: '+itErr.message+'\n파일은 등록됐습니다. 항목만 재시도해주세요.');}
   }
   window._parsedChecklistItems=null;

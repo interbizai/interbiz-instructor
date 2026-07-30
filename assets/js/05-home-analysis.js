@@ -211,31 +211,41 @@ async function loadChecklistItemsForEval(checklistId){
 }
 // Vertex 결과 후처리 — sub_scores 기반으로 categories/overall_score 재계산
 // (AI가 가끔 합계를 다르게 반환해도 화면 숫자 불일치 방지)
+// 5단계 앵커 채점 환산표 (표준형) — 3점(보통) = 배점의 60%
+const LEVEL_RATIO={5:1,4:0.8,3:0.6,2:0.4,1:0.2};
+const LEVEL_NAME={5:'매우 우수',4:'우수',3:'보통',2:'미흡',1:'매우 미흡'};
+const LEVEL_TAG_COLOR={5:'#10b981',4:'#22c55e',3:'#f59e0b',2:'#f97316',1:'#ef4444'};
+// 점수 칸 아래에 5단계 원점수 태그 (예: 4점 · 우수)
+function renderLevelScoreTag(s){
+  const ls=Number(s?.level_score||0);
+  if(!(ls>=1&&ls<=5)) return '';
+  const capped=s.score_capped?' <span title="근거가 약해 분포 상한 규칙으로 조정된 항목">▾</span>':'';
+  return `<div style="margin-top:2px;font-size:9px;font-weight:800;color:${LEVEL_TAG_COLOR[ls]};white-space:nowrap">${ls}점 · ${LEVEL_NAME[ls]}${capped}</div>`;
+}
 function normalizeVertexResult(raw){
   if(!raw||!Array.isArray(raw.sub_scores)||!raw.sub_scores.length) return raw;
-  // level에 맞춰 score를 5/3/0(또는 max 비율) 강제 보정 + 중간값 금지
+  // level_score(1~5) 기준으로 점수를 확정한다.
+  // ⚠ 예전처럼 '잘함=만점' 으로 올리지 않는다. 4점(우수)은 배점의 80%가 정상이다.
   raw.sub_scores=raw.sub_scores.map(s=>{
     const max=Number(s.max||5);
-    let level=s.level;
-    const rawScore=Number(s.score||0);
-    if(!['good','normal','bad','na'].includes(level)){
-      const ratio=max>0?(rawScore/max):0;
-      level=ratio>=0.85?'good':ratio>=0.4?'normal':rawScore===0?'bad':'normal';
-    }
-    // 자동 NA 보정: 강사 실패가 아닌 '평가 자체가 불가'한 경우만 na로
-    // 주의: '언급되지 않았다' / '관찰되지 않음' 같은 강사 실패 표현은 bad 유지
+    // ── na 판정 ── '평가 자체가 성립 불가'한 경우만. 강사가 안 한 것은 na 가 아니라 1점
     const ts=String(s.timestamp||'').trim();
     const ana=String(s.analysis||'');
     const noTs=!ts||ts==='-'||ts==='—'||/^\s*$/.test(ts);
-    const naKeywords=/(평가하기 어렵|평가가 어렵|판단하기 어렵|판단이 어렵|판단 불가|평가 불가|확인 불가|녹화된 강의이므로|영상에 해당 내용이 없|평가 대상이 아님|해당 항목을 평가할 수 없)/;
-    if(noTs && naKeywords.test(ana) && level!=='good' && level!=='normal') level='na';
-    let score;
-    if(level==='good') score=max;
-    else if(level==='normal') score=Math.round(max*0.6);
-    else if(level==='bad') score=0;
-    else score=0; // na
+    const naKeywords=/(평가하기 어렵|평가가 어렵|판단하기 어렵|판단이 어렵|판단 불가|평가 불가|확인 불가|녹화된 강의이므로|평가 대상이 아님|해당 항목을 평가할 수 없)/;
+    const isNa = s.level==='na' || (noTs && naKeywords.test(ana) && s.level!=='good' && s.level!=='normal');
     // ⚠ max 도 반환 — 원본 s.max=0 인 경우 보정된 5 가 유지되도록 (이전 버그: max 안 넘김 → 0 그대로 저장)
-    return {...s, level, score, max};
+    if(isNa) return {...s, level:'na', level_score:0, level_name:'해당없음', score:0, max};
+    const ls=Math.round(Number(s.level_score));
+    // ── 구버전 저장 데이터(level_score 없음) ── 점수를 건드리지 않고 그대로 표시.
+    //    (예전 평가 기록을 다시 열었을 때 점수가 달라지면 안 되므로 재계산 금지)
+    if(!(ls>=1&&ls<=5)){
+      const legacyLevel=['good','normal','bad'].includes(s.level)?s.level:'normal';
+      return {...s, level:legacyLevel, score:Number(s.score||0), max};
+    }
+    const score=Math.round(max*(LEVEL_RATIO[ls]||0));
+    const level=ls>=4?'good':ls===3?'normal':'bad';
+    return {...s, level, level_score:ls, level_name:LEVEL_NAME[ls]||'', score, max};
   });
   // habits: occurrences 정규화 — 문자열 배열/객체 배열 혼재 대응 → timestamps[](MM:SS) + contexts[](문구)
   if(Array.isArray(raw.habits)){
@@ -897,6 +907,10 @@ async function saveEvaluation({videoId,voiceEvalId,checklistId,eduFileUrl,evalTy
     speech_report:{
       rubric_alignment_score:result.rubric_alignment_score,
       rubric_alignment_reason:result.rubric_alignment_reason,
+      // 5단계 앵커 채점 메타 — 점수 분포 / 상한 강등 이력 / AI 자체 설계 평가안
+      score_distribution:result.score_distribution||null,
+      scoring_meta:result.scoring_meta||null,
+      generated_checklist:Array.isArray(result.generated_checklist)?result.generated_checklist:null,
       summary_opinion:result.summary_opinion||'',
       pitch_overall:result.pitch_overall||'',
       pitch_recommendation:result.pitch_recommendation||'',
@@ -1139,8 +1153,7 @@ function loadEduFilesForCategory(){
     const curEduType=document.getElementById('an-edu-type')?.value||'';
     const allCl=(D.checklists||[]).filter(c=>(c.category||'')==='체크리스트');
     const critCl=curEduType?allCl.filter(c=>c.type===curEduType):allCl.filter(c=>c.type&&c.type!=='standard'&&c.type!=='speech');
-    const stdCl=allCl.filter(c=>(c.type||'')==='standard'||!c.type);
-    if(!eduFiles.length&&!critCl.length&&!stdCl.length){wrap.style.display='none';return;}
+    if(!eduFiles.length&&!critCl.length){wrap.style.display='none';return;}
     wrap.style.display='block';
     const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const mkCard=(f,kind,tagColor)=>{
@@ -1163,10 +1176,7 @@ function loadEduFilesForCategory(){
       html+=`<div style="font-size:11px;font-weight:700;color:var(--green);margin:10px 0 6px">✓ 교육맞춤평가 체크리스트 (${critCl.length})</div>`;
       html+=critCl.map(f=>mkCard(f,'crit','#10b981')).join('');
     }
-    if(stdCl.length){
-      html+=`<div style="font-size:11px;font-weight:700;color:var(--blue);margin:10px 0 6px">🤖 AI 독자 체크리스트 (${stdCl.length})</div>`;
-      html+=stdCl.map(f=>mkCard(f,'ai','#0078C8')).join('');
-    }
+    // AI 독자 평가는 등록 체크리스트를 쓰지 않고 AI가 평가안을 직접 설계하므로 목록에서 제외
     list.innerHTML=html;
     // 이벤트 위임 (한 번만 바인딩)
     if(!list.dataset.bound){
@@ -1607,7 +1617,7 @@ function openChecklistDetail(which){
             ${arr.map((s,si)=>{const safeCat=cat.replace(/'/g,"\\'");return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openSubItemVideoModal('${which}','${safeCat}',${si})">
               <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
               <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
-              <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
+              <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}${typeof renderLevelScoreTag==='function'?renderLevelScoreTag(s):''}</td>
               <td style="padding:8px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff;white-space:nowrap">${levelLabel[s.level]||s.level||'-'}</span></td>
               <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
               <td style="padding:8px;color:var(--t2);line-height:1.5">
@@ -1925,7 +1935,9 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
   const pfx=srcPrefix==='st'?'st':'an';
   const file=el('an-file').files?.[0];
   const critClId=parseInt(document.getElementById(pfx+'-cl-select')?.value||'0')||null;   // 교육맞춤평가용
-  const aiClId=parseInt(document.getElementById(pfx+'-cl-ai-select')?.value||'0')||null;  // AI 독자용
+  // AI 독자는 등록된 체크리스트를 쓰지 않는다 — AI가 영상을 보고 평가안을 직접 설계해 채점 (자동 평가안)
+  // (구버전 드롭다운이 남아있는 화면에서만 값을 읽어 하위호환 유지)
+  const aiClId=parseInt(document.getElementById(pfx+'-cl-ai-select')?.value||'0')||null;
   const eduFileUrl=document.getElementById(pfx+'-checklist-url')?.value||'';
   if(!file){
     alert('영상 파일이 없습니다.');
@@ -1952,13 +1964,10 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     el('an-ai-summary').textContent='체크리스트 로드 중...';
     const critItems=critClId?await loadChecklistItemsForEval(critClId):[];
     const aiItems=aiClId?await loadChecklistItemsForEval(aiClId):[];
-    if(!critItems.length&&!aiItems.length){
-      alert('체크리스트를 선택하세요. 교육콘텐츠에 체크리스트 등록 후 다시 시도해주세요.');
-      showAiLoading(false);
-      return;
-    }
-    // AI 독자 체크리스트가 없으면 교육맞춤 체크리스트로 폴백 (기존 동작 호환)
-    const aiItemsEff=aiItems.length?aiItems:critItems;
+    // AI 독자 = 등록 평가안을 쓰지 않는 독립 평가.
+    // 빈 배열로 보내면 서버가 자동 평가안 모드(AI가 대항목/세부항목/기준/배점을 직접 설계)로 동작한다.
+    const aiItemsEff=aiItems;
+    const aiAutoRubric=!aiItems.length;
     // 기존 체크리스트 변수명 호환용 (없어진 참조 안전 처리)
     const checklistItems=critItems.length?critItems:aiItems;
     const checklistId=critClId||aiClId;
@@ -2003,8 +2012,9 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
       setAiLoadingStage('crit','done'); // skip
       setAiLoadingStep('AI 영상 분석 (AI 독자)...');
     }
-    // AI 독자: AI 독자 체크리스트만 사용 (교육자료 없음)
+    // AI 독자: 등록 평가안 없이 AI가 스스로 평가안을 설계해 채점 (교육자료도 전달 안 함)
     setAiLoadingStage('ai','active');
+    if(aiAutoRubric) setAiLoadingStep('AI 독자 분석 (AI가 평가안 직접 설계 중)...');
     try{
       aiResult=normalizeVertexResult(await callVertexAnalyze({
         video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
@@ -2042,7 +2052,8 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     // 관리자·부관리자에게 업로드 알림 (강사 본인 제외)
     notifyAdminsOfUpload({kind:'video', title, uploaderId:userId, orgName:vidRow.org_name, link:'page-admin'}).catch(()=>{});
     // 5) 원본 Vertex 결과 그대로 evaluations 테이블에 저장 — 각 평가별 실제 사용 체크리스트 id 기록
-    const aiSaveCid=aiClId||critClId;  // AI 독자는 AI 체크리스트 id, 없으면 폴백
+    // AI 독자는 자동 평가안(AI 자체 설계)이면 연결할 체크리스트가 없음 → null
+    const aiSaveCid=aiClId||null;
     const saveTasks=[saveEvaluation({videoId,checklistId:aiSaveCid,eduFileUrl:null,evalType:'AI독자',result:aiResult})];
     if(critResult) saveTasks.push(saveEvaluation({videoId,checklistId:critClId,eduFileUrl,evalType:'평가안기준',result:critResult}));
     const saveResults=await Promise.all(saveTasks);
@@ -2850,7 +2861,7 @@ function openCategoryRadar(which,categoryName){
           ${items.map((s,si)=>{const safeCat=categoryName.replace(/'/g,"\\'");return `<tr style="border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''" onclick="openSubItemVideoModal('${which}','${safeCat}',${si})">
             <td style="padding:8px;font-weight:600;color:var(--blue)">${s.sub_item||'-'}</td>
             <td style="padding:8px;color:var(--t2)">${s.criterion||'-'}</td>
-            <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}</td>
+            <td style="padding:8px;text-align:center;font-weight:700">${s.score||0}/${s.max||0}${typeof renderLevelScoreTag==='function'?renderLevelScoreTag(s):''}</td>
             <td style="padding:8px;text-align:center"><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:${levelColor[s.level]||'#eee'};color:#fff;white-space:nowrap">${levelLabel[s.level]||s.level||'-'}</span></td>
             <td style="padding:8px;text-align:center;font-size:10px;color:var(--t3)">${s.timestamp||'-'}</td>
             <td style="padding:8px;color:var(--t2);line-height:1.5">
