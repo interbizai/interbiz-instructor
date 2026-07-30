@@ -1668,6 +1668,44 @@ function openVideoAtTime(seconds,label){
   setTimeout(()=>{const v=document.getElementById('ts-jump-video');if(v){try{v.currentTime=sec;}catch(e){}}},200);
 }
 
+// ── 점수 수기 수정 직후 그래프 제자리 갱신 ────────────────
+// 표(an-ts-feed) DOM 은 건드리지 않고 레이더/달성도/총점 배너만 새로 그린다.
+// (표를 다시 그리면 연달아 수정 중인 입력이 날아가므로 절대 여기서 표를 만지지 말 것)
+function updateAnalysisGraphs(){
+  const mkBars=(cats)=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:center">`+
+    cats.map(c=>{const p=c.max>0?Math.round(c.score/c.max*100):0;const cc=scoreColorFromRatio(p/100);return `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;width:100%">
+      <span style="font-size:12.5px;font-weight:700;color:var(--t1);width:140px;flex-shrink:0">${c.name}</span>
+      <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;min-width:0"><div style="height:100%;width:${p}%;background:${cc};border-radius:5px;transition:width .8s"></div></div>
+      <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:800;background:${cc};color:#fff;min-width:50px;text-align:center;flex-shrink:0">${p}%</span>
+    </div>`;}).join('')+`</div>`;
+  const crit=window._lastVertexResult?.crit;
+  const ai=window._lastVertexResult?.ai;
+  if(crit?.categories?.length){
+    const eduRadar=el('an-edu-radar');
+    if(eduRadar&&typeof drawRadarSVG==='function') eduRadar.innerHTML=drawRadarSVG(crit.categories,{clickable:true,which:'crit'});
+    const eduBars=el('an-edu-bars');
+    if(eduBars) eduBars.innerHTML=mkBars(crit.categories);
+    if(typeof repaintScoreSummary==='function') repaintScoreSummary('crit',crit.overall_score);
+  }
+  if(ai?.categories?.length){
+    const aiBars=el('an-ai-bars');
+    if(aiBars) aiBars.innerHTML=mkBars(ai.categories);
+    if(typeof repaintScoreSummary==='function') repaintScoreSummary('ai',ai.overall_score);
+  }
+}
+// 전체보기 모달이 열려 있으면 최신 점수로 다시 그린다 (스크롤 위치 보존)
+function refreshChecklistDetailIfOpen(){
+  const ov=document.getElementById('cl-detail-overlay');
+  if(!ov) return;
+  const which=ov.dataset.which||'crit';
+  const scroller=ov.firstElementChild;
+  const top=scroller?scroller.scrollTop:0;
+  ov.remove();
+  try{ openChecklistDetail(which); }catch(e){ console.warn('모달 갱신 경고:',e); return; }
+  const nov=document.getElementById('cl-detail-overlay');
+  const ns=nov?.firstElementChild;
+  if(ns&&top>0) ns.scrollTop=top;
+}
 // 체크리스트 전체보기 모달 — 대항목별 세부 다각 그래프 + 달성도 + 상세 테이블
 function openChecklistDetail(which){
   // My역량 전체보기: evaluations 집계 데이터 사용
@@ -1772,6 +1810,7 @@ function openChecklistDetail(which){
   const overlay=document.createElement('div');
   overlay.className='overlay show';
   overlay.id='cl-detail-overlay';
+  overlay.dataset.which=which;  // 점수 수기 수정 시 최신 데이터로 다시 그리기 위한 식별자
   overlay.onclick=e=>{if(e.target===overlay) overlay.remove();};
   overlay.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:1200px;width:96vw;max-height:92vh;overflow-y:auto;animation:scaleIn .25s cubic-bezier(.22,1,.36,1)">
     <div style="position:sticky;top:0;z-index:10;background:#fff;padding:20px 24px 12px;border-bottom:1px solid var(--bdr)">

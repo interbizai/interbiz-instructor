@@ -458,7 +458,15 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
     if(!(CU?.isAdmin||CU?.isSubAdmin)){ return; }
     const evalId=which==='ai'?window._anAiEvalId:window._anCritEvalId;
     if(!evalId){ if(typeof showToast==='function')showToast('평가 ID 없음 — 새로고침 후 다시 시도','#ef4444'); return; }
-    const row=(D.evaluations||[]).find(e=>e.id===evalId);
+    let row=(D.evaluations||[]).find(e=>e.id===evalId);
+    // 과거 영상 열람 화면(내 영상 목록 → 상세)은 evaluations 를 서버에서 직접 가져와
+    // D.evaluations 목록에 없을 수 있다 → 그 자리에서 조회해 저장이 항상 되게 한다
+    if(!row){
+      try{
+        const {data:fr,error:fe}=await sb.from('evaluations').select('*').eq('id',evalId).single();
+        if(!fe&&fr){ row=fr; (D.evaluations=D.evaluations||[]).push(row); }
+      }catch(_){}
+    }
     if(!row){ if(typeof showToast==='function')showToast('평가 row 로드 실패','#ef4444'); return; }
     const subs=Array.isArray(row.sub_scores)?JSON.parse(JSON.stringify(row.sub_scores)):[];
     if(!subs[subIdx]){ if(typeof showToast==='function')showToast('항목 인덱스 오류','#ef4444'); return; }
@@ -553,6 +561,9 @@ async function saveSubScoreEdit(which,subIdx,field,newValue){
     if(field==='score'){
       try{ repaintScorePill(which,subIdx,subs[subIdx].score,subs[subIdx].max||5); }catch(_){}
       try{ repaintScoreSummary(which,row.overall_score); }catch(_){}
+      // 교육 분석 레이더 · 역량별 달성도 · 전체보기 모달도 즉시 함께 갱신
+      try{ if(typeof updateAnalysisGraphs==='function') updateAnalysisGraphs(); }catch(_){}
+      try{ if(typeof refreshChecklistDetailIfOpen==='function') refreshChecklistDetailIfOpen(); }catch(_){}
       try{ scheduleGraphRefresh(); }catch(_){}
     }
   }catch(e){
