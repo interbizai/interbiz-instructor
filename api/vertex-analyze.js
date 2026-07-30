@@ -220,8 +220,19 @@ function distributionCaps(n) {
 }
 
 // 5단계 앵커 채점 규칙 블록 (평가안기준 · AI독자 공통)
-function buildScoringRules(itemCount, hasCustomLevels) {
+function buildScoringRules(itemCount, levelsMode) {
   const { cap5, cap45 } = distributionCaps(itemCount || 15);
+  const anchorNote = {
+    all: '   · 각 항목의 levels 는 이 조직이 실제로 쓰는 평가표 원문이다. 임의로 해석하거나 완화하지 말고 문장 그대로 적용하라.',
+    mixed: `   · levels_source 가 "조직 평가표 원문" 인 항목은 그 문장을 그대로, 글자 그대로 적용하라 (완화·재해석 금지).
+   · levels_source 가 "범용 기준" 인 항목은 조직이 세부 기준을 정하지 않은 항목이다.
+     이 경우 범용 기준을 그 항목의 criterion(평가 기준)과 detail(기준 상세)에 맞춰 해석해 적용하라.
+     기준이 없다고 해서 후하게 주지 말 것 — 판단 근거는 똑같이 영상 속 관찰과 MM:SS 인용이다.`,
+    none: `   · 이 평가안에는 조직이 정한 5단계 세부 기준이 없다. 아래 levels 는 범용 기준이다.
+     각 항목의 criterion(평가 기준)과 detail(기준 상세)을 그 항목의 실질 기준으로 삼고,
+     범용 levels 를 거기에 맞춰 해석해 적용하라.
+     세부 기준이 없다는 이유로 점수를 후하게 주는 것은 금지한다. 채점 강도는 동일하다.`,
+  }[levelsMode || 'none'];
   return `# 채점 방식 — 5단계 앵커 채점 (이 순서를 반드시 지켜라)
 각 세부항목마다:
 1) 영상에서 그 항목에 해당하는 장면을 찾아 MM:SS 와 강사의 실제 발화를 인용한다.
@@ -229,9 +240,7 @@ function buildScoringRules(itemCount, hasCustomLevels) {
 3) 근거가 실제로 충족하는 가장 높은 단계를 level_score(1~5 정수)로 정한다.
 4) evidence 에 "몇 점 기준 문장의 어느 부분을 무엇으로 충족했는지"를 MM:SS 인용과 함께 적는다.
 5) score(점수 숫자)는 서버가 level_score 로 자동 환산한다. 너는 level_score 만 정확히 정하면 된다.
-${hasCustomLevels
-    ? '   · 각 항목의 levels 는 이 조직이 실제로 쓰는 평가표 원문이다. 임의로 해석하거나 완화하지 말고 문장 그대로 적용하라.'
-    : '   · 각 항목의 levels 는 범용 기준이다. 강의 성격에 맞춰 엄격하게 적용하라.'}
+${anchorNote}
 
 # ⛔ 캘리브레이션 — 점수 인플레이션 금지 (이 규칙이 다른 모든 규칙보다 우선한다)
 1) **모든 항목의 출발점은 3점(보통)이다.** 근거 인용 없이 4점 이상을 준 항목은 오답으로 간주한다.
@@ -355,13 +364,15 @@ function enforceScoring(parsed) {
 }
 
 function buildPrompt({ checklistItems, evalType, hasEduMaterial, autoRubric }) {
-  // 평가안기준 = 등록된 엑셀의 5단계 세부 기준표를 그대로 앵커로 사용
-  // AI독자     = 세부 기준표를 보지 않고, 범용 전문가 기준으로 독립 채점
-  const useCustomLevels = evalType === '평가안기준';
-  let hasCustomLevels = false;
+  // 등록된 평가안이 있으면(autoRubric 아님) 그 5단계 세부 기준표를 앵커로 쓴다.
+  //   · 세부 기준표가 없는 항목은 범용 앵커(GENERIC_LEVELS)로 대체 — 채점 자체는 동일하게 동작
+  //   · 한 체크리스트 안에 있는 항목/없는 항목이 섞여 있어도 항목별로 알맞게 처리
+  // AI 독자(자동 평가안)는 조직 기준을 일부러 보지 않으므로 항상 범용 앵커.
+  const useCustomLevels = !autoRubric;
+  let customCount = 0;
   const checklistSpec = (checklistItems || []).map((it, i) => {
     const custom = useCustomLevels ? normalizeLevels(it.levels) : null;
-    if (custom) hasCustomLevels = true;
+    if (custom) customCount++;
     return {
       n: i + 1,
       category: it.category,
@@ -370,9 +381,12 @@ function buildPrompt({ checklistItems, evalType, hasEduMaterial, autoRubric }) {
       max_score: it.max_score,
       detail: it.detail || '',
       scale: it.scale_max || 5,
+      levels_source: custom ? '조직 평가표 원문' : '범용 기준',
       levels: custom || GENERIC_LEVELS,
     };
   });
+  const totalCount = checklistSpec.length;
+  const levelsMode = customCount === 0 ? 'none' : (customCount === totalCount ? 'all' : 'mixed');
 
   const evalContext =
     evalType === '평가안기준'
@@ -435,11 +449,12 @@ ${autoRubric
 5) 그 다음 아래 채점 방식대로 sub_scores 를 작성한다.
    sub_scores 의 category / sub_item / criterion / max 는 generated_checklist 와 **정확히 일치**해야 한다.
 6) 평가안은 이 영상 하나를 위해 설계하되, 강사 역량 평가로서 보편타당해야 한다 (강사가 잘한 것만 골라 항목을 만들지 말 것 — 그건 부정행위다).`
-  : `# 체크리스트 (배점 합계 100점)
+  : `# 체크리스트 (배점 합계 100점 · 총 ${totalCount}개 항목)
 각 항목의 levels 가 채점 앵커(기준점)다. 반드시 이 문장과 대조해서 level_score 를 정하라.
+levels_source 는 그 기준이 조직 평가표 원문인지, 조직이 정하지 않아 범용 기준으로 대체된 것인지를 나타낸다.
 ${JSON.stringify(checklistSpec, null, 2)}`}
 
-${buildScoringRules(autoRubric ? 15 : checklistSpec.length, hasCustomLevels)}
+${buildScoringRules(autoRubric ? 15 : totalCount, autoRubric ? 'none' : levelsMode)}
 
 # 그 밖의 작성 규칙
 - 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기. na 항목만 빈 문자열

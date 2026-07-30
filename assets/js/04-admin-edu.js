@@ -394,11 +394,22 @@ function summarizeChecklistLevels(items){
 }
 function checklistLevelBadge(items){
   const s=summarizeChecklistLevels(items);
-  if(!s.withLv) return `<div style="font-size:11px;font-weight:700;color:var(--orange,#f59e0b)">⚠ 5단계 세부 기준표 없음 — AI가 자체 기준으로 채점합니다 (점수가 후해질 수 있음)</div>`;
-  const perfect=s.full===s.total;
-  return `<div style="font-size:11px;font-weight:700;color:${perfect?'var(--green)':'var(--orange,#f59e0b)'}">
-    ${perfect?'✓':'△'} 5단계 세부 기준표 인식: ${s.full}/${s.total} 항목 완전 · ${s.withLv}/${s.total} 항목 부분 이상
-    ${perfect?'— 이 기준 문장으로 엄격 채점됩니다':'— 비어 있는 항목은 AI 자체 기준으로 채점됩니다'}
+  // 세부 기준표가 없어도 정상 동작한다 — 평가기준/기준상세를 근거로 범용 5단계 기준이 적용됨.
+  // 채점 강도(출발점 3점 · 근거 인용 의무 · 분포 검증)는 두 경우 모두 동일하다.
+  if(!s.withLv){
+    return `<div style="font-size:11px;font-weight:700;color:var(--blue)">
+      ○ 5단계 세부 기준표 없음 — 범용 5단계 기준으로 채점됩니다 (정상 동작)
+      <div style="font-weight:600;color:var(--t3);margin-top:2px">채점 강도는 동일합니다. 엑셀에 <b>5점~1점</b> 열을 추가하면 조직 기준이 그대로 반영됩니다.</div>
+    </div>`;
+  }
+  if(s.full===s.total){
+    return `<div style="font-size:11px;font-weight:700;color:var(--green)">
+      ✓ 5단계 세부 기준표 인식: ${s.full}/${s.total} 항목 완전 — 이 기준 문장으로 엄격 채점됩니다
+    </div>`;
+  }
+  return `<div style="font-size:11px;font-weight:700;color:var(--orange,#f59e0b)">
+    △ 5단계 세부 기준표 인식: ${s.full}/${s.total} 항목 완전 · ${s.withLv}/${s.total} 항목 부분 이상
+    <div style="font-weight:600;color:var(--t3);margin-top:2px">비어 있는 항목은 범용 5단계 기준으로 채점됩니다 (정상 동작)</div>
   </div>`;
 }
 function renderChecklistPreview(items){
