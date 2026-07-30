@@ -17,7 +17,7 @@ const sbAdmin = SB_URL && SB_SERVICE_KEY ? createClient(SB_URL, SB_SERVICE_KEY, 
 // 채점 로직/프롬프트를 바꿀 때마다 올린다 → 예전 캐시(후한 점수)가 재사용되는 것을 차단
 const PROMPT_VERSION = 'v2-5level-strict-2026-07-30';
 
-function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, model }) {
+function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, edu_text, model }) {
   const h = crypto.createHash('sha256');
   h.update(PROMPT_VERSION);
   h.update('|');
@@ -28,6 +28,8 @@ function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, ed
   h.update(String(eval_type || ''));
   h.update('|');
   h.update(String(edu_file_url || ''));
+  h.update('|');
+  h.update(String(edu_text || '').slice(0, 20000));
   h.update('|');
   h.update(String(model || 'gemini-2.5-pro'));
   return h.digest('hex');
@@ -113,15 +115,29 @@ async function extractTextFromPptx(buffer) {
   }
   return out.join('\n\n');
 }
+// 서버가 안전하게 내려받아 풀 수 있는 상한 (Vercel 함수 메모리 한도 고려)
+// 이보다 큰 교안은 브라우저에서 텍스트를 추출해 edu_text 로 보내야 한다.
+const EDU_SERVER_MAX_MB = 60;
+
 async function fetchEduMaterial(url, mime) {
   if (!url) return { kind: 'none' };
   // Gemini 직접 처리 가능한 타입은 fileData URL 그대로
   if (GEMINI_DIRECT_MIMES.has(mime)) return { kind: 'fileData', mime, url };
-  // Word/Excel은 서버에서 텍스트 추출
+  // Word/Excel/PowerPoint는 서버에서 텍스트 추출
   const r = await fetch(url);
   if (!r.ok) throw new Error(`교육자료 다운로드 실패: ${r.status}`);
+  // 대용량 방어 — 함수 메모리를 넘기면 분석 전체가 죽으므로 여기서 건너뛴다
+  const declared = Number(r.headers.get('content-length') || 0);
+  if (declared && declared > EDU_SERVER_MAX_MB * 1024 * 1024) {
+    console.warn(`[vertex] 교육자료 ${Math.round(declared / 1024 / 1024)}MB — 서버 추출 상한(${EDU_SERVER_MAX_MB}MB) 초과, 건너뜀`);
+    return { kind: 'too_large', mb: Math.round(declared / 1024 / 1024) };
+  }
   const ab = await r.arrayBuffer();
   const buf = Buffer.from(ab);
+  if (buf.byteLength > EDU_SERVER_MAX_MB * 1024 * 1024) {
+    console.warn(`[vertex] 교육자료 ${Math.round(buf.byteLength / 1024 / 1024)}MB — 서버 추출 상한 초과, 건너뜀`);
+    return { kind: 'too_large', mb: Math.round(buf.byteLength / 1024 / 1024) };
+  }
   if (
     mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     mime === 'application/msword' ||
@@ -605,6 +621,7 @@ export default async function handler(req, res) {
       eval_type,
       edu_file_url,
       edu_file_mime,
+      edu_text,
       model = 'gemini-2.5-pro',
     } = req.body || {};
 
@@ -619,7 +636,7 @@ export default async function handler(req, res) {
 
     // 캐시 조회 — 같은 영상+평가안+교육자료+모델이면 저장된 결과 즉시 반환 (Vertex 비용 절감)
     const skipCache = req.body?.skip_cache === true;
-    const cacheKey = makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, model });
+    const cacheKey = makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, edu_text, model });
     if (sbAdmin && !skipCache) {
       try {
         const { data: hit } = await sbAdmin.from('vertex_cache').select('result').eq('cache_key', cacheKey).maybeSingle();
@@ -687,21 +704,28 @@ export default async function handler(req, res) {
       parts.push({ inlineData: { mimeType: videoMime, data: vbuf.toString('base64') } });
     }
     let eduInlineText = '';
-    // 교육자료는 평가안기준 뿐 아니라 AI독자(스피치)에서도 참고용으로 주입 (있으면)
-    if (edu_file_url) {
+    // ① 브라우저에서 미리 뽑아 보낸 교안 텍스트가 있으면 그대로 사용 (대용량 교안 대응 — 다운로드 불필요)
+    const eduTextIn = typeof edu_text === 'string' ? edu_text.trim() : '';
+    if (eduTextIn) {
+      eduInlineText = `\n\n[교육자료 — 교안 본문]\n${eduTextIn.slice(0, 20000)}`;
+    } else if (edu_file_url) {
+      // ② 없으면 서버가 내려받아 추출 (평가안기준 뿐 아니라 AI독자에서도 참고용으로 주입)
       const edu = await fetchEduMaterial(edu_file_url, edu_file_mime || '');
       if (edu.kind === 'fileData') {
         parts.push({ fileData: { mimeType: edu.mime, fileUri: edu.url } });
       } else if (edu.kind === 'text') {
         eduInlineText = `\n\n${edu.label}\n${edu.text.slice(0, 20000)}`;
+      } else if (edu.kind === 'too_large') {
+        eduInlineText = `\n\n[교육자료 안내] 교안 파일이 ${edu.mb}MB로 서버에서 열기에 너무 커서 내용을 읽지 못했습니다. 교안 대조 없이 영상만으로 평가하고, rubric_alignment_score 는 0으로 두세요.`;
       }
     }
+    const hasEduContent = !!eduTextIn || !!edu_file_url;
     parts.push({
       text:
         buildPrompt({
           checklistItems: checklist_items || [],
           evalType: eval_type,
-          hasEduMaterial: !!edu_file_url,
+          hasEduMaterial: hasEduContent,
           autoRubric,
         }) + eduInlineText,
     });

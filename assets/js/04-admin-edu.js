@@ -602,9 +602,25 @@ async function uploadEduChecklist(){
   }
   const ext=file.name.split('.').pop()||'file';
   const path=`checklists/${Date.now()}.${ext}`;
-  const{error:ue}=await sb.storage.from('files').upload(path,file);
-  if(ue){alert('업로드 실패: '+ue.message);return;}
-  const{data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
+  // 대형 교안(PPT 등)은 Supabase Storage 용량 한도에 걸리므로 GCS(무제한)로 우회
+  let publicUrl='';
+  const useGCS = file.size > 8*1024*1024;
+  let ue=null;
+  if(!useGCS){
+    ({error:ue}=await sb.storage.from('files').upload(path,file));
+    if(!ue) publicUrl=sb.storage.from('files').getPublicUrl(path).data.publicUrl;
+  }
+  if(useGCS||ue){
+    if(ue) console.warn('[edu] Supabase 업로드 실패 → GCS 폴백:',ue.message);
+    try{
+      const up=await uploadFileToGCS(file,'edu-materials');
+      publicUrl=up.public_url;
+    }catch(ge){
+      alert('업로드 실패: '+(ge.message||ue?.message||''));
+      return;
+    }
+  }
+  if(!publicUrl){alert('업로드 실패: '+(ue?.message||'알 수 없는 오류'));return;}
   const insertPayload={name,file_name:file.name,file_url:publicUrl,category:cat,month:new Date().getMonth()+1,uploader:CU?.name||'관리자'};
   if(type) insertPayload.type=type;
   const{data:inserted,error:dbErr}=await sb.from('checklist_files').insert({...insertPayload,org_name:curOrg()}).select().single();

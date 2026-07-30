@@ -202,6 +202,81 @@ async function uploadAnalysisVideo(file){
   }
   return {public_url:sig.public_url, gcs_uri:sig.gcs_uri, mime:file.type||'video/mp4'};
 }
+// ── 대용량 파일 업로드 (크기 제한 없음) ───────────────────
+// Supabase Storage 는 버킷 용량 한도가 있어 대형 교안(수백 MB)에서 실패한다.
+// 영상과 동일하게 GCS Signed URL 로 직접 올려 한도를 없앤다.
+async function uploadFileToGCS(file, folder){
+  const sigResp=await fetch('/api/gcs-upload-url',{
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
+    body:JSON.stringify({filename:file.name||'file.bin', content_type:file.type||'application/octet-stream', folder:folder||'edu-materials'})
+  });
+  const sigRaw=await sigResp.text();
+  let sig=null;
+  try{sig=JSON.parse(sigRaw);}catch(e){throw new Error(`업로드 URL 발급 실패(HTTP ${sigResp.status}): ${sigRaw.slice(0,200)}`);}
+  if(!sigResp.ok||!sig.ok) throw new Error(sig.error||'업로드 URL 발급 실패');
+  const putResp=await fetch(sig.upload_url,{
+    method:'PUT', headers:{'Content-Type':file.type||'application/octet-stream'}, body:file
+  });
+  if(!putResp.ok){
+    const err=await putResp.text().catch(()=>'');
+    throw new Error(`업로드 실패(HTTP ${putResp.status}): ${err.slice(0,200)}`);
+  }
+  return {public_url:sig.public_url, gcs_uri:sig.gcs_uri, mime:file.type||'application/octet-stream'};
+}
+// ── 교안 텍스트를 브라우저에서 추출 ────────────────────
+// 서버가 수백 MB 파일을 내려받아 풀면 메모리·시간 한도에 걸린다.
+// PPT/Word/Excel 은 전부 zip 구조라 브라우저에서 바로 텍스트만 뽑아 보낼 수 있다 (보통 수 KB).
+async function extractEduTextInBrowser(file){
+  const name=(file.name||'').toLowerCase();
+  const readBuf=()=>new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result);
+    r.onerror=()=>rej(new Error('파일 읽기 실패'));
+    r.readAsArrayBuffer(file);
+  });
+  try{
+    // Excel — 이미 로드된 XLSX 사용
+    if(/\.(xlsx|xls)$/.test(name) && typeof XLSX!=='undefined'){
+      const wb=XLSX.read(await readBuf(),{type:'array'});
+      return wb.SheetNames.map(n=>`# 시트: ${n}\n${XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join('\n\n');
+    }
+    // 텍스트 계열은 그대로
+    if(/\.(txt|csv|md)$/.test(name)) return await file.text();
+    // PowerPoint / Word — zip 해제 후 XML 에서 텍스트만
+    if(/\.(pptx|docx)$/.test(name)){
+      if(typeof JSZip==='undefined'){ console.warn('[edu] JSZip 미로드 — 서버 추출로 폴백'); return ''; }
+      const zip=await JSZip.loadAsync(await readBuf());
+      const unesc=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+      const pull=async(path)=>{
+        const xml=await zip.file(path).async('string');
+        const out=[];
+        const re=/<a:t[^>]*>([\s\S]*?)<\/a:t>|<w:t[^>]*>([\s\S]*?)<\/w:t>/g;
+        let m;
+        while((m=re.exec(xml))!==null){
+          const t=unesc((m[1]??m[2]??'')).trim();
+          if(t) out.push(t);
+        }
+        return out;
+      };
+      if(/\.pptx$/.test(name)){
+        const slides=Object.keys(zip.files)
+          .filter(f=>/^ppt\/slides\/slide\d+\.xml$/.test(f))
+          .sort((a,b)=>parseInt(a.match(/slide(\d+)/)[1])-parseInt(b.match(/slide(\d+)/)[1]));
+        const parts=[];
+        for(let i=0;i<slides.length;i++){
+          const texts=await pull(slides[i]);
+          if(texts.length) parts.push(`# 슬라이드 ${i+1}\n${texts.join('\n')}`);
+        }
+        return parts.join('\n\n');
+      }
+      const texts=await pull('word/document.xml');
+      return texts.join('\n');
+    }
+  }catch(e){
+    console.warn('[edu] 브라우저 텍스트 추출 실패 — 서버 추출로 폴백:',e);
+  }
+  return ''; // PDF/이미지 등은 Gemini 가 직접 읽으므로 추출 불필요
+}
 // 체크리스트 세부 항목 로드
 async function loadChecklistItemsForEval(checklistId){
   if(!checklistId) return [];
@@ -1686,6 +1761,8 @@ function applyChecklistFromSelect(prefix,kind){
 }
 function applyEduFile(url,name){
   document.getElementById('an-checklist-name').textContent=name+' (교육자료 적용)';
+  // 등록된 파일을 고른 경우 — 로컬 원본이 없어 브라우저 추출 불가 → 서버가 내려받아 처리
+  window._anEduText='';
   // 파일 URL을 hidden에 저장
   if(!document.getElementById('an-checklist-url')){
     const h=document.createElement('input');h.type='hidden';h.id='an-checklist-url';document.body.appendChild(h);
@@ -1705,24 +1782,56 @@ async function uploadAnChecklistFile(input){
   const file=input?.files?.[0];
   const nameEl=document.getElementById('an-checklist-name');
   if(!file){ if(nameEl) nameEl.textContent='선택된 파일 없음'; return; }
-  if(nameEl) nameEl.textContent=file.name+' (업로드 중…)';
+  const sizeMB=file.size/1024/1024;
+  if(nameEl) nameEl.textContent=`${file.name} (${sizeMB.toFixed(1)}MB · 업로드 중…)`;
+  window._anEduText='';
   try{
+    // ① 교안 텍스트를 브라우저에서 먼저 추출 (PPT/Word/Excel)
+    //    → 서버가 수백 MB 파일을 내려받아 풀 필요가 없어져 크기 제한이 사라진다
+    if(nameEl) nameEl.textContent=`${file.name} (${sizeMB.toFixed(1)}MB · 교안 읽는 중…)`;
+    const eduText=await extractEduTextInBrowser(file);
+    window._anEduText=eduText||'';
+    // ② 원본 파일 저장
+    //    작은 파일은 기존대로 Supabase, 큰 파일은 GCS(무제한)로 — 한도 오류 회피
+    if(nameEl) nameEl.textContent=`${file.name} (${sizeMB.toFixed(1)}MB · 업로드 중…)`;
+    let publicUrl='';
     const ext=(file.name.split('.').pop()||'bin').toLowerCase();
     const path=`eval-checklists/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const {error:ue}=await sb.storage.from('files').upload(path,file);
-    if(ue){
-      console.error('upload failed:',ue);
+    const useGCS = file.size > 8*1024*1024;   // 8MB 초과 → GCS 직행
+    let ue=null;
+    if(!useGCS){
+      ({error:ue}=await sb.storage.from('files').upload(path,file));
+      if(!ue) publicUrl=sb.storage.from('files').getPublicUrl(path).data.publicUrl;
+    }
+    // Supabase 가 실패했거나 처음부터 큰 파일이면 GCS 로 (크기 제한 없음)
+    if(useGCS||ue){
+      if(ue) console.warn('[edu] Supabase 업로드 실패 → GCS 폴백:',ue.message);
+      try{
+        const up=await uploadFileToGCS(file,'edu-materials');
+        publicUrl=up.public_url;
+      }catch(ge){
+        // 원본 저장에 실패해도 텍스트를 뽑았으면 분석은 진행 가능
+        if(window._anEduText){
+          console.warn('[edu] 원본 저장 실패 — 추출 텍스트로 분석 진행:',ge);
+          if(nameEl) nameEl.textContent=`${file.name} (원본 저장 실패 · 내용은 분석에 반영됨)`;
+          publicUrl='';
+        }else{
+          throw ge;
+        }
+      }
+    }
+    if(!publicUrl && !window._anEduText){
       if(nameEl) nameEl.textContent=file.name+' (업로드 실패)';
-      alert('파일 업로드 실패: '+(ue.message||''));
+      alert('파일 업로드 실패: '+(ue?.message||'알 수 없는 오류'));
       input.value='';
       return;
     }
-    const {data:{publicUrl}}=sb.storage.from('files').getPublicUrl(path);
     if(!document.getElementById('an-checklist-url')){
       const h=document.createElement('input');h.type='hidden';h.id='an-checklist-url';document.body.appendChild(h);
     }
     document.getElementById('an-checklist-url').value=publicUrl;
-    if(nameEl) nameEl.textContent=file.name+' (직접 업로드 적용)';
+    const txtInfo=window._anEduText?` · 교안 글자 ${window._anEduText.length.toLocaleString()}자 인식`:'';
+    if(nameEl) nameEl.textContent=`${file.name} (적용됨${txtInfo})`;
     // 드롭다운 바로 아래 배지 표시 (교육자료 클릭과 동일)
     const badge=document.getElementById('an-edu-applied');
     const badgeName=document.getElementById('an-edu-applied-name');
@@ -1990,7 +2099,9 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     }
     // 3) Vertex AI 호출 — 개별 실패해도 한 쪽은 보여주기
     el('an-ai-summary').textContent='AI 영상 분석 중... (1~3분)';
-    const hasEdu=!!eduFileUrl;
+    // 교안이 있는지 판단 — 원본 URL 이 없어도 브라우저에서 뽑은 텍스트가 있으면 교육맞춤평가 가능
+    const eduText=String(window._anEduText||'');
+    const hasEdu=!!eduFileUrl||!!eduText;
     let critResult=null, aiResult=null;
     const errors=[];
     // 교육맞춤평가: 교육맞춤 체크리스트 + 교육자료(edu_file_url) 동시 전달
@@ -2003,6 +2114,8 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
           video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
           checklist_items:critItems, eval_type:'평가안기준',
           edu_file_url:eduFileUrl,
+          // 브라우저에서 뽑은 교안 텍스트 — 있으면 서버가 원본을 내려받지 않는다 (대용량 교안 대응)
+          edu_text:eduText,
           edu_file_mime:eduFileUrl.match(/\.pdf$/i)?'application/pdf':eduFileUrl.match(/\.(xlsx|xls)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':eduFileUrl.match(/\.(docx|doc)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':eduFileUrl.match(/\.(pptx?|ppt)$/i)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':'application/pdf'
         }));
         setAiLoadingStage('crit','done');
