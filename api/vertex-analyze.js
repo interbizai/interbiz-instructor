@@ -14,8 +14,13 @@ const SB_URL = process.env.SUPABASE_URL;
 const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const sbAdmin = SB_URL && SB_SERVICE_KEY ? createClient(SB_URL, SB_SERVICE_KEY, { auth: { persistSession: false } }) : null;
 
+// 채점 로직/프롬프트를 바꿀 때마다 올린다 → 예전 캐시(후한 점수)가 재사용되는 것을 차단
+const PROMPT_VERSION = 'v2-5level-strict-2026-07-30';
+
 function makeCacheKey({ video_gcs_uri, video_url, checklist_items, eval_type, edu_file_url, model }) {
   const h = crypto.createHash('sha256');
+  h.update(PROMPT_VERSION);
+  h.update('|');
   h.update(String(video_gcs_uri || video_url || ''));
   h.update('|');
   h.update(JSON.stringify(checklist_items || []));
@@ -164,15 +169,194 @@ function getCredentials() {
   };
 }
 
-function buildPrompt({ checklistItems, evalType, hasEduMaterial }) {
-  const checklistSpec = checklistItems.map((it, i) => ({
-    n: i + 1,
-    category: it.category,
-    sub_item: it.sub_item,
-    criterion: it.criterion,
-    max_score: it.max_score,
-    detail: it.detail || '',
-  }));
+// ── 5단계 앵커 채점 체계 ────────────────────────────────
+// 엑셀 평가표의 5점/4점/3점/2점/1점 기준 문장을 그대로 AI 에게 앵커(기준점)로 주입한다.
+// 점수 환산(표준형): 3점 = 배점의 60% → 전 항목 보통이면 총점 60점(C등급)
+const LEVEL_RATIO = { 5: 1.0, 4: 0.8, 3: 0.6, 2: 0.4, 1: 0.2 };
+const LEVEL_NAME = { 5: '매우 우수', 4: '우수', 3: '보통', 2: '미흡', 1: '매우 미흡' };
+// 엑셀에 세부 기준이 없는 항목 · AI 독자 평가에서 쓰는 범용 앵커
+const GENERIC_LEVELS = {
+  '5': '교과서적 시범강의 수준으로 완벽히 수행. 신입 강사 교육 교재에 그대로 실어도 되는 장면이 있음',
+  '4': '기대 수준을 확실히 넘김. 의도적으로 설계한 흔적이 보이나 완벽하지는 않음',
+  '3': '기본은 했음. 큰 문제도 없고 인상적이지도 않은 평균적 수행',
+  '2': '시도는 있었으나 형식적이거나 오류·누락이 있어 전달 목적을 충분히 달성하지 못함',
+  '1': '거의 수행되지 않았거나 잘못 수행되어 개선이 시급함',
+};
+
+function normalizeLevels(raw) {
+  if (!raw) return null;
+  let obj = raw;
+  if (typeof raw === 'string') {
+    try { obj = JSON.parse(raw); } catch (e) { return null; }
+  }
+  if (typeof obj !== 'object' || Array.isArray(obj)) return null;
+  const out = {};
+  for (const n of [5, 4, 3, 2, 1]) {
+    const v = obj[String(n)] ?? obj[n];
+    if (v && String(v).trim()) out[String(n)] = String(v).trim();
+  }
+  return Object.keys(out).length >= 2 ? out : null;
+}
+
+// 분포 상한 — 항목 수 기준으로 5점/(4+5)점 개수 제한
+function distributionCaps(n) {
+  return { cap5: Math.max(1, Math.floor(n * 0.2)), cap45: Math.max(2, Math.floor(n * 0.5)) };
+}
+
+// 5단계 앵커 채점 규칙 블록 (평가안기준 · AI독자 공통)
+function buildScoringRules(itemCount, hasCustomLevels) {
+  const { cap5, cap45 } = distributionCaps(itemCount || 15);
+  return `# 채점 방식 — 5단계 앵커 채점 (이 순서를 반드시 지켜라)
+각 세부항목마다:
+1) 영상에서 그 항목에 해당하는 장면을 찾아 MM:SS 와 강사의 실제 발화를 인용한다.
+2) 그 장면을 아래 체크리스트의 levels(5점~1점 기준 문장)와 한 줄씩 대조한다.
+3) 근거가 실제로 충족하는 가장 높은 단계를 level_score(1~5 정수)로 정한다.
+4) evidence 에 "몇 점 기준 문장의 어느 부분을 무엇으로 충족했는지"를 MM:SS 인용과 함께 적는다.
+5) score(점수 숫자)는 서버가 level_score 로 자동 환산한다. 너는 level_score 만 정확히 정하면 된다.
+${hasCustomLevels
+    ? '   · 각 항목의 levels 는 이 조직이 실제로 쓰는 평가표 원문이다. 임의로 해석하거나 완화하지 말고 문장 그대로 적용하라.'
+    : '   · 각 항목의 levels 는 범용 기준이다. 강의 성격에 맞춰 엄격하게 적용하라.'}
+
+# ⛔ 캘리브레이션 — 점수 인플레이션 금지 (이 규칙이 다른 모든 규칙보다 우선한다)
+1) **모든 항목의 출발점은 3점(보통)이다.** 근거 인용 없이 4점 이상을 준 항목은 오답으로 간주한다.
+2) 4점 이상은 evidence 에 MM:SS 인용이 반드시 있어야 한다. 인용이 없으면 3점 이하로 내려라.
+3) 5점은 "이 장면을 신입 강사 교육 교재에 그대로 실을 수 있는가?"에 '예'라고 답할 수 있을 때만.
+   "잘했다", "무난했다", "문제 없었다" 수준은 5점이 아니라 3점이다.
+4) **분포 기준선 (총 ${itemCount}개 항목 기준)**
+   · 5점: ${cap5}개 이내가 정상
+   · 4점 + 5점 합계: ${cap45}개 이내가 정상
+   · **이 기준선을 넘겨도 된다. 단, 넘기는 항목마다 evidence 에 "5점(또는 4점) 기준 문장의 어느 부분을
+     영상 MM:SS 의 무엇으로 충족했는지"가 반드시 적혀 있어야 한다.**
+   · 근거 인용 없이 기준선을 넘긴 항목은 서버가 자동으로 강등한다. 즉 근거 없는 고득점은 무의미하다.
+   · 정말 뛰어난 강의라면 기준선을 넘겨 90점대가 나와도 된다. 다만 근거로 증명하라.
+   · 반대로 근거를 못 대겠으면 미련 없이 3점으로 내려라.
+5) 전 항목이 4~5점이거나 전 항목이 동일 점수면 **관찰 실패**로 간주한다. 반드시 잘한 항목과 못한 항목이 갈려야 한다.
+6) 강사가 그 항목을 **아예 하지 않았다면 1점**이다. "관찰되지 않았다"를 이유로 na 처리하지 말 것.
+7) na(해당없음)는 오직 **영상 자체가 그 항목을 담을 수 없는 경우**에만 쓴다.
+   · na 허용 예: 수강생이 화면·소리에 전혀 등장하지 않아 '수강생 반응 관찰' 을 물리적으로 확인할 방법이 없음
+   · na 금지 예: 강사가 참여 유도를 하지 않았다 → 이것은 1점이다
+   · na 금지 예: 시간이 짧아 판단이 애매하다 → 관찰된 만큼만 보고 2~3점을 주어라
+8) level(good/normal/bad)은 level_score 에서 자동으로 정한다: 5·4점 → "good" / 3점 → "normal" / 2·1점 → "bad"
+9) 점수 환산표 (참고용, 계산은 서버가 함): 5점=배점의 100% / 4점=80% / 3점=60% / 2점=40% / 1점=20%
+   → 전 항목 3점이면 총점 60점이다. 60점은 '보통'이며 정상적인 결과다. 총점을 높이려고 점수를 올리지 마라.`;
+}
+
+// ── 서버측 채점 확정 ────────────────────────────────
+// AI 가 캘리브레이션 규칙을 어겨도 여기서 되돌린다 (프롬프트만으로는 인플레이션이 완전히 안 잡힘)
+//  1) level_score(1~5) 정규화 — 누락 시 score/max 비율에서 역산
+//  2) 분포 상한 강제 — 근거(evidence) 없는 항목부터 강등
+//  3) score = 배점 × 환산비율, level = good/normal/bad 확정
+//  4) 대항목/총점 재계산 (na 는 분자·분모 모두에서 제외)
+function enforceScoring(parsed) {
+  if (!parsed || !Array.isArray(parsed.sub_scores) || !parsed.sub_scores.length) return parsed;
+  const subs = parsed.sub_scores;
+  const scored = subs.filter((s) => s.level !== 'na');
+
+  // 1) level_score 정규화
+  for (const s of scored) {
+    let ls = Math.round(Number(s.level_score));
+    if (!(ls >= 1 && ls <= 5)) {
+      const max = Number(s.max) || 5;
+      const ratio = max > 0 ? Number(s.score || 0) / max : 0;
+      ls = ratio >= 0.95 ? 5 : ratio >= 0.75 ? 4 : ratio >= 0.55 ? 3 : ratio >= 0.3 ? 2 : 1;
+    }
+    s.level_score = ls;
+  }
+
+  // 2) 분포 상한 강제 — 근거가 빈약한 항목부터 끌어내린다
+  const { cap5, cap45 } = distributionCaps(scored.length || 15);
+  const hasTime = (s) => /\d{1,2}:\d{2}/.test(String(s.evidence || '') + ' ' + String(s.timestamp || ''));
+  const weakness = (s) => (String(s.evidence || '').trim() ? 0 : 2) + (hasTime(s) ? 0 : 1);
+  // ⚠ 상한을 넘었다고 무조건 깎지 않는다.
+  //   근거(evidence + MM:SS 인용)가 부실한 항목만 끌어내린다.
+  //   → 근거가 확실한 고득점은 살아남으므로, 진짜 잘한 강의는 90점대도 나올 수 있다.
+  //     반대로 "그냥 잘했다" 식의 무근거 고득점은 전부 강등된다.
+  const demote = (pred, cap, target) => {
+    const hits = scored.filter(pred);
+    let over = hits.length - cap;
+    if (over <= 0) return 0;
+    const weak = hits.filter((s) => weakness(s) > 0).sort((a, b) => weakness(b) - weakness(a));
+    let n = 0;
+    for (const s of weak) {
+      if (over <= 0) break;
+      s.level_score = target;
+      s.score_capped = true;
+      over--; n++;
+    }
+    return n;
+  };
+  const capped5 = demote((s) => s.level_score === 5, cap5, 4);
+  const capped45 = demote((s) => s.level_score >= 4, cap45, 3);
+
+  // 3) score / level 확정
+  for (const s of subs) {
+    if (s.level === 'na') { s.level_score = 0; s.score = 0; s.level_name = '해당없음'; continue; }
+    const max = Number(s.max) || 0;
+    const ls = s.level_score;
+    s.score = Math.round(max * (LEVEL_RATIO[ls] || 0));
+    s.level = ls >= 4 ? 'good' : ls === 3 ? 'normal' : 'bad';
+    s.level_name = LEVEL_NAME[ls] || '';
+  }
+
+  // 4) 대항목 · 총점 재계산 (na 제외)
+  const order = [];
+  const catMap = new Map();
+  for (const s of subs) {
+    const k = s.category || '기타';
+    if (!order.includes(k)) order.push(k);
+    if (s.level === 'na') continue;
+    if (!catMap.has(k)) catMap.set(k, { name: k, score: 0, max: 0 });
+    const c = catMap.get(k);
+    c.score += Number(s.score || 0);
+    c.max += Number(s.max || 0);
+  }
+  const categories = order.filter((k) => catMap.has(k)).map((k) => {
+    const c = catMap.get(k);
+    return { name: k, score: c.score, max: c.max, achievement: c.max > 0 ? Math.round((c.score / c.max) * 100) : 0 };
+  });
+  const totalScore = categories.reduce((a, c) => a + c.score, 0);
+  const totalMax = categories.reduce((a, c) => a + c.max, 0);
+
+  // 실제 분포 재집계
+  const dist = { '5점': 0, '4점': 0, '3점': 0, '2점': 0, '1점': 0, na: 0 };
+  for (const s of subs) {
+    if (s.level === 'na') dist.na++;
+    else if (s.level_score >= 1 && s.level_score <= 5) dist[`${s.level_score}점`]++;
+  }
+
+  return {
+    ...parsed,
+    categories,
+    overall_score: totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0,
+    score_distribution: dist,
+    scoring_meta: {
+      version: PROMPT_VERSION,
+      ratio: LEVEL_RATIO,
+      caps: { cap5, cap45, item_count: scored.length },
+      capped: { from5to4: capped5, from4to3: capped45 },
+    },
+  };
+}
+
+function buildPrompt({ checklistItems, evalType, hasEduMaterial, autoRubric }) {
+  // 평가안기준 = 등록된 엑셀의 5단계 세부 기준표를 그대로 앵커로 사용
+  // AI독자     = 세부 기준표를 보지 않고, 범용 전문가 기준으로 독립 채점
+  const useCustomLevels = evalType === '평가안기준';
+  let hasCustomLevels = false;
+  const checklistSpec = (checklistItems || []).map((it, i) => {
+    const custom = useCustomLevels ? normalizeLevels(it.levels) : null;
+    if (custom) hasCustomLevels = true;
+    return {
+      n: i + 1,
+      category: it.category,
+      sub_item: it.sub_item,
+      criterion: it.criterion,
+      max_score: it.max_score,
+      detail: it.detail || '',
+      scale: it.scale_max || 5,
+      levels: custom || GENERIC_LEVELS,
+    };
+  });
 
   const evalContext =
     evalType === '평가안기준'
@@ -192,9 +376,12 @@ function buildPrompt({ checklistItems, evalType, hasEduMaterial }) {
    - 0-9: 교육자료가 비어있거나 전혀 무관한 내용
 6) 교육자료가 전달되지 않았거나 텍스트가 비어있으면 반드시 0
 7) 95% 이상은 교육자료가 완벽한 교안+대본+평가기준을 모두 포함한 경우에만. 일반적인 시나리오/PPT는 50~70이 현실적`
-      : `당신은 **세계적인 가전 전문 강사**입니다. 스피치·발성·화법·청중 상호작용에 대한 깊은 통찰로 강사를 평가합니다. 업로드된 영상·오디오를 독립적으로 확인하여, 아래 체크리스트 기준으로 평가합니다.
-교육자료(시나리오/교안/평가안)가 첨부된 경우 반드시 읽고 내용의 흐름과 영상의 전달이 얼마나 부합하는지 '느낌' 수준으로 반영하되, 평가의 주 기준은 체크리스트입니다.
-rubric_alignment_score는 교육자료가 없으면 0, 있으면 50~90 사이로 교육자료의 구조/핵심 키워드 명확도를 참고해 부여하세요.`;
+      : `당신은 **세계적인 가전 전문 강사**입니다. 스피치·발성·화법·청중 상호작용에 대한 깊은 통찰로 강사를 평가합니다.
+이것은 **AI 독자 평가**입니다. 조직이 등록한 상세 평가표(세부 기준표)는 일부러 보지 않고, **전문 강사 코치로서 영상만 보고 내린 독립적 판단**을 점수로 내야 합니다.
+- 조직 평가표에 맞춰주려 하지 말 것. 조직 기준으로는 통과여도 전문가 눈에 부족하면 낮은 점수를 주는 것이 이 평가의 존재 이유입니다.
+- 기준은 "대한민국 상위 10% 현장 강사와 비교했을 때 이 강의는 어느 수준인가?" 입니다. 평균적인 강의는 3점(보통)입니다.
+교육자료(시나리오/교안/평가안)가 첨부된 경우 흐름 참고용으로만 읽고, 평가의 주 기준은 어디까지나 영상에서 관찰된 실제 수행입니다.
+rubric_alignment_score는 0으로 두세요.`;
 
   return `${evalContext}
 
@@ -211,42 +398,49 @@ rubric_alignment_score는 교육자료가 없으면 0, 있으면 50~90 사이로
    - 문서 전체를 읽고 핵심 목표 · 핵심 키워드 · 권장 흐름을 먼저 뽑아라
    - 영상 강사의 실제 전달과 1:1 대조해 일치/불일치 지점을 구체적으로 명시
    - analysis에 "교육자료의 ○○ 부분을 영상에서는 △△로 전달함" 식으로 명시적 비교를 포함
-5) 점수는 관찰된 근거가 명확할 때만 부여. 근거가 없으면 na로 처리하고 bad로 떨어뜨리지 말 것.
+5) 근거 없이 후한 점수를 주는 것은 최악의 오답이다. 근거가 약하면 점수를 내려라 (na로 도피하지 말 것).
 6) 영상 길이가 길어도 fps/샘플링 한계로 놓친 구간을 임의로 추론하지 말 것. 관찰 가능한 구간만 근거로 사용.
 7) 동일 문구 반복 금지 — 각 항목의 analysis는 해당 항목 고유의 내용으로 구체 서술.
 
-# 체크리스트 (100점 만점)
-${JSON.stringify(checklistSpec, null, 2)}
+${autoRubric
+  ? `# 자체 평가안 설계 (등록된 평가안 없음 → 네가 직접 만든다)
+이 평가에는 등록된 체크리스트가 없다. 따라서 **먼저 이 영상에 맞는 평가안을 직접 설계한 뒤, 그 평가안으로 채점**한다.
+1) 영상을 처음부터 끝까지 본 뒤 이 강의의 성격(제품 교육 / 판매 화법 / 서비스 응대 / 실습 지도 등)을 판단한다.
+2) 대항목 4~6개, 세부항목 총 12~16개의 평가안을 설계한다. 각 세부항목에 반드시 포함:
+   · category  : 대항목명 (예: "1.내용 전문성")
+   · no        : "1-1" 형식의 번호
+   · sub_item  : 세부항목명 (예: "제품 숙지도")
+   · criterion : 평가 기준을 질문형으로 (예: "제품의 원리와 특장점을 정확히 이해하고 교육하였는가?")
+   · detail    : 평가 기준 상세 한 줄 (무엇을 봤을 때 잘한 것으로 볼지)
+   · max_score : 배점. 중요 항목 10점, 일반 항목 5점 식으로 가중
+   · levels    : {"5":"…","4":"…","3":"…","2":"…","1":"…"} 5단계 기준 문장 (각 30~60자, 서로 확실히 구분되게)
+3) **max_score 의 합계는 정확히 100 이어야 한다.** 설계 후 반드시 합계를 검산하라.
+4) 설계한 평가안 전체를 응답의 "generated_checklist" 배열에 담는다.
+5) 그 다음 아래 채점 방식대로 sub_scores 를 작성한다.
+   sub_scores 의 category / sub_item / criterion / max 는 generated_checklist 와 **정확히 일치**해야 한다.
+6) 평가안은 이 영상 하나를 위해 설계하되, 강사 역량 평가로서 보편타당해야 한다 (강사가 잘한 것만 골라 항목을 만들지 말 것 — 그건 부정행위다).`
+  : `# 체크리스트 (배점 합계 100점)
+각 항목의 levels 가 채점 앵커(기준점)다. 반드시 이 문장과 대조해서 level_score 를 정하라.
+${JSON.stringify(checklistSpec, null, 2)}`}
 
-# 채점 규칙
-- 각 세부항목은 4가지 level 중 하나: "good"(잘함), "normal"(보통), "bad"(못함), "na"(해당없음/평가 불가)
-- 중요: 영상에 해당 내용이 전혀 관찰되지 않거나 평가 불가한 경우 반드시 "na"로 분류. "평가하기 어렵다", "판단 불가", "관찰되지 않음" 같은 분석을 쓰면서 "bad"로 처리하지 말 것. na일 때 timestamp는 빈 문자열
-- score는 0 ≤ score ≤ max 범위의 정수. 관찰된 수행 수준에 맞춰 세밀하게 부여 (예: max=5 이면 0·1·2·3·4·5 모두 허용 / max=10이면 0~10 정수 / max=15면 0~15 정수)
-- level은 score/max 비율 기준으로 자동 일치 (max 크기에 따라 임계값 다름):
-  · max ≤ 5 일 때
-     - score/max ≥ 0.8 (예: 5/5, 4/5)         → "good"
-     - 0.6 ≤ score/max < 0.8 (예: 3/5)        → "normal"
-     - score/max < 0.6 (예: 2/5, 1/5, 0/5)    → "bad"
-  · max ≥ 6 일 때
-     - score/max ≥ 0.9 (예: 9/10, 14/15)      → "good"
-     - 0.7 ≤ score/max < 0.9 (예: 7/10, 8/10) → "normal"
-     - score/max < 0.7                         → "bad"
-  · 영상에 관찰 불가 → "na" (점수 합산 제외)
-- 애매하면 중간(normal) 쪽. 확실히 뛰어난 부분만 good, 명백한 문제만 bad.
-- overall_score는 전체 sub_scores의 score합/max합×100으로 정확히 계산. 0점 항목이 3개 이상이면 80점 이상 나올 수 없음
-- 판정 불가(해당없음)인 경우 "na"로 표기 — 점수 합산에서 제외
-- 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기
-- analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 권장)
-- solution은 "normal"/"bad" 항목에만 작성. "good"/"na" 항목은 solution을 빈 문자열("")로 둔다
+${buildScoringRules(autoRubric ? 15 : checklistSpec.length, hasCustomLevels)}
+
+# 그 밖의 작성 규칙
+- 시점(timestamp)은 영상 내 MM:SS 또는 MM:SS-MM:SS 형식으로 구체적으로 적기. na 항목만 빈 문자열
+- analysis는 한국어로 구체적으로 (영상 속 실제 장면/발언 인용 필수)
+- solution은 level_score 4점 이하 항목에 반드시 작성. 5점 항목과 na 항목은 빈 문자열("")
 - habits(반복어)는 엄격 검증: 강사 입에서 실제로 여러 번(5회 이상) 반복해서 들리는 표현만 포함. 추측·유추 금지. 각 occurrence에는 MM:SS와 함께 그 시점의 실제 발화 문장 10~25자를 context로 반드시 인용. count는 occurrences 배열 길이와 일치해야 함. 확실하지 않은 반복어는 아예 제외(빈 배열이어도 OK)
-- overall_score = sum(sub_scores[i].score) / sum(sub_scores[i].max) × 100 을 반올림한 정수 (na 항목은 양쪽 합계에서 제외)
-- categories[].score = 해당 대항목에 속한 sub_scores의 score 합, categories[].max = max 합 (na 제외)
-- categories[].achievement = round(score/max × 100) (max=0이면 0)
+- overall_score / categories 는 서버가 level_score 로 재계산한다. 대략값으로 채워도 되지만 level_score 는 절대 대충 정하지 마라
 
 # 응답 JSON 스키마 (반드시 이 구조로만 응답)
 {
-  "overall_score": 0~100 정수 (=sub_scores의 score 합 ÷ max 합 × 100 반올림, na 제외),
-  "rubric_alignment_score": 0~100 정수 (교육자료가 얼마나 명확하고 유용한지. 평가안기준일 때만 작성, AI독자는 0),
+  "overall_score": 0~100 정수 (참고값 — 서버가 level_score 기준으로 재계산함),
+  "score_distribution": {"5점":int,"4점":int,"3점":int,"2점":int,"1점":int,"na":int},
+  // ⚠ score_distribution 은 sub_scores 의 level_score 를 직접 세어서 적어라.
+  //   분포 기준선을 넘겼다면, 넘긴 항목 전부에 MM:SS 인용이 있는지 응답 전에 스스로 검토하라.
+  ${autoRubric ? `"generated_checklist": [{"category":"대항목","no":"1-1","sub_item":"세부항목","criterion":"평가 기준 질문","detail":"기준 상세 한 줄","max_score":int,"levels":{"5":"…","4":"…","3":"…","2":"…","1":"…"}}],
+  // ⚠ generated_checklist 의 max_score 합계는 반드시 정확히 100
+  ` : ''}"rubric_alignment_score": 0~100 정수 (교육자료가 얼마나 명확하고 유용한지. 평가안기준일 때만 작성, AI독자는 0),
   "rubric_alignment_reason": "rubric_alignment_score의 근거를 한줄로 (예: '교안 구조가 명확하고 핵심 키워드 10개 확인됨' 또는 '교육자료가 전달되지 않아 평가 불가')",
   "categories": [{"name":"대항목명","score":int,"max":int,"achievement":0~100}],
   "sub_scores": [{
@@ -254,8 +448,10 @@ ${JSON.stringify(checklistSpec, null, 2)}
     "category": "대항목",
     "sub_item": "세부항목",
     "criterion": "평가기준",
+    "level_score": 1|2|3|4|5 (na면 0),
     "level": "good"|"normal"|"bad"|"na",
-    "score": int,
+    "evidence": "몇 점 기준 문장의 어느 부분을 무엇으로 충족했는지 + MM:SS 인용 (4점 이상이면 필수)",
+    "score": int (서버가 재계산하므로 0이어도 무방),
     "max": int,
     "timestamp": "MM:SS" 또는 "MM:SS-MM:SS" 또는 "",
     "analysis": "구체 분석",
@@ -413,10 +609,13 @@ export default async function handler(req, res) {
     } = req.body || {};
 
     if (!video_url && !video_gcs_uri) return res.status(400).json({ ok: false, error: 'video_url 또는 video_gcs_uri 필요' });
-    if (!Array.isArray(checklist_items) || !checklist_items.length)
-      return res.status(400).json({ ok: false, error: 'checklist_items 필요' });
     if (!eval_type || !['평가안기준', 'AI독자'].includes(eval_type))
       return res.status(400).json({ ok: false, error: 'eval_type: "평가안기준" | "AI독자"' });
+    // 체크리스트가 없으면 → AI독자 모드에서는 AI가 영상을 보고 평가안을 직접 설계 (auto rubric)
+    const hasChecklist = Array.isArray(checklist_items) && checklist_items.length > 0;
+    const autoRubric = !hasChecklist;
+    if (!hasChecklist && eval_type === '평가안기준')
+      return res.status(400).json({ ok: false, error: '평가안기준 분석에는 checklist_items 가 필요합니다' });
 
     // 캐시 조회 — 같은 영상+평가안+교육자료+모델이면 저장된 결과 즉시 반환 (Vertex 비용 절감)
     const skipCache = req.body?.skip_cache === true;
@@ -500,9 +699,10 @@ export default async function handler(req, res) {
     parts.push({
       text:
         buildPrompt({
-          checklistItems: checklist_items,
+          checklistItems: checklist_items || [],
           evalType: eval_type,
           hasEduMaterial: !!edu_file_url,
+          autoRubric,
         }) + eduInlineText,
     });
 
@@ -569,6 +769,24 @@ export default async function handler(req, res) {
         raw_length: text.length,
       });
     }
+
+    // AI 독자 자동 평가안: 스스로 만든 배점 합계가 100이 아니면 100 기준으로 보정
+    if (autoRubric && Array.isArray(parsed.generated_checklist) && parsed.generated_checklist.length) {
+      const sum = parsed.generated_checklist.reduce((a, x) => a + (Number(x.max_score) || 0), 0);
+      if (sum > 0 && sum !== 100) {
+        console.warn(`[vertex-analyze] 자동 평가안 배점 합계 ${sum} → 100으로 보정`);
+        const k = 100 / sum;
+        parsed.generated_checklist.forEach((x) => { x.max_score = Math.max(1, Math.round((Number(x.max_score) || 0) * k)); });
+        const byName = new Map(parsed.generated_checklist.map((x) => [`${x.category}||${x.sub_item}`, x.max_score]));
+        (parsed.sub_scores || []).forEach((s) => {
+          const m = byName.get(`${s.category}||${s.sub_item}`);
+          if (m) s.max = m;
+        });
+      }
+    }
+
+    // 5단계 앵커 채점 확정 (분포 상한 강제 + 총점 재계산)
+    parsed = enforceScoring(parsed);
 
     // 캐시 저장 (fire-and-forget — 응답 지연 X)
     if (sbAdmin && !skipCache) {
