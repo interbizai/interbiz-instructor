@@ -421,6 +421,8 @@ async function loadFromDB(tier){
 
 // 단계 로딩 헬퍼 — 핵심부터 즉시, 콘텐츠는 백그라운드
 async function loadFromDBStaged(){
+  // AI 코칭 중지 스위치 상태 — 화면 그리기 전에 먼저 읽어둔다 (비용 관리용)
+  try{ if(typeof loadAiCoachingFlag==='function') await loadAiCoachingFlag(); }catch(_){}
   // 1단계: 핵심 (users/videos/evaluations/voice_evals) — 즉시 표시 가능
   await loadFromDB('core');
   // 2단계: 콘텐츠(인터PICK·교육콘텐츠 등) + 보조 — 백그라운드

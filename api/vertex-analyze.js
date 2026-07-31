@@ -70,6 +70,24 @@ function verifyAuth(req) {
   }
 }
 
+// ── AI 코칭 중지 스위치 (비용 관리) ──────────────────────
+// 관리자가 [관리자 → 금액 현황] 에서 중지하면 여기서도 막는다.
+// 화면 쪽만 막으면 브라우저 개발자도구로 우회해 비용이 새므로 서버가 최종 판정.
+// 관리자(sub===0) 는 점검용으로 통과시킨다.
+async function isAiCoachingBlocked(decoded) {
+  if (!sbAdmin) return false;
+  if (decoded && decoded.sub === 0) return false;          // 관리자는 예외
+  const org = decoded && decoded.org ? String(decoded.org) : '';
+  const key = org ? `ai_coaching_blocked_${org}` : 'ai_coaching_blocked';
+  try {
+    const { data, error } = await sbAdmin.from('app_settings').select('value').eq('key', key).maybeSingle();
+    if (error) return false;                                // 조회 실패 시 막지 않음 (서비스 중단 방지)
+    return String(data?.value || '0') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
 // ── 교육자료 파일 타입별 처리 ──────────────
 // Gemini가 직접 처리 가능: PDF, 이미지, 텍스트 → fileData로 전달
 // Word/Excel/PowerPoint는 미지원 → 서버에서 텍스트 추출 후 텍스트로 전달
@@ -621,6 +639,15 @@ export default async function handler(req, res) {
 
   const auth = verifyAuth(req);
   if (!auth.ok) return res.status(401).json({ ok: false, error: auth.error });
+
+  // AI 코칭 중지 스위치 — 화면 우회로 비용이 새는 것을 막는 최종 관문
+  if (await isAiCoachingBlocked(auth.decoded)) {
+    return res.status(403).json({
+      ok: false,
+      error: 'AI 코칭이 일시 중지된 상태입니다. 이용이 필요하시면 관리자에게 문의해주세요.',
+      code: 'ai_coaching_blocked',
+    });
+  }
 
   // AI 시나리오 코치 모드 분기
   if (req.body && req.body.mode === 'scenario_coach') {

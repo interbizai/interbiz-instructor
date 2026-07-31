@@ -1,5 +1,5 @@
 // 인터PICK Service Worker — PWA 캐싱 + 오프라인 지원
-const VERSION = 'v1.2.1';
+const VERSION = 'v1.2.2';
 const STATIC_CACHE = `interpick-static-${VERSION}`;
 const RUNTIME_CACHE = `interpick-runtime-${VERSION}`;
 
@@ -12,20 +12,20 @@ const APP_SHELL = [
   '/login-am.html',
   '/login-hicare.html',
   '/manifest.json',
-  '/assets/css/app.css?v1.2.1',
+  '/assets/css/app.css?v1.2.2',
   '/assets/css/login.css',
   '/assets/js/login.js',
-  '/assets/js/01-core-db.js?v1.2.1',
-  '/assets/js/02-state.js?v1.2.1',
-  '/assets/js/03-nav-auth.js?v1.2.1',
-  '/assets/js/04-admin-edu.js?v1.2.1',
-  '/assets/js/05-home-analysis.js?v1.2.1',
-  '/assets/js/06-voice-calendar.js?v1.2.1',
-  '/assets/js/07-dashboard-my.js?v1.2.1',
-  '/assets/js/08-lecturer.js?v1.2.1',
-  '/assets/js/09-admin-panel.js?v1.2.1',
-  '/assets/js/10-ui-init.js?v1.2.1',
-  '/assets/js/video-protect.js?v1.2.1',
+  '/assets/js/01-core-db.js?v1.2.2',
+  '/assets/js/02-state.js?v1.2.2',
+  '/assets/js/03-nav-auth.js?v1.2.2',
+  '/assets/js/04-admin-edu.js?v1.2.2',
+  '/assets/js/05-home-analysis.js?v1.2.2',
+  '/assets/js/06-voice-calendar.js?v1.2.2',
+  '/assets/js/07-dashboard-my.js?v1.2.2',
+  '/assets/js/08-lecturer.js?v1.2.2',
+  '/assets/js/09-admin-panel.js?v1.2.2',
+  '/assets/js/10-ui-init.js?v1.2.2',
+  '/assets/js/video-protect.js?v1.2.2',
   '/assets/logo/interpick-icon.png',
   '/assets/logo/interpick-logo.png',
   '/assets/logo/1_white.png',

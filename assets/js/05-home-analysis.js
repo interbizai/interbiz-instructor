@@ -2,16 +2,33 @@
    (index.html 9464~12601행에서 분리 · 로드 순서 유지 필수) */
 
 /* ════════════════════════════════
-   AI 평가 실행 권한 (관리자 전용)
+   AI 코칭 실행 스위치 (비용 관리용)
    ────────────────────────────────
-   AI 분석은 비용·시간이 큰 작업이라 관리자(부관리자 포함)만 실행할 수 있다.
-   강사 계정이 분석 버튼을 누르면 실행하지 않고 안내 모달만 띄운다.
-   ※ 이미 저장된 평가 결과 열람은 막지 않는다 — 실행만 제한.
+   평소에는 강사 누구나 AI 분석을 실행할 수 있다.
+   관리자가 [관리자 → 금액 현황] 에서 '중지' 로 바꾸면 그때만 실행이 막힌다.
+   · 조직별로 따로 켜고 끌 수 있음 (LG전자 강사 / 하이케어솔루션)
+   · 관리자 본인은 중지 중에도 실행 가능 (점검·테스트용)
+   · 이미 저장된 평가 결과 열람은 어떤 경우에도 막지 않는다 — 실행만 제한
 ════════════════════════════════ */
-function canRunAnalysis(){
-  return !!(typeof CU!=='undefined' && CU && CU.isAdmin);
+function aiCoachingSettingKey(){
+  const org=(typeof curOrg==='function' && curOrg())||'';
+  return org ? 'ai_coaching_blocked_'+org : 'ai_coaching_blocked';
 }
-function showAdminOnlyNotice(featureName){
+// 서버 설정을 읽어 전역 캐시에 저장 (로그인 직후 · 토글 직후 호출)
+async function loadAiCoachingFlag(){
+  if(!window.sb) return;
+  try{
+    const {data,error}=await sb.from('app_settings').select('value').eq('key',aiCoachingSettingKey()).maybeSingle();
+    if(error) return;                      // 조회 실패 시 기존 값 유지 (기본 허용)
+    window._aiCoachingBlocked = String(data?.value||'0')==='1';
+  }catch(_){}
+}
+function isAiCoachingBlocked(){ return window._aiCoachingBlocked===true; }
+function canRunAnalysis(){
+  if(!isAiCoachingBlocked()) return true;                  // 평소 — 전원 사용 가능
+  return !!(typeof CU!=='undefined' && CU && CU.isAdmin);  // 중지 중 — 관리자만 예외
+}
+function showAiCoachingBlockedNotice(featureName){
   document.getElementById('admin-only-overlay')?.remove();
   const ov=document.createElement('div');
   ov.className='overlay show';
@@ -19,26 +36,27 @@ function showAdminOnlyNotice(featureName){
   const close=()=>ov.remove();
   ov.onclick=e=>{ if(e.target===ov) close(); };
   ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:32px 28px 24px;max-width:400px;width:88vw;text-align:center;animation:scaleIn .25s cubic-bezier(.22,1,.36,1);box-shadow:0 20px 60px rgba(0,0,0,.18)">
-    <div style="width:56px;height:56px;margin:0 auto 18px;border-radius:50%;background:rgba(0,120,200,.08);display:flex;align-items:center;justify-content:center">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div style="width:56px;height:56px;margin:0 auto 18px;border-radius:50%;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2"></rect>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
       </svg>
     </div>
-    <div style="font-size:17px;font-weight:900;color:var(--t1);margin-bottom:8px">관리자 권한이 필요합니다</div>
+    <div style="font-size:17px;font-weight:900;color:var(--t1);margin-bottom:8px">AI 코칭이 일시 중지되었습니다</div>
     <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:22px">
-      ${featureName||'AI 평가 분석'}은 현재 관리자만 실행할 수 있습니다.<br>
-      평가가 필요하시면 관리자에게 요청해주세요.
+      ${featureName||'AI 평가 분석'}은 현재 관리자가 중지해 둔 상태입니다.<br>
+      이용이 필요하시면 관리자에게 문의해주세요.
     </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:18px">이미 완료된 평가 결과는 그대로 확인하실 수 있습니다.</div>
     <button class="btn btn-blue" id="admin-only-ok" style="width:100%;padding:11px;font-size:13px;font-weight:800">확인</button>
   </div>`;
   document.body.appendChild(ov);
   ov.querySelector('#admin-only-ok').onclick=close;
 }
-// 분석 실행 직전 호출 — 권한 없으면 안내 후 false 반환
+// 분석 실행 직전 호출 — 중지 상태면 안내 후 false 반환
 function requireAnalysisPermission(featureName){
   if(canRunAnalysis()) return true;
-  showAdminOnlyNotice(featureName);
+  showAiCoachingBlockedNotice(featureName);
   return false;
 }
 /* ════════════════════════════════

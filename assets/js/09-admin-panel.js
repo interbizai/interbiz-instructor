@@ -34,12 +34,69 @@ function renderAdminCreditBanner(){
   const banner=document.getElementById('admin-credit-banner');
   if(!banner) return;
   banner.style.display='block';
-  banner.innerHTML=`<div style="display:flex;justify-content:flex-end;padding:14px 4px">
+  banner.innerHTML=`${renderAiCoachingSwitch()}
+  <div style="display:flex;justify-content:flex-end;padding:14px 4px">
     <a href="https://console.cloud.google.com/billing" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border:1px solid rgba(0,120,200,.25);border-radius:10px;font-size:13px;color:var(--blue);font-weight:700;text-decoration:none;background:#fff;transition:background .15s ease" onmouseover="this.style.background='rgba(0,120,200,.05)'" onmouseout="this.style.background='#fff'">
       Cloud Console 열기
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l10-10"/><polyline points="7 7 17 7 17 17"/></svg>
     </a>
   </div>`;
+}
+
+/* ── AI 코칭 사용 스위치 (비용 관리) ──────────────────────
+   중지하면 강사가 AI 분석을 실행할 수 없어 그 시점부터 AI 비용이 발생하지 않는다.
+   조직별로 따로 적용되며, 관리자 본인은 중지 중에도 점검용으로 실행 가능. */
+function renderAiCoachingSwitch(){
+  const blocked = (typeof isAiCoachingBlocked==='function') ? isAiCoachingBlocked() : false;
+  const org = (typeof curOrg==='function' && curOrg()) || '전체';
+  const on = !blocked;
+  return `<div style="border:1px solid ${on?'var(--bdr)':'rgba(239,68,68,.35)'};border-radius:14px;padding:18px 20px;background:${on?'#fff':'rgba(239,68,68,.04)'};margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:240px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <span style="font-size:15px;font-weight:900;color:var(--t1)">AI 코칭 사용</span>
+          <span style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:800;background:${on?'rgba(16,185,129,.12)':'rgba(239,68,68,.12)'};color:${on?'#10b981':'#ef4444'}">${on?'사용 중':'중지됨'}</span>
+          <span style="font-size:11px;color:var(--t3);font-weight:700">· ${org}</span>
+        </div>
+        <div style="font-size:12px;color:var(--t2);line-height:1.6">
+          ${on
+            ? '강사가 영상·스피치·시나리오 AI 분석을 실행할 수 있습니다. 실행할 때마다 AI 비용이 발생합니다.'
+            : '강사의 AI 분석 실행이 막혀 있어 <b style="color:#ef4444">AI 비용이 발생하지 않습니다.</b> 저장된 평가 결과 열람은 정상입니다.'}
+        </div>
+        ${!on?'<div style="font-size:11px;color:var(--t3);margin-top:5px">※ 관리자 계정은 중지 중에도 점검용으로 실행할 수 있습니다.</div>':''}
+      </div>
+      <button id="ai-switch-btn" onclick="toggleAiCoaching()"
+        style="padding:11px 22px;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;color:#fff;background:${on?'#ef4444':'#10b981'};box-shadow:0 2px 8px rgba(0,0,0,.12)">
+        ${on?'■ AI 코칭 중지':'▶ AI 코칭 재개'}
+      </button>
+    </div>
+  </div>`;
+}
+
+async function toggleAiCoaching(){
+  if(!(CU?.isAdmin||CU?.isSubAdmin)){ alert('관리자만 변경할 수 있습니다.'); return; }
+  const willBlock = !((typeof isAiCoachingBlocked==='function') && isAiCoachingBlocked());
+  const org = (typeof curOrg==='function' && curOrg()) || '';
+  const msg = willBlock
+    ? `[${org}] AI 코칭을 중지할까요?\n\n· 강사가 영상·스피치·시나리오 AI 분석을 실행할 수 없게 됩니다\n· 그 시점부터 AI 비용이 발생하지 않습니다\n· 저장된 평가 결과 열람은 그대로 됩니다`
+    : `[${org}] AI 코칭을 다시 사용할까요?\n\n· 강사가 AI 분석을 실행할 수 있게 됩니다\n· 실행할 때마다 AI 비용이 발생합니다`;
+  if(!confirm(msg)) return;
+  const btn=document.getElementById('ai-switch-btn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='저장 중…'; }
+  try{
+    const key=(typeof aiCoachingSettingKey==='function')?aiCoachingSettingKey():'ai_coaching_blocked';
+    const {error}=await sb.from('app_settings').upsert({
+      key, value: willBlock?'1':'0', updated_at:new Date().toISOString()
+    },{onConflict:'key'});
+    if(error){ alert('저장 실패: '+error.message); return; }
+    window._aiCoachingBlocked = willBlock;
+    if(typeof showToast==='function') showToast(willBlock?'AI 코칭을 중지했습니다':'AI 코칭을 다시 사용합니다', willBlock?'#ef4444':'#10b981');
+    renderAdminCreditBanner();
+  }catch(e){
+    alert('저장 중 오류: '+(e?.message||e));
+  }finally{
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+  }
 }
 
 // 검색 입력 — debounce 150ms 로 키 입력마다 재렌더
