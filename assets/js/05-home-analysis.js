@@ -441,9 +441,19 @@ function normalizeVertexResult(raw){
   const overall=totalMax>0?Math.round(totalScore/totalMax*100):0;
   return {...raw, categories, overall_score:overall};
 }
-// /api/vertex-analyze 호출 — 일시 장애(429/503/504/timeout) 자동 재시도, 최대 4회
+// /api/vertex-analyze 호출
+// ⚠ 타임아웃(504/FUNCTION_INVOCATION_TIMEOUT)에 같은 설정으로 재시도하면
+//   서버 한도(300초)를 매번 꽉 채우고 죽어 20분을 통째로 버린다.
+//   → 재시도할 때마다 '더 빠른 설정'으로 낮춰간다 (모델 → 프레임 수).
+//   Flash 는 Pro 보다 2~3배 빠르고 비용도 훨씬 낮아 타임아웃 탈출에 가장 효과적.
 async function callVertexAnalyze(payload){
-  const delays=[0,5000,12000,25000];
+  const baseFps = typeof payload.fps==='number' ? payload.fps : 0.2;
+  const chain = [
+    { cfg:{...payload},                                                          label:'정밀 분석' },
+    { cfg:{...payload, model:'gemini-2.5-flash'},                                label:'빠른 모델로 재시도' },
+    { cfg:{...payload, model:'gemini-2.5-flash', fps:Math.max(0.05, baseFps/2)}, label:'프레임 절반으로 재시도' },
+  ];
+  const delays=[0,3000,8000];
   let lastErr=null;
   const normalizeErr=e=>{
     if(e==null) return '';
@@ -459,18 +469,19 @@ async function callVertexAnalyze(payload){
   };
   // 413 / Content Too Large 는 영구 오류로 처리 — 재시도해도 똑같이 거부됨
   // (callVertexAnalyze 호출자는 다른 경로로 복구해야 함 — GCS 직접 업로드 등)
-  for(let i=0;i<delays.length;i++){
+  for(let i=0;i<chain.length;i++){
     if(delays[i]>0) await new Promise(r=>setTimeout(r,delays[i]));
+    if(i>0 && typeof setAiLoadingStep==='function') setAiLoadingStep(`AI 분석 ${chain[i].label}...`);
     let resp;
     try{
       resp=await fetch('/api/vertex-analyze',{
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('ib_token')||'')},
-        body:JSON.stringify(payload)
+        body:JSON.stringify(chain[i].cfg)
       });
     }catch(netErr){
       // 네트워크 자체 실패 (오프라인·DNS) — 일시 장애로 간주
       lastErr=new Error('네트워크 오류: '+(netErr?.message||netErr));
-      if(i<delays.length-1) continue;
+      if(i<chain.length-1) continue;
       break;
     }
     const raw=await resp.text();
@@ -478,7 +489,7 @@ async function callVertexAnalyze(payload){
     try{data=JSON.parse(raw);}catch(e){
       // JSON 파싱 실패 (Vercel 504 HTML 페이지 등) — status 코드로 재시도 판단
       lastErr=new Error(`서버 응답 비정상(HTTP ${resp.status}): ${raw.slice(0,200)}`);
-      if(isTransient(resp.status, raw) && i<delays.length-1) continue;
+      if(isTransient(resp.status, raw) && i<chain.length-1) continue;
       break;
     }
     if(resp.ok&&data.ok) return data.result;

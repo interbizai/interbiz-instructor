@@ -9,6 +9,10 @@ import { createClient } from '@supabase/supabase-js';
 // Vercel PRO 플랜 — 300초 한도 (5분)
 export const config = { maxDuration: 300 };
 
+// 한도(300초)를 넘기면 Vercel 이 함수를 죽여 클라이언트가 504 만 받고 결과는 사라진다.
+// 이 시각을 넘겼으면 추가 Gemini 호출을 하지 않고 지금까지 받은 결과로 마무리한다.
+const PARSE_RETRY_DEADLINE_MS = 170 * 1000;
+
 const JWT_SECRET = process.env.JWT_SECRET;
 const SB_URL = process.env.SUPABASE_URL;
 const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -633,6 +637,7 @@ ${hasEduMaterial ? '\n※ 첨부된 교육자료(시나리오/평가안)를 영�
 }
 
 export default async function handler(req, res) {
+  const reqStartedAt = Date.now();   // 300초 한도 관리용 (PARSE_RETRY_DEADLINE_MS 참조)
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'POST only' });
   }
@@ -817,8 +822,16 @@ export default async function handler(req, res) {
 
     let parsed = tryParse(text);
 
-    // 1차 파싱 실패 시 두 번까지 재시도
+    // 1차 파싱 실패 시 재시도 — 단, 남은 시간이 있을 때만.
+    // ⚠ 이 함수의 한도는 300초다. 한 번의 Gemini 호출이 이미 수 분 걸리므로
+    //   무조건 재시도하면 한도를 넘겨 504(FUNCTION_INVOCATION_TIMEOUT)로 죽고
+    //   클라이언트는 아무 결과도 못 받는다. → 여유가 있을 때만 다시 부른다.
     for (let i = 0; i < 2 && !parsed; i++) {
+      const elapsed = Date.now() - reqStartedAt;
+      if (elapsed > PARSE_RETRY_DEADLINE_MS) {
+        console.warn(`[vertex] 파싱 재시도 생략 — 경과 ${Math.round(elapsed / 1000)}초 (한도 임박)`);
+        break;
+      }
       try {
         const retry = await generateContentWithBackoff(gm, { contents: [{ role: 'user', parts }] });
         const rText = retry.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
