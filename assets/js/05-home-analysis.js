@@ -2263,9 +2263,12 @@ async function generateAIAnalysis(title,studentCount,hasChecklist,srcPrefix){
     setAiLoadingStage('ai','active');
     if(aiAutoRubric) setAiLoadingStep('AI 독자 분석 (AI가 평가안 직접 설계 중)...');
     try{
+      // AI 독자는 Flash 모델 사용 (사장님 결정 2026-08-03) —
+      // 정식 점수인 교육맞춤평가만 Pro 로 정밀 채점, 참고용 AI 독자는 빠르고 싼 모델로.
+      // 영상 1건당 AI 비용 약 40% 절감 + AI 독자 쪽 타임아웃 대폭 감소.
       aiResult=normalizeVertexResult(await callVertexAnalyze({
         video_url:videoUrl, video_gcs_uri:videoGcsUri, video_mime:videoMime, fps,
-        checklist_items:aiItemsEff, eval_type:'AI독자'
+        checklist_items:aiItemsEff, eval_type:'AI독자', model:'gemini-2.5-flash'
       }));
       setAiLoadingStage('ai','done');
     }catch(e){errors.push('AI 독자: '+e.message); console.error(e);}
